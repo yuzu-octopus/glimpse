@@ -36,7 +36,7 @@ function load(key: string): TodoItem[] {
   }
 }
 
-function Todo({ config }: WidgetComponentProps) {
+export function Todo({ config }: WidgetComponentProps) {
   const cfg = todoSchema.parse(config);
   const storageKey = `glimpse.todo.${cfg.id ?? 'default'}`;
   const [items, setItems] = useState<TodoItem[]>(() => load(storageKey));

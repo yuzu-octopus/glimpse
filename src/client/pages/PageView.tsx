@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Banner, Card, Collapsible, Skeleton, Tab, TabList, Text } from '@astryxdesign/core';
+import { useState, type ReactNode } from 'react';
+import { Banner, Card, Skeleton, Tab, TabList, Text } from '@astryxdesign/core';
+import { ChevronDown } from 'lucide-react';
 import type { ColumnPayload, WidgetPayload } from '../../shared/api';
 import type { WidgetType } from '../../shared/config';
 import { WidgetChrome } from '../components/WidgetChrome';
@@ -22,6 +23,11 @@ function widgetKey(w: WidgetPayload, i: number): string {
 
 function columnLabel(col: ColumnPayload, i: number): string {
   return widgetTitle(col.widgets[0]) ?? `Column ${i + 1}`;
+}
+
+/** Stable key for config-static column lists (order is static per config). */
+function columnKey(col: ColumnPayload, i: number): string {
+  return col.widgets[0] ? widgetKey(col.widgets[0], 0) : `column-${i}`;
 }
 
 /** Renders one widget: registry component, container, or not-implemented. */
@@ -81,6 +87,26 @@ function ContainerWidget({ widget }: { widget: WidgetPayload }) {
   );
 }
 
+/** Column wrapper: on mobile a toggle header collapses the section (glance
+ * behavior); on desktop the toggle is hidden and content always shows. */
+function MobileColumn({ label, children }: { label: string; children: ReactNode }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <div className={styles.column}>
+      <button
+        type="button"
+        className={styles.mobileToggle}
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        {label}
+        <ChevronDown size={12} className={open ? styles.chevronUp : ''} />
+      </button>
+      {open ? children : null}
+    </div>
+  );
+}
+
 export function PageView({ slug }: { slug: string }) {
   const state = usePageData(slug);
 
@@ -126,17 +152,13 @@ export function PageView({ slug }: { slug: string }) {
         {data.columns.map((col, i) => (
           // Columns are a config-static list (never reordered at runtime),
           // so the positional index is their stable identity.
-          <Collapsible
-            key={`column-${i}`}
-            defaultIsOpen
-            trigger={<span className={styles.mobileToggle}>{columnLabel(col, i)}</span>}
-          >
+          <MobileColumn key={columnKey(col, i)} label={columnLabel(col, i)}>
             <div className={styles.columnWidgets}>
               {col.widgets.map((w, j) => (
                 <WidgetSlot key={widgetKey(w, j)} widget={w} />
               ))}
             </div>
-          </Collapsible>
+          </MobileColumn>
         ))}
       </div>
     </div>

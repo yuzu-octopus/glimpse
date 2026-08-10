@@ -22,13 +22,36 @@
   min-width: 0;
 }
 
+/* Grid items default to min-width:auto — allow cards to shrink to the
+   track (long unbroken titles otherwise blow out mobile layouts). */
+.columnWidgets > *,
+.headWidgets > * {
+  min-width: 0;
+}
+
 .mobileToggle {
   display: none;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 4px;
+  border: none;
+  background: transparent;
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--color-text-secondary);
+  cursor: pointer;
+  text-align: start;
+}
+
+.chevronUp {
+  transform: rotate(180deg);
+}
+
+.column {
+  min-width: 0;
 }
 
 .splitColumn {
@@ -45,12 +68,12 @@
 
 @media (max-width: 768px) {
   .columns {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: minmax(0, 1fr) !important;
   }
   .mobileToggle {
     display: inline-flex;
   }
   .splitColumn {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }

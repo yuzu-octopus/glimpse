@@ -4,7 +4,7 @@ import { searchSchema } from '../../../shared/widgets/search';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 
-function Search({ config }: WidgetComponentProps) {
+export function Search({ config }: WidgetComponentProps) {
   const cfg = searchSchema.parse(config);
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -50,7 +50,11 @@ function Search({ config }: WidgetComponentProps) {
       '{QUERY}',
       encodeURIComponent(rest),
     );
-    window.open(url, cfg['new-tab'] ? '_blank' : '_self');
+    if (cfg['new-tab']) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      window.open(url, '_self');
+    }
     setQuery('');
   };
 
