@@ -122,6 +122,6 @@ export const ConfigSchema = z.object({
 export type Config = z.infer<typeof ConfigSchema>;
 
 /** Config after slug derivation — every page has a unique slug. */
-export type ResolvedConfig = Config & {
+export type ResolvedConfig = Omit<Config, 'pages'> & {
   pages: (Page & { slug: string })[];
 };
