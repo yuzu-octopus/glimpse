@@ -31,9 +31,10 @@ registerWidget('lobsters', async (ctx, config) => {
   const stories = await fetchJson<LobstersStory[]>(ctx, `${instance}/${endpoint}.json`);
 
   const tags = cfg.tags;
+  const tagSet = new Set(tags ?? []);
   const filtered =
     tags && tags.length > 0
-      ? stories.filter((s) => (s.tags ?? []).some((t) => tags.includes(t)))
+      ? stories.filter((s) => (s.tags ?? []).some((t) => tagSet.has(t)))
       : stories;
 
   const limit = cfg.limit ?? 10;

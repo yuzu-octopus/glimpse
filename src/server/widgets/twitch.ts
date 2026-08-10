@@ -81,19 +81,22 @@ registerWidget('twitch-channels', async (ctx, config) => {
   const headers = helixHeaders(ctx, token);
 
   const logins = cfg.channels.map(encodeURIComponent);
-  const users = await fetchJson<{ data: TwitchUser[] }>(
-    ctx,
-    `https://api.twitch.tv/helix/users?login=${logins.join('&login=')}`,
-    { headers },
-  );
-  const streamsRes = await fetchJson<{ data: TwitchStream[] }>(
-    ctx,
-    `https://api.twitch.tv/helix/streams?user_login=${logins.join('&user_login=')}`,
-    { headers },
-  );
+  const [usersRes, streamsRes] = await Promise.all([
+    fetchJson<{ data: TwitchUser[] }>(
+      ctx,
+      `https://api.twitch.tv/helix/users?login=${logins.join('&login=')}`,
+      { headers },
+    ),
+    fetchJson<{ data: TwitchStream[] }>(
+      ctx,
+      `https://api.twitch.tv/helix/streams?user_login=${logins.join('&user_login=')}`,
+      { headers },
+    ),
+  ]);
+  const users = usersRes.data;
   const streams = new Map(streamsRes.data.map((s) => [s.user_login, s]));
 
-  const channels: TwitchChannel[] = users.data.map((u) => {
+  const channels: TwitchChannel[] = users.map((u) => {
     const stream = streams.get(u.login);
     return {
       login: u.login ?? '',
@@ -127,13 +130,17 @@ registerWidget('twitch-top-games', async (ctx, config) => {
     data: Array<{ id?: string; name?: string; box_art_url?: string }>;
   }>(ctx, `https://api.twitch.tv/helix/games/top?first=${limit}`, { headers });
 
-  const excluded = cfg.exclude.map((e) => e.toLowerCase());
-  const games: TwitchGame[] = res.data
-    .filter((g) => !excluded.includes((g.name ?? '').toLowerCase()))
-    .map((g) => ({
-      id: g.id ?? '',
-      name: g.name ?? '',
-      thumbnail: g.box_art_url?.replace('{width}x{height}', '144x192') ?? null,
-    }));
+  const excluded = new Set(cfg.exclude.map((e) => e.toLowerCase()));
+  const games: TwitchGame[] = res.data.flatMap((g) =>
+    excluded.has((g.name ?? '').toLowerCase())
+      ? []
+      : [
+          {
+            id: g.id ?? '',
+            name: g.name ?? '',
+            thumbnail: g.box_art_url?.replace('{width}x{height}', '144x192') ?? null,
+          },
+        ],
+  );
   return { games };
 });

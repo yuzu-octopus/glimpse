@@ -47,26 +47,26 @@ registerWidget('reddit', async (ctx, config) => {
     headers: { 'User-Agent': 'glimpse/0.1 (dashboard) by /u/glimpse-app' },
   });
 
-  const posts: RedditPost[] = (listing.data?.children ?? [])
-    .filter((c) => typeof c.data.title === 'string')
-    .map((c) => {
-      const d = c.data;
-      const permalink = d.permalink ?? '';
-      return {
-        title: d.title as string,
-        url: d.url ?? '',
-        commentsUrl:
-          cfg['comments-url-template']?.replace('{PERMALINK}', permalink) ??
-          `https://www.reddit.com${permalink}`,
-        thumbnail: VALID_THUMB(d.thumbnail) ? d.thumbnail : null,
-        flair: d.link_flair_text ?? null,
-        score: d.score ?? 0,
-        comments: d.num_comments ?? 0,
-        ageSeconds: d.created_utc
-          ? Math.floor(Date.now() / 1000) - d.created_utc
-          : 0,
-      };
-    });
+  const posts: RedditPost[] = (listing.data?.children ?? []).flatMap((c) =>
+    typeof c.data.title === 'string'
+      ? [
+          {
+            title: c.data.title,
+            url: c.data.url ?? '',
+            commentsUrl:
+              cfg['comments-url-template']?.replace('{PERMALINK}', c.data.permalink ?? '') ??
+              `https://www.reddit.com${c.data.permalink ?? ''}`,
+            thumbnail: VALID_THUMB(c.data.thumbnail) ? c.data.thumbnail : null,
+            flair: c.data.link_flair_text ?? null,
+            score: c.data.score ?? 0,
+            comments: c.data.num_comments ?? 0,
+            ageSeconds: c.data.created_utc
+              ? Math.floor(Date.now() / 1000) - c.data.created_utc
+              : 0,
+          },
+        ]
+      : [],
+  );
 
   return { posts: posts.slice(0, limit) };
 });
