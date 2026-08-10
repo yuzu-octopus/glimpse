@@ -1,0 +1,11 @@
+/* TopNav wrapper: hidden on desktop when the page sets
+   `hide-desktop-navigation` (glance keeps it visible on mobile). */
+.hideDesktopNav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .hideDesktopNav {
+    display: block;
+  }
+}

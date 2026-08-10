@@ -46,6 +46,11 @@
   height: 20px;
 }
 
+.chartLink {
+  display: block;
+  line-height: 0;
+}
+
 .price {
   font-size: 14px;
   font-weight: 600;

@@ -34,6 +34,14 @@ function feedUrlFor(channel: string): string {
   return `https://www.youtube.com/feeds/videos.xml?user=${encodeURIComponent(handle)}`;
 }
 
+/** Default link, or the configured template with {VIDEO-ID} from the v= param. */
+function videoUrlFor(link: string, template: string | undefined): string {
+  const id = new URL(link).searchParams.get('v') ?? '';
+  return template
+    ? template.replace('{VIDEO-ID}', id)
+    : `https://www.youtube.com/watch?v=${id}`;
+}
+
 registerWidget('videos', async (ctx, config) => {
   const cfg = videosSchema.parse(config);
   const parser = new Parser<VideoFeedSummary, ParserItem>({
@@ -52,16 +60,22 @@ registerWidget('videos', async (ctx, config) => {
     feeds.map(async ({ url, source }) => {
       const raw = await fetchText(ctx, url);
       const parsed = (await parser.parseString(raw)) as ParsedFeed;
-      return parsed.items.map((item) => ({
-        title: item.title ?? '',
-        url: item.link ?? '',
-        channel: parsed.title ?? source,
-        published: item.isoDate ?? item.pubDate ?? null,
-        thumbnail:
-          item.mediaGroup?.['media:thumbnail']?.[0]?.$?.url ??
-          item.enclosure?.url ??
-          null,
-      })) as Video[];
+      return parsed.items.flatMap((item) =>
+        !cfg['include-shorts'] && (item.link ?? '').includes('/shorts/')
+          ? []
+          : [
+              {
+                title: item.title ?? '',
+                url: videoUrlFor(item.link ?? '', cfg['video-url-template']),
+                channel: parsed.title ?? source,
+                published: item.isoDate ?? item.pubDate ?? null,
+                thumbnail:
+                  item.mediaGroup?.['media:thumbnail']?.[0]?.$?.url ??
+                  item.enclosure?.url ??
+                  null,
+              } as Video,
+            ],
+      );
     }),
   );
 

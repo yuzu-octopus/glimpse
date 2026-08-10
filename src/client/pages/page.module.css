@@ -11,6 +11,14 @@
   justify-content: center;
 }
 
+/* Page-name header for mobile only (glance `show-mobile-header`). */
+.mobileHeader {
+  display: none;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
 .headWidgets {
   display: grid;
   gap: 12px;
@@ -79,6 +87,9 @@
   }
   .mobileToggle {
     display: inline-flex;
+  }
+  .mobileHeader {
+    display: block;
   }
   .splitColumn {
     grid-template-columns: minmax(0, 1fr);

@@ -1,6 +1,6 @@
 import { redditSchema } from '../../shared/widgets/feeds';
-import { registerWidget } from './registry';
-import { fetchJson } from './http';
+import { parseCacheDuration } from '../cache';
+import { registerWidget, type WidgetFetchContext } from './registry';
 
 interface RedditChild {
   data: {
@@ -33,19 +33,75 @@ export interface RedditPost {
 const VALID_THUMB = (t: string | undefined): t is string =>
   typeof t === 'string' && t.startsWith('http');
 
+const USER_AGENT = 'glimpse/0.1 (dashboard) by /u/glimpse-app';
+
+interface ProxyConfig {
+  url: string;
+  'allow-insecure'?: boolean;
+  timeout?: string;
+}
+
+/** Reddit app-only OAuth: token cached for ~1h (Reddit tokens live 24h). */
+async function getAccessToken(
+  ctx: WidgetFetchContext,
+  appAuth: { id: string; secret: string },
+): Promise<string> {
+  const cached = ctx.cache.get<string>('reddit:token');
+  if (cached) return cached;
+
+  const res = await ctx.fetch('https://www.reddit.com/api/v1/access_token', {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${btoa(`${appAuth.id}:${appAuth.secret}`)}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': USER_AGENT,
+    },
+    body: 'grant_type=client_credentials',
+  });
+  if (!res.ok) throw new Error(`reddit token: HTTP ${res.status}`);
+  const body = (await res.json()) as { access_token?: string; expires_in?: number };
+  if (!body.access_token) throw new Error('reddit token: no access_token in response');
+
+  const ttl = Math.min((body.expires_in ?? 3600) * 1000, 3600_000);
+  ctx.cache.set('reddit:token', body.access_token, ttl);
+  return body.access_token;
+}
+
 registerWidget('reddit', async (ctx, config) => {
   const cfg = redditSchema.parse(config);
   const limit = cfg.limit ?? 10;
   const sort = cfg['sort-by'] ?? 'hot';
   const period = cfg['top-period'] ?? 'day';
 
-  const url = cfg.search
+  const proxy: ProxyConfig | undefined =
+    typeof cfg.proxy === 'string' ? { url: cfg.proxy } : cfg.proxy;
+  if (proxy && proxy.url.startsWith('http://') && !proxy['allow-insecure']) {
+    throw new Error(
+      `reddit: insecure proxy "${proxy.url}" requires allow-insecure: true`,
+    );
+  }
+
+  let url = cfg.search
     ? `https://www.reddit.com/search.json?q=${encodeURIComponent(cfg.search)}&sort=${sort}&t=${period}&limit=${limit}`
     : `https://www.reddit.com/r/${encodeURIComponent(cfg.subreddit)}/${sort}.json?limit=${limit}&t=${period}`;
+  if (cfg['request-url-template']) {
+    url = cfg['request-url-template'].replace('{REQUEST-URL}', url);
+  }
 
-  const listing = await fetchJson<RedditListing>(ctx, url, {
-    headers: { 'User-Agent': 'glimpse/0.1 (dashboard) by /u/glimpse-app' },
+  const headers: Record<string, string> = { 'User-Agent': USER_AGENT };
+  if (cfg['app-auth']) {
+    headers.Authorization = `Bearer ${await getAccessToken(ctx, cfg['app-auth'])}`;
+  }
+
+  const res = await ctx.fetch(url, {
+    headers,
+    signal: AbortSignal.timeout(
+      proxy?.timeout ? parseCacheDuration(proxy.timeout) : 15_000,
+    ),
+    ...(proxy ? { proxy: proxy.url } : {}),
   });
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+  const listing = (await res.json()) as RedditListing;
 
   const posts: RedditPost[] = (listing.data?.children ?? []).flatMap((c) =>
     typeof c.data.title === 'string'
@@ -68,5 +124,8 @@ registerWidget('reddit', async (ctx, config) => {
       : [],
   );
 
+  if (cfg['extra-sort-by'] === 'engagement') {
+    posts.sort((a, b) => b.score + b.comments - (a.score + a.comments));
+  }
   return { posts: posts.slice(0, limit) };
 });

@@ -11,8 +11,8 @@ import { Theme, defineTheme, type ThemeMode } from '@astryxdesign/core/theme';
 import { LinkProvider } from '@astryxdesign/core/Link';
 import { buildTheme } from '../../shared/theme/base16ToAstryx';
 import { invertLuminance } from '../../shared/theme/base16';
-import { presetById } from '../../shared/theme/presets';
-import { customThemeTokens } from '../../shared/theme/glanceHsl';
+import { presetById, type Preset } from '../../shared/theme/presets';
+import { buildConfigPresets, customThemeTokens } from '../../shared/theme/glanceHsl';
 import { useConfig } from '../hooks/useConfig';
 
 const STORAGE_KEY = 'glimpse.theme.v1';
@@ -20,6 +20,8 @@ const STORAGE_KEY = 'glimpse.theme.v1';
 export interface ThemeSettings {
   mode: ThemeMode;
   presetId: string;
+  /** Presets declared in config `theme.presets`, added to the picker. */
+  configPresets: Preset[];
   setMode: (mode: ThemeMode) => void;
   setPresetId: (id: string) => void;
 }
@@ -86,8 +88,15 @@ export function GlimpseThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [settings]);
 
+  const configPresets = useMemo(
+    () =>
+      buildConfigPresets(configState.status === 'ready' ? configState.config.theme : undefined),
+    [configState],
+  );
+
   const theme = useMemo(() => {
-    const preset = presetById(settings.presetId);
+    const preset =
+      configPresets.find((p) => p.id === settings.presetId) ?? presetById(settings.presetId);
     const light = preset.light ?? invertLuminance(preset.dark);
     let t = buildTheme(preset.id, light, preset.dark);
     const custom =
@@ -98,15 +107,16 @@ export function GlimpseThemeProvider({ children }: { children: ReactNode }) {
       t = defineTheme({ name: preset.id, extends: t, tokens: custom });
     }
     return t;
-  }, [settings.presetId, configState]);
+  }, [settings.presetId, configState, configPresets]);
 
   const api = useMemo<ThemeSettings>(
     () => ({
       ...settings,
+      configPresets,
       setMode: (mode) => setSettings((s) => ({ ...s, mode })),
       setPresetId: (presetId) => setSettings((s) => ({ ...s, presetId })),
     }),
-    [settings],
+    [settings, configPresets],
   );
 
   return (

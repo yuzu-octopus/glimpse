@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Button, TextInput } from '@astryxdesign/core';
 import { CheckboxInput } from '@astryxdesign/core/CheckboxInput';
 import { Pencil, Trash2 } from 'lucide-react';
@@ -44,6 +44,7 @@ export function Todo({ config }: WidgetComponentProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const editRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   useEffect(() => {
     try {
@@ -59,6 +60,31 @@ export function Todo({ config }: WidgetComponentProps) {
     setItems((prev) => [...prev, { id: crypto.randomUUID(), text: t, done: false }]);
     setText('');
     inputRef.current?.focus();
+  };
+
+  /** Ctrl+Enter (or Cmd+Enter) prepends to the top (glance parity). */
+  const addTop = () => {
+    const t = text.trim();
+    if (!t) return;
+    setItems((prev) => [{ id: crypto.randomUUID(), text: t, done: false }, ...prev]);
+    setText('');
+    inputRef.current?.focus();
+  };
+
+  /** Enter appends; Ctrl/Cmd+Enter prepends; ArrowDown jumps to the last
+   * item's edit button so the list stays keyboard-reachable. */
+  const handleInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        addTop();
+      } else {
+        add();
+      }
+    } else if (e.key === 'ArrowDown' && items.length > 0) {
+      e.preventDefault();
+      editRefs.current[items.length - 1]?.focus();
+    }
   };
 
   const toggle = (id: string) =>
@@ -90,7 +116,7 @@ export function Todo({ config }: WidgetComponentProps) {
           value={text}
           onChange={setText}
           placeholder="Add a task…"
-          onEnter={add}
+          onKeyDown={handleInputKeyDown}
           hasClear
         />
         <Button label="Add" size="sm" onClick={add} />
@@ -98,7 +124,7 @@ export function Todo({ config }: WidgetComponentProps) {
       {items.length === 0 ? (
         <div className={styles.empty}>No tasks yet.</div>
       ) : (
-        items.map((item) => (
+        items.map((item, i) => (
           <div key={item.id} className={styles.item}>
             <CheckboxInput
               value={item.done}
@@ -123,6 +149,9 @@ export function Todo({ config }: WidgetComponentProps) {
             )}
             <button
               type="button"
+              ref={(el) => {
+                editRefs.current[i] = el;
+              }}
               className={styles.iconBtn}
               aria-label={`Edit ${item.text}`}
               onClick={() => (editingId === item.id ? commitEdit() : startEdit(item))}

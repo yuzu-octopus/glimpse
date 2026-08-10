@@ -70,15 +70,31 @@ function ContainerWidget({ widget }: { widget: WidgetPayload }) {
       </div>
     );
   }
+  const groupTitleUrl = (() => {
+    const t = widget.config['title-url'];
+    return typeof t === 'string' && t ? t : undefined;
+  })();
   return (
     <Card padding={0}>
       <TabList
         value={String(active)}
-        onChange={(v) => setActive(Number(v))}
+        onChange={(v) => {
+          const next = Number(v);
+          // glance: clicking the already-active tab opens the group title-url
+          if (next === active && groupTitleUrl) {
+            window.open(groupTitleUrl, '_blank', 'noopener,noreferrer');
+          } else {
+            setActive(next);
+          }
+        }}
         hasDivider
       >
         {children.map((w, i) => (
-          <Tab key={widgetKey(w, i)} value={String(i)} label={widgetTitle(w) ?? `Tab ${i + 1}`} />
+          <Tab
+            key={widgetKey(w, i)}
+            value={String(i)}
+            label={widgetTitle(w) ?? `Tab ${i + 1}`}
+          />
         ))}
       </TabList>
       <div className={styles.tabContent}>
@@ -138,6 +154,9 @@ export function PageView({ slug }: { slug: string }) {
       className={`${styles.page} ${data['center-vertically'] ? styles.centered : ''}`}
       style={{ maxWidth: WIDTHS[data.width] }}
     >
+      {data['show-mobile-header'] ? (
+        <div className={styles.mobileHeader}>{data.name}</div>
+      ) : null}
       {data.headWidgets.length > 0 ? (
         <div className={styles.headWidgets}>
           {data.headWidgets.map((w, i) => (

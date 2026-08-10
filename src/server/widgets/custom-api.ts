@@ -36,9 +36,21 @@ function evalFirst(expr: string, json: unknown): string | null {
 registerWidget('custom-api', async (ctx, config) => {
   const cfg = customApiSchema.parse(config);
 
+  if (cfg.url.startsWith('http://') && !cfg['allow-insecure']) {
+    throw new Error(
+      'custom-api: refusing insecure http:// URL; set allow-insecure: true to permit it',
+    );
+  }
+
   const headers: Record<string, string> = { ...cfg.headers };
   const method = cfg.method ?? 'GET';
-  if (cfg['body-type'] === 'json' && !('content-type' in headers)) {
+  // Glance sends JSON bodies when body-type is json; a map body implies json
+  // even when body-type is absent (glance default with a map body).
+  const bodyIsMap = cfg.body !== undefined && typeof cfg.body !== 'string';
+  const hasContentType = Object.keys(headers).some(
+    (k) => k.toLowerCase() === 'content-type',
+  );
+  if ((cfg['body-type'] === 'json' || bodyIsMap) && !hasContentType) {
     headers['content-type'] = 'application/json';
   }
 
@@ -55,7 +67,25 @@ registerWidget('custom-api', async (ctx, config) => {
   }
   const res = await ctx.fetch(url.toString(), init);
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
-  const payload = (await res.json()) as unknown;
+  // skip-json-validation tolerates JSON Lines responses: each non-empty line
+  // parses into one array element. A single JSON document still parses as-is
+  // (a bare object is later wrapped into a one-item list).
+  let payload: unknown;
+  if (cfg['skip-json-validation']) {
+    const text = await res.text();
+    const trimmed = text.trim();
+    try {
+      payload = JSON.parse(trimmed);
+    } catch {
+      // Not a single JSON document — treat as JSON Lines, one item per line.
+      payload = trimmed
+        .split(/\r?\n/)
+        .filter((line) => line.trim() !== '')
+        .map((line) => JSON.parse(line));
+    }
+  } else {
+    payload = await res.json();
+  }
 
   const rootResult = JSONPath({ path: cfg.options.path, json: payload as object }) as unknown;
   const list: unknown[] = Array.isArray(rootResult) ? rootResult : [rootResult];

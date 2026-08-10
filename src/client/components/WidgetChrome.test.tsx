@@ -1,8 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { WidgetChrome } from './WidgetChrome';
 
 const rows = Array.from({ length: 5 }, (_, i) => <div key={i}>row {i}</div>);
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('WidgetChrome', () => {
   it('renders the title and children', () => {
@@ -57,5 +61,46 @@ describe('WidgetChrome', () => {
     );
     expect(screen.getByTestId('widget-loading')).toBeInTheDocument();
     expect(screen.queryByText('content')).toBeNull();
+  });
+
+  it('never collapses when collapseAfter is -1', () => {
+    render(<WidgetChrome title="Feed" collapseAfter={-1} items={rows} />);
+    expect(screen.queryByRole('button', { name: /show more/i })).toBeNull();
+    expect(screen.getByText('row 4')).toBeInTheDocument();
+  });
+
+  it('collapses back with Show less and scrolls the card into view', () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    render(<WidgetChrome title="Feed" collapseAfter={3} items={rows} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /show more/i }));
+    expect(screen.getByText('row 4')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /show less/i }));
+    expect(screen.queryByText('row 3')).toBeNull();
+    expect(screen.getByRole('button', { name: /show more \(2\)/i })).toBeInTheDocument();
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' });
+  });
+
+  it('shows a red status dot next to the title when error is set', () => {
+    render(
+      <WidgetChrome title="Broken" error="upstream exploded">
+        <div>content</div>
+      </WidgetChrome>,
+    );
+    const dot = screen.getByTestId('widget-error-dot');
+    expect(dot.className).toContain('errorDot');
+    // error Banner stays in the body
+    expect(screen.getByText('upstream exploded')).toBeInTheDocument();
+  });
+
+  it('does not render the error dot when there is no error', () => {
+    render(
+      <WidgetChrome title="Fine">
+        <div>content</div>
+      </WidgetChrome>,
+    );
+    expect(screen.queryByTestId('widget-error-dot')).toBeNull();
   });
 });

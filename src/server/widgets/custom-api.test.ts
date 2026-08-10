@@ -112,4 +112,77 @@ describe('custom-api fetcher', () => {
       customApiFetcher()(ctx, { type: 'custom-api', url: 'https://api.example.com/boom' }),
     ).rejects.toThrow('HTTP 500');
   });
+
+  it('sets json content-type for map bodies even without body-type', async () => {
+    const ctx = makeCtx(async (_url, init) => {
+      expect(init?.method).toBe('POST');
+      expect(init?.body).toBe('{"query":"x"}');
+      expect((init?.headers as Record<string, string>)['content-type']).toBe('application/json');
+      return new Response(JSON.stringify([{ title: 'A' }]), { status: 200 });
+    });
+    const data = (await customApiFetcher()(ctx, {
+      type: 'custom-api',
+      url: 'https://api.example.com/search',
+      method: 'POST',
+      body: { query: 'x' },
+      options: { path: '$[*]', title: '$.title' },
+    })) as { items: CustomApiItem[] };
+    expect(data.items).toHaveLength(1);
+    expect(data.items[0].title).toBe('A');
+  });
+
+  it('repeats array parameters as repeated query params', async () => {
+    const ctx = makeCtx(async (url) => {
+      expect(url).toContain('tag=a&tag=b');
+      return new Response(JSON.stringify([{ title: 'A' }]), { status: 200 });
+    });
+    const data = (await customApiFetcher()(ctx, {
+      type: 'custom-api',
+      url: 'https://api.example.com/items',
+      parameters: { tag: ['a', 'b'] },
+      options: { path: '$', title: '$.title' },
+    })) as { items: CustomApiItem[] };
+    expect(data.items).toHaveLength(1);
+  });
+
+  it('parses JSON Lines when skip-json-validation is set', async () => {
+    const ctx = makeCtx(async () =>
+      new Response('{"title":"One"}\n{"title":"Two"}\n', { status: 200 }),
+    );
+    const data = (await customApiFetcher()(ctx, {
+      type: 'custom-api',
+      url: 'https://api.example.com/stream',
+      'skip-json-validation': true,
+      options: { path: '$[*]', title: '$.title' },
+    })) as { items: CustomApiItem[] };
+    expect(data.items.map((i) => i.title)).toEqual(['One', 'Two']);
+  });
+
+  it('wraps a single JSON object under skip-json-validation', async () => {
+    const ctx = makeCtx(async () =>
+      new Response(JSON.stringify({ title: 'Solo' }), { status: 200 }),
+    );
+    const data = (await customApiFetcher()(ctx, {
+      type: 'custom-api',
+      url: 'https://api.example.com/solo',
+      'skip-json-validation': true,
+      options: { path: '$', title: '$.title' },
+    })) as { items: CustomApiItem[] };
+    expect(data.items).toHaveLength(1);
+    expect(data.items[0].title).toBe('Solo');
+  });
+
+  it('refuses insecure http urls unless allow-insecure is set', async () => {
+    const ctx = makeCtx(async () => new Response('{}', { status: 200 }));
+    await expect(
+      customApiFetcher()(ctx, { type: 'custom-api', url: 'http://api.example.com/x' }),
+    ).rejects.toThrow('allow-insecure');
+    const data = (await customApiFetcher()(ctx, {
+      type: 'custom-api',
+      url: 'http://api.example.com/x',
+      'allow-insecure': true,
+      options: { path: '$' },
+    })) as { items: CustomApiItem[] };
+    expect(data.items).toHaveLength(1);
+  });
 });

@@ -28,7 +28,37 @@ const DATE_FORMAT = new Intl.DateTimeFormat('en-GB', {
   month: 'long',
 });
 
-function Clock({ config }: WidgetComponentProps) {
+/** Minutes ahead of UTC for a timezone at `d` (local when tz is undefined). */
+function offsetMinutes(tz: string | undefined, d: Date): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    timeZoneName: 'longOffset',
+  }).formatToParts(d);
+  const name = parts.find((p) => p.type === 'timeZoneName')?.value ?? '';
+  const m = /GMT([+-])(\d{2}):(\d{2})/.exec(name);
+  if (!m) return 0;
+  return (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3]));
+}
+
+/** Offset of a zone vs local time, e.g. "+3h" with title "3 hours ahead". */
+function offsetBadge(tz: string, now: Date): { label: string; title: string } {
+  const diff = offsetMinutes(tz, now) - offsetMinutes(undefined, now);
+  if (diff === 0) return { label: '0h', title: 'Same time as local' };
+  const abs = Math.abs(diff);
+  const hours = Math.floor(abs / 60);
+  const mins = abs % 60;
+  const sign = diff > 0 ? '+' : '-';
+  const label = mins === 0 ? `${sign}${hours}h` : `${sign}${hours}h ${mins}m`;
+  const word = diff > 0 ? 'ahead' : 'behind';
+  const h = `${hours} hour${hours === 1 ? '' : 's'}`;
+  const title =
+    mins === 0
+      ? `${h} ${word}`
+      : `${h} ${mins} minute${mins === 1 ? '' : 's'} ${word}`;
+  return { label, title };
+}
+
+export function Clock({ config }: WidgetComponentProps) {
   const cfg = clockSchema.parse(config);
   const hour12 = (cfg['hour-format'] ?? '24h') === '12h';
   const [now, setNow] = useState(() => new Date());
@@ -46,16 +76,24 @@ function Clock({ config }: WidgetComponentProps) {
       <div className={styles.date}>{date}</div>
       {cfg.timezones.length > 0 ? (
         <div className={styles.zones}>
-          {cfg.timezones.map((z) => (
-            <div key={z.timezone} className={styles.zone}>
-              <span className={styles.zoneLabel}>
-                {z.label ?? z.timezone}
-              </span>
-              <span className={styles.zoneTime}>
-                {formatTime(now, z.timezone, hour12)}
-              </span>
-            </div>
-          ))}
+          {cfg.timezones.map((z) => {
+            const badge = offsetBadge(z.timezone, now);
+            return (
+              <div key={z.timezone} className={styles.zone}>
+                <span className={styles.zoneLabel}>
+                  {z.label ?? z.timezone}
+                </span>
+                <span className={styles.zoneRight}>
+                  <span className={styles.zoneOffset} title={badge.title}>
+                    {badge.label}
+                  </span>
+                  <span className={styles.zoneTime}>
+                    {formatTime(now, z.timezone, hour12)}
+                  </span>
+                </span>
+              </div>
+            );
+          })}
         </div>
       ) : null}
     </WidgetChrome>

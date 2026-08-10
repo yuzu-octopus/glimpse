@@ -50,4 +50,66 @@ describe('markets widget', () => {
     rerender(<Sparkline values={[]} />);
     expect(container.querySelector('svg')).toBeNull();
   });
+
+  it('resolves symbol links from the template with {SYMBOL}', () => {
+    render(
+      <Markets
+        config={{
+          type: 'markets',
+          markets: [{ symbol: 'AAPL' }],
+          'symbol-link-template': 'https://www.google.com/search?tbm=nws&q={SYMBOL}',
+          'chart-link-template': 'https://www.tradingview.com/chart/?symbol={SYMBOL}',
+        }}
+        data={{ markets }}
+      />,
+    );
+    const symbolLink = screen.getByRole('link', { name: 'AAPL' });
+    expect(symbolLink).toHaveAttribute('href', 'https://www.google.com/search?tbm=nws&q=AAPL');
+    expect(symbolLink).toHaveAttribute('target', '_blank');
+    const chartLink = screen.getByRole('link', { name: 'AAPL chart' });
+    expect(chartLink).toHaveAttribute('href', 'https://www.tradingview.com/chart/?symbol=AAPL');
+    expect(chartLink).toHaveAttribute('target', '_blank');
+  });
+
+  it('per-market symbol-link and chart-link override the templates', () => {
+    render(
+      <Markets
+        config={{
+          type: 'markets',
+          markets: [
+            {
+              symbol: 'AAPL',
+              'symbol-link': 'https://news.example.com/apple',
+              'chart-link': 'https://charts.example.com/aapl',
+            },
+          ],
+          'symbol-link-template': 'https://template.example.com/{SYMBOL}',
+          'chart-link-template': 'https://template.example.com/chart/{SYMBOL}',
+        }}
+        data={{ markets }}
+      />,
+    );
+    expect(screen.getByRole('link', { name: 'AAPL' })).toHaveAttribute(
+      'href',
+      'https://news.example.com/apple',
+    );
+    expect(screen.getByRole('link', { name: 'AAPL chart' })).toHaveAttribute(
+      'href',
+      'https://charts.example.com/aapl',
+    );
+  });
+
+  it('renders plain text and an unlinked sparkline when no link resolves', () => {
+    const { container } = render(
+      <Markets
+        config={{ type: 'markets', markets: [{ symbol: 'X' }] }}
+        data={{ markets: [{ symbol: 'X', name: 'X Corp', price: null, change: null, changePct: null, chart: [1, 2, 3] }] }}
+      />,
+    );
+    expect(screen.getByText('X')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'X' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'X chart' })).toBeNull();
+    // the sparkline still renders, just not wrapped in an anchor
+    expect(container.querySelector('polyline')).not.toBeNull();
+  });
 });

@@ -9,16 +9,30 @@ const MONTH_FORMAT = new Intl.DateTimeFormat('en-GB', {
   year: 'numeric',
 });
 
+/** Weekday of the first grid column, monday=0 … sunday=6. */
+const DAY_START: Record<string, number> = {
+  monday: 0,
+  tuesday: 1,
+  wednesday: 2,
+  thursday: 3,
+  friday: 4,
+  saturday: 5,
+  sunday: 6,
+};
+
+const DOW_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+
 function Calendar({ config }: WidgetComponentProps) {
   const cfg = calendarSchema.parse(config);
-  const startMonday = (cfg['first-day-of-week'] ?? 'monday') === 'monday';
+  const start = DAY_START[(cfg['first-day-of-week'] ?? 'monday').toLowerCase()] ?? 0;
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth();
 
   const cells = useMemo(() => {
     const first = new Date(year, month, 1);
-    const offset = (first.getDay() + (startMonday ? 6 : 0)) % 7;
+    // JS getDay() is sunday=0; convert to monday=0 then align to the start day.
+    const offset = (((first.getDay() + 6) % 7) - start + 7) % 7;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const daysInPrev = new Date(year, month, 0).getDate();
     const out: { day: number; current: boolean }[] = [];
@@ -32,11 +46,9 @@ function Calendar({ config }: WidgetComponentProps) {
       out.push({ day: out.length - offset - daysInMonth + 1, current: false });
     }
     return out;
-  }, [year, month, startMonday]);
+  }, [year, month, start]);
 
-  const dows = startMonday
-    ? ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
-    : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const dows = [...DOW_LABELS.slice(start), ...DOW_LABELS.slice(0, start)];
   const monthName = MONTH_FORMAT.format(now);
 
   return (
@@ -62,3 +74,5 @@ function Calendar({ config }: WidgetComponentProps) {
 }
 
 registerWidgetComponent('calendar', Calendar);
+
+export default Calendar;

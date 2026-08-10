@@ -4,8 +4,11 @@ import { useConfig } from '../hooks/useConfig';
 import { ThemePicker } from './ThemePicker';
 import styles from './top-nav.module.css';
 
+// glance docs §Pages & Columns: default 1600px / slim 1100px / wide 1920px.
+const NAV_WIDTHS = { default: 1600, slim: 1100, wide: 1920 } as const;
+
 /** Global top navigation: app title, page tabs, theme picker (step 5). */
-export function TopNav() {
+export function TopNav({ width }: { width?: 'default' | 'slim' | 'wide' }) {
   const state = useConfig();
   const config = state.status === 'ready' ? state.config : undefined;
   const { pathname } = useLocation();
@@ -18,6 +21,11 @@ export function TopNav() {
   return (
     <AstryxTopNav
       heading="Glimpse"
+      style={
+        width
+          ? { maxWidth: NAV_WIDTHS[width], marginInline: 'auto' }
+          : undefined
+      }
       centerContent={
         <nav className={styles.tabs} aria-label="Pages">
           {pages.map((p) => (

@@ -1,8 +1,10 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PagePayload } from '../../shared/api';
 import type { WidgetType } from '../../shared/config';
+import App from '../../App';
+import { GlimpseThemeProvider } from '../theme/GlimpseThemeProvider';
 import { PageView } from './PageView';
 import { clientWidgets, registerWidgetComponent } from '../widgets/registry';
 
@@ -34,6 +36,20 @@ beforeEach(() => {
       {error ? <span data-testid="widget-error">{error}</span> : String(config.title)}
     </div>
   ));
+  // jsdom lacks matchMedia; Astryx components (Spinner, Theme) use it
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
 });
 
 afterEach(() => {
@@ -54,6 +70,50 @@ function renderPage(p: PagePayload) {
   return render(
     <MemoryRouter>
       <PageView slug={p.slug} />
+    </MemoryRouter>,
+  );
+}
+
+// Shared by the App-level tests: one config, two pages, so the module-level
+// useConfig cache stays consistent across both renders.
+const APP_CONFIG_PAGES = [
+  {
+    name: 'Home',
+    slug: 'home',
+    width: 'default',
+    'hide-desktop-navigation': true,
+    'desktop-navigation-width': 'slim',
+    columns: [{ size: 'full', widgets: [{ type: 'clock', config: { type: 'clock' }, data: null }] }],
+  },
+  {
+    name: 'Docs',
+    slug: 'docs',
+    width: 'default',
+    columns: [{ size: 'full', widgets: [{ type: 'clock', config: { type: 'clock' }, data: null }] }],
+  },
+];
+
+function json(body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
+function renderApp(initialEntry: string) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string) => {
+      if (url === '/api/config') return json({ config: { pages: APP_CONFIG_PAGES } });
+      if (url === '/api/theme') return json({ customCss: null });
+      return json(payload());
+    }),
+  );
+  return render(
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <GlimpseThemeProvider>
+        <App />
+      </GlimpseThemeProvider>
     </MemoryRouter>,
   );
 }
@@ -151,5 +211,84 @@ describe('PageView', () => {
     expect(widgets).toHaveLength(2);
     const grid = document.querySelector('[class*="columns"]') as HTMLElement;
     expect(grid?.style.gridTemplateColumns).toBe('300px minmax(0, 1fr)');
+  });
+
+  it('renders a mobile page-name header when show-mobile-header is set', async () => {
+    renderPage(payload({ name: 'My Page', 'show-mobile-header': true }));
+    const header = await screen.findByText('My Page');
+    expect(header.className).toContain('mobileHeader');
+  });
+
+  it('does not render the mobile header by default', async () => {
+    renderPage(payload());
+    await screen.findByTestId('clock-widget');
+    expect(screen.queryByText('Home')).toBeNull();
+  });
+
+  it('opens the active group tab title-url in a new tab', async () => {
+    const openSpy = vi.fn();
+    vi.stubGlobal('open', openSpy);
+    renderPage(
+      payload({
+        columns: [
+          {
+            size: 'full',
+            widgets: [
+              {
+                type: 'group',
+                config: {
+                  type: 'group',
+                  'title-url': 'https://example.com/group',
+                },
+                data: null,
+                widgets: [
+                  {
+                    type: 'clock',
+                    config: { type: 'clock', title: 'Tab A' },
+                    data: null,
+                  },
+                  { type: 'clock', config: { type: 'clock', title: 'Tab B' }, data: null },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    // tab A is active by default — clicking it opens the group's title-url
+    fireEvent.click(await screen.findByRole('button', { name: 'Tab A' }));
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://example.com/group',
+      '_blank',
+      'noopener,noreferrer',
+    );
+
+    // clicking tab B switches to it and opens nothing
+    fireEvent.click(screen.getByRole('button', { name: 'Tab B' }));
+    expect(openSpy).toHaveBeenCalledTimes(1);
+    // content switched to tab B (clock title 'Tab B' now rendered in body)
+    expect(screen.getAllByText('Tab B').length).toBeGreaterThan(1);
+
+    // clicking tab B again (now active) opens the group title-url
+    fireEvent.click(screen.getByRole('button', { name: 'Tab B' }));
+    expect(openSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('hides desktop navigation and constrains nav width from the page config', async () => {
+    renderApp('/');
+    await screen.findByTestId('clock-widget');
+    const wrapper = document.querySelector('[data-testid="top-nav-wrapper"]') as HTMLElement;
+    expect(wrapper.className).toContain('hideDesktopNav');
+    const nav = wrapper.querySelector('nav[role="navigation"]') as HTMLElement;
+    expect(nav.style.maxWidth).toBe('1100px');
+  });
+
+  it('keeps desktop navigation visible when the page does not hide it', async () => {
+    renderApp('/docs');
+    await screen.findByTestId('clock-widget');
+    const wrapper = document.querySelector('[data-testid="top-nav-wrapper"]') as HTMLElement;
+    expect(wrapper.className).not.toContain('hideDesktopNav');
+    const nav = wrapper.querySelector('nav[role="navigation"]') as HTMLElement;
+    expect(nav.style.maxWidth).toBe('');
   });
 });

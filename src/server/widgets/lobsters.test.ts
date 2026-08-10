@@ -77,6 +77,18 @@ describe('lobsters fetcher', () => {
     expect(data.posts).toHaveLength(2);
   });
 
+  it('fetches custom-url directly, overriding instance/sort construction', async () => {
+    const ctx = makeCtx({ 'https://feeds.example.com/lobsters.json': STORIES });
+    const data = (await lobstersFetcher()(ctx, {
+      type: 'lobsters',
+      'instance-url': 'https://ignored.lobste.rs',
+      'sort-by': 'new',
+      'custom-url': 'https://feeds.example.com/lobsters.json',
+    })) as { posts: LobsterPost[] };
+    expect(data.posts).toHaveLength(2);
+    expect(data.posts[0].title).toBe('Rust post');
+  });
+
   it('returns an empty list for an empty payload', async () => {
     const ctx = makeCtx({ 'https://lobste.rs/hottest.json': [] });
     const data = (await lobstersFetcher()(ctx, { type: 'lobsters' })) as { posts: LobsterPost[] };

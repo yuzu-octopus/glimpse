@@ -48,4 +48,33 @@ describe('todo widget', () => {
     renderTodo('restore-key');
     expect(screen.getByRole('checkbox', { name: 'restored' })).toBeChecked();
   });
+
+  it('prepends tasks added with Ctrl+Enter, Enter still appends', () => {
+    const { container } = renderTodo();
+    const input = screen.getByLabelText('New task');
+
+    fireEvent.change(input, { target: { value: 'bottom' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.change(input, { target: { value: 'top' } });
+    fireEvent.keyDown(input, { key: 'Enter', ctrlKey: true });
+    fireEvent.change(input, { target: { value: 'middle' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    const texts = Array.from(container.querySelectorAll('[class*="itemText"]')).map(
+      (el) => el.textContent,
+    );
+    expect(texts).toEqual(['top', 'bottom', 'middle']);
+  });
+
+  it('focuses the last item edit button on ArrowDown in the input', () => {
+    renderTodo();
+    const input = screen.getByLabelText('New task');
+    fireEvent.change(input, { target: { value: 'first' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+    fireEvent.change(input, { target: { value: 'last' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(screen.getByRole('button', { name: 'Edit last' })).toHaveFocus();
+  });
 });

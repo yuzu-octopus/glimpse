@@ -1,3 +1,4 @@
+import { Link } from '@astryxdesign/core';
 import { monitorSchema } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
@@ -5,11 +6,16 @@ import type { MonitorSite } from '../../../server/widgets/monitor';
 import styles from './monitor.module.css';
 
 function SiteRow({ site }: { site: MonitorSite }) {
+  // Down + error-url configured -> error-url is the link; same-tab controls target (default new tab).
+  const href = site.ok || !site.errorUrl ? site.url : site.errorUrl;
+  const target = site.sameTab ? undefined : '_blank';
   return (
     <div className={styles.row}>
       <span className={`${styles.dot} ${site.ok ? styles.dotUp : styles.dotDown}`} aria-label={site.ok ? 'up' : 'down'} />
       <div className={styles.rowBody}>
-        <span className={styles.title}>{site.title || site.url}</span>
+        <Link href={href} target={target} className={styles.title} hasUnderline={false}>
+          {site.title || site.url}
+        </Link>
         <span className={styles.url}>{site.url}</span>
       </div>
       <span className={styles.ms}>{site.ms !== null ? `${site.ms} ms` : '—'}</span>

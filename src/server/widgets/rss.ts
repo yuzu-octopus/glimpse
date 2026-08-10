@@ -10,6 +10,7 @@ export interface RssItem {
   source: string;
   thumbnail: string | null;
   description: string | null;
+  categories: string[];
 }
 
 type ParserItem = Parser.Item & {
@@ -45,7 +46,10 @@ registerWidget('rss', async (ctx, config) => {
         source: feed.title ?? parsed.title ?? '',
         thumbnail:
           item.mediaThumbnail?.$?.url ?? item.enclosure?.url ?? null,
-        description: item.contentSnippet ?? item.summary ?? null,
+        description: feed['hide-description']
+          ? null
+          : (item.contentSnippet ?? item.summary ?? null),
+        categories: feed['hide-categories'] ? [] : (item.categories ?? []),
       })) as RssItem[];
     }),
   );

@@ -15,6 +15,8 @@ interface GitHubRelease {
   tag_name?: string;
   html_url?: string;
   published_at?: string;
+  prerelease?: boolean;
+  draft?: boolean;
 }
 
 interface GitLabRelease {
@@ -84,13 +86,20 @@ function parseRepo(
   return { source: repo.source ?? 'github', path: url, includePrereleases };
 }
 
+interface RepoRequest {
+  source: Release['source'];
+  path: string;
+  tag?: string;
+  includePrereleases: boolean;
+}
+
 async function fetchReleases(
   ctx: WidgetFetchContext,
-  source: Release['source'],
-  path: string,
+  req: RepoRequest,
   limit: number,
   token: string | undefined,
 ): Promise<Release[]> {
+  const { source, path } = req;
   if (source === 'github') {
     const headers: Record<string, string> = {};
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -99,7 +108,12 @@ async function fetchReleases(
       `https://api.github.com/repos/${path}/releases?per_page=${limit}`,
       { headers },
     );
-    return data.map((r) => ({
+    // glance parity: the `/releases/latest` endpoint excludes prereleases
+    // and drafts; the list endpoint returns both, so filter unless requested.
+    const filtered = data.filter(
+      (r) => req.includePrereleases || (!r.prerelease && !r.draft),
+    );
+    return filtered.map((r) => ({
       name: r.name || r.tag_name || '',
       tag: r.tag_name ?? '',
       url: r.html_url ?? `https://github.com/${path}/releases`,
@@ -108,11 +122,15 @@ async function fetchReleases(
     }));
   }
   if (source === 'docker-hub') {
+    // a pinned tag needs to see past `limit` results, so widen the page
     const data = await fetchJson<DockerTags>(
       ctx,
-      `https://hub.docker.com/v2/repositories/${path}/tags?page_size=${limit}`,
+      `https://hub.docker.com/v2/repositories/${path}/tags?page_size=${req.tag ? 100 : limit}`,
     );
-    return (data.results ?? []).map((r) => ({
+    const results = (data.results ?? []).filter(
+      (r) => !req.tag || r.name === req.tag,
+    );
+    return results.map((r) => ({
       name: r.name ?? '',
       tag: r.name ?? '',
       url: `https://hub.docker.com/r/${path}/tags`,
@@ -144,9 +162,10 @@ registerWidget('releases', async (ctx, config) => {
 
   const settled = await Promise.allSettled(
     cfg.repositories.map((repo) => {
-      const { source, path } = parseRepo(repo);
-      const token = source === 'github' ? githubToken : cfg['gitlab-token'];
-      return fetchReleases(ctx, source, path, limit, token);
+      const req = parseRepo(repo);
+      const token =
+        req.source === 'github' ? githubToken : cfg['gitlab-token'];
+      return fetchReleases(ctx, req, limit, token);
     }),
   );
   const failed = settled.filter((r) => r.status === 'rejected');

@@ -6,16 +6,30 @@ import { useRelativeTime } from '../useRelativeTime';
 import type { RssItem } from '../../../server/widgets/rss';
 import styles from './rss.module.css';
 
-function Row({ item, detailed }: { item: RssItem; detailed: boolean }) {
+function Row({ item, detailed, singleLine }: {
+  item: RssItem; detailed: boolean; singleLine: boolean;
+}) {
   const age = item.published ? (Date.now() - Date.parse(item.published)) / 1000 : 0;
   const ageText = useRelativeTime(age);
+  const titleClass = singleLine
+    ? `${styles.title} ${styles.titleSingle}`
+    : `${styles.title} ${styles.titleClamp}`;
   return (
     <div className={styles.row}>
-      <Link href={item.url} target="_blank" className={styles.title} hasUnderline={false}>
+      <Link href={item.url} target="_blank" className={titleClass} hasUnderline={false}>
         {item.title}
       </Link>
       {detailed && item.description ? (
         <div className={styles.desc}>{item.description}</div>
+      ) : null}
+      {detailed && (item.categories ?? []).length > 0 ? (
+        <div className={styles.chips}>
+          {(item.categories ?? []).map((c) => (
+            <span key={c} className={styles.chip}>
+              {c}
+            </span>
+          ))}
+        </div>
       ) : null}
       <div className={styles.meta}>
         <span>{item.source}</span>
@@ -75,6 +89,7 @@ function Rss({ config, data }: WidgetComponentProps) {
     );
   }
   const detailed = style === 'detailed-list';
+  const singleLine = cfg['single-line-titles'] === true;
   return (
     <WidgetChrome
       title={cfg.title}
@@ -82,9 +97,13 @@ function Rss({ config, data }: WidgetComponentProps) {
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
       collapseAfter={collapseAfter}
-      items={items.map((item) => <Row key={item.url} item={item} detailed={detailed} />)}
+      items={items.map((item) => (
+        <Row key={item.url} item={item} detailed={detailed} singleLine={singleLine} />
+      ))}
     />
   );
 }
 
 registerWidgetComponent('rss', Rss);
+
+export default Rss;

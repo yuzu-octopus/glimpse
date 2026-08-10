@@ -35,17 +35,45 @@ function Change({ change, changePct }: { change: number | null; changePct: numbe
   );
 }
 
-function Row({ market }: { market: Market }) {
+/** glance precedence: per-market link > widget template > no link. */
+function resolveLink(
+  template: string | undefined,
+  specific: string | undefined,
+  symbol: string,
+): string | undefined {
+  if (specific) return specific;
+  if (template) return template.replaceAll('{SYMBOL}', symbol);
+  return undefined;
+}
+
+interface RowLinks {
+  symbolLink?: string;
+  chartLink?: string;
+}
+
+function Row({ market, symbolLink, chartLink }: { market: Market } & RowLinks) {
+  const symbol = symbolLink ? (
+    <Link href={symbolLink} target="_blank" className={styles.symbol} hasUnderline={false}>
+      {market.symbol}
+    </Link>
+  ) : (
+    <span className={styles.symbol}>{market.symbol}</span>
+  );
+  const sparkline = <Sparkline values={market.chart} />;
   return (
     <div className={styles.row}>
       <div className={styles.rowLeft}>
-        <Link href={`https://finance.yahoo.com/quote/${market.symbol}`} target="_blank" className={styles.symbol} hasUnderline={false}>
-          {market.symbol}
-        </Link>
+        {symbol}
         {market.name ? <span className={styles.name}>{market.name}</span> : null}
       </div>
       <div className={styles.rowRight}>
-        <Sparkline values={market.chart} />
+        {chartLink ? (
+          <Link href={chartLink} target="_blank" className={styles.chartLink} hasUnderline={false} label={`${market.symbol} chart`}>
+            {sparkline}
+          </Link>
+        ) : (
+          sparkline
+        )}
         <span className={styles.price}>
           {market.price !== null ? market.price.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'}
         </span>
@@ -58,13 +86,24 @@ function Row({ market }: { market: Market }) {
 function Markets({ config, data }: WidgetComponentProps) {
   const cfg = marketsSchema.parse(config);
   const markets = ((data as { markets?: Market[] } | null)?.markets ?? []) as Market[];
+  const links = new Map<string, RowLinks>(
+    cfg.markets.map((m) => [
+      m.symbol,
+      {
+        symbolLink: resolveLink(cfg['symbol-link-template'], m['symbol-link'], m.symbol),
+        chartLink: resolveLink(cfg['chart-link-template'], m['chart-link'], m.symbol),
+      },
+    ]),
+  );
   return (
     <WidgetChrome
       title={cfg.title}
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
-      items={markets.map((m) => <Row key={m.symbol} market={m} />)}
+      items={markets.map((m) => (
+        <Row key={m.symbol} market={m} {...(links.get(m.symbol) ?? {})} />
+      ))}
     />
   );
 }

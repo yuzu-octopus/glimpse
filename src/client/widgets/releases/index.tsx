@@ -48,3 +48,5 @@ function Releases({ config, data }: WidgetComponentProps) {
 }
 
 registerWidgetComponent('releases', Releases);
+
+export default Releases;

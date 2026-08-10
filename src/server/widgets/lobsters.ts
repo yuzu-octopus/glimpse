@@ -26,9 +26,10 @@ interface LobstersStory {
 
 registerWidget('lobsters', async (ctx, config) => {
   const cfg = lobstersSchema.parse(config);
-  const instance = cfg['instance-url'] ?? 'https://lobste.rs';
-  const endpoint = cfg['sort-by'] === 'new' ? 'newest' : 'hottest';
-  const stories = await fetchJson<LobstersStory[]>(ctx, `${instance}/${endpoint}.json`);
+  const feedUrl =
+    cfg['custom-url'] ??
+    `${cfg['instance-url'] ?? 'https://lobste.rs'}/${cfg['sort-by'] === 'new' ? 'newest' : 'hottest'}.json`;
+  const stories = await fetchJson<LobstersStory[]>(ctx, feedUrl);
 
   const tags = cfg.tags;
   const tagSet = new Set(tags ?? []);

@@ -77,4 +77,42 @@ describe('videos fetcher', () => {
     })) as { videos: Video[] };
     expect(data.videos).toEqual([]);
   });
+
+  it('drops shorts unless include-shorts is set', async () => {
+    const feed = `<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>My Channel</title>
+  <entry>
+    <title>Long video</title>
+    <link href="https://www.youtube.com/watch?v=aaa"/>
+    <published>2024-01-02T10:00:00+00:00</published>
+  </entry>
+  <entry>
+    <title>Short clip</title>
+    <link href="https://www.youtube.com/shorts/bbb"/>
+    <published>2024-01-01T10:00:00+00:00</published>
+  </entry>
+</feed>`;
+    const ctx = makeCtx(async () => new Response(feed, { status: 200 }));
+
+    const filtered = (await videosFetcher()(ctx, { type: 'videos', channels: ['UC1'] })) as { videos: Video[] };
+    expect(filtered.videos).toHaveLength(1);
+    expect(filtered.videos[0].title).toBe('Long video');
+
+    const kept = (await videosFetcher()(ctx, { type: 'videos', channels: ['UC1'], 'include-shorts': true })) as {
+      videos: Video[];
+    };
+    expect(kept.videos).toHaveLength(2);
+  });
+
+  it('applies the video-url-template with the extracted VIDEO-ID', async () => {
+    const ctx = makeCtx(async () => new Response(FEED, { status: 200 }));
+    const data = (await videosFetcher()(ctx, {
+      type: 'videos',
+      channels: ['UC1234567890123456789012'],
+      'video-url-template': 'https://invidious.local/watch?v={VIDEO-ID}',
+    })) as { videos: Video[] };
+    expect(data.videos[0].url).toBe('https://invidious.local/watch?v=aaa');
+    expect(data.videos[1].url).toBe('https://invidious.local/watch?v=bbb');
+  });
 });

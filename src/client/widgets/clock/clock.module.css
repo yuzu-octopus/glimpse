@@ -24,6 +24,18 @@
   font-size: 13px;
 }
 
+.zoneRight {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.zoneOffset {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  cursor: default;
+}
+
 .zoneLabel {
   color: var(--color-text-secondary);
 }

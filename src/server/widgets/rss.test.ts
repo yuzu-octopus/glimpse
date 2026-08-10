@@ -12,6 +12,8 @@ const RSS_FIXTURE = `<?xml version="1.0" encoding="UTF-8"?>
     <link>https://example.com/1</link>
     <pubDate>Mon, 01 Jan 2024 10:00:00 GMT</pubDate>
     <description>First description</description>
+    <category>News</category>
+    <category>Tech</category>
   </item>
   <item>
     <title>Second post</title>
@@ -67,5 +69,23 @@ describe('rss fetcher', () => {
     await expect(
       rssFetcher()(ctx, { type: 'rss', feeds: [{ url: 'https://example.com/x' }] }),
     ).rejects.toThrow();
+  });
+
+  it('extracts categories per item', async () => {
+    const ctx = makeCtx(async () => new Response(RSS_FIXTURE, { status: 200 }));
+    const data = (await rssFetcher()(ctx, { type: 'rss', feeds: [{ url: 'https://example.com/feed' }] })) as { items: RssItem[] };
+    // sorted newest first: 'Second post' has no categories, 'First post' has two
+    expect(data.items[0].categories).toEqual([]);
+    expect(data.items[1].categories).toEqual(['News', 'Tech']);
+  });
+
+  it('hides categories and description per feed', async () => {
+    const ctx = makeCtx(async () => new Response(RSS_FIXTURE, { status: 200 }));
+    const data = (await rssFetcher()(ctx, {
+      type: 'rss',
+      feeds: [{ url: 'https://example.com/feed', 'hide-categories': true, 'hide-description': true }],
+    })) as { items: RssItem[] };
+    expect(data.items[1].categories).toEqual([]);
+    expect(data.items[1].description).toBeNull();
   });
 });

@@ -10,6 +10,22 @@
   padding: 10px 14px 2px;
 }
 
+.titleRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Small red status dot next to the title when the widget failed. */
+.errorDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-error);
+  flex-shrink: 0;
+}
+
 .title {
   font-size: 12px;
   font-weight: 600;

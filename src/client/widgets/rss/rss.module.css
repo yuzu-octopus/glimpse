@@ -10,12 +10,37 @@
   color: var(--color-text-primary);
   text-decoration: none;
   overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.titleSingle {
   white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.titleClamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .title:hover {
   color: var(--color-text-accent);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.chip {
+  font-size: 11px;
+  line-height: 1;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--color-background-muted);
+  color: var(--color-text-secondary);
 }
 
 .desc {

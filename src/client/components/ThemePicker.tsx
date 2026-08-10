@@ -1,29 +1,31 @@
 import { useMemo, useState } from 'react';
 import { IconButton, Popover, SegmentedControl, SegmentedControlItem } from '@astryxdesign/core';
 import { Palette } from 'lucide-react';
-import { presets } from '../../shared/theme/presets';
+import { presets, type Preset } from '../../shared/theme/presets';
 import { useThemeSettings } from '../theme/GlimpseThemeProvider';
 import styles from './theme-picker.module.css';
 
-function swatchOf(preset: (typeof presets)[number]): string {
+function swatchOf(preset: Preset): string {
   // sample the accent + background of the active side for the swatch
   const side = preset.variant === 'light' && preset.light ? preset.light : preset.dark;
   return `${side.base0D} ${side.base00}`;
 }
 
 export function ThemePicker() {
-  const { mode, presetId, setMode, setPresetId } = useThemeSettings();
+  const { mode, presetId, setMode, setPresetId, configPresets } = useThemeSettings();
   const [open, setOpen] = useState(false);
 
-  const { dark, light } = useMemo(
-    () => ({
-      dark: presets.filter((p) => p.variant === 'dark'),
-      light: presets.filter((p) => p.variant === 'light'),
-    }),
-    [],
-  );
+  const { dark, light } = useMemo(() => {
+    // config presets win over same-id library presets (glance's
+    // default-dark/default-light override semantics)
+    const staticPresets = presets.filter((p) => !configPresets.some((c) => c.id === p.id));
+    return {
+      dark: staticPresets.filter((p) => p.variant === 'dark'),
+      light: staticPresets.filter((p) => p.variant === 'light'),
+    };
+  }, [configPresets]);
 
-  const renderGroup = (label: string, group: typeof presets) =>
+  const renderGroup = (label: string, group: Preset[]) =>
     group.length > 0 ? (
       <div key={label}>
         <div className={styles.groupLabel}>{label}</div>
@@ -65,6 +67,7 @@ export function ThemePicker() {
           <div className={styles.list}>
             {renderGroup('Dark', dark)}
             {renderGroup('Light', light)}
+            {renderGroup('Custom', configPresets)}
           </div>
         </div>
       }
