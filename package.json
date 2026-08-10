@@ -8,7 +8,9 @@
     "dev:server": "bun --watch src/server/index.ts",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "start": "bun run src/server/index.ts"
+    "start": "bun run src/server/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@astryxdesign/core": "^0.3.0",
