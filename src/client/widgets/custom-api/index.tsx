@@ -47,6 +47,7 @@ function CustomApi({ config, data }: WidgetComponentProps) {
       title={cfg.title}
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
+      cssClass={cfg['css-class']}
       items={rows}
     />
   );

@@ -38,7 +38,9 @@ function Releases({ config, data }: WidgetComponentProps) {
   return (
     <WidgetChrome
       title={cfg.title}
+      titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
+      cssClass={cfg['css-class']}
       collapseAfter={cfg['collapse-after']}
       items={releases.map((r) => <ReleaseRow key={r.url + r.tag} release={r} showIcon={showIcon} />)}
     />

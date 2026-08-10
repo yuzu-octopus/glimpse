@@ -8,12 +8,15 @@ import styles from './bookmarks.module.css';
 function Bookmarks({ config }: WidgetComponentProps) {
   const cfg = bookmarksSchema.parse(config);
   const groups = cfg.groups ?? [];
-  if (groups.length === 0) return <WidgetChrome title={cfg.title} hideHeader={cfg['hide-header']}><div className={styles.empty}>No bookmark groups configured.</div></WidgetChrome>;
+  if (groups.length === 0) return <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}><div className={styles.empty}>No bookmark groups configured.</div></WidgetChrome>;
 
   return (
-    <WidgetChrome title={cfg.title} hideHeader={cfg['hide-header']}>
-      {groups.map((group, i) => (
-        <div key={group.title ?? `group-${i}`} className={styles.group}>
+    <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
+      {groups.map((group) => (
+        <div
+          key={group.title ?? group.links[0]?.url ?? 'untitled'}
+          className={styles.group}
+        >
           {group.title ? (
             <div className={styles.groupTitle}>
               {group.color ? (

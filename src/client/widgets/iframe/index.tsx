@@ -6,7 +6,7 @@ import styles from './iframe.module.css';
 function Iframe({ config }: WidgetComponentProps) {
   const cfg = iframeSchema.parse(config);
   return (
-    <WidgetChrome title={cfg.title} hideHeader={cfg['hide-header']}>
+    <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
       <iframe
         src={cfg.source}
         height={cfg.height ?? 300}
@@ -20,7 +20,7 @@ function Iframe({ config }: WidgetComponentProps) {
 function Html({ config }: WidgetComponentProps) {
   const cfg = htmlSchema.parse(config);
   return (
-    <WidgetChrome title={cfg.title} hideHeader={cfg['hide-header']}>
+    <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
       <div
         className={styles.html}
         dangerouslySetInnerHTML={{ __html: cfg.source }}

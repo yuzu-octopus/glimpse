@@ -4,6 +4,11 @@ import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import styles from './calendar.module.css';
 
+const MONTH_FORMAT = new Intl.DateTimeFormat('en-GB', {
+  month: 'long',
+  year: 'numeric',
+});
+
 function Calendar({ config }: WidgetComponentProps) {
   const cfg = calendarSchema.parse(config);
   const startMonday = (cfg['first-day-of-week'] ?? 'monday') === 'monday';
@@ -32,13 +37,10 @@ function Calendar({ config }: WidgetComponentProps) {
   const dows = startMonday
     ? ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
     : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-  const monthName = new Intl.DateTimeFormat('en-GB', {
-    month: 'long',
-    year: 'numeric',
-  }).format(now);
+  const monthName = MONTH_FORMAT.format(now);
 
   return (
-    <WidgetChrome title={cfg.title} hideHeader={cfg['hide-header']}>
+    <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
       <div className={styles.month}>{monthName}</div>
       <div className={styles.grid}>
         {dows.map((d) => (
@@ -46,9 +48,9 @@ function Calendar({ config }: WidgetComponentProps) {
             {d}
           </div>
         ))}
-        {cells.map((c, i) => (
+        {cells.map((c) => (
           <div
-            key={i}
+            key={`${c.current ? 'c' : 'p'}-${c.day}`}
             className={`${styles.day} ${c.current ? '' : styles.other} ${c.current && c.day === now.getDate() ? styles.today : ''}`}
           >
             {c.day}

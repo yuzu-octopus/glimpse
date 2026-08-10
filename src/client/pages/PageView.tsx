@@ -8,7 +8,8 @@ import { usePageData } from '../hooks/usePageData';
 import { clientWidgets } from '../widgets/registry';
 import styles from './page.module.css';
 
-const WIDTHS = { default: 1900, slim: 1300, wide: 1600 } as const;
+// glance docs §Pages & Columns: default 1600px / slim 1100px / wide 1920px.
+const WIDTHS = { default: 1600, slim: 1100, wide: 1920 } as const;
 
 function widgetTitle(w: WidgetPayload): string | undefined {
   const t = w.config.title;

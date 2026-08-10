@@ -32,6 +32,7 @@ export const hackerNewsSchema = z.object({
   'sort-by': z.enum(['top', 'new', 'best']).optional(),
   'extra-sort-by': z.enum(['engagement']).optional(),
   'comments-url-template': z.string().optional(),
+  'collapse-after': z.number().optional(),
 });
 export type HackerNewsConfig = z.infer<typeof hackerNewsSchema>;
 

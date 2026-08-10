@@ -41,7 +41,7 @@ function Reddit({ config, data }: WidgetComponentProps) {
 
   if (style === 'horizontal-cards' || style === 'vertical-cards') {
     return (
-      <WidgetChrome title={cfg.title} hideHeader={cfg['hide-header']} cssClass={styles.cards}>
+      <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={[cfg['css-class'], styles.cards].filter(Boolean).join(' ') || undefined}>
         <div className={style === 'horizontal-cards' ? styles.cardRow : styles.cardCol}>
           {posts.map((post) => (
             <Link key={post.url} href={post.url} target="_blank" className={styles.card} hasUnderline={false}>
@@ -61,7 +61,9 @@ function Reddit({ config, data }: WidgetComponentProps) {
   return (
     <WidgetChrome
       title={cfg.title}
+      titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
+      cssClass={cfg['css-class']}
       collapseAfter={cfg['collapse-after']}
       items={posts.map((p) => <Row key={p.url} post={p} showThumb={showThumb} showFlair={showFlair} />)}
     />

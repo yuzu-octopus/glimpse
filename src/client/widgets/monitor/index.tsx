@@ -26,7 +26,7 @@ function Monitor({ config, data }: WidgetComponentProps) {
       title={cfg.title}
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
-      cssClass={cfg.style === 'compact' ? styles.compact : undefined}
+      cssClass={[cfg['css-class'], cfg.style === 'compact' ? styles.compact : undefined].filter(Boolean).join(' ') || undefined}
       items={visible.map((s) => <SiteRow key={s.url} site={s} />)}
     />
   );

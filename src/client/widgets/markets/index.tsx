@@ -63,6 +63,7 @@ function Markets({ config, data }: WidgetComponentProps) {
       title={cfg.title}
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
+      cssClass={cfg['css-class']}
       items={markets.map((m) => <Row key={m.symbol} market={m} />)}
     />
   );

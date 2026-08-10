@@ -4,14 +4,29 @@ import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import styles from './clock.module.css';
 
+/** Formatters cached per hour12/timezone combo (rebuilt each tick otherwise). */
+const timeFormatters = new Map<string, Intl.DateTimeFormat>();
+
 function formatTime(d: Date, tz: string | undefined, hour12: boolean): string {
-  return new Intl.DateTimeFormat('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12,
-    timeZone: tz,
-  }).format(d);
+  const key = `${hour12}:${tz ?? 'local'}`;
+  let fmt = timeFormatters.get(key);
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12,
+      timeZone: tz,
+    });
+    timeFormatters.set(key, fmt);
+  }
+  return fmt.format(d);
 }
+
+const DATE_FORMAT = new Intl.DateTimeFormat('en-GB', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+});
 
 function Clock({ config }: WidgetComponentProps) {
   const cfg = clockSchema.parse(config);
@@ -23,14 +38,10 @@ function Clock({ config }: WidgetComponentProps) {
     return () => clearInterval(id);
   }, []);
 
-  const date = new Intl.DateTimeFormat('en-GB', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  }).format(now);
+  const date = DATE_FORMAT.format(now);
 
   return (
-    <WidgetChrome title={cfg.title} hideHeader={cfg['hide-header']}>
+    <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
       <div className={styles.time}>{formatTime(now, undefined, hour12)}</div>
       <div className={styles.date}>{date}</div>
       {cfg.timezones.length > 0 ? (

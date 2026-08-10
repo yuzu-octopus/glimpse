@@ -25,12 +25,12 @@ function Row({ item, detailed }: { item: RssItem; detailed: boolean }) {
   );
 }
 
-function Cards({ items, title, titleUrl, hideHeader, cardHeight, thumbnailHeight }: {
-  items: RssItem[]; title?: string; titleUrl?: string; hideHeader?: boolean;
+function Cards({ items, title, titleUrl, hideHeader, cssClass, cardHeight, thumbnailHeight }: {
+  items: RssItem[]; title?: string; titleUrl?: string; hideHeader?: boolean; cssClass?: string;
   cardHeight?: number; thumbnailHeight?: number;
 }) {
   return (
-    <WidgetChrome title={title} titleUrl={titleUrl} hideHeader={hideHeader} cssClass={styles.cards}>
+    <WidgetChrome title={title} titleUrl={titleUrl} hideHeader={hideHeader} cssClass={[cssClass, styles.cards].filter(Boolean).join(' ') || undefined}>
       <div className={styles.cardRow}>
         {items.map((item) => (
           <Link key={item.url} href={item.url} target="_blank" className={styles.card} hasUnderline={false}>
@@ -68,6 +68,7 @@ function Rss({ config, data }: WidgetComponentProps) {
         title={cfg.title}
         titleUrl={cfg['title-url']}
         hideHeader={cfg['hide-header']}
+        cssClass={cfg['css-class']}
         cardHeight={cfg['card-height']}
         thumbnailHeight={cfg['thumbnail-height']}
       />
@@ -79,6 +80,7 @@ function Rss({ config, data }: WidgetComponentProps) {
       title={cfg.title}
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
+      cssClass={cfg['css-class']}
       collapseAfter={collapseAfter}
       items={items.map((item) => <Row key={item.url} item={item} detailed={detailed} />)}
     />

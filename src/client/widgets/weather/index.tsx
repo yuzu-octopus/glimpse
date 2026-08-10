@@ -24,17 +24,18 @@ function weatherIcon(code: number | null) {
   return <CloudLightning size={18} />;
 }
 
+const DAY_NAMES = new Intl.DateTimeFormat('en-GB', { weekday: 'short' });
+
 function Weather({ config, data }: WidgetComponentProps) {
   const cfg = weatherSchema.parse(config);
   const w = data as WeatherData | null;
-  if (!w) return <WidgetChrome title={cfg.title} hideHeader={cfg['hide-header']}><div className={styles.empty}>No weather data.</div></WidgetChrome>;
+  if (!w) return <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}><div className={styles.empty}>No weather data.</div></WidgetChrome>;
 
-  const dayNames = new Intl.DateTimeFormat('en-GB', { weekday: 'short' });
   const today = new Date().toISOString().slice(0, 10);
-  const day = (date: string) => (date === today ? 'Today' : dayNames.format(new Date(date + 'T00:00:00')));
+  const day = (date: string) => (date === today ? 'Today' : DAY_NAMES.format(new Date(date + 'T00:00:00')));
 
   return (
-    <WidgetChrome title={cfg.title} hideHeader={cfg['hide-header']}>
+    <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
       {!cfg['hide-location'] ? <div className={styles.location}>{w.location}</div> : null}
       <div className={styles.current}>
         <div className={styles.temp}>{w.current.temp != null ? `${Math.round(w.current.temp)}°` : '—'}</div>

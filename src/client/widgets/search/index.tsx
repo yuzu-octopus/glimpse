@@ -59,7 +59,7 @@ export function Search({ config }: WidgetComponentProps) {
   };
 
   return (
-    <WidgetChrome title={cfg.title} hideHeader={cfg['hide-header']}>
+    <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
       <form onSubmit={submit}>
         <TextInput
           ref={inputRef}

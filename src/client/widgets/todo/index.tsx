@@ -81,7 +81,7 @@ export function Todo({ config }: WidgetComponentProps) {
   };
 
   return (
-    <WidgetChrome title={cfg.title} hideHeader={cfg['hide-header']}>
+    <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
       <div className={styles.form}>
         <TextInput
           ref={inputRef}

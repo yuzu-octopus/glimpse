@@ -51,6 +51,7 @@ function TwitchChannels({ config, data }: WidgetComponentProps) {
       title={cfg.title}
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
+      cssClass={cfg['css-class']}
       collapseAfter={cfg['collapse-after']}
       items={channels.map((c) => <ChannelRow key={c.login} channel={c} />)}
     />
@@ -79,6 +80,7 @@ function TwitchTopGames({ config, data }: WidgetComponentProps) {
       title={cfg.title}
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
+      cssClass={cfg['css-class']}
       collapseAfter={cfg['collapse-after']}
       items={games.map((g, i) => <GameCard key={g.id} game={g} rank={i + 1} />)}
     />

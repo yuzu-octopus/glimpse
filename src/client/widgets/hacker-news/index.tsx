@@ -34,6 +34,8 @@ function HackerNews({ config, data }: WidgetComponentProps) {
       title={cfg.title}
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
+      cssClass={cfg['css-class']}
+      collapseAfter={cfg['collapse-after']}
       items={posts.map((p) => <HnRow key={p.id} post={p} />)}
     />
   );

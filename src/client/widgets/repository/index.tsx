@@ -39,6 +39,7 @@ function Repository({ config, data }: WidgetComponentProps) {
       title={cfg.title}
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
+      cssClass={cfg['css-class']}
       items={[
         <div key="header" className={styles.header}>
           <Link href={repo.url ?? '#'} target="_blank" className={styles.repoName} hasUnderline={false}>
