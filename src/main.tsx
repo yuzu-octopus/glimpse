@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import '@astryxdesign/core/reset.css';
 import '@astryxdesign/core/astryx.css';
 import './index.css';
+import './client/widgets';
 import App from './App';
 import { GlimpseThemeProvider } from './client/theme/GlimpseThemeProvider';
 

@@ -1,0 +1,10 @@
+.frame {
+  width: 100%;
+  border: none;
+  border-radius: var(--radius-inner);
+  background: var(--color-background-surface);
+}
+
+.html {
+  font-size: 14px;
+}

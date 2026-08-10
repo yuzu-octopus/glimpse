@@ -13,7 +13,16 @@ function payload(overrides: Partial<PagePayload> = {}): PagePayload {
     width: 'default',
     headWidgets: [],
     columns: [
-      { size: 'full', widgets: [{ type: 'clock', config: { type: 'clock', title: 'Clock' }, data: null }] },
+      {
+        size: 'full',
+        widgets: [
+          {
+            type: 'clock',
+            config: { type: 'clock', title: 'Clock', timezones: [] },
+            data: null,
+          },
+        ],
+      },
     ],
     ...overrides,
   };

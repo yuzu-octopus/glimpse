@@ -1,0 +1,48 @@
+.form {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.itemText {
+  flex: 1;
+  font-size: 14px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.done {
+  text-decoration: line-through;
+  color: var(--color-text-disabled);
+}
+
+.editInput {
+  flex: 1;
+}
+
+.iconBtn {
+  display: inline-flex;
+  padding: 2px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-inner);
+}
+
+.iconBtn:hover {
+  color: var(--color-text-primary);
+  background: var(--color-overlay-hover);
+}
+
+.empty {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}

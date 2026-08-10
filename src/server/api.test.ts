@@ -18,8 +18,12 @@ function page(columns: Column[], headWidgets: WidgetConfig[] = []) {
   return { name: 'Home', slug: 'home', columns, 'head-widgets': headWidgets };
 }
 
-const clockWidget: WidgetConfig = { type: 'clock' };
-const rssWidget: WidgetConfig = { type: 'rss', cache: '1h' };
+const clockWidget: WidgetConfig = { type: 'clock', timezones: [] };
+const rssWidget: WidgetConfig = {
+  type: 'rss',
+  cache: '1h',
+  feeds: [{ url: 'https://example.com/feed.xml' }],
+};
 
 afterEach(() => {
   serverWidgets.delete('rss' as never);

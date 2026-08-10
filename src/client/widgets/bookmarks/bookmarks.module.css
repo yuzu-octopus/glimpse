@@ -1,0 +1,68 @@
+.group {
+  margin-bottom: 10px;
+}
+
+.group:last-child {
+  margin-bottom: 0;
+}
+
+.groupTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+.groupDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.links {
+  display: grid;
+}
+
+.linkRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  min-width: 0;
+}
+
+.linkTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linkRow:hover .linkTitle {
+  color: var(--color-text-accent);
+}
+
+.linkDesc {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arrow {
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.empty {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}

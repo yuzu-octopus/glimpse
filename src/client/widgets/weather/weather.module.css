@@ -1,0 +1,66 @@
+.location {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px;
+}
+
+.current {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.temp {
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.currentIcon {
+  color: var(--color-text-accent);
+}
+
+.details {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin: 4px 0 10px;
+}
+
+.detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.daily {
+  display: grid;
+  gap: 3px;
+}
+
+.dayRow {
+  display: grid;
+  grid-template-columns: 48px 20px 1fr;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.dayName {
+  color: var(--color-text-secondary);
+}
+
+.temps {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.low {
+  color: var(--color-text-secondary);
+}
+
+.empty {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
