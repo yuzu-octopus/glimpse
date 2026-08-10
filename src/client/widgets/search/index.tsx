@@ -1,15 +1,34 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { TextInput } from '@astryxdesign/core';
-import { searchSchema } from '../../../shared/widgets/search';
+import { searchSchema, type SearchConfig } from '../../../shared/widgets/search';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
+
+export const ENGINE_PRESETS: Record<string, string> = {
+  duckduckgo: 'https://duckduckgo.com/?q={QUERY}',
+  google: 'https://www.google.com/search?q={QUERY}',
+  bing: 'https://www.bing.com/search?q={QUERY}',
+  perplexity: 'https://www.perplexity.ai/search?q={QUERY}',
+  kagi: 'https://kagi.com/search?q={QUERY}',
+  startpage: 'https://www.startpage.com/search?q={QUERY}',
+};
+
+/** glance search-engine: preset name, custom URL with {QUERY}, or object. */
+function resolveEngine(engine: SearchConfig['search-engine']): string {
+  if (typeof engine === 'object' && engine) return engine.url;
+  if (typeof engine === 'string') {
+    const preset = ENGINE_PRESETS[engine.toLowerCase()];
+    if (preset) return preset;
+    if (engine.includes('{QUERY}')) return engine;
+  }
+  return ENGINE_PRESETS.duckduckgo;
+}
 
 export function Search({ config }: WidgetComponentProps) {
   const cfg = searchSchema.parse(config);
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  const engine = cfg['search-engine'];
-  const engineUrl = engine?.url ?? 'https://duckduckgo.com/?q={QUERY}';
+  const engineUrl = resolveEngine(cfg['search-engine']);
   const shortcut = cfg.key ?? 's';
 
   useEffect(() => {

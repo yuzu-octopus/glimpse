@@ -13,13 +13,29 @@ export const PageSchema = z.object({
   name: z.string().min(1),
   slug: z.string().optional(),
   width: z.enum(['default', 'slim', 'wide']).optional(),
+  'desktop-navigation-width': z.enum(['default', 'slim', 'wide']).optional(),
   'center-vertically': z.boolean().optional(),
+  'hide-desktop-navigation': z.boolean().optional(),
+  'show-mobile-header': z.boolean().optional(),
   'head-widgets': z.array(WidgetSchema).optional(),
   columns: z.array(ColumnSchema).min(1).max(3),
 });
 export type Page = z.infer<typeof PageSchema>;
 
 /** Glance HSL theme block (docs/configuration.md §Theme). */
+export const ThemePresetSchema = z
+  .object({
+    light: z.boolean().optional(),
+    'background-color': z.string().optional(),
+    'primary-color': z.string().optional(),
+    'positive-color': z.string().optional(),
+    'negative-color': z.string().optional(),
+    'contrast-multiplier': z.number().optional(),
+    'text-saturation-multiplier': z.number().optional(),
+  })
+  .loose();
+export type ThemePreset = z.infer<typeof ThemePresetSchema>;
+
 export const ThemeConfigSchema = z
   .object({
     light: z.boolean().optional(),
@@ -30,6 +46,8 @@ export const ThemeConfigSchema = z
     'contrast-multiplier': z.number().optional(),
     'text-saturation-multiplier': z.number().optional(),
     'custom-css-file': z.string().optional(),
+    'disable-picker': z.boolean().optional(),
+    presets: z.record(z.string(), ThemePresetSchema).optional(),
   })
   .loose();
 export type ThemeConfig = z.infer<typeof ThemeConfigSchema>;

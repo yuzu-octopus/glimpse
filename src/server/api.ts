@@ -100,6 +100,15 @@ export async function buildPagePayload(
     ...(page['center-vertically'] !== undefined
       ? { 'center-vertically': page['center-vertically'] }
       : {}),
+    ...(page['hide-desktop-navigation'] !== undefined
+      ? { 'hide-desktop-navigation': page['hide-desktop-navigation'] }
+      : {}),
+    ...(page['show-mobile-header'] !== undefined
+      ? { 'show-mobile-header': page['show-mobile-header'] }
+      : {}),
+    ...(page['desktop-navigation-width'] !== undefined
+      ? { 'desktop-navigation-width': page['desktop-navigation-width'] }
+      : {}),
     headWidgets,
     columns,
   };

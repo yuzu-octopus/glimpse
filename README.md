@@ -2,6 +2,17 @@
 
 A self-hosted, glance-inspired dashboard built with Bun + TypeScript + Vite + React 19 and the Astryx design system. Like [Glance](https://github.com/glanceapp/glance), Glimpse renders a YAML-configured dashboard of widgets, but fetches all external data server-side: API keys and tokens live in the server environment and never reach the browser.
 
+## Credits & design relation
+
+Glimpse is **inspired by** [glanceapp/glance](https://github.com/glanceapp/glance) (MIT) and credits it for the concept: the YAML `pages` → `columns` → `widgets` layout, the shared widget props (`title`, `title-url`, `hide-header`, `cache`, `css-class`), the HSL theme block, and the per-widget option vocabulary. It is not a port. Under the hood the architecture is different and deliberately modern:
+
+- **Server-rendered HTML (Go templates + vanilla JS) → typed React SPA** with a JSON API (`/api/page/:slug`) and per-widget components.
+- **Widget configs are zod-validated** end to end (shared schemas used by both server and client), so a config error is a readable validation message, not a silent mis-render.
+- **A real theme system**: 58 curated presets (base16) converted to Astryx tokens with light/dark pairs, an in-nav theme picker, and CSS-custom-property theming — not HSL-arithmetic per page.
+- Server-side per-widget TTL caching + singleflight dedupe, skeleton loaders, error banners, and accessible components.
+
+Where glance's config shapes fought that architecture we kept our own (e.g. `custom-api` uses JSONPath field mapping instead of Go `html/template`; `twitch-top-games` shows rank instead of viewer counts because the official Helix API does not expose them). Widgets we deliberately did not port: `docker-containers`, `dns-stats`, `server-stats`, `change-detection`, `extension`, `calendar-legacy`, plus glance's auth/brute-force lockout and `$include`-adjacent Docker-secrets syntax (`${secret:}`).
+
 ## Features
 
 - **22 widget types**, grouped by how they work:

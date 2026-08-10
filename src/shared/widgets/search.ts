@@ -5,10 +5,10 @@ export const searchSchema = z.object({
   type: z.literal('search'),
   ...sharedWidgetFields,
   'search-engine': z
-    .object({
-      name: z.string(),
-      url: z.string(),
-    })
+    .union([
+      z.string(), // preset name (duckduckgo/google/bing/...) or custom URL with {QUERY}
+      z.object({ name: z.string(), url: z.string() }),
+    ])
     .optional(),
   bangs: z
     .array(
@@ -22,6 +22,7 @@ export const searchSchema = z.object({
   'new-tab': z.boolean().optional(),
   autofocus: z.boolean().optional(),
   placeholder: z.string().optional(),
+  target: z.string().optional(),
   key: z.string().optional(),
 });
 export type SearchConfig = z.infer<typeof searchSchema>;

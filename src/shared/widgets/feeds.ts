@@ -7,6 +7,8 @@ const feedSchema = z.object({
   limit: z.number().optional(),
   'item-link-prefix': z.string().optional(),
   headers: z.record(z.string(), z.string()).optional(),
+  'hide-categories': z.boolean().optional(),
+  'hide-description': z.boolean().optional(),
 });
 
 export const rssSchema = z.object({
@@ -49,13 +51,38 @@ export const redditSchema = z.object({
   'show-flairs': z.boolean().optional(),
   style: z.enum(['vertical-list', 'horizontal-cards', 'vertical-cards']).optional(),
   'comments-url-template': z.string().optional(),
+  'request-url-template': z.string().optional(),
+  proxy: z
+    .union([
+      z.string(),
+      z.object({
+        url: z.string(),
+        'allow-insecure': z.boolean().optional(),
+        timeout: z.string().optional(),
+      }),
+    ])
+    .optional(),
+  'extra-sort-by': z.enum(['engagement']).optional(),
+  'app-auth': z
+    .object({
+      name: z.string().optional(),
+      id: z.string(),
+      secret: z.string(),
+    })
+    .optional(),
 });
 export type RedditConfig = z.infer<typeof redditSchema>;
 
-const releaseRepoSchema = z.object({
-  url: z.string().optional(),
-  source: z.enum(['github', 'gitlab', 'codeberg', 'docker-hub']).optional(),
-});
+const releaseRepoSchema = z.union([
+  // glance forms: "owner/repo", "gitlab:owner/repo", "dockerhub:image[:tag]"
+  z.string(),
+  z.object({
+    url: z.string().optional(),
+    repository: z.string().optional(),
+    source: z.enum(['github', 'gitlab', 'codeberg', 'docker-hub']).optional(),
+    'include-prereleases': z.boolean().optional(),
+  }),
+]);
 
 export const releasesSchema = z.object({
   type: z.literal('releases'),

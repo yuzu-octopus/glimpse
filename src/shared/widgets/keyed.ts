@@ -5,6 +5,7 @@ export const lobstersSchema = z.object({
   type: z.literal('lobsters'),
   ...sharedWidgetFields,
   'instance-url': z.string().optional(),
+  'custom-url': z.string().optional(),
   'sort-by': z.enum(['hot', 'new']).optional(),
   tags: z.array(z.string()).optional(),
   limit: z.number().optional(),
@@ -21,6 +22,8 @@ export const videosSchema = z.object({
   'collapse-after': z.number().optional(),
   'collapse-after-rows': z.number().optional(),
   style: z.enum(['horizontal-cards', 'vertical-list', 'grid-cards']).optional(),
+  'include-shorts': z.boolean().optional(),
+  'video-url-template': z.string().optional(),
 });
 export type VideosConfig = z.infer<typeof videosSchema>;
 
@@ -32,10 +35,14 @@ export const marketsSchema = z.object({
       z.object({
         symbol: z.string(),
         name: z.string().optional(),
+        'symbol-link': z.string().optional(),
+        'chart-link': z.string().optional(),
       }),
     )
     .min(1),
   'sort-by': z.enum(['change', 'absolute-change']).optional(),
+  'symbol-link-template': z.string().optional(),
+  'chart-link-template': z.string().optional(),
 });
 export type MarketsConfig = z.infer<typeof marketsSchema>;
 
@@ -48,7 +55,16 @@ export const monitorSchema = z.object({
         url: z.string(),
         title: z.string().optional(),
         icon: z.string().optional(),
-        'expected-status-code': z.number().optional(),
+        'check-url': z.string().optional(),
+        'error-url': z.string().optional(),
+        timeout: z.string().optional(),
+        'allow-insecure': z.boolean().optional(),
+        'same-tab': z.boolean().optional(),
+        'alt-status-codes': z.array(z.number()).optional(),
+        'basic-auth': z
+          .object({ username: z.string(), password: z.string() })
+          .optional(),
+        'expected-status-code': z.number().optional(), // glimpse extension
       }),
     )
     .min(1),
@@ -62,11 +78,15 @@ export const customApiSchema = z.object({
   ...sharedWidgetFields,
   url: z.string(),
   headers: z.record(z.string(), z.string()).optional(),
-  method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']).optional(),
-  body: z.string().optional(),
+  method: z
+    .enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'])
+    .optional(),
+  body: z.union([z.string(), z.record(z.string(), z.unknown())]).optional(),
   'body-type': z.enum(['json', 'string']).optional(),
-  parameters: z.record(z.string(), z.string()).optional(),
+  parameters: z.record(z.string(), z.union([z.string(), z.array(z.string())])).optional(),
   frameless: z.boolean().optional(),
+  'allow-insecure': z.boolean().optional(),
+  'skip-json-validation': z.boolean().optional(),
   options: z
     .object({
       path: z.string(),

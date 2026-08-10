@@ -33,10 +33,42 @@ interface DockerTags {
   results?: DockerTag[];
 }
 
+const SOURCE_PREFIXES: Record<string, Release['source']> = {
+  gitlab: 'gitlab',
+  codeberg: 'codeberg',
+  dockerhub: 'docker-hub',
+  github: 'github',
+};
+
+/** glance repo forms: "owner/repo", "gitlab:x", "dockerhub:image[:tag]". */
+function parseRepoString(input: string): { source: Release['source']; path: string; tag?: string } {
+  const prefixed = /^([a-z-]+):(.+)$/.exec(input);
+  if (prefixed && SOURCE_PREFIXES[prefixed[1]]) {
+    const source = SOURCE_PREFIXES[prefixed[1]];
+    let path = prefixed[2];
+    let tag: string | undefined;
+    if (source === 'docker-hub') {
+      const tagSep = path.lastIndexOf(':');
+      if (tagSep > 0) {
+        tag = path.slice(tagSep + 1);
+        path = path.slice(0, tagSep);
+      }
+      if (!path.includes('/')) path = `library/${path}`;
+    }
+    return { source, path, tag };
+  }
+  return { source: 'github', path: input };
+}
+
 function parseRepo(
-  repo: { url?: string; source?: 'github' | 'gitlab' | 'codeberg' | 'docker-hub' },
-): { source: 'github' | 'gitlab' | 'codeberg' | 'docker-hub'; path: string } {
-  const url = repo.url ?? '';
+  repo: string | { url?: string; repository?: string; source?: Release['source']; 'include-prereleases'?: boolean },
+): { source: Release['source']; path: string; tag?: string; includePrereleases: boolean } {
+  const includePrereleases =
+    typeof repo === 'object' && repo['include-prereleases'] === true;
+  if (typeof repo === 'string') {
+    return { ...parseRepoString(repo), includePrereleases };
+  }
+  const url = repo.url ?? repo.repository ?? '';
   const m = /^https?:\/\/([^/]+)\/(.+?)\/?$/.exec(url);
   if (m) {
     const host = m[1];
@@ -47,9 +79,9 @@ function parseRepo(
       : host.includes('docker') ? 'docker-hub'
       : (repo.source ?? 'github');
     const path = source === 'docker-hub' && m[2].startsWith('r/') ? m[2].slice(2) : m[2];
-    return { source, path };
+    return { source, path, includePrereleases };
   }
-  return { source: repo.source ?? 'github', path: url };
+  return { source: repo.source ?? 'github', path: url, includePrereleases };
 }
 
 async function fetchReleases(

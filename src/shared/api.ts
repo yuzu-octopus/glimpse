@@ -19,6 +19,9 @@ export interface PagePayload {
   name: string;
   width: 'default' | 'slim' | 'wide';
   'center-vertically'?: boolean;
+  'hide-desktop-navigation'?: boolean;
+  'show-mobile-header'?: boolean;
+  'desktop-navigation-width'?: 'default' | 'slim' | 'wide';
   headWidgets: WidgetPayload[];
   columns: ColumnPayload[];
 }

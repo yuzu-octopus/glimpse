@@ -44,11 +44,15 @@ registerWidget('custom-api', async (ctx, config) => {
 
   const url = new URL(cfg.url);
   for (const [k, v] of Object.entries(cfg.parameters ?? {})) {
-    url.searchParams.set(k, v);
+    if (Array.isArray(v)) v.forEach((x) => url.searchParams.append(k, x));
+    else url.searchParams.set(k, v);
   }
 
   const init: RequestInit = { method, headers };
-  if (cfg.body !== undefined) init.body = cfg.body;
+  if (cfg.body !== undefined) {
+    init.body =
+      typeof cfg.body === 'string' ? cfg.body : JSON.stringify(cfg.body);
+  }
   const res = await ctx.fetch(url.toString(), init);
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   const payload = (await res.json()) as unknown;
