@@ -1,6 +1,7 @@
 import { useLocation } from 'react-router-dom';
 import { TopNav as AstryxTopNav, TopNavItem } from '@astryxdesign/core';
 import { useConfig } from '../hooks/useConfig';
+import { ThemePicker } from './ThemePicker';
 import styles from './top-nav.module.css';
 
 /** Global top navigation: app title, page tabs, theme picker (step 5). */
@@ -29,6 +30,7 @@ export function TopNav() {
           ))}
         </nav>
       }
+      endContent={<ThemePicker />}
     />
   );
 }

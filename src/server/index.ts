@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { extname, join, normalize, sep } from 'node:path';
+import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
 import { initConfig, getConfig } from './config';
 import { Singleflight, TtlCache } from './cache';
 import { buildPagePayload } from './api';
@@ -80,10 +80,18 @@ const server = Bun.serve({
 
     if (pathname === '/api/theme') {
       const r = getConfig();
+      let customCss: string | null = null;
+      const cssFile = r.ok && r.config ? r.config.theme?.['custom-css-file'] : undefined;
+      if (cssFile) {
+        try {
+          customCss = readFileSync(resolve(dirname(CONFIG_PATH), cssFile), 'utf8');
+        } catch (e) {
+          console.log(`[glimpse] cannot read custom css file: ${(e as Error).message}`);
+        }
+      }
       return json({
         theme: r.ok && r.config ? r.config.theme ?? null : null,
-        customCss: null, // populated once theming lands (step 5)
-        presets: [], // populated once theming lands (step 5)
+        customCss,
       });
     }
 
