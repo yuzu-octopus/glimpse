@@ -11,14 +11,18 @@ import {
 } from './feeds';
 import { groupSchema, setWidgetSchemaRef, splitColumnSchema } from './group';
 import { htmlSchema, iframeSchema } from './iframe';
+import {
+  customApiSchema,
+  lobstersSchema,
+  marketsSchema,
+  monitorSchema,
+  repositorySchema,
+  twitchChannelsSchema,
+  twitchTopGamesSchema,
+  videosSchema,
+} from './keyed';
 import { searchSchema } from './search';
-import { sharedWidgetFields } from './shared';
 import { todoSchema } from './todo';
-
-/** Loose placeholder for widgets whose strict schema lands in a later step. */
-function looseSchema<T extends string>(type: T) {
-  return z.object({ type: z.literal(type), ...sharedWidgetFields }).loose();
-}
 
 const schemaEntries = [
   bookmarksSchema,
@@ -35,14 +39,14 @@ const schemaEntries = [
   splitColumnSchema,
   releasesSchema,
   weatherSchema,
-  looseSchema('lobsters'),
-  looseSchema('videos'),
-  looseSchema('markets'),
-  looseSchema('monitor'),
-  looseSchema('custom-api'),
-  looseSchema('repository'),
-  looseSchema('twitch-channels'),
-  looseSchema('twitch-top-games'),
+  lobstersSchema,
+  videosSchema,
+  marketsSchema,
+  monitorSchema,
+  customApiSchema,
+  repositorySchema,
+  twitchChannelsSchema,
+  twitchTopGamesSchema,
 ] as const;
 
 /** Public widget type union, derived from the schema entries. */

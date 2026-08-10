@@ -40,6 +40,20 @@ pages:
             limit: 10
           - type: todo
             id: glance-todo
+          - type: monitor
+            sites:
+              - url: https://example.com
+                title: example.com
+              - url: https://definitely-not-a-real-site-xyz.com
+                title: broken site
+          - type: markets
+            markets:
+              - symbol: SPY
+                name: S&P 500
+              - symbol: BTC-USD
+                name: Bitcoin
+          - type: lobsters
+            limit: 8
 
 # Optional custom theme in glance HSL format (h s l).
 # theme:

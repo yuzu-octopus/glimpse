@@ -56,9 +56,13 @@ describe('buildPagePayload', () => {
   it('isolates a failing widget without breaking its siblings', async () => {
     registerWidget('rss', vi.fn(async () => ({ items: [] })));
     registerWidget('monitor', vi.fn(async () => { throw new Error('boom'); }));
+    const monitorWidget: WidgetConfig = {
+      type: 'monitor',
+      sites: [{ url: 'https://example.com' }],
+    };
 
     const payload = await buildPagePayload(
-      page([{ size: 'full', widgets: [rssWidget, { type: 'monitor' }] }]),
+      page([{ size: 'full', widgets: [rssWidget, monitorWidget] }]),
       makeCtx(),
     );
     const [rss, monitor] = payload.columns[0].widgets;

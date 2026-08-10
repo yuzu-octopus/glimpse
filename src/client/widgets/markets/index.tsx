@@ -1,0 +1,73 @@
+import { Link } from '@astryxdesign/core';
+import { ArrowDown, ArrowUp } from 'lucide-react';
+import { marketsSchema } from '../../../shared/widgets/keyed';
+import { WidgetChrome } from '../../components/WidgetChrome';
+import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
+import type { Market } from '../../../server/widgets/markets';
+import styles from './markets.module.css';
+
+/** 21-point sparkline, hand-rolled inline SVG (glance parity — a chart, not an icon). */
+export function Sparkline({ values }: { values: number[] }) {
+  if (values.length < 2) return null;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const points = values
+    .map((v, i) => `${(i / (values.length - 1)) * 60},${20 - ((v - min) / range) * 18 - 1}`)
+    .join(' ');
+  return (
+    <svg viewBox="0 0 60 20" className={styles.sparkline} aria-hidden="true">
+      <polyline points={points} fill="none" stroke="var(--color-text-secondary)" strokeWidth={1.5} />
+    </svg>
+  );
+}
+
+function Change({ change, changePct }: { change: number | null; changePct: number | null }) {
+  if (change === null) return null;
+  const up = change >= 0;
+  const cls = up ? styles.up : styles.down;
+  return (
+    <span className={`${styles.change} ${cls}`}>
+      {up ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+      {change.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+      {changePct !== null ? ` (${changePct.toFixed(2)}%)` : ''}
+    </span>
+  );
+}
+
+function Row({ market }: { market: Market }) {
+  return (
+    <div className={styles.row}>
+      <div className={styles.rowLeft}>
+        <Link href={`https://finance.yahoo.com/quote/${market.symbol}`} target="_blank" className={styles.symbol} hasUnderline={false}>
+          {market.symbol}
+        </Link>
+        {market.name ? <span className={styles.name}>{market.name}</span> : null}
+      </div>
+      <div className={styles.rowRight}>
+        <Sparkline values={market.chart} />
+        <span className={styles.price}>
+          {market.price !== null ? market.price.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'}
+        </span>
+        <Change change={market.change} changePct={market.changePct} />
+      </div>
+    </div>
+  );
+}
+
+function Markets({ config, data }: WidgetComponentProps) {
+  const cfg = marketsSchema.parse(config);
+  const markets = ((data as { markets?: Market[] } | null)?.markets ?? []) as Market[];
+  return (
+    <WidgetChrome
+      title={cfg.title}
+      titleUrl={cfg['title-url']}
+      hideHeader={cfg['hide-header']}
+      items={markets.map((m) => <Row key={m.symbol} market={m} />)}
+    />
+  );
+}
+
+registerWidgetComponent('markets', Markets);
+
+export default Markets;
