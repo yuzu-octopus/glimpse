@@ -1,0 +1,43 @@
+.card {
+  padding: 0;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px 2px;
+}
+
+.title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+}
+
+a.title:hover {
+  color: var(--color-text-accent);
+}
+
+.body {
+  padding: 6px 14px 12px;
+  min-width: 0;
+}
+
+.skeleton {
+  display: grid;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.more {
+  margin-top: 8px;
+}
+
+.error {
+  margin-top: 6px;
+}

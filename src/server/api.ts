@@ -1,31 +1,12 @@
 import type { Page } from '../shared/config';
+import type { ColumnPayload, PagePayload, WidgetPayload } from '../shared/api';
 import { parseCacheDuration } from './cache';
 import {
   serverWidgets,
   type WidgetFetchContext,
 } from './widgets/registry';
 
-export interface WidgetPayload {
-  type: string;
-  config: Record<string, unknown>;
-  data: unknown;
-  error?: string;
-  /** Children for container widgets (group, split-column). */
-  widgets?: WidgetPayload[];
-}
-
-export interface ColumnPayload {
-  size: 'small' | 'full';
-  widgets: WidgetPayload[];
-}
-
-export interface PagePayload {
-  slug: string;
-  name: string;
-  width: 'default' | 'slim' | 'wide';
-  headWidgets: WidgetPayload[];
-  columns: ColumnPayload[];
-}
+export type { ColumnPayload, PagePayload, WidgetPayload };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
