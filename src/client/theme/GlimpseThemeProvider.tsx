@@ -15,7 +15,7 @@ import { presetById } from '../../shared/theme/presets';
 import { customThemeTokens } from '../../shared/theme/glanceHsl';
 import { useConfig } from '../hooks/useConfig';
 
-const STORAGE_KEY = 'glimpse.theme';
+const STORAGE_KEY = 'glimpse.theme.v1';
 
 export interface ThemeSettings {
   mode: ThemeMode;
@@ -56,8 +56,11 @@ function useCustomCss(): string | null {
   useEffect(() => {
     let cancelled = false;
     fetch('/api/theme')
-      .then((r) => r.json())
-      .then((body: { customCss?: string | null }) => {
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json() as Promise<{ customCss?: string | null }>;
+      })
+      .then((body) => {
         if (!cancelled) setCss(body.customCss ?? null);
       })
       .catch(() => {

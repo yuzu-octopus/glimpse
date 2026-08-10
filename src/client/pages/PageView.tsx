@@ -14,6 +14,12 @@ function widgetTitle(w: WidgetPayload): string | undefined {
   return typeof t === 'string' ? t : undefined;
 }
 
+/** Stable key for config-driven widget lists (order is static per config). */
+function widgetKey(w: WidgetPayload, i: number): string {
+  const title = widgetTitle(w);
+  return title ? `${w.type}:${title}` : `${w.type}:${i}`;
+}
+
 function columnLabel(col: ColumnPayload, i: number): string {
   return widgetTitle(col.widgets[0]) ?? `Column ${i + 1}`;
 }
@@ -52,7 +58,7 @@ function ContainerWidget({ widget }: { widget: WidgetPayload }) {
     return (
       <div className={styles.splitColumn}>
         {children.map((w, i) => (
-          <WidgetSlot key={i} widget={w} />
+          <WidgetSlot key={widgetKey(w, i)} widget={w} />
         ))}
       </div>
     );
@@ -65,7 +71,7 @@ function ContainerWidget({ widget }: { widget: WidgetPayload }) {
         hasDivider
       >
         {children.map((w, i) => (
-          <Tab key={i} value={String(i)} label={widgetTitle(w) ?? `Tab ${i + 1}`} />
+          <Tab key={widgetKey(w, i)} value={String(i)} label={widgetTitle(w) ?? `Tab ${i + 1}`} />
         ))}
       </TabList>
       <div className={styles.tabContent}>
@@ -105,7 +111,7 @@ export function PageView({ slug }: { slug: string }) {
       {data.headWidgets.length > 0 ? (
         <div className={styles.headWidgets}>
           {data.headWidgets.map((w, i) => (
-            <WidgetSlot key={i} widget={w} />
+            <WidgetSlot key={widgetKey(w, i)} widget={w} />
           ))}
         </div>
       ) : null}
@@ -118,14 +124,16 @@ export function PageView({ slug }: { slug: string }) {
         }}
       >
         {data.columns.map((col, i) => (
+          // Columns are a config-static list (never reordered at runtime),
+          // so the positional index is their stable identity.
           <Collapsible
-            key={i}
+            key={`column-${i}`}
             defaultIsOpen
             trigger={<span className={styles.mobileToggle}>{columnLabel(col, i)}</span>}
           >
             <div className={styles.columnWidgets}>
               {col.widgets.map((w, j) => (
-                <WidgetSlot key={j} widget={w} />
+                <WidgetSlot key={widgetKey(w, j)} widget={w} />
               ))}
             </div>
           </Collapsible>

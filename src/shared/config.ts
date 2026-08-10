@@ -8,7 +8,7 @@ import { z } from 'zod';
  * registered below (initially the shared loose base, tightened as widgets
  * land).
  */
-export const WIDGET_TYPES = [
+const widgetTypeNames = [
   'bookmarks',
   'search',
   'clock',
@@ -33,8 +33,6 @@ export const WIDGET_TYPES = [
   'twitch-top-games',
 ] as const;
 
-export type WidgetType = (typeof WIDGET_TYPES)[number];
-
 /** Shared props every widget accepts (glance "Shared Properties" table). */
 const sharedProps = {
   type: z.literal('__type__'),
@@ -45,8 +43,8 @@ const sharedProps = {
   'css-class': z.string().optional(),
 } as const;
 
-function baseSchema(type: WidgetType) {
-  return z.object({ ...sharedProps, type: z.literal(type) }).passthrough();
+function baseSchema(type: (typeof widgetTypeNames)[number]) {
+  return z.object({ ...sharedProps, type: z.literal(type) }).loose();
 }
 
 /**
@@ -81,6 +79,9 @@ const schemaEntries = [
   baseSchema('twitch-top-games'),
 ] as const;
 
+/** Public widget type union, derived from the schema entries. */
+export type WidgetType = (typeof schemaEntries)[number]['shape']['type']['value'];
+
 export const WidgetSchema = z.discriminatedUnion('type', schemaEntries);
 export type WidgetConfig = z.infer<typeof WidgetSchema>;
 
@@ -112,7 +113,7 @@ export const ThemeConfigSchema = z
     'text-saturation-multiplier': z.number().optional(),
     'custom-css-file': z.string().optional(),
   })
-  .passthrough();
+  .loose();
 export type ThemeConfig = z.infer<typeof ThemeConfigSchema>;
 
 export const ConfigSchema = z.object({
