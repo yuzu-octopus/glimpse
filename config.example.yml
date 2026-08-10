@@ -1,0 +1,47 @@
+# Glimpse example configuration.
+# Copy to config.yml and edit. Format mirrors glance's glance.yml:
+# pages -> columns (small = 300px fixed, full = remaining width) -> widgets.
+
+pages:
+  - name: Home
+    columns:
+      - size: small
+        widgets:
+          - type: clock
+          - type: weather
+            location: London, United Kingdom
+            units: metric
+          - type: bookmarks
+            groups:
+              - title: Dev
+                links:
+                  - title: GitHub
+                    url: https://github.com
+                  - title: Hacker News
+                    url: https://news.ycombinator.com
+                  - title: selfh.st
+                    url: https://selfh.st
+      - size: full
+        widgets:
+          - type: search
+            search-engine:
+              name: DuckDuckGo
+              url: https://duckduckgo.com/?q={QUERY}
+          - type: rss
+            title: Interesting reads
+            limit: 10
+            collapse-after: 3
+            feeds:
+              - url: https://selfh.st/rss/
+                title: selfh.st
+      - size: small
+        widgets:
+          - type: hacker-news
+            limit: 10
+          - type: todo
+            id: glance-todo
+
+# Optional custom theme in glance HSL format (h s l).
+# theme:
+#   background-color: 240 21 15
+#   primary-color: 217 92 83

@@ -1,0 +1,33 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+dev-dist/
+*.tsbuildinfo
+
+# reference clone — never commit the upstream repo
+/glance/
+
+# secrets & user config
+.env
+.env.*
+!.env.example
+config.yml
+
+# local tooling
+.agents/
+skills-lock.json
+.vite/
+*.local
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# logs
+*.log
+npm-debug.log*
