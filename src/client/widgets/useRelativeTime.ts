@@ -10,7 +10,7 @@ export function useRelativeTime(ageSeconds: number): string {
   return formatAge(ageSeconds + elapsed);
 }
 
-export function formatAge(totalSeconds: number): string {
+function formatAge(totalSeconds: number): string {
   const s = Math.max(0, totalSeconds);
   if (s < 60) return `${s}s`;
   const m = Math.floor(s / 60);

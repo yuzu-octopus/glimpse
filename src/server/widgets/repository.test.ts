@@ -84,33 +84,6 @@ describe('repository fetcher', () => {
     }
   });
 
-  it('fetches commits when commits-limit is non-negative', async () => {
-    const commits = [{ sha: 'abc' }];
-    const { ctx } = makeCtx({
-      [REPO_URL]: REPO,
-      [PULLS_URL]: PULLS,
-      [ISSUES_URL]: ISSUES,
-      'https://api.github.com/repos/acme/widget/commits?per_page=2': commits,
-    });
-    const data = (await repositoryFetcher()(ctx, {
-      type: 'repository',
-      repository: 'acme/widget',
-      'commits-limit': 2,
-    })) as RepositoryData;
-    expect(data.pulls).toHaveLength(1); // shape unchanged
-  });
-
-  it('skips commits fetch when commits-limit is negative', async () => {
-    const { ctx, fetchMock } = makeCtx({
-      [REPO_URL]: REPO,
-      [PULLS_URL]: PULLS,
-      [ISSUES_URL]: ISSUES,
-    });
-    await repositoryFetcher()(ctx, { type: 'repository', repository: 'acme/widget' });
-    const calls = fetchMock.mock.calls.map((c) => c[0]);
-    expect(calls.some((u) => String(u).includes('/commits'))).toBe(false);
-  });
-
   it('throws on missing repo (404)', async () => {
     const { ctx } = makeCtx({});
     await expect(

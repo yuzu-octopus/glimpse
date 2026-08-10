@@ -18,6 +18,7 @@ export interface PagePayload {
   slug: string;
   name: string;
   width: 'default' | 'slim' | 'wide';
+  'center-vertically'?: boolean;
   headWidgets: WidgetPayload[];
   columns: ColumnPayload[];
 }

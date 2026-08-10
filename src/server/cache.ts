@@ -19,14 +19,6 @@ export class TtlCache {
   set(key: string, value: unknown, ttlMs: number): void {
     this.store.set(key, { value, expiresAt: Date.now() + ttlMs });
   }
-
-  /** Guard against unbounded growth from changing configs. */
-  prune(): void {
-    const now = Date.now();
-    for (const [k, v] of this.store) {
-      if (v.expiresAt <= now) this.store.delete(k);
-    }
-  }
 }
 
 /**

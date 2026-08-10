@@ -21,7 +21,6 @@ export const videosSchema = z.object({
   'collapse-after': z.number().optional(),
   'collapse-after-rows': z.number().optional(),
   style: z.enum(['horizontal-cards', 'vertical-list', 'grid-cards']).optional(),
-  'video-url-template': z.string().optional(),
 });
 export type VideosConfig = z.infer<typeof videosSchema>;
 
@@ -33,14 +32,10 @@ export const marketsSchema = z.object({
       z.object({
         symbol: z.string(),
         name: z.string().optional(),
-        'symbol-link': z.string().optional(),
-        'chart-link': z.string().optional(),
       }),
     )
     .min(1),
   'sort-by': z.enum(['change', 'absolute-change']).optional(),
-  'symbol-link-template': z.string().optional(),
-  'chart-link-template': z.string().optional(),
 });
 export type MarketsConfig = z.infer<typeof marketsSchema>;
 
@@ -72,7 +67,6 @@ export const customApiSchema = z.object({
   'body-type': z.enum(['json', 'string']).optional(),
   parameters: z.record(z.string(), z.string()).optional(),
   frameless: z.boolean().optional(),
-  'allow-insecure': z.boolean().optional(),
   options: z
     .object({
       path: z.string(),
@@ -96,7 +90,6 @@ export const repositorySchema = z.object({
   token: z.string().optional(),
   'pull-requests-limit': z.number().optional(),
   'issues-limit': z.number().optional(),
-  'commits-limit': z.number().optional(),
 });
 export type RepositoryConfig = z.infer<typeof repositorySchema>;
 

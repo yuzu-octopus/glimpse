@@ -133,7 +133,10 @@ export function PageView({ slug }: { slug: string }) {
   const data = state.data;
 
   return (
-    <div className={styles.page} style={{ maxWidth: WIDTHS[data.width] }}>
+    <div
+      className={`${styles.page} ${data['center-vertically'] ? styles.centered : ''}`}
+      style={{ maxWidth: WIDTHS[data.width] }}
+    >
       {data.headWidgets.length > 0 ? (
         <div className={styles.headWidgets}>
           {data.headWidgets.map((w, i) => (

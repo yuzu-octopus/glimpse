@@ -45,26 +45,19 @@ registerWidget('repository', async (ctx, config) => {
   const token = cfg.token ?? ctx.env.GITHUB_TOKEN;
   const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
-  const repo = await fetchJson<GitHubRepo>(ctx, base, { headers });
-  const pulls = await fetchJson<GitHubIssueLike[]>(
-    ctx,
-    `${base}/pulls?state=open&per_page=${cfg['pull-requests-limit'] ?? 3}`,
-    { headers },
-  );
-  const issuesRes = await fetchJson<GitHubIssueLike[]>(
-    ctx,
-    `${base}/issues?state=open&per_page=${cfg['issues-limit'] ?? 3}`,
-    { headers },
-  );
-
-  // v1 does not display commits; the option stays accepted (fetched when >= 0).
-  if ((cfg['commits-limit'] ?? -1) >= 0) {
-    await fetchJson<unknown[]>(
+  const [repo, pulls, issues] = await Promise.all([
+    fetchJson<GitHubRepo>(ctx, base, { headers }),
+    fetchJson<GitHubIssueLike[]>(
       ctx,
-      `${base}/commits?per_page=${cfg['commits-limit']}`,
+      `${base}/pulls?state=open&per_page=${cfg['pull-requests-limit'] ?? 3}`,
       { headers },
-    );
-  }
+    ),
+    fetchJson<GitHubIssueLike[]>(
+      ctx,
+      `${base}/issues?state=open&per_page=${cfg['issues-limit'] ?? 3}`,
+      { headers },
+    ),
+  ]);
 
   return {
     name: repo.full_name ?? cfg.repository,
@@ -72,6 +65,6 @@ registerWidget('repository', async (ctx, config) => {
     stars: repo.stargazers_count ?? null,
     url: repo.html_url ?? `https://github.com/${cfg.repository}`,
     pulls: pulls.map(mapIssue),
-    issues: issuesRes.filter((i) => !('pull_request' in i)).map(mapIssue),
-  } as RepositoryData;
+    issues: issues.flatMap((i) => ('pull_request' in i ? [] : [mapIssue(i)])),
+  };
 });

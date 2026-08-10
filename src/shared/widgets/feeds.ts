@@ -75,6 +75,5 @@ export const weatherSchema = z.object({
   units: z.enum(['metric', 'imperial']).optional(),
   'hour-format': z.enum(['12h', '24h']).optional(),
   'hide-location': z.boolean().optional(),
-  'show-area-name': z.boolean().optional(),
 });
 export type WeatherConfig = z.infer<typeof weatherSchema>;

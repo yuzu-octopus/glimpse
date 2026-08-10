@@ -257,7 +257,7 @@ export function initConfig(configPath: string, onChange?: (r: LoadResult) => voi
   return reloadConfig(configPath);
 }
 
-export function stopWatchers(): void {
+function stopWatchers(): void {
   for (const w of watchers) {
     try {
       w.close();

@@ -1,12 +1,10 @@
 import type { Page } from '../shared/config';
-import type { ColumnPayload, PagePayload, WidgetPayload } from '../shared/api';
+import type { PagePayload, WidgetPayload } from '../shared/api';
 import { parseCacheDuration } from './cache';
 import {
   serverWidgets,
   type WidgetFetchContext,
 } from './widgets/registry';
-
-export type { ColumnPayload, PagePayload, WidgetPayload };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -99,6 +97,9 @@ export async function buildPagePayload(
     slug: page.slug,
     name: page.name,
     width: page.width ?? 'default',
+    ...(page['center-vertically'] !== undefined
+      ? { 'center-vertically': page['center-vertically'] }
+      : {}),
     headWidgets,
     columns,
   };

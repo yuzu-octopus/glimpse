@@ -4,6 +4,13 @@
   width: 100%;
 }
 
+.centered {
+  min-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
 .headWidgets {
   display: grid;
   gap: 12px;
