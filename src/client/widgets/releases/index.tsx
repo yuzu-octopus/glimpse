@@ -8,9 +8,9 @@ import type { Release } from '../../../server/widgets/releases';
 import styles from './releases.module.css';
 
 function SourceIcon({ source }: { source: Release['source'] }) {
-  if (source === 'github') return <GitBranch size={13} className={styles.icon} />;
-  if (source === 'gitlab' || source === 'codeberg') return <GitBranch size={13} className={styles.icon} />;
-  return <Container size={13} className={styles.icon} />;
+  if (source === 'github') return <GitBranch size={16} className={styles.icon} />;
+  if (source === 'gitlab' || source === 'codeberg') return <GitBranch size={16} className={styles.icon} />;
+  return <Container size={16} className={styles.icon} />;
 }
 
 function ReleaseRow({ release, showIcon }: { release: Release; showIcon: boolean }) {

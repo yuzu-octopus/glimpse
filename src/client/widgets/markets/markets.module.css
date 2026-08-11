@@ -1,80 +1,89 @@
 .row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 5px 0;
+  gap: 15px;
   min-width: 0;
+  animation: collapsibleItemReveal 0.25s backwards;
 }
+
+.row + .row {
+  margin-top: 10px;
+  border-top: 1px solid var(--color-separator);
+  padding-top: 10px;
+}
+
+.row:nth-child(2) { animation-delay: 30ms; }
+.row:nth-child(3) { animation-delay: 60ms; }
+.row:nth-child(4) { animation-delay: 90ms; }
+.row:nth-child(5) { animation-delay: 120ms; }
+.row:nth-child(6) { animation-delay: 150ms; }
+.row:nth-child(7) { animation-delay: 180ms; }
+.row:nth-child(8) { animation-delay: 210ms; }
 
 .rowLeft {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
   min-width: 0;
 }
 
+/* glance: symbol is the headline link (color-highlight size-h3 block text-truncate) */
 .symbol {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-primary);
+  display: block;
+  font-size: var(--font-size-h3);
+  color: var(--color-text-highlight);
   text-decoration: none;
-  white-space: nowrap;
-}
-
-.symbol:hover {
-  color: var(--color-text-accent);
-}
-
-.name {
-  font-size: 12px;
-  color: var(--color-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.rowRight {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
+.name {
+  display: block;
+  color: var(--color-text-base);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.sparkline {
-  width: 60px;
-  height: 20px;
-}
-
+/* glance .market-chart: margin-left auto, 65px wide */
 .chartLink {
   display: block;
+  margin-left: auto;
+  flex-shrink: 0;
   line-height: 0;
 }
 
-.price {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  min-width: 52px;
+.sparkline {
+  display: block;
+  width: 65px;
+  height: auto;
+}
+
+/* glance .market-values: min-width 80px, right-aligned */
+.values {
+  min-width: 80px;
+  flex-shrink: 0;
   text-align: right;
+}
+
+.price {
+  color: var(--color-text-base);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .change {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  font-size: 12px;
-  white-space: nowrap;
-  min-width: 78px;
   justify-content: flex-end;
+  gap: 2px;
+  font-size: var(--font-size-h3);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .up {
-  color: var(--color-text-green);
+  color: var(--color-positive);
 }
 
 .down {
-  color: var(--color-text-red);
+  color: var(--color-negative);
 }

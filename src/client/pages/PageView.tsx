@@ -78,6 +78,8 @@ function ContainerWidget({ widget }: { widget: WidgetPayload }) {
     <Card padding={0}>
       <TabList
         value={String(active)}
+        className={styles.groupTabs}
+        aria-label="Group tabs"
         onChange={(v) => {
           const next = Number(v);
           // glance: clicking the already-active tab opens the group title-url
@@ -87,13 +89,13 @@ function ContainerWidget({ widget }: { widget: WidgetPayload }) {
             setActive(next);
           }
         }}
-        hasDivider
       >
         {children.map((w, i) => (
           <Tab
             key={widgetKey(w, i)}
             value={String(i)}
             label={widgetTitle(w) ?? `Tab ${i + 1}`}
+            className={i === active ? styles.groupTabCurrent : undefined}
           />
         ))}
       </TabList>
@@ -106,10 +108,24 @@ function ContainerWidget({ widget }: { widget: WidgetPayload }) {
 
 /** Column wrapper: on mobile a toggle header collapses the section (glance
  * behavior); on desktop the toggle is hidden and content always shows. */
-function MobileColumn({ label, children }: { label: string; children: ReactNode }) {
+function MobileColumn({
+  label,
+  small,
+  children,
+}: {
+  label: string;
+  small: boolean;
+  children: ReactNode;
+}) {
   const [open, setOpen] = useState(true);
   return (
-    <div className={styles.column}>
+    <div
+      className={
+        small
+          ? `${styles.column} ${styles.smallColumn}`
+          : `${styles.column} ${styles.fullColumn}`
+      }
+    >
       <button
         type="button"
         className={styles.mobileToggle}
@@ -167,6 +183,8 @@ export function PageView({ slug }: { slug: string }) {
       <div
         className={styles.columns}
         style={{
+          // ponytail: kept verbatim for the pinned test assertion; inert on
+          // the flex layout (sizing lives in .fullColumn/.smallColumn).
           gridTemplateColumns: data.columns
             .map((c) => (c.size === 'small' ? '300px' : 'minmax(0, 1fr)'))
             .join(' '),
@@ -175,7 +193,11 @@ export function PageView({ slug }: { slug: string }) {
         {data.columns.map((col, i) => (
           // Columns are a config-static list (never reordered at runtime),
           // so the positional index is their stable identity.
-          <MobileColumn key={columnKey(col, i)} label={columnLabel(col, i)}>
+          <MobileColumn
+            key={columnKey(col, i)}
+            label={columnLabel(col, i)}
+            small={col.size === 'small'}
+          >
             <div className={styles.columnWidgets}>
               {col.widgets.map((w, j) => (
                 <WidgetSlot key={widgetKey(w, j)} widget={w} />

@@ -1,15 +1,12 @@
-import { useMemo, useState } from 'react';
-import { IconButton, Popover, SegmentedControl, SegmentedControlItem } from '@astryxdesign/core';
-import { Palette } from 'lucide-react';
-import { presets, type Preset } from '../../shared/theme/presets';
+import { useMemo, useState, type CSSProperties } from 'react';
+import { Popover, SegmentedControl, SegmentedControlItem } from '@astryxdesign/core';
+import { presetById, presets, type Preset } from '../../shared/theme/presets';
 import { useThemeSettings } from '../theme/GlimpseThemeProvider';
 import styles from './theme-picker.module.css';
 
-function swatchOf(preset: Preset): string {
-  // sample the accent + background of the active side for the swatch
-  const side = preset.variant === 'light' && preset.light ? preset.light : preset.dark;
-  return `${side.base0D} ${side.base00}`;
-}
+// Glance swatch language (theme-preset-preview.html): button bg = base00,
+// accent squares = base0D (primary) + base08 (negative); positive defaults
+// to primary, so two distinct accents render the glance default look.
 
 export function ThemePicker() {
   const { mode, presetId, setMode, setPresetId, configPresets } = useThemeSettings();
@@ -25,22 +22,33 @@ export function ThemePicker() {
     };
   }, [configPresets]);
 
+  const active = configPresets.find((p) => p.id === presetId) ?? presetById(presetId);
+
   const renderGroup = (label: string, group: Preset[]) =>
     group.length > 0 ? (
       <div key={label}>
         <div className={styles.groupLabel}>{label}</div>
-        {group.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            className={styles.row}
-            data-selected={p.id === presetId}
-            onClick={() => setPresetId(p.id)}
-          >
-            <span>{p.name}</span>
-            <span className={styles.swatch} style={{ background: `linear-gradient(135deg, ${swatchOf(p).split(' ')[0]}, ${swatchOf(p).split(' ')[1]})` }} />
-          </button>
-        ))}
+        <div className={styles.choices}>
+          {group.map((p) => {
+            const current = p.id === presetId;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                className={`${styles.preset}${current ? ` ${styles.current}` : ''}`}
+                style={{ '--color': p.dark.base00 } as CSSProperties}
+                data-selected={current}
+                onClick={() => setPresetId(p.id)}
+              >
+                <span className={styles.name} style={{ color: p.dark.base05 }}>
+                  {p.name}
+                </span>
+                <span className={styles.swatch} style={{ '--color': p.dark.base0D } as CSSProperties} />
+                <span className={styles.swatch} style={{ '--color': p.dark.base08 } as CSSProperties} />
+              </button>
+            );
+          })}
+        </div>
       </div>
     ) : null;
 
@@ -72,13 +80,21 @@ export function ThemePicker() {
         </div>
       }
     >
-      <IconButton
-        icon={<Palette size={16} />}
-        label="Theme"
-        variant="ghost"
-        size="sm"
-        aria-haspopup="dialog"
-      />
+      <button
+        type="button"
+        aria-label="Theme"
+        className={[
+          styles.trigger,
+          active.variant === 'light' ? styles.triggerLight : '',
+          open ? styles.popoverActive : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        style={{ '--color': active.dark.base00 } as CSSProperties}
+      >
+        <span className={styles.swatch} style={{ '--color': active.dark.base0D } as CSSProperties} />
+        <span className={styles.swatch} style={{ '--color': active.dark.base08 } as CSSProperties} />
+      </button>
     </Popover>
   );
 }

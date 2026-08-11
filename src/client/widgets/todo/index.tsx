@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Button, TextInput } from '@astryxdesign/core';
-import { CheckboxInput } from '@astryxdesign/core/CheckboxInput';
 import { Pencil, Trash2 } from 'lucide-react';
 import { todoSchema } from '../../../shared/widgets/todo';
 import { WidgetChrome } from '../../components/WidgetChrome';
@@ -126,11 +125,12 @@ export function Todo({ config }: WidgetComponentProps) {
       ) : (
         items.map((item, i) => (
           <div key={item.id} className={styles.item}>
-            <CheckboxInput
-              value={item.done}
+            <input
+              type="checkbox"
+              className={styles.checkbox}
+              checked={item.done}
               onChange={() => toggle(item.id)}
-              label={item.text}
-              isLabelHidden
+              aria-label={item.text}
             />
             {editingId === item.id ? (
               <TextInput

@@ -13,22 +13,31 @@ export function Sparkline({ values }: { values: number[] }) {
   const max = Math.max(...values);
   const range = max - min || 1;
   const points = values
-    .map((v, i) => `${(i / (values.length - 1)) * 60},${20 - ((v - min) / range) * 18 - 1}`)
+    .map((v, i) => `${(i / (values.length - 1)) * 100},${50 - ((v - min) / range) * 40}`)
     .join(' ');
   return (
-    <svg viewBox="0 0 60 20" className={styles.sparkline} aria-hidden="true">
-      <polyline points={points} fill="none" stroke="var(--color-text-secondary)" strokeWidth={1.5} />
+    <svg viewBox="0 0 100 50" className={styles.sparkline} aria-hidden="true">
+      <polyline
+        points={points}
+        fill="none"
+        stroke="var(--color-text-subdue)"
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
     </svg>
   );
 }
 
 function Change({ change, changePct }: { change: number | null; changePct: number | null }) {
   if (change === null) return null;
-  const up = change >= 0;
-  const cls = up ? styles.up : styles.down;
+  // glance colors strictly by sign; zero stays neutral
+  const up = change > 0;
+  const down = change < 0;
+  const cls = up ? styles.up : down ? styles.down : undefined;
   return (
-    <span className={`${styles.change} ${cls}`}>
-      {up ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+    <span className={cls ? `${styles.change} ${cls}` : styles.change}>
+      {up ? <ArrowUp size={12} /> : down ? <ArrowDown size={12} /> : null}
       {change.toLocaleString(undefined, { maximumFractionDigits: 2 })}
       {changePct !== null ? ` (${changePct.toFixed(2)}%)` : ''}
     </span>
@@ -66,18 +75,18 @@ function Row({ market, symbolLink, chartLink }: { market: Market } & RowLinks) {
         {symbol}
         {market.name ? <span className={styles.name}>{market.name}</span> : null}
       </div>
-      <div className={styles.rowRight}>
-        {chartLink ? (
-          <Link href={chartLink} target="_blank" className={styles.chartLink} hasUnderline={false} label={`${market.symbol} chart`}>
-            {sparkline}
-          </Link>
-        ) : (
-          sparkline
-        )}
+      {chartLink ? (
+        <Link href={chartLink} target="_blank" className={styles.chartLink} hasUnderline={false} label={`${market.symbol} chart`}>
+          {sparkline}
+        </Link>
+      ) : (
+        <span className={styles.chartLink}>{sparkline}</span>
+      )}
+      <div className={styles.values}>
+        <Change change={market.change} changePct={market.changePct} />
         <span className={styles.price}>
           {market.price !== null ? market.price.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'}
         </span>
-        <Change change={market.change} changePct={market.changePct} />
       </div>
     </div>
   );

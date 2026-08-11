@@ -1,47 +1,48 @@
 .header {
   display: grid;
   gap: 2px;
-  padding: 5px 0;
   min-width: 0;
 }
 
+/* glance repository.html: name is size-h4 color-highlight link */
 .repoName {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   width: fit-content;
-  font-size: 15px;
+  font-size: var(--font-size-h4);
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--color-text-highlight);
   text-decoration: none;
 }
 
 .repoName:hover {
-  color: var(--color-text-accent);
+  color: var(--color-primary);
 }
 
+/* glance list-horizontal-text: stars/forks in subdue */
 .stars {
   display: inline-flex;
   align-items: center;
   gap: 3px;
   font-size: 12px;
-  font-weight: 500;
-  color: var(--color-text-secondary);
+  color: var(--color-text-subdue);
 }
 
 .desc {
-  font-size: 12px;
-  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+  color: var(--color-text-paragraph);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* glance: hr margin-block-8 between sections */
 .subList {
   display: grid;
-  gap: 1px;
-  padding: 6px 0;
-  border-top: 1px solid var(--color-border);
+  gap: 2px;
+  padding: 8px 0;
+  border-top: 1px solid var(--color-separator);
   min-width: 0;
 }
 
@@ -53,8 +54,8 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--color-text-secondary);
-  margin-bottom: 3px;
+  color: var(--color-text-base-muted);
+  margin-bottom: 4px;
 }
 
 .subRow {
@@ -68,19 +69,19 @@
 
 .subNumber {
   font-size: 12px;
-  color: var(--color-text-secondary);
+  color: var(--color-text-subdue);
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
 
 .subTitle {
-  font-size: 13px;
-  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  color: var(--color-text-base);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .subRow:hover .subTitle {
-  color: var(--color-text-accent);
+  color: var(--color-text-highlight);
 }

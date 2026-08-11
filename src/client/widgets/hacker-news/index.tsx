@@ -4,22 +4,34 @@ import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { useRelativeTime } from '../useRelativeTime';
 import type { HnPost } from '../../../server/widgets/hacker-news';
-import common from '../common.module.css';
+import styles from './hacker-news.module.css';
+
+/** post source host, minus www (glance rss-list shows the channel/domain). */
+function domainOf(url: string): string | null {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return null;
+  }
+}
 
 function HnRow({ post }: { post: HnPost }) {
   const age = useRelativeTime(post.ageSeconds);
+  const domain = domainOf(post.url);
   return (
-    <div className={common.row}>
-      <Link href={post.url} target="_blank" className={common.rowTitle} hasUnderline={false}>
+    <div className={styles.row}>
+      <Link href={post.url} target="_blank" className={styles.title} hasUnderline={false}>
         {post.title}
       </Link>
-      <div className={common.meta}>
+      <div className={styles.meta}>
+        {domain ? <span>{domain}</span> : null}
+        {domain ? <span className={styles.sep}>•</span> : null}
         <span>{post.score} points</span>
-        <span>·</span>
-        <Link href={post.commentsUrl} target="_blank" className={common.meta}>
+        <span className={styles.sep}>•</span>
+        <Link href={post.commentsUrl} target="_blank" className={styles.metaLink}>
           {post.comments} comments
         </Link>
-        <span>·</span>
+        <span className={styles.sep}>•</span>
         <span>{age}</span>
       </div>
     </div>
@@ -42,3 +54,5 @@ function HackerNews({ config, data }: WidgetComponentProps) {
 }
 
 registerWidgetComponent('hacker-news', HackerNews);
+
+export default HackerNews;

@@ -5,10 +5,10 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from 'react';
-import { TextInput } from '@astryxdesign/core';
 import { searchSchema, type SearchConfig } from '../../../shared/widgets/search';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
+import styles from './search.module.css';
 
 const ENGINE_PRESETS: Record<string, string> = {
   duckduckgo: 'https://duckduckgo.com/?q={QUERY}',
@@ -128,18 +128,35 @@ export function Search({ config }: WidgetComponentProps) {
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
     >
-      <form onSubmit={submit}>
-        <TextInput
+      <form className={styles.search} onSubmit={submit}>
+        <span className={styles.iconContainer} aria-hidden="true">
+          <svg
+            className={styles.icon}
+            viewBox="0 0 24 24"
+            fill="none"
+            strokeWidth={1.5}
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+            />
+          </svg>
+        </span>
+        <input
           ref={inputRef}
-          label="Search"
-          isLabelHidden
+          className={styles.input}
+          type="text"
+          aria-label="Search"
           value={query}
-          onChange={setQuery}
+          onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onKeyDown}
           placeholder={cfg.placeholder ?? `Search the web… (press ${shortcut})`}
-          hasAutoFocus={cfg.autofocus === true}
-          hasClear
+          autoComplete="off"
+          autoFocus={cfg.autofocus === true}
         />
+        <kbd title="Press [S] to focus the search input">S</kbd>
       </form>
     </WidgetChrome>
   );

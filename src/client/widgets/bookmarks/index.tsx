@@ -1,5 +1,4 @@
 import { Link } from '@astryxdesign/core';
-import { ArrowUpRight } from 'lucide-react';
 import { bookmarksSchema } from '../../../shared/widgets/bookmarks';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
@@ -8,20 +7,23 @@ import styles from './bookmarks.module.css';
 function Bookmarks({ config }: WidgetComponentProps) {
   const cfg = bookmarksSchema.parse(config);
   const groups = cfg.groups ?? [];
-  if (groups.length === 0) return <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}><div className={styles.empty}>No bookmark groups configured.</div></WidgetChrome>;
+  if (groups.length === 0) {
+    return (
+      <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
+        <div className={styles.empty}>No bookmark groups configured.</div>
+      </WidgetChrome>
+    );
+  }
 
   return (
     <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
       {groups.map((group) => (
-        <div
-          key={group.title ?? group.links[0]?.url ?? 'untitled'}
-          className={styles.group}
-        >
+        <div key={group.title ?? group.links[0]?.url ?? 'untitled'} className={styles.group}>
           {group.title ? (
-            <div className={styles.groupTitle}>
-              {group.color ? (
-                <span className={styles.groupDot} style={{ backgroundColor: group.color }} />
-              ) : null}
+            <div
+              className={styles.groupTitle}
+              style={group.color ? { color: group.color } : undefined}
+            >
               {group.title}
             </div>
           ) : null}
@@ -31,14 +33,18 @@ function Bookmarks({ config }: WidgetComponentProps) {
                 key={`${link.title}-${j}`}
                 href={link.url}
                 target={link['same-tab'] || group['same-tab'] || cfg['same-tab'] ? undefined : '_blank'}
-                className={styles.linkRow}
+                className={styles.linkCard}
                 hasUnderline={false}
               >
+                {link.icon ? (
+                  <span className={styles.iconContainer}>
+                    <img src={link.icon} alt="" loading="lazy" className={styles.icon} />
+                  </span>
+                ) : null}
                 <span className={styles.linkTitle}>{link.title}</span>
-                {link.description ? <span className={styles.linkDesc}>{link.description}</span> : null}
-                {!(link['hide-arrow'] ?? group['hide-arrow'] ?? cfg['hide-arrow']) && (
-                  <ArrowUpRight size={13} className={styles.arrow} />
-                )}
+                {link.description ? (
+                  <span className={styles.linkDesc}>{link.description}</span>
+                ) : null}
               </Link>
             ))}
           </div>
@@ -49,3 +55,5 @@ function Bookmarks({ config }: WidgetComponentProps) {
 }
 
 registerWidgetComponent('bookmarks', Bookmarks);
+
+export default Bookmarks;

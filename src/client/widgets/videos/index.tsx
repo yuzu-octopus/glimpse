@@ -2,10 +2,16 @@ import { Link } from '@astryxdesign/core';
 import { videosSchema } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
+import { useRelativeTime } from '../useRelativeTime';
 import type { Video } from '../../../server/widgets/videos';
 import styles from './videos.module.css';
 
+function useVideoAge(video: Video): string | null {
+  return useRelativeTime(video.published ? (Date.now() - Date.parse(video.published)) / 1000 : 0);
+}
+
 function Card({ video }: { video: Video }) {
+  const age = useVideoAge(video);
   return (
     <Link href={video.url} target="_blank" className={styles.card} hasUnderline={false}>
       {video.thumbnail ? (
@@ -14,12 +20,16 @@ function Card({ video }: { video: Video }) {
         <div className={styles.cardThumbPlaceholder} />
       )}
       <span className={styles.cardTitle}>{video.title}</span>
-      <span className={styles.cardChannel}>{video.channel}</span>
+      <span className={styles.cardMeta}>
+        {video.published ? <span className={styles.cardTime}>{age}</span> : null}
+        <span className={styles.cardChannel}>{video.channel}</span>
+      </span>
     </Link>
   );
 }
 
 function Row({ video }: { video: Video }) {
+  const age = useVideoAge(video);
   return (
     <div className={styles.row}>
       {video.thumbnail ? (
@@ -31,7 +41,10 @@ function Row({ video }: { video: Video }) {
         <Link href={video.url} target="_blank" className={styles.title} hasUnderline={false}>
           {video.title}
         </Link>
-        <div className={styles.rowMeta}>{video.channel}</div>
+        <div className={styles.rowMeta}>
+          {video.published ? <span className={styles.rowTime}>{age}</span> : null}
+          <span className={styles.rowChannel}>{video.channel}</span>
+        </div>
       </div>
     </div>
   );

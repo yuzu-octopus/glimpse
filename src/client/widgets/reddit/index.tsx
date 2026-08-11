@@ -20,15 +20,36 @@ function Row({ post, showThumb, showFlair }: { post: RedditPost; showThumb: bool
         <div className={styles.meta}>
           {showFlair && post.flair ? <span className={styles.flair}>{post.flair}</span> : null}
           <span>{post.score} points</span>
-          <span>·</span>
+          <span className={styles.sep}>•</span>
           <Link href={post.commentsUrl} target="_blank" className={styles.metaLink}>
             {post.comments} comments
           </Link>
-          <span>·</span>
+          <span className={styles.sep}>•</span>
           <span>{age}</span>
         </div>
       </div>
     </div>
+  );
+}
+
+function Card({ post, showMeta }: { post: RedditPost; showMeta: boolean }) {
+  const age = useRelativeTime(post.ageSeconds);
+  return (
+    <Link key={post.url} href={post.url} target="_blank" className={styles.card} hasUnderline={false}>
+      {post.thumbnail ? (
+        <img src={post.thumbnail} alt="" loading="lazy" className={styles.cardThumb} />
+      ) : (
+        <div className={styles.cardThumbPlaceholder} />
+      )}
+      <span className={styles.cardTitle}>{post.title}</span>
+      {showMeta ? (
+        <span className={styles.cardMeta}>
+          <span>{post.score} points</span>
+          <span className={styles.sep}>•</span>
+          <span>{age}</span>
+        </span>
+      ) : null}
+    </Link>
   );
 }
 
@@ -44,14 +65,7 @@ function Reddit({ config, data }: WidgetComponentProps) {
       <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={[cfg['css-class'], styles.cards].filter(Boolean).join(' ') || undefined}>
         <div className={style === 'horizontal-cards' ? styles.cardRow : styles.cardCol}>
           {posts.map((post) => (
-            <Link key={post.url} href={post.url} target="_blank" className={styles.card} hasUnderline={false}>
-              {post.thumbnail ? (
-                <img src={post.thumbnail} alt="" loading="lazy" className={styles.cardThumb} />
-              ) : (
-                <div className={styles.cardThumbPlaceholder} />
-              )}
-              <span className={styles.cardTitle}>{post.title}</span>
-            </Link>
+            <Card key={post.url} post={post} showMeta={style === 'vertical-cards'} />
           ))}
         </div>
       </WidgetChrome>
@@ -71,3 +85,5 @@ function Reddit({ config, data }: WidgetComponentProps) {
 }
 
 registerWidgetComponent('reddit', Reddit);
+
+export default Reddit;

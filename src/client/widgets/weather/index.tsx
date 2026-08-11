@@ -4,9 +4,7 @@ import {
   CloudRain,
   CloudSnow,
   CloudSun,
-  Droplets,
   Sun,
-  Thermometer,
 } from 'lucide-react';
 import { weatherSchema } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
@@ -24,9 +22,41 @@ function weatherIcon(code: number | null) {
   return <CloudLightning size={18} />;
 }
 
+/** WMO weather code → condition label (glance weatherCodeTable). */
+const WEATHER_CODES: Record<number, string> = {
+  0: 'Clear Sky',
+  1: 'Mainly Clear',
+  2: 'Partly Cloudy',
+  3: 'Overcast',
+  45: 'Fog',
+  48: 'Rime Fog',
+  51: 'Drizzle',
+  53: 'Drizzle',
+  55: 'Drizzle',
+  56: 'Drizzle',
+  57: 'Drizzle',
+  61: 'Rain',
+  63: 'Moderate Rain',
+  65: 'Heavy Rain',
+  66: 'Freezing Rain',
+  67: 'Freezing Rain',
+  71: 'Snow',
+  73: 'Moderate Snow',
+  75: 'Heavy Snow',
+  77: 'Snow Grains',
+  80: 'Rain',
+  81: 'Moderate Rain',
+  82: 'Heavy Rain',
+  85: 'Snow',
+  86: 'Snow',
+  95: 'Thunderstorm',
+  96: 'Thunderstorm',
+  99: 'Thunderstorm',
+};
+
 const DAY_NAMES = new Intl.DateTimeFormat('en-GB', { weekday: 'short' });
 
-function Weather({ config, data }: WidgetComponentProps) {
+export function Weather({ config, data }: WidgetComponentProps) {
   const cfg = weatherSchema.parse(config);
   const w = data as WeatherData | null;
   if (!w) return <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}><div className={styles.empty}>No weather data.</div></WidgetChrome>;
@@ -34,25 +64,27 @@ function Weather({ config, data }: WidgetComponentProps) {
   const today = new Date().toISOString().slice(0, 10);
   const day = (date: string) => (date === today ? 'Today' : DAY_NAMES.format(new Date(date + 'T00:00:00')));
 
+  const unit = (cfg.units ?? 'metric') === 'metric' ? 'C' : 'F';
+  const condition = w.current.code != null ? WEATHER_CODES[w.current.code] : undefined;
+
   return (
     <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
-      {!cfg['hide-location'] ? <div className={styles.location}>{w.location}</div> : null}
       <div className={styles.current}>
         <div className={styles.temp}>{w.current.temp != null ? `${Math.round(w.current.temp)}°` : '—'}</div>
         <div className={styles.currentIcon}>{weatherIcon(w.current.code)}</div>
       </div>
-      <div className={styles.details}>
-        {w.current.feelsLike != null ? (
-          <span className={styles.detail}>
-            <Thermometer size={13} /> feels {Math.round(w.current.feelsLike)}°
-          </span>
-        ) : null}
-        {w.current.humidity != null ? (
-          <span className={styles.detail}>
-            <Droplets size={13} /> {w.current.humidity}%
-          </span>
-        ) : null}
-      </div>
+      {condition ? <div className={styles.condition}>{condition}</div> : null}
+      {w.current.feelsLike != null ? (
+        <div className={styles.feelsLike}>
+          Feels like {Math.round(w.current.feelsLike)}°{unit}
+        </div>
+      ) : null}
+      {!cfg['hide-location'] ? (
+        <div className={styles.location}>
+          <span className={styles.locationIcon} aria-hidden="true" />
+          <span className={styles.locationText}>{w.location}</span>
+        </div>
+      ) : null}
       <div className={styles.daily}>
         {w.daily.slice(0, 7).map((d) => (
           <div key={d.date} className={styles.dayRow}>

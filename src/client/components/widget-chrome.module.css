@@ -1,13 +1,37 @@
 .card {
+  /* Card's own spacing is neutralized; the .body below owns the content
+     padding so widget contents align with glance's widget-content. */
   padding: 0;
 }
 
+/* glance widgets.css .widget-header */
 .header {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 14px 2px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 calc(var(--widget-content-horizontal-padding) + 1px);
+  margin-bottom: 9px;
+  font-size: var(--font-size-h4);
+  color: var(--color-text-highlight);
+}
+
+/* glance widgets.css .widget-error-header — negative-tinted backdrop
+   bleeding half a content-padding step into the surrounding area. */
+.errorHeader {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 18px;
+}
+
+.errorHeader::before {
+  content: '';
+  position: absolute;
+  inset: calc(0px - (var(--widget-content-vertical-padding) / 2))
+    calc(0px - (var(--widget-content-horizontal-padding) / 2));
+  background: var(--color-negative);
+  opacity: 0.05;
+  border-radius: var(--border-radius);
+  z-index: -1;
 }
 
 .titleRow {
@@ -22,38 +46,70 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--color-error);
+  background: var(--color-negative);
   flex-shrink: 0;
 }
 
 .title {
-  font-size: 12px;
-  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-text-secondary);
+  color: inherit;
   text-decoration: none;
-}
-
-a.title:hover {
-  color: var(--color-text-accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .body {
-  padding: 6px 14px 12px;
+  padding: var(--widget-content-padding);
   min-width: 0;
+}
+
+/* glance utils.css — the content box drops its bottom padding when the
+   expand toggle is the last child; the toggle's own vertical padding
+   supplies the gap. */
+.body:has(.more:last-child) {
+  padding-bottom: 0;
 }
 
 .skeleton {
   display: grid;
   gap: 8px;
-  padding: 4px 0;
 }
 
+/* glance utils.css .expand-toggle-button */
 .more {
-  margin-top: 8px;
+  font: inherit;
+  border: 0;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  text-align: left;
+  color: var(--color-text-base);
+  text-transform: uppercase;
+  font-size: var(--font-size-h4);
+  padding: var(--widget-content-vertical-padding) 0;
+  background: var(--color-widget-background);
 }
 
-.error {
-  margin-top: 6px;
+.moreExpanded {
+  position: sticky;
+  /* -1px to hide the 1px gap on chrome */
+  bottom: -1px;
+}
+
+/* glance utils.css .expand-toggle-button-icon — chevron right of the label,
+   pointing down when collapsed, up when expanded. */
+.chevron {
+  display: inline-block;
+  margin-left: 10px;
+  position: relative;
+  top: -2px;
+  transform: rotate(90deg);
+  transition: transform 0.3s;
+  flex-shrink: 0;
+}
+
+.moreExpanded .chevron {
+  transform: rotate(-90deg);
 }

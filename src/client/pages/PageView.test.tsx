@@ -279,7 +279,7 @@ describe('PageView', () => {
     await screen.findByTestId('clock-widget');
     const wrapper = document.querySelector('[data-testid="top-nav-wrapper"]') as HTMLElement;
     expect(wrapper.className).toContain('hideDesktopNav');
-    const nav = wrapper.querySelector('nav[role="navigation"]') as HTMLElement;
+    const nav = wrapper.querySelector('nav[aria-label="Pages"]') as HTMLElement;
     expect(nav.style.maxWidth).toBe('1100px');
   });
 
@@ -288,7 +288,13 @@ describe('PageView', () => {
     await screen.findByTestId('clock-widget');
     const wrapper = document.querySelector('[data-testid="top-nav-wrapper"]') as HTMLElement;
     expect(wrapper.className).not.toContain('hideDesktopNav');
-    const nav = wrapper.querySelector('nav[role="navigation"]') as HTMLElement;
+    const nav = wrapper.querySelector('nav[aria-label="Pages"]') as HTMLElement;
     expect(nav.style.maxWidth).toBe('');
+  });
+
+  it('renders the mobile navigation bar (shown below the 768px breakpoint)', async () => {
+    renderApp('/');
+    await screen.findByTestId('clock-widget');
+    expect(document.querySelector('[data-testid="mobile-navigation"]')).toBeTruthy();
   });
 });

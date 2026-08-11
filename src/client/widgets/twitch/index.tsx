@@ -1,4 +1,3 @@
-import { Badge, StatusDot } from '@astryxdesign/core';
 import { Eye } from 'lucide-react';
 import { twitchChannelsSchema, twitchTopGamesSchema } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
@@ -8,7 +7,7 @@ import styles from './twitch.module.css';
 
 function ChannelRow({ channel }: { channel: TwitchChannel }) {
   return (
-    <div className={`${styles.row} ${channel.live ? '' : styles.offline}`}>
+    <div className={`${styles.row} ${channel.live ? styles.live : ''}`}>
       {channel.thumbnail ? (
         <img src={channel.thumbnail} alt="" loading="lazy" className={styles.rowThumb} />
       ) : (
@@ -19,8 +18,8 @@ function ChannelRow({ channel }: { channel: TwitchChannel }) {
           <span className={styles.displayName}>{channel.displayName}</span>
           {channel.live ? (
             <span className={styles.liveBadge}>
-              <StatusDot variant="success" label="live" />
-              <Badge label="LIVE" variant="success" />
+              <Eye size={12} />
+              <span>LIVE</span>
             </span>
           ) : null}
         </div>
@@ -37,7 +36,9 @@ function ChannelRow({ channel }: { channel: TwitchChannel }) {
               {channel.game ? <span>{channel.game}</span> : null}
             </div>
           </>
-        ) : null}
+        ) : (
+          <div className={styles.offline}>Offline</div>
+        )}
       </div>
     </div>
   );
@@ -66,8 +67,10 @@ function GameCard({ game, rank }: { game: TwitchGame; rank: number }) {
       ) : (
         <div className={styles.gameThumbPlaceholder} />
       )}
-      <span className={styles.rank}>#{rank}</span>
-      <span className={styles.gameName}>{game.name}</span>
+      <div className={styles.gameInfo}>
+        <span className={styles.rank}>#{rank}</span>
+        <span className={styles.gameName}>{game.name}</span>
+      </div>
     </div>
   );
 }

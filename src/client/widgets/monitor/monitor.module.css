@@ -1,13 +1,33 @@
 .row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 0;
+  gap: 12px;
   min-width: 0;
+  animation: collapsibleItemReveal 0.25s backwards;
 }
 
+.row + .row {
+  margin-top: 8px;
+  border-top: 1px solid var(--color-separator);
+  padding-top: 8px;
+}
+
+.row:nth-child(2) { animation-delay: 30ms; }
+.row:nth-child(3) { animation-delay: 60ms; }
+.row:nth-child(4) { animation-delay: 90ms; }
+.row:nth-child(5) { animation-delay: 120ms; }
+.row:nth-child(6) { animation-delay: 150ms; }
+.row:nth-child(7) { animation-delay: 180ms; }
+.row:nth-child(8) { animation-delay: 210ms; }
+
 .compact .row {
-  padding: 2px 0;
+  padding: 0;
+}
+
+.compact .row + .row {
+  margin-top: 8px;
+  border-top: none;
+  padding-top: 0;
 }
 
 .compact .title,
@@ -16,19 +36,20 @@
   font-size: 12px;
 }
 
+/* glance monitor status icon: positive check up / negative warning down */
 .dot {
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
 .dotUp {
-  background: var(--color-text-green);
+  background: var(--color-positive);
 }
 
 .dotDown {
-  background: var(--color-text-red);
+  background: var(--color-negative);
 }
 
 .rowBody {
@@ -39,16 +60,24 @@
   overflow: hidden;
 }
 
+/* glance monitor.html: site title is size-h3 color-highlight link */
 .title {
-  font-size: 14px;
+  font-size: var(--font-size-h3);
   font-weight: 500;
-  color: var(--color-text-primary);
+  color: var(--color-text-base);
+  text-decoration: none;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.title:hover {
+  color: var(--color-text-highlight);
 }
 
 .url {
   font-size: 12px;
-  color: var(--color-text-secondary);
+  color: var(--color-text-subdue);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -58,6 +87,6 @@
   margin-left: auto;
   flex-shrink: 0;
   font-size: 12px;
-  color: var(--color-text-secondary);
+  color: var(--color-text-base-muted);
   font-variant-numeric: tabular-nums;
 }

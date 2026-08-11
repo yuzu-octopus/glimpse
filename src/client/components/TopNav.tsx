@@ -1,5 +1,6 @@
-import { useLocation } from 'react-router-dom';
-import { TopNav as AstryxTopNav, TopNavItem } from '@astryxdesign/core';
+import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Menu } from 'lucide-react';
 import { useConfig } from '../hooks/useConfig';
 import { ThemePicker } from './ThemePicker';
 import styles from './top-nav.module.css';
@@ -7,38 +8,88 @@ import styles from './top-nav.module.css';
 // glance docs §Pages & Columns: default 1600px / slim 1100px / wide 1920px.
 const NAV_WIDTHS = { default: 1600, slim: 1100, wide: 1920 } as const;
 
-/** Global top navigation: app title, page tabs, theme picker (step 5). */
-export function TopNav({ width }: { width?: 'default' | 'slim' | 'wide' }) {
+function useNavPages() {
   const state = useConfig();
-  const config = state.status === 'ready' ? state.config : undefined;
   const { pathname } = useLocation();
-  const pages = config?.pages ?? [];
+  const pages = state.status === 'ready' ? state.config.pages : [];
   const homeSlug = pages[0]?.slug;
-
   const isSelected = (slug: string) =>
     slug === homeSlug ? pathname === '/' || pathname === `/${slug}` : pathname === `/${slug}`;
+  return { pages, homeSlug, isSelected };
+}
 
+/** Desktop header: glance's widget-frame bar (logo + page tabs + theme
+ * picker, height 45px). The nav element carries the content-bounds width so
+ * the whole bar constrains like glance's header-container. */
+export function TopNav({ width }: { width?: 'default' | 'slim' | 'wide' }) {
+  const { pages, homeSlug, isSelected } = useNavPages();
   return (
-    <AstryxTopNav
-      heading="Glimpse"
+    <nav
+      aria-label="Pages"
+      className={styles.header}
       style={
-        width
-          ? { maxWidth: NAV_WIDTHS[width], marginInline: 'auto' }
-          : undefined
+        width ? { maxWidth: NAV_WIDTHS[width], marginInline: 'auto' } : undefined
       }
-      centerContent={
-        <nav className={styles.tabs} aria-label="Pages">
+    >
+      <span className={styles.logo}>Glimpse</span>
+      <div className={styles.navLinks}>
+        {pages.map((p) => (
+          <Link
+            key={p.slug}
+            to={p.slug === homeSlug ? '/' : `/${p.slug}`}
+            className={
+              isSelected(p.slug)
+                ? `${styles.navLink} ${styles.navLinkCurrent}`
+                : styles.navLink
+            }
+            aria-current={isSelected(p.slug) ? 'page' : undefined}
+          >
+            {p.name}
+          </Link>
+        ))}
+      </div>
+      <ThemePicker />
+    </nav>
+  );
+}
+
+/** Mobile bottom bar (glance mobile-navigation): icons row with the
+ * expandable page-links list; shown <768px, hidden on desktop via CSS. */
+export function MobileNavigation() {
+  const { pages, homeSlug, isSelected } = useNavPages();
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className={styles.mobileNav} data-testid="mobile-navigation">
+      <div className={styles.mobileNavIcons}>
+        <button
+          type="button"
+          className={styles.mobileNavToggle}
+          aria-label="Pages"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((v) => !v)}
+        >
+          <Menu size={18} aria-hidden="true" />
+        </button>
+        <ThemePicker />
+      </div>
+      {expanded ? (
+        <div className={styles.mobileNavLinks}>
           {pages.map((p) => (
-            <TopNavItem
+            <Link
               key={p.slug}
-              href={p.slug === homeSlug ? '/' : `/${p.slug}`}
-              label={p.name}
-              isSelected={isSelected(p.slug)}
-            />
+              to={p.slug === homeSlug ? '/' : `/${p.slug}`}
+              className={
+                isSelected(p.slug)
+                  ? `${styles.mobileNavLink} ${styles.mobileNavLinkCurrent}`
+                  : styles.mobileNavLink
+              }
+              aria-current={isSelected(p.slug) ? 'page' : undefined}
+            >
+              {p.name}
+            </Link>
           ))}
-        </nav>
-      }
-      endContent={<ThemePicker />}
-    />
+        </div>
+      ) : null}
+    </div>
   );
 }

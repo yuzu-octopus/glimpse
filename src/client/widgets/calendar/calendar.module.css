@@ -1,3 +1,11 @@
+.month {
+  font-size: var(--font-size-h4);
+  font-weight: 600;
+  text-transform: capitalize;
+  color: var(--color-text-highlight);
+  margin-bottom: 15px;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -6,34 +14,23 @@
 }
 
 .dow {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-secondary);
-  padding: 4px 0;
+  font-size: var(--font-size-h6);
+  color: var(--color-text-subdue);
+  margin-bottom: 3px;
 }
 
 .day {
-  font-size: 13px;
+  font-size: var(--font-size-base);
+  color: var(--color-text-base);
   padding: 4px 0;
-  border-radius: var(--radius-inner);
+  border-radius: var(--border-radius);
 }
 
 .today {
-  background: var(--color-accent);
-  color: var(--color-on-accent);
-  font-weight: 600;
+  background-color: var(--color-popover-border);
+  color: var(--color-text-highlight);
 }
 
 .other {
-  color: var(--color-text-disabled);
-}
-
-.month {
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: capitalize;
-  color: var(--color-text-secondary);
-  margin-bottom: 6px;
+  color: var(--color-text-subdue);
 }

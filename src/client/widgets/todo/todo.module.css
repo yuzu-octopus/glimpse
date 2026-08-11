@@ -1,26 +1,64 @@
 .form {
   display: flex;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 0;
+  gap: 10px;
+  padding: 5px 0;
+}
+
+.item + .item {
+  border-top: 1px solid var(--color-separator);
+}
+
+.checkbox {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--color-text-subdue);
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.2s;
+}
+
+.checkbox::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 1px;
+  background: var(--color-primary);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.checkbox:checked::after {
+  opacity: 1;
+}
+
+.checkbox:focus-visible {
+  outline: none;
+  border-color: var(--color-primary);
 }
 
 .itemText {
   flex: 1;
-  font-size: 14px;
+  font-size: var(--font-size-base);
+  color: var(--color-text-base);
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
 .done {
   text-decoration: line-through;
-  color: var(--color-text-disabled);
+  color: var(--color-text-subdue);
 }
 
 .editInput {
@@ -32,17 +70,24 @@
   padding: 2px;
   border: none;
   background: transparent;
-  color: var(--color-text-secondary);
+  color: var(--color-text-subdue);
   cursor: pointer;
-  border-radius: var(--radius-inner);
+  border-radius: var(--border-radius);
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.item:hover .iconBtn,
+.item:focus-within .iconBtn {
+  opacity: 1;
 }
 
 .iconBtn:hover {
-  color: var(--color-text-primary);
-  background: var(--color-overlay-hover);
+  color: var(--color-text-highlight);
+  background: var(--color-widget-background-highlight);
 }
 
 .empty {
-  font-size: 13px;
-  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+  color: var(--color-text-subdue);
 }

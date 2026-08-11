@@ -1,15 +1,70 @@
+/* Glance rss-list / rss-detailed-list / rss-horizontal-cards look. */
+
 .row {
-  padding: 5px 0;
+  display: flex;
+  gap: 15px; /* glance .flex.gap-15 */
+  align-items: flex-start;
   min-width: 0;
+}
+
+/* glance .list.list-with-separator */
+.row + .row {
+  margin-top: 5px;
+  border-top: 1px solid var(--color-separator);
+  padding-top: 5px;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* glance .thumbnail-container + .rss-detailed-thumbnail */
+.thumbContainer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 3px;
+  border: 1px solid var(--color-separator);
+  border-radius: var(--border-radius);
+}
+
+.thumb {
+  display: block;
+  aspect-ratio: 3 / 2;
+  height: 87px;
+  border-radius: var(--border-radius);
+  object-fit: cover;
+  /* glance .thumbnail */
+  filter: grayscale(0.2) contrast(0.9);
+  opacity: 0.8;
+  transition: filter 0.2s, opacity 0.2s;
+}
+
+/* glance .thumbnail-parent:hover .thumbnail */
+.row:hover .thumb {
+  filter: none;
+  opacity: 1;
+}
+
+.thumbPlaceholder {
+  width: 17.5px;
+  height: 17.5px;
+  margin: 5px;
+  flex-shrink: 0;
 }
 
 .title {
   display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-primary);
+  font-size: var(--font-size-h4); /* glance .size-title-dynamic (small column) */
+  color: var(--color-primary); /* glance .color-primary-if-not-visited */
   text-decoration: none;
   overflow: hidden;
+}
+
+.titleDetailed {
+  font-size: var(--font-size-h3); /* glance .size-h3 */
 }
 
 .titleSingle {
@@ -24,72 +79,109 @@
 }
 
 .title:hover {
-  color: var(--color-text-accent);
+  color: var(--color-text-highlight);
 }
 
-.chips {
+.meta {
   display: flex;
-  flex-wrap: wrap;
   gap: 4px;
-  margin-top: 3px;
-}
-
-.chip {
-  font-size: 11px;
-  line-height: 1;
-  padding: 3px 7px;
-  border-radius: 999px;
-  background: var(--color-background-muted);
-  color: var(--color-text-secondary);
+  align-items: center;
+  margin-top: 2px;
+  font-size: var(--font-size-base);
+  color: var(--color-text-base-muted);
 }
 
 .desc {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  margin-top: 2px;
+  margin-top: 7px;
+  max-width: 550px;
+  color: var(--color-text-paragraph);
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
-.meta {
+/* glance .attachments */
+.chips {
   display: flex;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  margin-top: 1px;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
 }
 
+.chip {
+  border-radius: var(--border-radius);
+  padding: 1px 5px;
+  font-size: var(--font-size-h6);
+  background-color: var(--color-separator);
+}
+
+/* glance .cards-horizontal */
 .cardRow {
   display: flex;
-  gap: 10px;
+  gap: calc(var(--widget-content-vertical-padding) * 0.7);
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  padding-bottom: 4px;
+  scrollbar-width: thin;
+  padding-bottom: 7px;
 }
 
+/* glance .card.widget-content-frame */
 .card {
   flex: 0 0 150px;
   scroll-snap-align: start;
-  display: grid;
-  gap: 4px;
-  text-decoration: none;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  text-decoration: none;
+  background: var(--color-widget-background);
+  border: 1px solid var(--color-widget-content-border);
+  border-radius: var(--border-radius);
+  overflow: hidden;
 }
 
-.cardThumb,
-.cardThumbPlaceholder {
+.cardThumb {
+  display: block;
   width: 100%;
   object-fit: cover;
-  border-radius: var(--radius-inner);
-  background: var(--color-background-muted);
+  /* glance .thumbnail */
+  filter: grayscale(0.2) contrast(0.9);
+  opacity: 0.8;
+  transition: filter 0.2s, opacity 0.2s;
 }
 
+.card:hover .cardThumb {
+  filter: none;
+  opacity: 1;
+}
+
+.cardThumbPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-widget-background-highlight);
+}
+
+.cardThumbPlaceholderIcon {
+  width: 20px;
+  height: 20px;
+}
+
+/* glance .padding-inline-widget + .margin-bottom-widget */
+.cardContent {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  padding: 0 10px 10px;
+}
+
+/* glance .text-truncate-3-lines + .color-primary-if-not-visited */
 .cardTitle {
-  font-size: 12px;
-  line-height: 1.3;
-  color: var(--color-text-primary);
+  margin-top: 7px;
+  margin-bottom: auto;
+  font-size: var(--font-size-base);
+  color: var(--color-primary);
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -97,5 +189,81 @@
 }
 
 .card:hover .cardTitle {
-  color: var(--color-text-accent);
+  color: var(--color-text-highlight);
+}
+
+.cardMeta {
+  display: flex;
+  gap: 4px;
+  margin-top: 5px;
+  font-size: var(--font-size-base);
+  color: var(--color-text-base-muted);
+}
+
+/* glance .rss-card-2 */
+.card2 {
+  position: relative;
+  flex: 0 0 150px;
+  scroll-snap-align: start;
+  min-width: 0;
+  height: 270px;
+  text-decoration: none;
+  background: var(--color-widget-background);
+  border: 1px solid var(--color-widget-content-border);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.card2::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+    0deg,
+    var(--color-widget-background),
+    color-mix(in srgb, var(--color-widget-background) 80%, transparent) 60px,
+    transparent 140px
+  );
+  z-index: 2;
+}
+
+.card2Thumb {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: calc(var(--border-radius) + 1px);
+  opacity: 0.9;
+  z-index: 1;
+}
+
+.card2ThumbPlaceholder {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 30px;
+  z-index: 1;
+}
+
+.card2Content {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 10px;
+  padding-inline: 10px;
+  z-index: 3;
+}
+
+.card2Title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-base);
+  color: var(--color-primary);
+}
+
+.card2:hover .card2Title {
+  color: var(--color-text-highlight);
 }

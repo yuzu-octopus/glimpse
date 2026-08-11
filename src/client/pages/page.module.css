@@ -1,39 +1,69 @@
+/* glance site.css/page-content.html port. `.page` doubles as the
+   content-bounds wrapper (maxWidth inline from the page width prop). */
 .page {
   margin: 0 auto;
-  padding: 16px;
+  padding: var(--widget-gap) var(--content-bounds-padding);
   width: 100%;
+  animation: pageContentEntrance 0.3s cubic-bezier(0.25, 1, 0.5, 1) backwards;
 }
 
 .centered {
-  min-height: calc(100vh - 64px);
+  min-height: calc(100vh - 56px);
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
-/* Page-name header for mobile only (glance `show-mobile-header`). */
+/* Page-name header for mobile only (glance `show-mobile-header` →
+   mobile-reachability-header: sticky top strip). */
 .mobileHeader {
   display: none;
-  font-size: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  height: var(--mobile-navigation-height);
+  align-items: center;
+  justify-content: center;
+  background: var(--color-widget-background);
+  border-bottom: 1px solid var(--color-separator);
+  font-size: var(--font-size-h3);
   font-weight: 600;
-  margin-bottom: 12px;
+  color: var(--color-text-highlight);
+  margin: calc(-1 * var(--widget-gap)) calc(-1 * var(--content-bounds-padding))
+    var(--widget-gap);
 }
 
 .headWidgets {
   display: grid;
-  gap: 12px;
+  gap: var(--widget-gap);
+  margin-bottom: var(--widget-gap);
 }
 
+/* page-columns: flex row, gap var(--widget-gap). The inline
+   gridTemplateColumns below is kept verbatim for the pinned test assertion;
+   it is inert on a flex container. */
 .columns {
-  display: grid;
-  gap: 12px;
-  align-items: start;
-  margin-top: 16px;
+  display: flex;
+  gap: var(--widget-gap);
+}
+
+.column {
+  min-width: 0;
+}
+
+.fullColumn {
+  width: 100%;
+  min-width: 0;
+}
+
+.smallColumn {
+  width: 300px;
+  flex-shrink: 0;
 }
 
 .columnWidgets {
   display: grid;
-  gap: 12px;
+  gap: var(--widget-gap);
   min-width: 0;
 }
 
@@ -44,19 +74,22 @@
   min-width: 0;
 }
 
+/* Mobile column toggle header (glance look: uppercase + separator). */
 .mobileToggle {
   display: none;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   width: 100%;
-  padding: 10px 4px;
+  padding: 5px 0;
+  margin-bottom: var(--widget-gap);
   border: none;
+  border-bottom: 1px solid var(--color-separator);
   background: transparent;
-  font-size: 12px;
+  font-size: var(--font-size-h5);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-text-secondary);
+  color: var(--color-text-base);
   cursor: pointer;
   text-align: start;
 }
@@ -65,31 +98,78 @@
   transform: rotate(180deg);
 }
 
-.column {
-  min-width: 0;
-}
-
 .splitColumn {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: var(--widget-gap);
   align-items: start;
 }
 
+/* Group tabs (widget-group.css port): uppercase, subdue, dotted underline
+   on the current tab. */
+.groupTabs {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding: var(--widget-content-vertical-padding)
+    var(--widget-content-horizontal-padding);
+  border-bottom: 1px solid var(--color-widget-content-border);
+  font-size: var(--font-size-h4);
+}
+
+.groupTabs button,
+.groupTabs a {
+  background: none;
+  border: none;
+  border-bottom: 1px dotted transparent;
+  font: inherit;
+  text-transform: uppercase;
+  color: var(--color-text-subdue);
+  line-height: calc(1.6em - 1px);
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition: color 0.3s, border-color 0.3s;
+}
+
+.groupTabs button:hover:not(.groupTabCurrent),
+.groupTabs a:hover:not(.groupTabCurrent) {
+  color: var(--color-text-base);
+}
+
+.groupTabs .groupTabCurrent {
+  border-bottom-color: var(--color-text-base-muted);
+  color: var(--color-text-base);
+}
+
+/* Hide the Astryx hover-pill (first child) and selected indicator (last
+   child) spans — glance group tabs are plain text with the dotted border. */
+.groupTabs button > span:first-child,
+.groupTabs button > span:last-child,
+.groupTabs a > span:first-child,
+.groupTabs a > span:last-child {
+  display: none;
+}
+
 .tabContent {
-  padding: 10px 14px 12px;
+  padding: var(--widget-content-padding);
   min-width: 0;
 }
 
 @media (max-width: 768px) {
   .columns {
-    grid-template-columns: minmax(0, 1fr) !important;
+    flex-direction: column;
+  }
+  .smallColumn {
+    width: 100%;
+    flex-shrink: 1;
   }
   .mobileToggle {
     display: inline-flex;
   }
   .mobileHeader {
-    display: block;
+    display: flex;
   }
   .splitColumn {
     grid-template-columns: minmax(0, 1fr);

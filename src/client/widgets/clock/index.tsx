@@ -75,26 +75,27 @@ export function Clock({ config }: WidgetComponentProps) {
       <div className={styles.time}>{formatTime(now, undefined, hour12)}</div>
       <div className={styles.date}>{date}</div>
       {cfg.timezones.length > 0 ? (
-        <div className={styles.zones}>
-          {cfg.timezones.map((z) => {
-            const badge = offsetBadge(z.timezone, now);
-            return (
-              <div key={z.timezone} className={styles.zone}>
-                <span className={styles.zoneLabel}>
-                  {z.label ?? z.timezone}
-                </span>
-                <span className={styles.zoneRight}>
+        <>
+          <div className={styles.separator} />
+          <div className={styles.zones}>
+            {cfg.timezones.map((z) => {
+              const badge = offsetBadge(z.timezone, now);
+              return (
+                <div key={z.timezone} className={styles.zone}>
+                  <span className={styles.zoneLabel}>
+                    {z.label ?? z.timezone}
+                  </span>
                   <span className={styles.zoneOffset} title={badge.title}>
                     {badge.label}
                   </span>
                   <span className={styles.zoneTime}>
                     {formatTime(now, z.timezone, hour12)}
                   </span>
-                </span>
-              </div>
-            );
-          })}
-        </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       ) : null}
     </WidgetChrome>
   );

@@ -1,6 +1,6 @@
 import { Route, Routes, useLocation, useParams } from 'react-router-dom';
-import { Banner, Center, Spinner } from '@astryxdesign/core';
-import { TopNav } from './client/components/TopNav';
+import { Banner } from '@astryxdesign/core';
+import { MobileNavigation, TopNav } from './client/components/TopNav';
 import { useConfig } from './client/hooks/useConfig';
 import { PageView } from './client/pages/PageView';
 import styles from './app.module.css';
@@ -16,19 +16,19 @@ export default function App() {
 
   if (state.status === 'loading') {
     return (
-      <Center minHeight="100vh">
-        <Spinner size="lg" />
-      </Center>
+      <div className={styles.loadingContainer}>
+        <div className={styles.loadingIcon} role="status" aria-label="Loading" />
+      </div>
     );
   }
   if (state.status === 'error') {
     return (
-      <Center minHeight="100vh">
+      <div className={styles.loadingContainer}>
         <Banner
           status="error"
           title={state.error ?? 'Configuration failed to load'}
         />
-      </Center>
+      </div>
     );
   }
 
@@ -45,18 +45,23 @@ export default function App() {
     <>
       <div
         data-testid="top-nav-wrapper"
-        className={
-          activePage['hide-desktop-navigation'] ? styles.hideDesktopNav : undefined
-        }
+        className={[
+          styles.headerContainer,
+          activePage['hide-desktop-navigation'] ? styles.hideDesktopNav : null,
+        ]
+          .filter(Boolean)
+          .join(' ')}
       >
         <TopNav width={activePage['desktop-navigation-width']} />
       </div>
+      <MobileNavigation />
       <main>
         <Routes>
           <Route path="/" element={<PageView slug={homeSlug} />} />
           <Route path="/:slug" element={<RoutePage />} />
         </Routes>
       </main>
+      <div className={styles.mobileNavigationOffset} />
     </>
   );
 }

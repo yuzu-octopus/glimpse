@@ -9,9 +9,9 @@ function Iframe({ config }: WidgetComponentProps) {
     <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
       <iframe
         src={cfg.source}
-        height={cfg.height ?? 300}
         className={styles.frame}
         title={cfg.title ?? 'Embedded content'}
+        style={{ minHeight: cfg.height ?? 300 }}
       />
     </WidgetChrome>
   );
@@ -31,3 +31,5 @@ function Html({ config }: WidgetComponentProps) {
 
 registerWidgetComponent('iframe', Iframe);
 registerWidgetComponent('html', Html);
+
+export default Iframe;

@@ -1,11 +1,45 @@
-/* TopNav wrapper: hidden on desktop when the page sets
-   `hide-desktop-navigation` (glance keeps it visible on mobile). */
+/* TopNav wrapper: glance header-container (margin-top) — hidden on desktop
+   when the page sets `hide-desktop-navigation` (glance keeps it visible on
+   mobile). */
+.headerContainer {
+  margin-top: calc(var(--widget-gap) / 2);
+}
+
 .hideDesktopNav {
+  display: none;
+}
+
+/* glance loading-icon: centered, 1.5em ring spinning via the global
+   loadingIconSpin keyframes. */
+.loadingContainer {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loadingIcon {
+  width: 1.5em;
+  height: 1.5em;
+  border: 0.25em solid var(--color-widget-content-border);
+  border-top-color: var(--color-widget-background-highlight);
+  border-radius: 50%;
+  animation: loadingIconSpin 800ms infinite linear;
+}
+
+/* glance mobile-navigation-offset: keeps page content clear of the fixed
+   bottom bar on mobile only. */
+.mobileNavigationOffset {
   display: none;
 }
 
 @media (max-width: 768px) {
   .hideDesktopNav {
     display: block;
+  }
+  .mobileNavigationOffset {
+    display: block;
+    height: var(--mobile-navigation-height);
+    flex-shrink: 0;
   }
 }

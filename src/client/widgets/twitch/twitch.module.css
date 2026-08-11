@@ -1,22 +1,42 @@
 .row {
   display: flex;
-  gap: 10px;
-  padding: 5px 0;
+  gap: 12px;
   min-width: 0;
+  animation: collapsibleItemReveal 0.25s backwards;
 }
 
-.offline {
-  opacity: 0.6;
+.row + .row {
+  margin-top: 8px;
+  border-top: 1px solid var(--color-separator);
+  padding-top: 8px;
 }
 
+.row:nth-child(2) { animation-delay: 30ms; }
+.row:nth-child(3) { animation-delay: 60ms; }
+.row:nth-child(4) { animation-delay: 90ms; }
+.row:nth-child(5) { animation-delay: 120ms; }
+.row:nth-child(6) { animation-delay: 150ms; }
+.row:nth-child(7) { animation-delay: 180ms; }
+.row:nth-child(8) { animation-delay: 210ms; }
+
+/* glance .twitch-channel-avatar-container: circle, subdue border,
+   positive border + LIVE badge when live */
 .rowThumb,
 .rowThumbPlaceholder {
-  width: 60px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
   object-fit: cover;
-  border-radius: 4px;
-  background: var(--color-background-muted);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px solid var(--color-text-subdue);
+  padding: 2px;
+  background: var(--color-widget-background-highlight);
+}
+
+.live .rowThumb,
+.live .rowThumbPlaceholder {
+  border-color: var(--color-positive);
 }
 
 .rowBody {
@@ -30,29 +50,42 @@
   min-width: 0;
 }
 
+/* glance: name is size-h3, color-highlight when live */
 .displayName {
-  font-size: 14px;
+  font-size: var(--font-size-h3);
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--color-text-base);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.live .displayName {
+  color: var(--color-text-highlight);
+}
+
+/* glance twitch LIVE badge: positive bg, widget-bg text, h6, radius */
 .liveBadge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+  background: var(--color-positive);
+  color: var(--color-widget-background);
+  font-size: var(--font-size-h6);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  border-radius: var(--border-radius);
+  padding: 1px 3px;
 }
 
 .title {
   font-size: 12px;
-  color: var(--color-text-secondary);
+  color: var(--color-text-base-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
 .meta {
@@ -60,47 +93,78 @@
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: var(--color-text-secondary);
-  margin-top: 1px;
+  color: var(--color-text-base-muted);
+  margin-top: 2px;
 }
 
 .viewers {
   display: inline-flex;
   align-items: center;
   gap: 3px;
+  color: var(--color-text-subdue);
 }
 
-.gameCard {
-  display: grid;
-  grid-template-columns: 44px 1fr;
-  grid-template-rows: auto auto;
-  column-gap: 10px;
-  align-items: center;
-  padding: 5px 0;
-  min-width: 0;
+.offline {
+  font-size: 12px;
+  color: var(--color-text-subdue);
+  margin-top: 2px;
 }
+
+/* games list — glance .twitch-category: thumb 50px 3/4, name color-highlight */
+.gameCard {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  animation: collapsibleItemReveal 0.25s backwards;
+}
+
+.gameCard + .gameCard {
+  margin-top: 8px;
+  border-top: 1px solid var(--color-separator);
+  padding-top: 8px;
+}
+
+.gameCard:nth-child(2) { animation-delay: 30ms; }
+.gameCard:nth-child(3) { animation-delay: 60ms; }
+.gameCard:nth-child(4) { animation-delay: 90ms; }
+.gameCard:nth-child(5) { animation-delay: 120ms; }
+.gameCard:nth-child(6) { animation-delay: 150ms; }
+.gameCard:nth-child(7) { animation-delay: 180ms; }
+.gameCard:nth-child(8) { animation-delay: 210ms; }
 
 .gameThumb,
 .gameThumbPlaceholder {
-  grid-row: 1 / 3;
-  width: 44px;
-  height: 58px;
+  width: 48px;
+  aspect-ratio: 3 / 4;
+  flex-shrink: 0;
   object-fit: cover;
-  border-radius: 4px;
-  background: var(--color-background-muted);
+  border-radius: var(--border-radius);
+  filter: grayscale(0.2) contrast(0.9);
+  opacity: 0.8;
+  transition: filter 0.2s, opacity 0.2s;
+  background: var(--color-widget-background-highlight);
+}
+
+.gameCard:hover .gameThumb {
+  opacity: 1;
+  filter: none;
+}
+
+.gameInfo {
+  min-width: 0;
 }
 
 .rank {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
+  font-size: 11px;
+  color: var(--color-text-subdue);
   font-variant-numeric: tabular-nums;
 }
 
 .gameName {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-text-primary);
+  display: block;
+  font-size: var(--font-size-h3);
+  color: var(--color-text-highlight);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

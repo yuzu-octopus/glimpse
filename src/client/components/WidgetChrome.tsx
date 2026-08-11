@@ -1,5 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { Banner, Button, Card, Link, Skeleton } from '@astryxdesign/core';
+import { Banner, Card, Link, Skeleton } from '@astryxdesign/core';
+import { ChevronRight } from 'lucide-react';
 import styles from './widget-chrome.module.css';
 
 interface WidgetChromeProps {
@@ -53,7 +54,9 @@ export function WidgetChrome({
       padding={0}
     >
       {!hideHeader && title ? (
-        <div className={styles.header}>
+        <div
+          className={error ? `${styles.header} ${styles.errorHeader}` : styles.header}
+        >
           <span className={styles.titleRow}>
             {titleUrl ? (
               <Link href={titleUrl} className={styles.title} hasUnderline={false}>
@@ -80,29 +83,29 @@ export function WidgetChrome({
             <Skeleton width="97%" height={14} />
           </div>
         ) : error ? (
-          <div className={styles.error}>
-            <Banner status="error" title={error} />
-          </div>
+          <Banner status="error" title={error} />
         ) : (
           <>
             {visible}
             {hasCollapse ? (
               expanded ? (
-                <Button
-                  label="Show less"
-                  variant="ghost"
-                  size="sm"
+                <button
+                  type="button"
+                  className={`${styles.more} ${styles.moreExpanded}`}
                   onClick={collapse}
-                  className={styles.more}
-                />
+                >
+                  Show less
+                  <ChevronRight size={12} className={styles.chevron} />
+                </button>
               ) : (
-                <Button
-                  label={`Show more (${list.length - count})`}
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setExpanded(true)}
+                <button
+                  type="button"
                   className={styles.more}
-                />
+                  onClick={() => setExpanded(true)}
+                >
+                  {`Show more (${list.length - count})`}
+                  <ChevronRight size={12} className={styles.chevron} />
+                </button>
               )
             ) : null}
           </>

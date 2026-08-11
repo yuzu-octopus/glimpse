@@ -1,5 +1,7 @@
+/* Glance bookmarks look: group headers + cards-grid of icon + title. */
+
 .group {
-  margin-bottom: 10px;
+  margin-bottom: 12px; /* glance .list-gap-24 between groups */
 }
 
 .group:last-child {
@@ -7,62 +9,72 @@
 }
 
 .groupTitle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-secondary);
-  margin-bottom: 4px;
+  font-size: var(--font-size-h3); /* glance .size-h3 */
+  color: var(--color-primary); /* glance --bookmarks-group-color default */
+  margin-bottom: 3px; /* glance .margin-bottom-3 */
 }
 
-.groupDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
+/* glance .cards-grid (6 per row, collapses with container width) */
 .links {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+  gap: 7px;
 }
 
-.linkRow {
+.linkCard {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 4px 0;
+  gap: 4px;
+  padding: 5px;
   min-width: 0;
+  border-radius: var(--border-radius);
+  text-decoration: none;
+}
+
+.linkCard:hover {
+  background: var(--color-widget-background-highlight);
+}
+
+/* glance .bookmarks-icon-container */
+.iconContainer {
+  margin-block: 1px;
+  background-color: var(--color-widget-background-highlight);
+  border-radius: var(--border-radius);
+  padding: 5px;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+/* glance .bookmarks-icon */
+.icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  opacity: 0.8;
 }
 
 .linkTitle {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-primary);
+  max-width: 100%;
+  font-size: var(--font-size-h5);
+  color: var(--color-text-highlight);
+  text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.linkRow:hover .linkTitle {
-  color: var(--color-text-accent);
 }
 
 .linkDesc {
-  font-size: 12px;
-  color: var(--color-text-secondary);
+  max-width: 100%;
+  font-size: var(--font-size-h6);
+  color: var(--color-text-paragraph);
+  text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.arrow {
-  flex-shrink: 0;
-  opacity: 0.6;
-}
-
 .empty {
-  font-size: 13px;
-  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+  color: var(--color-text-base-muted);
 }

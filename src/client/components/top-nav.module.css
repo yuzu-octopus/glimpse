@@ -1,4 +1,132 @@
-.tabs {
+/* glance site.css header port: the whole bar is a widget-frame card
+   (header + logo + nav links + theme picker, height 45px, gap 25px). */
+.header {
   display: flex;
-  gap: 2px;
+  height: 45px;
+  gap: 25px;
+  padding-inline: var(--widget-content-horizontal-padding);
+  background: var(--color-widget-background);
+  border: 1px solid var(--color-widget-content-border);
+  border-radius: var(--border-radius);
+  box-shadow: 0 3px 0 0 var(--color-widget-shadow);
+}
+
+.logo {
+  height: 100%;
+  flex-shrink: 0;
+  line-height: 45px;
+  font-size: 20px;
+  color: var(--color-text-highlight);
+  border-right: 1px solid var(--color-widget-content-border);
+  padding-right: var(--widget-content-horizontal-padding);
+}
+
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.navLinks::-webkit-scrollbar {
+  display: none;
+}
+
+.navLink {
+  display: block;
+  height: 100%;
+  line-height: 45px;
+  flex-shrink: 0;
+  border-bottom: 2px solid transparent;
+  transition: color 0.3s, border-color 0.3s;
+  font-size: var(--font-size-h3);
+  color: var(--color-text-base);
+  text-decoration: none;
+}
+
+.navLink:hover:not(.navLinkCurrent) {
+  border-bottom-color: var(--color-text-subdue);
+  color: var(--color-text-highlight);
+}
+
+.navLinkCurrent {
+  border-bottom-color: var(--color-primary);
+  color: var(--color-text-highlight);
+}
+
+/* glance mobile.css bottom bar: hidden on desktop, fixed bar <768px with an
+   expandable page-links list above the icons row (column-reverse keeps the
+   icons anchored to the bottom edge). */
+.mobileNav {
+  display: none;
+}
+
+.mobileNavIcons {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: var(--mobile-navigation-height);
+  flex-shrink: 0;
+}
+
+.mobileNavToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--color-text-base);
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.mobileNavToggle:hover {
+  color: var(--color-text-highlight);
+}
+
+.mobileNavLinks {
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  gap: 25px;
+  padding: 20px var(--content-bounds-padding);
+  border-top: 1px solid var(--color-widget-content-border);
+  border-bottom: 1px solid var(--color-widget-content-border);
+}
+
+.mobileNavLink {
+  flex-shrink: 0;
+  font-size: var(--font-size-h3);
+  color: var(--color-text-base);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.mobileNavLink:hover:not(.mobileNavLinkCurrent) {
+  color: var(--color-text-highlight);
+}
+
+.mobileNavLinkCurrent {
+  color: var(--color-text-highlight);
+}
+
+@media (max-width: 768px) {
+  .mobileNav {
+    display: flex;
+    flex-direction: column-reverse;
+    position: fixed;
+    bottom: 0;
+    left: var(--content-bounds-padding);
+    right: var(--content-bounds-padding);
+    z-index: 11;
+    background-color: var(--color-widget-background);
+    border: 1px solid var(--color-widget-content-border);
+    border-bottom: 0;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+  }
 }

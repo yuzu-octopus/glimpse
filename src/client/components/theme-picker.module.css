@@ -1,15 +1,19 @@
+/* Theme picker — glance site.css .theme-choices / .theme-preset /
+ * .theme-color / .current-theme-preview port. */
+
 .panel {
   padding: 12px;
   width: 260px;
 }
 
 .modeRow {
-  margin-bottom: 10px;
+  margin-bottom: 14px;
 }
 
 .list {
-  display: grid;
-  gap: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   max-height: 320px;
   overflow-y: auto;
 }
@@ -19,39 +23,105 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-text-secondary);
-  padding: 8px 8px 2px;
+  color: var(--color-text-subdue);
+  padding: 0 8px 8px;
 }
 
-.row {
+/* glance .theme-choices: 2 columns, 3 when the group has a third entry. */
+.choices {
+  --presets-per-row: 2;
+  display: grid;
+  grid-template-columns: repeat(var(--presets-per-row), 1fr);
+  align-items: center;
+  gap: 13.5px;
+}
+
+.choices:has(> :nth-child(3)) {
+  --presets-per-row: 3;
+}
+
+/* glance .theme-preset */
+.preset {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  width: 100%;
-  text-align: start;
-  padding: 6px 8px;
-  border-radius: var(--radius-inner);
+  justify-content: center;
+  gap: 5px;
+  height: 20px;
+  padding-inline: 5px;
   border: none;
-  background: transparent;
-  color: var(--color-text-primary);
+  border-radius: 3px;
+  background-color: var(--color);
+  color: var(--color-text-base);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--font-size-base);
   cursor: pointer;
+  min-width: 0;
 }
 
-.row:hover {
-  background: var(--color-overlay-hover);
+/* glance .theme-choices .theme-preset::before — selection/hover ring. */
+.preset::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 7px;
+  border: 2px solid transparent;
+  transition: border-color 0.3s;
 }
 
-.row[data-selected='true'] {
-  color: var(--color-text-accent);
+.preset:hover::before {
+  border-color: var(--color-text-subdue);
 }
 
+.preset.current::before {
+  border-color: var(--color-text-base);
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* glance .theme-color */
 .swatch {
+  background-color: var(--color);
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* glance .current-theme-preview: dimmed until hovered or popover open. */
+.trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 20px;
+  padding-inline: 5px;
+  border: none;
+  border-radius: 3px;
+  background-color: var(--color);
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 0.3s;
+}
+
+.trigger:hover,
+.trigger.popoverActive {
+  opacity: 1;
+}
+
+/* glance .theme-preset-light (light-authored active theme). */
+.triggerLight {
+  gap: 3px;
+  height: 18px;
+}
+
+.triggerLight .swatch {
   width: 10px;
   height: 10px;
-  border-radius: 50%;
-  border: 1px solid var(--color-border);
-  flex-shrink: 0;
+  border-radius: 3px;
 }

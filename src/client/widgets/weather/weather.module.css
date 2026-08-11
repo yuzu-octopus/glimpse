@@ -1,12 +1,9 @@
-.location {
-  font-size: 13px;
-  color: var(--color-text-secondary);
-  margin-bottom: 6px;
-}
-
+/* Icon + big temperature (glance weather has no big temp; the largest
+   weather text is size-h2, so keep our headline display) */
 .current {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
 }
 
@@ -14,29 +11,71 @@
   font-size: 34px;
   font-weight: 600;
   line-height: 1;
+  color: var(--color-text-highlight);
 }
 
 .currentIcon {
-  color: var(--color-text-accent);
+  color: var(--color-text-highlight);
 }
 
-.details {
+/* glance weather.html: condition = size-h2, feels-like = size-h4 */
+.condition {
+  font-size: var(--font-size-h2);
+  color: var(--color-text-paragraph);
+  text-align: center;
+  margin-top: 2px;
+}
+
+.feelsLike {
+  font-size: var(--font-size-h4);
+  color: var(--color-text-base-muted);
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* glance weather.html: location row, size-h5 + location-icon, margin-top-15 */
+.location {
   display: flex;
-  gap: 12px;
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  margin: 4px 0 10px;
-}
-
-.detail {
-  display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 7px;
+  font-size: var(--font-size-h5);
+  margin-top: 15px;
 }
 
+.locationIcon {
+  width: 0.8em;
+  height: 0.8em;
+  border-radius: 0 50% 50% 50%;
+  background-color: currentColor;
+  transform: rotate(225deg) translate(0.1em, 0.1em);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.locationIcon::after {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  width: 0.4em;
+  height: 0.4em;
+  border-radius: 50%;
+  background-color: var(--color-widget-background);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.locationText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Daily forecast: glance .list-with-separator (1px --color-separator, 5px gaps) */
 .daily {
   display: grid;
-  gap: 3px;
+  margin-top: 15px;
 }
 
 .dayRow {
@@ -44,23 +83,33 @@
   grid-template-columns: 48px 20px 1fr;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--font-size-base);
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid var(--color-separator);
+}
+
+.dayRow:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
 }
 
 .dayName {
-  color: var(--color-text-secondary);
+  color: var(--color-text-base);
 }
 
 .temps {
   text-align: end;
   font-variant-numeric: tabular-nums;
+  color: var(--color-text-highlight);
 }
 
 .low {
-  color: var(--color-text-secondary);
+  color: var(--color-text-subdue);
 }
 
 .empty {
   font-size: 13px;
-  color: var(--color-text-secondary);
+  color: var(--color-text-base-muted);
 }
