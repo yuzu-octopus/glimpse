@@ -1,14 +1,77 @@
+/* Glimpse global styles — glance-compatible surface (main.css + site.css port).
+ * The :root block holds literal fallbacks for the default dark ramp
+ * (bg 240 8 9, primary 43 50 70, negative 0 70 70) so isolated renders and
+ * pre-theme paint have real values; the Theme provider overrides them at
+ * runtime via its own :scope tokens. */
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+}
+
 :root {
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* dimensions */
+  --widget-gap: 23px;
+  --widget-content-vertical-padding: 15px;
+  --widget-content-horizontal-padding: 17px;
+  --widget-content-padding: 15px 17px;
+  --content-bounds-padding: 15px;
+  --border-radius: 5px;
+  --mobile-navigation-height: 50px;
+  --font-size-h1: 17px;
+  --font-size-h2: 16px;
+  --font-size-h3: 15px;
+  --font-size-h4: 14px;
+  --font-size-base: 13px;
+  --font-size-h5: 12px;
+  --font-size-h6: 11px;
+
+  /* default dark ramp (glance defaults: bg 240 8 9, primary 43 50 70,
+     negative 0 70 70; positive defaults to primary) */
+  --color-background: #151519;
+  --color-widget-background: #17171c;
+  --color-widget-content-border: #1e1e24;
+  --color-widget-background-highlight: #1e1e24;
+  --color-separator: #1e1e24;
+  --color-popover-background: #1b1b22;
+  --color-popover-border: #31313a;
+  --color-progress-border: #2d2d34;
+  --color-progress-value: #525260;
+  --color-vertical-progress-value: #575766;
+  --color-graph-gridlines: #232329;
+  --color-widget-shadow: #141417;
+  --color-text-highlight: #d6d6dc;
+  --color-text-paragraph: #b5b5c0;
+  --color-text-base: #8b8b9c;
+  --color-text-base-muted: #7b7b8e;
+  --color-text-subdue: #525260;
+  --color-primary: #d9c38c;
+  --color-positive: #d9c38c;
+  --color-negative: #e87d7d;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  scrollbar-color: var(--color-text-subdue) transparent;
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  font-variant-ligatures: none;
+  color: var(--color-text-base);
+  background-color: var(--color-background);
+  overflow-y: scroll;
 }
 
 #root {
@@ -17,4 +80,64 @@ body {
 
 a {
   color: inherit;
+  text-decoration: none;
+  overflow-wrap: break-word;
+}
+
+::selection {
+  background-color: var(--color-widget-content-border);
+  color: var(--color-text-highlight);
+}
+
+::-webkit-scrollbar {
+  background: var(--color-background);
+  height: 5px;
+  width: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-text-subdue);
+  border-radius: var(--border-radius);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+  border-radius: var(--border-radius);
+}
+
+kbd {
+  font: inherit;
+  padding: 1px 8px;
+  border-radius: var(--border-radius);
+  border: 2px solid var(--color-widget-background-highlight);
+  box-shadow: 0 2px 0 var(--color-widget-background-highlight);
+}
+
+@keyframes pageContentEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes collapsibleItemReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes loadingIconSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }

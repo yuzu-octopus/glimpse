@@ -7,12 +7,17 @@ import {
   type ReactNode,
 } from 'react';
 import { Link } from 'react-router-dom';
-import { Theme, defineTheme, type ThemeMode } from '@astryxdesign/core/theme';
+import { Theme, type ThemeMode } from '@astryxdesign/core/theme';
 import { LinkProvider } from '@astryxdesign/core/Link';
-import { buildTheme } from '../../shared/theme/base16ToAstryx';
-import { invertLuminance } from '../../shared/theme/base16';
+import type { ThemeConfig } from '../../shared/config';
 import { presetById, type Preset } from '../../shared/theme/presets';
-import { buildConfigPresets, customThemeTokens } from '../../shared/theme/glanceHsl';
+import { buildConfigPresets, parseHsl } from '../../shared/theme/glanceHsl';
+import {
+  buildGlimpseTheme,
+  sourcePairFromPreset,
+  type ThemeSourcePair,
+} from '../../shared/theme/glimpseTheme';
+import type { Hsl } from '../../shared/theme/glanceRamp';
 import { useConfig } from '../hooks/useConfig';
 
 const STORAGE_KEY = 'glimpse.theme.v1';
@@ -50,6 +55,37 @@ function readStored(): { mode: ThemeMode; presetId: string } {
     // corrupted storage — fall through to defaults
   }
   return { mode: 'system', presetId: 'catppuccin-mocha' };
+}
+
+/** Glance documented fallbacks (docs/configuration.md §Theme). */
+const FALLBACK_BG: Hsl = { h: 240, s: 8, l: 9 };
+const FALLBACK_PRIMARY: Hsl = { h: 43, s: 50, l: 70 };
+const FALLBACK_NEGATIVE: Hsl = { h: 0, s: 70, l: 70 };
+
+/**
+ * Top-level config `theme` color fields override the active preset's seeds.
+ * The authored side (per the `light` flag) takes the block's HSL; the other
+ * side keeps the preset pair's own seeds.
+ */
+function applyConfigTheme(pair: ThemeSourcePair, theme?: ThemeConfig): ThemeSourcePair {
+  if (!theme) return pair;
+  const declared =
+    theme['background-color'] !== undefined ||
+    theme['primary-color'] !== undefined ||
+    theme['positive-color'] !== undefined ||
+    theme['negative-color'] !== undefined;
+  if (!declared) return pair;
+
+  const authored = theme.light === true ? 'light' : 'dark';
+  const side = pair[authored];
+  const parse = (v: string | undefined, fallback: Hsl): Hsl | null =>
+    v === undefined ? null : parseHsl(v) ?? fallback;
+
+  const bg = parse(theme['background-color'], FALLBACK_BG) ?? side.bg;
+  const primary = parse(theme['primary-color'], FALLBACK_PRIMARY) ?? side.primary;
+  const negative = parse(theme['negative-color'], FALLBACK_NEGATIVE) ?? side.negative;
+  const positive = parse(theme['positive-color'], primary) ?? primary;
+  return { ...pair, [authored]: { ...side, bg, primary, negative, positive } };
 }
 
 /** Injects the YAML custom-css-file contents (glance appends it last). */
@@ -97,16 +133,11 @@ export function GlimpseThemeProvider({ children }: { children: ReactNode }) {
   const theme = useMemo(() => {
     const preset =
       configPresets.find((p) => p.id === settings.presetId) ?? presetById(settings.presetId);
-    const light = preset.light ?? invertLuminance(preset.dark);
-    let t = buildTheme(preset.id, light, preset.dark);
-    const custom =
-      configState.status === 'ready' && configState.config.theme
-        ? customThemeTokens(configState.config.theme)
-        : {};
-    if (Object.keys(custom).length > 0) {
-      t = defineTheme({ name: preset.id, extends: t, tokens: custom });
-    }
-    return t;
+    const pair = applyConfigTheme(
+      sourcePairFromPreset(preset),
+      configState.status === 'ready' ? configState.config.theme : undefined,
+    );
+    return buildGlimpseTheme(pair);
   }, [settings.presetId, configState, configPresets]);
 
   const api = useMemo<ThemeSettings>(

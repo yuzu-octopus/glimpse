@@ -19,7 +19,7 @@ export interface Base16Scheme {
 
 const HEX_RE = /^#([0-9a-fA-F]{6})$/;
 
-function hexToRgb(hex: string): [number, number, number] {
+export function hexToRgb(hex: string): [number, number, number] {
   const m = HEX_RE.exec(hex);
   if (!m) throw new Error(`invalid hex color: ${hex}`);
   const n = parseInt(m[1], 16);
@@ -31,7 +31,7 @@ function rgbToHex(r: number, g: number, b: number): string {
   return `#${c(r)}${c(g)}${c(b)}`;
 }
 
-function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+export function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   const rn = r / 255, gn = g / 255, bn = b / 255;
   const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn);
   const l = (max + min) / 2;
