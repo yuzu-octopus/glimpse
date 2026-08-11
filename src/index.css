@@ -108,10 +108,19 @@ a {
 
 kbd {
   font: inherit;
+  font-size: var(--font-size-h5);
   padding: 1px 8px;
   border-radius: var(--border-radius);
   border: 2px solid var(--color-widget-background-highlight);
   box-shadow: 0 2px 0 var(--color-widget-background-highlight);
+  user-select: none;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+kbd:active {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 0 var(--color-widget-background-highlight);
 }
 
 @keyframes pageContentEntrance {

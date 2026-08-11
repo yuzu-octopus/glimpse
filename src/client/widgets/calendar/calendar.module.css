@@ -1,5 +1,5 @@
 .month {
-  font-size: var(--font-size-h4);
+  font-size: var(--font-size-h2);
   font-weight: 600;
   text-transform: capitalize;
   color: var(--color-text-highlight);

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { calendarSchema } from '../../../shared/widgets/calendar';
+import type { CalendarConfig } from '../../../shared/widgets/calendar';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import styles from './calendar.module.css';
@@ -23,7 +23,7 @@ const DAY_START: Record<string, number> = {
 const DOW_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
 function Calendar({ config }: WidgetComponentProps) {
-  const cfg = calendarSchema.parse(config);
+  const cfg = config as unknown as CalendarConfig;
   const start = DAY_START[(cfg['first-day-of-week'] ?? 'monday').toLowerCase()] ?? 0;
   const now = new Date();
   const year = now.getFullYear();

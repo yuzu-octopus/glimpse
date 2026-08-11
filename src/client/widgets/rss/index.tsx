@@ -1,5 +1,5 @@
 import { Link } from '@astryxdesign/core';
-import { rssSchema } from '../../../shared/widgets/feeds';
+import type { RssConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { useRelativeTime } from '../useRelativeTime';
@@ -132,7 +132,7 @@ function Cards({ items, title, titleUrl, hideHeader, cssClass, cardHeight, thumb
 }
 
 function Rss({ config, data }: WidgetComponentProps) {
-  const cfg = rssSchema.parse(config);
+  const cfg = config as unknown as RssConfig;
   const items = ((data as { items?: RssItem[] } | null)?.items ?? []) as RssItem[];
   const style = cfg.style ?? 'vertical-list';
   const collapseAfter = cfg['collapse-after'];

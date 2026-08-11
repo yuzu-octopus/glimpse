@@ -2,6 +2,15 @@
   display: block;
 }
 
+.framelessError {
+  font-size: var(--font-size-base);
+  color: var(--color-negative);
+  padding: var(--widget-content-padding);
+  background: var(--color-widget-background);
+  border: 1px solid var(--color-widget-content-border);
+  border-radius: var(--border-radius);
+}
+
 .row {
   display: flex;
   align-items: center;

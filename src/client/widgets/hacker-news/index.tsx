@@ -1,5 +1,5 @@
 import { Link } from '@astryxdesign/core';
-import { hackerNewsSchema } from '../../../shared/widgets/feeds';
+import type { HackerNewsConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { useRelativeTime } from '../useRelativeTime';
@@ -39,7 +39,7 @@ function HnRow({ post }: { post: HnPost }) {
 }
 
 function HackerNews({ config, data }: WidgetComponentProps) {
-  const cfg = hackerNewsSchema.parse(config);
+  const cfg = config as unknown as HackerNewsConfig;
   const posts = ((data as { posts?: HnPost[] } | null)?.posts ?? []) as HnPost[];
   return (
     <WidgetChrome

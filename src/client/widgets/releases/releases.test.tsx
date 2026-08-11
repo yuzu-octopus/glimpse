@@ -50,4 +50,12 @@ describe('releases widget', () => {
     expect(screen.getByTestId('widget-body')).toBeInTheDocument();
     expect(screen.queryByRole('link')).toBeNull();
   });
+
+  it('surfaces a fetch error via the widget chrome', () => {
+    render(
+      <Releases config={{ type: 'releases', title: 'Releases', repositories: ['glanceapp/glance'] }} data={null} error="GitHub rate limit exceeded" />,
+    );
+    expect(screen.getByText('GitHub rate limit exceeded')).toBeInTheDocument();
+    expect(screen.getByTestId('widget-error-dot')).toBeInTheDocument();
+  });
 });

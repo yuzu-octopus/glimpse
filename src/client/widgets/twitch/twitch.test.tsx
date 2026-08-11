@@ -64,4 +64,17 @@ describe('twitch-top-games widget', () => {
     expect(container.querySelector('[data-testid="widget-body"]')).toBeInTheDocument();
     expect(screen.queryByText('Just Chatting')).toBeNull();
   });
+
+  it('surfaces a fetch error via the widget chrome', () => {
+    render(
+      <TwitchChannels
+        config={{ type: 'twitch-channels', title: 'Channels', channels: ['shroud'] }}
+        data={null}
+        error="TWITCH_CLIENT_ID env var is missing"
+      />,
+    );
+    expect(screen.getByText('TWITCH_CLIENT_ID env var is missing')).toBeInTheDocument();
+    expect(screen.getByTestId('widget-error-dot')).toBeInTheDocument();
+    expect(screen.queryByText('LIVE')).toBeNull();
+  });
 });

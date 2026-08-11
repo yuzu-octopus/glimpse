@@ -1,6 +1,6 @@
 import { Link } from '@astryxdesign/core';
 import { Container, GitBranch } from 'lucide-react';
-import { releasesSchema } from '../../../shared/widgets/feeds';
+import type { ReleasesConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { useRelativeTime } from '../useRelativeTime';
@@ -31,8 +31,8 @@ function ReleaseRow({ release, showIcon }: { release: Release; showIcon: boolean
   );
 }
 
-function Releases({ config, data }: WidgetComponentProps) {
-  const cfg = releasesSchema.parse(config);
+function Releases({ config, data, error }: WidgetComponentProps) {
+  const cfg = config as unknown as ReleasesConfig;
   const releases = ((data as { releases?: Release[] } | null)?.releases ?? []) as Release[];
   const showIcon = cfg['show-source-icon'] === true;
   return (
@@ -41,6 +41,7 @@ function Releases({ config, data }: WidgetComponentProps) {
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
+      error={error}
       collapseAfter={cfg['collapse-after']}
       items={releases.map((r) => <ReleaseRow key={r.url + r.tag} release={r} showIcon={showIcon} />)}
     />

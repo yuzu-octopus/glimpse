@@ -1,5 +1,5 @@
 import { Link } from '@astryxdesign/core';
-import { customApiSchema } from '../../../shared/widgets/keyed';
+import type { CustomApiConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import type { CustomApiItem } from '../../../server/widgets/custom-api';
@@ -33,14 +33,19 @@ function ItemRow({ item }: { item: CustomApiItem }) {
   );
 }
 
-function CustomApi({ config, data }: WidgetComponentProps) {
-  const cfg = customApiSchema.parse(config);
+function CustomApi({ config, data, error }: WidgetComponentProps) {
+  const cfg = config as unknown as CustomApiConfig;
   const items = ((data as { items?: CustomApiItem[] } | null)?.items ?? []) as CustomApiItem[];
   const frameless = cfg.frameless === true;
 
   const rows = items.map((item) => <ItemRow key={item.title + (item.url ?? '')} item={item} />);
   if (frameless) {
-    return <div className={styles.frameless} data-testid="custom-api-frameless">{rows}</div>;
+    // frameless has no chrome to hang the error on — surface it inline
+    return (
+      <div className={styles.frameless} data-testid="custom-api-frameless">
+        {error ? <div className={styles.framelessError}>{error}</div> : rows}
+      </div>
+    );
   }
   return (
     <WidgetChrome
@@ -48,6 +53,7 @@ function CustomApi({ config, data }: WidgetComponentProps) {
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
+      error={error}
       items={rows}
     />
   );

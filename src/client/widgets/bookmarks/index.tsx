@@ -1,11 +1,11 @@
 import { Link } from '@astryxdesign/core';
-import { bookmarksSchema } from '../../../shared/widgets/bookmarks';
+import type { BookmarksConfig } from '../../../shared/widgets/bookmarks';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import styles from './bookmarks.module.css';
 
 function Bookmarks({ config }: WidgetComponentProps) {
-  const cfg = bookmarksSchema.parse(config);
+  const cfg = config as unknown as BookmarksConfig;
   const groups = cfg.groups ?? [];
   if (groups.length === 0) {
     return (
@@ -17,8 +17,10 @@ function Bookmarks({ config }: WidgetComponentProps) {
 
   return (
     <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
-      {groups.map((group) => (
-        <div key={group.title ?? group.links[0]?.url ?? 'untitled'} className={styles.group}>
+      {groups.map((group) => {
+        const links = group.links ?? [];
+        return (
+        <div key={group.title ?? links[0]?.url ?? 'untitled'} className={styles.group}>
           {group.title ? (
             <div
               className={styles.groupTitle}
@@ -28,7 +30,7 @@ function Bookmarks({ config }: WidgetComponentProps) {
             </div>
           ) : null}
           <div className={styles.links}>
-            {group.links.map((link, j) => (
+            {links.map((link, j) => (
               <Link
                 key={`${link.title}-${j}`}
                 href={link.url}
@@ -49,7 +51,8 @@ function Bookmarks({ config }: WidgetComponentProps) {
             ))}
           </div>
         </div>
-      ))}
+        );
+      })}
     </WidgetChrome>
   );
 }

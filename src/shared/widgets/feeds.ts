@@ -5,7 +5,6 @@ const feedSchema = z.object({
   url: z.string(),
   title: z.string().optional(),
   limit: z.number().optional(),
-  'item-link-prefix': z.string().optional(),
   headers: z.record(z.string(), z.string()).optional(),
   'hide-categories': z.boolean().optional(),
   'hide-description': z.boolean().optional(),
@@ -101,7 +100,6 @@ export const weatherSchema = z.object({
   ...sharedWidgetFields,
   location: z.string(),
   units: z.enum(['metric', 'imperial']).optional(),
-  'hour-format': z.enum(['12h', '24h']).optional(),
   'hide-location': z.boolean().optional(),
 });
 export type WeatherConfig = z.infer<typeof weatherSchema>;

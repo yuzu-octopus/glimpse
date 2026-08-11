@@ -36,4 +36,13 @@ describe('weather widget', () => {
     render(<Weather config={{ type: 'weather', location: 'London' }} data={null} />);
     expect(screen.getByText('No weather data.')).toBeInTheDocument();
   });
+
+  it('surfaces a fetch error via the widget chrome', () => {
+    render(
+      <Weather config={{ type: 'weather', title: 'Weather', location: 'London' }} data={null} error="open-meteo unreachable" />,
+    );
+    expect(screen.getByText('open-meteo unreachable')).toBeInTheDocument();
+    expect(screen.getByTestId('widget-error-dot')).toBeInTheDocument();
+    expect(screen.queryByText('No weather data.')).toBeNull();
+  });
 });

@@ -1,5 +1,5 @@
 import { Link } from '@astryxdesign/core';
-import { lobstersSchema } from '../../../shared/widgets/keyed';
+import type { LobstersConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { useRelativeTime } from '../useRelativeTime';
@@ -39,7 +39,7 @@ function LobstersRow({ post }: { post: LobsterPost }) {
 }
 
 function Lobsters({ config, data }: WidgetComponentProps) {
-  const cfg = lobstersSchema.parse(config);
+  const cfg = config as unknown as LobstersConfig;
   const posts = ((data as { posts?: LobsterPost[] } | null)?.posts ?? []) as LobsterPost[];
   return (
     <WidgetChrome

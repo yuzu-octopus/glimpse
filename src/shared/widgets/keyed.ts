@@ -54,7 +54,6 @@ export const monitorSchema = z.object({
       z.object({
         url: z.string(),
         title: z.string().optional(),
-        icon: z.string().optional(),
         'check-url': z.string().optional(),
         'error-url': z.string().optional(),
         timeout: z.string().optional(),

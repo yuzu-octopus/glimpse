@@ -66,4 +66,13 @@ describe('monitor widget', () => {
     expect(screen.getByRole('link', { name: 'Up site' })).toHaveAttribute('href', 'https://up.example');
     expect(screen.getByRole('link', { name: 'Up site' })).toHaveAttribute('target', '_blank');
   });
+
+  it('surfaces a fetch error via the widget chrome', () => {
+    render(
+      <Monitor config={{ type: 'monitor', title: 'Uptime', sites: [{ url: 'https://example.com' }] }} data={null} error="monitor fetch failed" />,
+    );
+    expect(screen.getByText('monitor fetch failed')).toBeInTheDocument();
+    expect(screen.getByTestId('widget-error-dot')).toBeInTheDocument();
+    expect(screen.queryByText('Example')).toBeNull();
+  });
 });

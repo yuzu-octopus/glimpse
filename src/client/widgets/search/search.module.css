@@ -80,3 +80,17 @@
   color: var(--color-text-base-muted);
   opacity: 1;
 }
+
+/* glance kbd hint: h5 size, no accidental selection; hidden on small
+   screens (glance .hide-on-mobile @ <=550px) — touch users can't press S */
+.kbd {
+  font-size: var(--font-size-h5);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+@media (max-width: 550px) {
+  .kbd {
+    display: none;
+  }
+}

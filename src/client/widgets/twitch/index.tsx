@@ -1,5 +1,5 @@
 import { Eye } from 'lucide-react';
-import { twitchChannelsSchema, twitchTopGamesSchema } from '../../../shared/widgets/keyed';
+import type { TwitchChannelsConfig, TwitchTopGamesConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import type { TwitchChannel, TwitchGame } from '../../../server/widgets/twitch';
@@ -44,8 +44,8 @@ function ChannelRow({ channel }: { channel: TwitchChannel }) {
   );
 }
 
-function TwitchChannels({ config, data }: WidgetComponentProps) {
-  const cfg = twitchChannelsSchema.parse(config);
+function TwitchChannels({ config, data, error }: WidgetComponentProps) {
+  const cfg = config as unknown as TwitchChannelsConfig;
   const channels = ((data as { channels?: TwitchChannel[] } | null)?.channels ?? []) as TwitchChannel[];
   return (
     <WidgetChrome
@@ -53,6 +53,7 @@ function TwitchChannels({ config, data }: WidgetComponentProps) {
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
+      error={error}
       collapseAfter={cfg['collapse-after']}
       items={channels.map((c) => <ChannelRow key={c.login} channel={c} />)}
     />
@@ -75,8 +76,8 @@ function GameCard({ game, rank }: { game: TwitchGame; rank: number }) {
   );
 }
 
-function TwitchTopGames({ config, data }: WidgetComponentProps) {
-  const cfg = twitchTopGamesSchema.parse(config);
+function TwitchTopGames({ config, data, error }: WidgetComponentProps) {
+  const cfg = config as unknown as TwitchTopGamesConfig;
   const games = ((data as { games?: TwitchGame[] } | null)?.games ?? []) as TwitchGame[];
   return (
     <WidgetChrome
@@ -84,6 +85,7 @@ function TwitchTopGames({ config, data }: WidgetComponentProps) {
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
+      error={error}
       collapseAfter={cfg['collapse-after']}
       items={games.map((g, i) => <GameCard key={g.id} game={g} rank={i + 1} />)}
     />
@@ -94,4 +96,3 @@ registerWidgetComponent('twitch-channels', TwitchChannels);
 registerWidgetComponent('twitch-top-games', TwitchTopGames);
 
 export { TwitchChannels, TwitchTopGames };
-export default TwitchChannels;

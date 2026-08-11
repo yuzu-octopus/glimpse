@@ -1,10 +1,10 @@
-import { iframeSchema, htmlSchema } from '../../../shared/widgets/iframe';
+import type { IframeConfig, HtmlConfig } from '../../../shared/widgets/iframe';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import styles from './iframe.module.css';
 
 function Iframe({ config }: WidgetComponentProps) {
-  const cfg = iframeSchema.parse(config);
+  const cfg = config as unknown as IframeConfig;
   return (
     <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
       <iframe
@@ -18,7 +18,7 @@ function Iframe({ config }: WidgetComponentProps) {
 }
 
 function Html({ config }: WidgetComponentProps) {
-  const cfg = htmlSchema.parse(config);
+  const cfg = config as unknown as HtmlConfig;
   return (
     <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
       <div

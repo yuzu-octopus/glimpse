@@ -6,7 +6,7 @@ import {
   CloudSun,
   Sun,
 } from 'lucide-react';
-import { weatherSchema } from '../../../shared/widgets/feeds';
+import type { WeatherConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import type { WeatherData } from '../../../server/widgets/weather';
@@ -56,10 +56,16 @@ const WEATHER_CODES: Record<number, string> = {
 
 const DAY_NAMES = new Intl.DateTimeFormat('en-GB', { weekday: 'short' });
 
-export function Weather({ config, data }: WidgetComponentProps) {
-  const cfg = weatherSchema.parse(config);
+export function Weather({ config, data, error }: WidgetComponentProps) {
+  const cfg = config as unknown as WeatherConfig;
   const w = data as WeatherData | null;
-  if (!w) return <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}><div className={styles.empty}>No weather data.</div></WidgetChrome>;
+  if (!w) {
+    return (
+      <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']} error={error}>
+        <div className={styles.empty}>No weather data.</div>
+      </WidgetChrome>
+    );
+  }
 
   const today = new Date().toISOString().slice(0, 10);
   const day = (date: string) => (date === today ? 'Today' : DAY_NAMES.format(new Date(date + 'T00:00:00')));

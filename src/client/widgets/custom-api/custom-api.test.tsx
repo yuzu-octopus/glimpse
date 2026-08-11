@@ -52,4 +52,20 @@ describe('custom-api widget', () => {
     expect(container.querySelector('[data-testid="widget-body"]')).toBeInTheDocument();
     expect(screen.queryByText('Deploy #42')).toBeNull();
   });
+
+  it('surfaces a fetch error via the widget chrome', () => {
+    render(
+      <CustomApi config={{ type: 'custom-api', title: 'CI', url: 'https://api.example.com' }} data={{ items: [], frameless: false }} error="HTTP 500 for https://api.example.com" />,
+    );
+    expect(screen.getByText('HTTP 500 for https://api.example.com')).toBeInTheDocument();
+    expect(screen.getByTestId('widget-error-dot')).toBeInTheDocument();
+  });
+
+  it('shows the error inline when frameless', () => {
+    render(
+      <CustomApi config={{ type: 'custom-api', frameless: true, url: 'https://api.example.com' }} data={{ items: [], frameless: true }} error="upstream down" />,
+    );
+    expect(screen.getByTestId('custom-api-frameless')).toBeInTheDocument();
+    expect(screen.getByText('upstream down')).toBeInTheDocument();
+  });
 });

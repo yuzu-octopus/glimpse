@@ -5,7 +5,7 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from 'react';
-import { searchSchema, type SearchConfig } from '../../../shared/widgets/search';
+import type { SearchConfig } from '../../../shared/widgets/search';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import styles from './search.module.css';
@@ -50,7 +50,8 @@ function matchBang(
 }
 
 export function Search({ config }: WidgetComponentProps) {
-  const cfg = searchSchema.parse(config);
+  const cfg = config as unknown as SearchConfig;
+  const bangs = cfg.bangs ?? [];
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const lastQueryRef = useRef('');
@@ -83,7 +84,7 @@ export function Search({ config }: WidgetComponentProps) {
   const search = (raw: string, newTab: boolean) => {
     const q = raw.trim();
     if (!q) return;
-    const { bang, rest } = matchBang(q, cfg.bangs);
+    const { bang, rest } = matchBang(q, bangs);
     if (!bang && rest.length === 0) return;
     const url = (bang?.url ?? engineUrl).replace(
       '{QUERY}',
@@ -156,7 +157,7 @@ export function Search({ config }: WidgetComponentProps) {
           autoComplete="off"
           autoFocus={cfg.autofocus === true}
         />
-        <kbd title="Press [S] to focus the search input">S</kbd>
+        <kbd className={styles.kbd} title="Press [S] to focus the search input">S</kbd>
       </form>
     </WidgetChrome>
   );

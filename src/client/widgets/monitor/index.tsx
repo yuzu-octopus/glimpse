@@ -1,5 +1,5 @@
 import { Link } from '@astryxdesign/core';
-import { monitorSchema } from '../../../shared/widgets/keyed';
+import type { MonitorConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import type { MonitorSite } from '../../../server/widgets/monitor';
@@ -23,8 +23,8 @@ function SiteRow({ site }: { site: MonitorSite }) {
   );
 }
 
-function Monitor({ config, data }: WidgetComponentProps) {
-  const cfg = monitorSchema.parse(config);
+function Monitor({ config, data, error }: WidgetComponentProps) {
+  const cfg = config as unknown as MonitorConfig;
   const sites = ((data as { sites?: MonitorSite[] } | null)?.sites ?? []) as MonitorSite[];
   const visible = cfg['show-failing-only'] ? sites.filter((s) => !s.ok) : sites;
   return (
@@ -33,6 +33,7 @@ function Monitor({ config, data }: WidgetComponentProps) {
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
       cssClass={[cfg['css-class'], cfg.style === 'compact' ? styles.compact : undefined].filter(Boolean).join(' ') || undefined}
+      error={error}
       items={visible.map((s) => <SiteRow key={s.url} site={s} />)}
     />
   );

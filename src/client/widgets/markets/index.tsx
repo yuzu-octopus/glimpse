@@ -1,6 +1,6 @@
 import { Link } from '@astryxdesign/core';
 import { ArrowDown, ArrowUp } from 'lucide-react';
-import { marketsSchema } from '../../../shared/widgets/keyed';
+import type { MarketsConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import type { Market } from '../../../server/widgets/markets';
@@ -93,7 +93,7 @@ function Row({ market, symbolLink, chartLink }: { market: Market } & RowLinks) {
 }
 
 function Markets({ config, data }: WidgetComponentProps) {
-  const cfg = marketsSchema.parse(config);
+  const cfg = config as unknown as MarketsConfig;
   const markets = ((data as { markets?: Market[] } | null)?.markets ?? []) as Market[];
   const links = new Map<string, RowLinks>(
     cfg.markets.map((m) => [
@@ -110,10 +110,13 @@ function Markets({ config, data }: WidgetComponentProps) {
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
-      items={markets.map((m) => (
-        <Row key={m.symbol} market={m} {...(links.get(m.symbol) ?? {})} />
-      ))}
-    />
+    >
+      <div className={styles.rows}>
+        {markets.map((m) => (
+          <Row key={m.symbol} market={m} {...(links.get(m.symbol) ?? {})} />
+        ))}
+      </div>
+    </WidgetChrome>
   );
 }
 

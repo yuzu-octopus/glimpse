@@ -1,3 +1,9 @@
+/* Query container: the widget body's content box. A 300px column yields
+   ~264px here; full columns are wider. */
+.rows {
+  container-type: inline-size;
+}
+
 .row {
   display: flex;
   align-items: center;
@@ -57,10 +63,17 @@
   height: auto;
 }
 
-/* glance .market-values: min-width 80px, right-aligned */
+/* glance .market-values: min-width 80px, right-aligned, change stacked over
+   price (two inline spans would join into one ~200px line and crush the
+   symbol block). */
 .values {
   min-width: 80px;
-  flex-shrink: 0;
+  /* never let the values column crowd out the symbol/name block */
+  max-width: 50%;
+  flex-shrink: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
   text-align: right;
 }
 
@@ -75,9 +88,15 @@
   align-items: center;
   justify-content: flex-end;
   gap: 2px;
+  min-width: 0;
+  max-width: 100%;
   font-size: var(--font-size-h3);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.change svg {
+  flex: none;
 }
 
 .up {
@@ -86,4 +105,19 @@
 
 .down {
   color: var(--color-negative);
+}
+
+/* Narrow body (a 300px column ≈ 264px of content): tighten the row, shrink
+   the sparkline, and drop the change line to the h5 size so symbol + name
+   + chart + change% + price all fit without truncation. */
+@container (max-width: 340px) {
+  .row {
+    gap: 10px;
+  }
+  .sparkline {
+    width: 40px;
+  }
+  .change {
+    font-size: var(--font-size-h5);
+  }
 }

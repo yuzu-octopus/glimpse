@@ -43,4 +43,13 @@ describe('repository widget', () => {
     render(<Repository config={{ type: 'repository', repository: 'user/other' }} data={null} />);
     expect(screen.getByText('user/other')).toBeInTheDocument();
   });
+
+  it('surfaces a fetch error via the widget chrome', () => {
+    render(
+      <Repository config={{ type: 'repository', title: 'Repo', repository: 'user/other' }} data={null} error="GitHub API unavailable" />,
+    );
+    expect(screen.getByText('GitHub API unavailable')).toBeInTheDocument();
+    expect(screen.getByTestId('widget-error-dot')).toBeInTheDocument();
+    expect(screen.queryByText('user/other')).toBeNull();
+  });
 });

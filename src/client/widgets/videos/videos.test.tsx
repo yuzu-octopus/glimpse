@@ -44,4 +44,13 @@ describe('videos widget', () => {
     expect(screen.getByTestId('widget-body')).toBeInTheDocument();
     expect(screen.queryByText('Bun 1.3 release')).toBeNull();
   });
+
+  it('surfaces a fetch error via the widget chrome', () => {
+    render(
+      <Videos config={{ type: 'videos', title: 'Videos' }} data={null} error="HTTP 403 for feed" />,
+    );
+    expect(screen.getByText('HTTP 403 for feed')).toBeInTheDocument();
+    expect(screen.getByTestId('widget-error-dot')).toBeInTheDocument();
+    expect(screen.queryByText('Bun 1.3 release')).toBeNull();
+  });
 });

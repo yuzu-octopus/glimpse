@@ -1,5 +1,5 @@
 import { Link } from '@astryxdesign/core';
-import { videosSchema } from '../../../shared/widgets/keyed';
+import type { VideosConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { useRelativeTime } from '../useRelativeTime';
@@ -50,8 +50,8 @@ function Row({ video }: { video: Video }) {
   );
 }
 
-function Videos({ config, data }: WidgetComponentProps) {
-  const cfg = videosSchema.parse(config);
+function Videos({ config, data, error }: WidgetComponentProps) {
+  const cfg = config as unknown as VideosConfig;
   const videos = ((data as { videos?: Video[] } | null)?.videos ?? []) as Video[];
   const style = cfg.style ?? 'horizontal-cards';
   const collapseAfter = style === 'grid-cards' ? cfg['collapse-after-rows'] : cfg['collapse-after'];
@@ -63,6 +63,7 @@ function Videos({ config, data }: WidgetComponentProps) {
         titleUrl={cfg['title-url']}
         hideHeader={cfg['hide-header']}
         cssClass={cfg['css-class']}
+        error={error}
         collapseAfter={collapseAfter}
         items={videos.map((v) => <Row key={v.url} video={v} />)}
       />
@@ -75,6 +76,7 @@ function Videos({ config, data }: WidgetComponentProps) {
       title={cfg.title}
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
+      error={error}
       collapseAfter={collapseAfter}
       cssClass={[cfg['css-class'], grid ? styles.gridWrap : styles.cards].filter(Boolean).join(' ') || undefined}
       items={videos.map((v) => <Card key={v.url} video={v} />)}

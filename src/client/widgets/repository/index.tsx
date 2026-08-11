@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from '@astryxdesign/core';
 import { CircleDot, GitPullRequest, Star } from 'lucide-react';
-import { repositorySchema } from '../../../shared/widgets/keyed';
+import type { RepositoryConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import type { RepoPull, RepositoryData } from '../../../server/widgets/repository';
@@ -29,8 +29,8 @@ function SubList({ icon, label, rows }: {
   );
 }
 
-function Repository({ config, data }: WidgetComponentProps) {
-  const cfg = repositorySchema.parse(config);
+function Repository({ config, data, error }: WidgetComponentProps) {
+  const cfg = config as unknown as RepositoryConfig;
   const repo = (data ?? {}) as Partial<RepositoryData>;
   const pulls = repo.pulls ?? [];
   const issues = repo.issues ?? [];
@@ -40,6 +40,7 @@ function Repository({ config, data }: WidgetComponentProps) {
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
+      error={error}
       items={[
         <div key="header" className={styles.header}>
           <Link href={repo.url ?? '#'} target="_blank" className={styles.repoName} hasUnderline={false}>

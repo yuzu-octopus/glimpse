@@ -1,19 +1,37 @@
 /* Glance rss-list / rss-detailed-list / rss-horizontal-cards look. */
 
 .row {
+  position: relative;
+  isolation: isolate;
   display: flex;
   gap: 15px; /* glance .flex.gap-15 */
   align-items: flex-start;
   min-width: 0;
-  /* glance padding-block-5 — keep the title off the row/frame edge */
-  padding-top: 5px;
+  /* glance padding-block-5 — breathing room below the header and around each row */
+  padding-block: 7px;
+}
+
+/* glance utils.css .summary::before — hover backdrop larger than the text */
+.row::before {
+  content: '';
+  position: absolute;
+  inset: -4px -10px;
+  border-radius: var(--border-radius);
+  background-color: var(--color-widget-background-highlight);
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.row:hover::before {
+  opacity: 1;
 }
 
 /* glance .list.list-with-separator */
 .row + .row {
   margin-top: 5px;
   border-top: 1px solid var(--color-separator);
-  padding-top: 5px;
 }
 
 .content {
@@ -59,7 +77,7 @@
 
 .title {
   display: block;
-  font-size: var(--font-size-h4); /* glance .size-title-dynamic (small column) */
+  font-size: var(--font-size-h3); /* glance .size-title-dynamic (full column) */
   color: var(--color-primary); /* glance .color-primary-if-not-visited */
   text-decoration: none;
   overflow: hidden;
@@ -89,8 +107,8 @@
   gap: 4px;
   align-items: center;
   margin-top: 2px;
-  font-size: var(--font-size-base);
-  color: var(--color-text-base-muted);
+  font-size: var(--font-size-h5);
+  color: var(--color-text-subdue);
 }
 
 .desc {

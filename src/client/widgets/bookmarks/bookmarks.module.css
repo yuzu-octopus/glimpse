@@ -32,6 +32,19 @@
   text-decoration: none;
 }
 
+/* The Astryx Link wraps children in one `.astryx-text` span (block, no
+   shrink). Reclaim the card layout through it: make the wrapper the flex
+   column so icon/title/desc stack centered, and let it shrink so the
+   nowrap ellipsis on .linkTitle/.linkDesc actually clips. */
+.linkCard :global(.astryx-text) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .linkCard:hover {
   background: var(--color-widget-background-highlight);
 }

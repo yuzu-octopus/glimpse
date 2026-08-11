@@ -1,5 +1,5 @@
 import { Link } from '@astryxdesign/core';
-import { redditSchema } from '../../../shared/widgets/feeds';
+import type { RedditConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { useRelativeTime } from '../useRelativeTime';
@@ -54,7 +54,7 @@ function Card({ post, showMeta }: { post: RedditPost; showMeta: boolean }) {
 }
 
 function Reddit({ config, data }: WidgetComponentProps) {
-  const cfg = redditSchema.parse(config);
+  const cfg = config as unknown as RedditConfig;
   const posts = ((data as { posts?: RedditPost[] } | null)?.posts ?? []) as RedditPost[];
   const showThumb = cfg['show-thumbnails'] === true;
   const showFlair = cfg['show-flairs'] === true;
