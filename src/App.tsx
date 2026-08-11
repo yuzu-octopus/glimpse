@@ -3,11 +3,14 @@ import { Banner } from '@astryxdesign/core';
 import { MobileNavigation, TopNav } from './client/components/TopNav';
 import { useConfig } from './client/hooks/useConfig';
 import { PageView } from './client/pages/PageView';
+import type { ResolvedConfig } from './shared/config';
 import styles from './app.module.css';
 
-function RoutePage() {
+type PageConfig = ResolvedConfig['pages'][number];
+
+function RoutePage({ page }: { page?: PageConfig }) {
   const { slug } = useParams();
-  return <PageView slug={slug ?? ''} />;
+  return <PageView slug={slug ?? ''} page={page} />;
 }
 
 export default function App() {
@@ -57,8 +60,8 @@ export default function App() {
       <MobileNavigation />
       <main>
         <Routes>
-          <Route path="/" element={<PageView slug={homeSlug} />} />
-          <Route path="/:slug" element={<RoutePage />} />
+          <Route path="/" element={<PageView slug={homeSlug} page={activePage} />} />
+          <Route path="/:slug" element={<RoutePage page={activePage} />} />
         </Routes>
       </main>
       <div className={styles.mobileNavigationOffset} />

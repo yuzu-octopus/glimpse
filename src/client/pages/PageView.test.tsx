@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PagePayload } from '../../shared/api';
-import type { WidgetType } from '../../shared/config';
+import type { Page, WidgetType } from '../../shared/config';
 import App from '../../App';
 import { GlimpseThemeProvider } from '../theme/GlimpseThemeProvider';
 import { PageView } from './PageView';
@@ -123,6 +123,45 @@ describe('PageView', () => {
     renderPage(payload());
     const widget = await screen.findByTestId('clock-widget');
     expect(within(widget).getByText('Clock')).toBeInTheDocument();
+  });
+
+  it('renders per-widget skeleton cards from the page config while loading, then fills', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        new Response(JSON.stringify(payload()), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
+    );
+    const page: Page & { slug: string } = {
+      slug: 'home',
+      name: 'Home',
+      columns: [
+        {
+          size: 'full',
+          widgets: [
+            { type: 'clock', title: 'Clock', timezones: [] },
+            { type: 'clock', title: 'Second Clock', timezones: [] },
+          ],
+        },
+      ],
+    };
+    render(
+      <MemoryRouter>
+        <PageView slug="home" page={page} />
+      </MemoryRouter>,
+    );
+    // Loading: the config structure renders one skeleton card per widget.
+    expect(screen.getByTestId('page-skeleton')).toBeInTheDocument();
+    expect(screen.getAllByTestId('widget-loading')).toHaveLength(2);
+    // ...then the fetched data fills the widgets in.
+    const widget = await screen.findByTestId('clock-widget');
+    expect(within(widget).getByText('Clock')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByTestId('widget-loading')).toBeNull(),
+    );
   });
 
   it('renders a placeholder for unimplemented widgets', async () => {

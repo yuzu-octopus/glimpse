@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Banner, Card, Skeleton, Tab, TabList, Text } from '@astryxdesign/core';
 import { ChevronDown } from 'lucide-react';
 import type { ColumnPayload, WidgetPayload } from '../../shared/api';
+import type { Page } from '../../shared/config';
 import type { WidgetType } from '../../shared/config';
 import { WidgetChrome } from '../components/WidgetChrome';
 import { usePageData } from '../hooks/usePageData';
@@ -29,6 +30,97 @@ function columnLabel(col: ColumnPayload, i: number): string {
 /** Stable key for config-static column lists (order is static per config). */
 function columnKey(col: ColumnPayload, i: number): string {
   return col.widgets[0] ? widgetKey(col.widgets[0], 0) : `column-${i}`;
+}
+
+/** Config-page shape the loading skeleton needs (subset of WidgetConfig). */
+interface SkeletonWidget {
+  type?: string;
+  title?: string;
+  'hide-header'?: boolean;
+  widgets?: unknown[];
+}
+
+/** Title from a config widget, falling back to its first child (containers). */
+function skeletonTitle(w: SkeletonWidget): string | undefined {
+  if (typeof w.title === 'string' && w.title) return w.title;
+  const first = w.widgets?.[0];
+  if (first && typeof first === 'object' && 'title' in first) {
+    const t = first.title;
+    if (typeof t === 'string' && t) return t;
+  }
+  return undefined;
+}
+
+/** Stable key for a config widget slot (title-based, falls back to index). */
+function skeletonKey(w: SkeletonWidget, i: number): string {
+  const t = skeletonTitle(w);
+  return t ? `${typeof w.type === 'string' ? w.type : 'widget'}:${t}` : `slot-${i}`;
+}
+
+/** Stable key for a config column slot. */
+function skeletonColumnKey(
+  col: { widgets: SkeletonWidget[] },
+  i: number,
+): string {
+  const first = col.widgets[0];
+  return first ? skeletonKey(first, 0) : `column-${i}`;
+}
+
+/** Skeleton card for one configured widget slot (WidgetChrome isLoading). */
+function WidgetSkeleton({ widget }: { widget: SkeletonWidget }) {
+  return (
+    <WidgetChrome
+      title={skeletonTitle(widget)}
+      hideHeader={widget['hide-header'] === true}
+      isLoading
+    />
+  );
+}
+
+function skeletonColumnLabel(
+  col: { size: 'small' | 'full'; widgets: SkeletonWidget[] },
+  i: number,
+): string {
+  const first = col.widgets[0];
+  return (first ? skeletonTitle(first) : undefined) ?? `Column ${i + 1}`;
+}
+
+/** Per-widget skeleton page mirroring the ready layout from the page config,
+ * so first paint shows the real structure with no layout shift on fill. */
+function PageSkeleton({ page }: { page: Page & { slug: string } }) {
+  return (
+    <div
+      className={`${styles.page} ${page['center-vertically'] ? styles.centered : ''}`}
+      style={{ maxWidth: WIDTHS[page.width ?? 'default'] }}
+      data-testid="page-skeleton"
+    >
+      {page['show-mobile-header'] ? (
+        <div className={styles.mobileHeader}>{page.name}</div>
+      ) : null}
+      {page['head-widgets'] && page['head-widgets'].length > 0 ? (
+        <div className={styles.headWidgets}>
+          {page['head-widgets'].map((w, i) => (
+            <WidgetSkeleton key={skeletonKey(w, i)} widget={w} />
+          ))}
+        </div>
+      ) : null}
+      <div className={styles.columns}>
+        {page.columns.map((col, i) => (
+          <MobileColumn
+            key={skeletonColumnKey(col, i)}
+            label={skeletonColumnLabel(col, i)}
+            small={col.size === 'small'}
+          >
+            <div className={styles.columnWidgets}>
+              {col.widgets.map((w, j) => (
+                <WidgetSkeleton key={skeletonKey(w, j)} widget={w} />
+              ))}
+            </div>
+          </MobileColumn>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 /** Renders one widget: registry component, container, or not-implemented. */
@@ -140,10 +232,19 @@ function MobileColumn({
   );
 }
 
-export function PageView({ slug }: { slug: string }) {
+export function PageView({
+  slug,
+  page,
+}: {
+  slug: string;
+  /** Page config from /api/config: drives the skeleton-first loading layout. */
+  page?: Page & { slug: string };
+}) {
   const state = usePageData(slug);
 
   if (state.status === 'loading') {
+    if (page) return <PageSkeleton page={page} />;
+    // Fallback when rendered without config (direct mounts): generic block.
     return (
       <div className={styles.page}>
         <Card padding={0}>

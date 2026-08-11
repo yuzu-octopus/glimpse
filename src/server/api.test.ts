@@ -117,4 +117,25 @@ describe('buildPagePayload', () => {
     );
     expect(payload.headWidgets[0].data).toEqual({ items: [{ title: 'head' }] });
   });
+
+  it('fetches head-widgets concurrently with column widgets', async () => {
+    const { promise: hPromise, resolve: hResolve } = Promise.withResolvers<unknown>();
+    const { promise: cPromise, resolve: cResolve } = Promise.withResolvers<unknown>();
+    const headFetcher = vi.fn(() => hPromise);
+    const colFetcher = vi.fn(() => cPromise);
+    registerWidget('rss', headFetcher);
+    registerWidget('monitor', colFetcher);
+
+    const p = buildPagePayload(
+      page([{ size: 'full', widgets: [{ type: 'monitor', sites: [] }] }], [rssWidget]),
+      makeCtx(),
+    );
+    // Both fetchers started before either resolves: awaiting head first would
+    // leave the column fetcher uncalled at this point.
+    expect(headFetcher).toHaveBeenCalledOnce();
+    expect(colFetcher).toHaveBeenCalledOnce();
+    hResolve({ items: [] });
+    cResolve({ sites: [] });
+    await p;
+  });
 });

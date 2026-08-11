@@ -21,9 +21,51 @@ export default defineConfig({
       },
       workbox: {
         navigateFallbackDenylist: [/^\/api\//],
+        runtimeCaching: [
+          {
+            // Boot-critical: serve the cached config when the network stalls
+            // (3s) or is offline, so the page chrome renders immediately.
+            urlPattern: /^\/api\/config(\?.*)?$/,
+            handler: 'NetworkFirst',
+            options: {
+              networkTimeoutSeconds: 3,
+              cacheName: 'api-config',
+              expiration: { maxEntries: 1, maxAgeSeconds: 60 },
+            },
+          },
+          {
+            // Per-page widget data: NetworkFirst with a short timeout gives
+            // stale-while-revalidate UX — cache renders when the network is
+            // slow or offline, while successful fetches refresh it in place.
+            urlPattern: /^\/api\/page\//,
+            handler: 'NetworkFirst',
+            options: {
+              networkTimeoutSeconds: 3,
+              cacheName: 'api-pages',
+              expiration: { maxEntries: 50, maxAgeSeconds: 300 },
+            },
+          },
+        ],
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // Stable vendor chunks: react/dom, Astryx core, icons. Keeps the
+        // main bundle small and lets the SW cache vendors across deploys.
+        manualChunks(id) {
+          // Stable vendor chunks: react/dom, Astryx core, icons. Keeps the
+          // main bundle small and lets the SW cache vendors across deploys.
+          // `node_modules/react` also matches react-dom's path.
+          if (id.includes('node_modules/react')) return 'react';
+          if (id.includes('node_modules/@astryxdesign/core')) return 'astryx';
+          if (id.includes('node_modules/lucide-react')) return 'icons';
+          return undefined;
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {

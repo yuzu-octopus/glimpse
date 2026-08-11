@@ -76,15 +76,17 @@ export async function buildPagePayload(
       ),
     );
 
-  const headWidgets = Array.isArray(page['head-widgets'])
-    ? await Promise.all(
+  // Kick off head-widgets and columns together: neither depends on the other,
+  // so awaiting head first would serialize the page's fetches.
+  const headPromise = Array.isArray(page['head-widgets'])
+    ? Promise.all(
         page['head-widgets'].map((w, i) =>
           fetchWidget(ctx, page.slug, `h:${i}`, isRecord(w) ? w : { type: 'unknown' }),
         ),
       )
-    : [];
+    : Promise.resolve([]);
 
-  const columns = await Promise.all(
+  const columnsPromise = Promise.all(
     page.columns.map((col) =>
       buildColumn(col).then((widgets) => ({
         size: col.size,
@@ -92,6 +94,8 @@ export async function buildPagePayload(
       })),
     ),
   );
+
+  const [headWidgets, columns] = await Promise.all([headPromise, columnsPromise]);
 
   return {
     slug: page.slug,

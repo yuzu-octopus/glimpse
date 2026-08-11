@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
 import { initConfig, getConfig } from './config';
 import { Singleflight, TtlCache } from './cache';
@@ -24,11 +24,44 @@ initConfig(CONFIG_PATH, (r) => {
 });
 console.log(`[glimpse] watching ${CONFIG_PATH}`);
 
-const json = (body: unknown, status = 200): Response =>
+const json = (body: unknown, status = 200, headers: Record<string, string> = {}): Response =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...headers },
   });
+
+// Custom CSS file is re-read on every /api/theme hit; cache it with a 5s
+// re-stat + mtime check so edits still appear quickly without per-request reads.
+const THEME_CSS_CHECK_MS = 5_000;
+let themeCssCache: { file: string; mtimeMs: number; content: string } | null = null;
+let themeCssCheckedAt = 0;
+
+function readThemeCss(cssFile: string): string | null {
+  const now = Date.now();
+  if (
+    themeCssCache?.file === cssFile &&
+    now - themeCssCheckedAt < THEME_CSS_CHECK_MS
+  ) {
+    return themeCssCache.content;
+  }
+  const path = resolve(dirname(CONFIG_PATH), cssFile);
+  try {
+    const { mtimeMs } = statSync(path);
+    if (themeCssCache?.file === cssFile && themeCssCache.mtimeMs === mtimeMs) {
+      themeCssCheckedAt = now;
+      return themeCssCache.content;
+    }
+    const content = readFileSync(path, 'utf8');
+    themeCssCache = { file: cssFile, mtimeMs, content };
+    themeCssCheckedAt = now;
+    return content;
+  } catch (e) {
+    console.log(`[glimpse] cannot read custom css file: ${(e as Error).message}`);
+    themeCssCache = null;
+    themeCssCheckedAt = now;
+    return null;
+  }
+}
 
 const CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -75,7 +108,10 @@ const server = Bun.serve({
 
     if (pathname === '/api/config') {
       const r = getConfig();
-      return r.ok ? json({ ok: true, config: r.config }) : json({ ok: false, errors: r.errors }, 400);
+      const headers = { 'cache-control': 'no-store' };
+      return r.ok
+        ? json({ ok: true, config: r.config }, 200, headers)
+        : json({ ok: false, errors: r.errors }, 400, headers);
     }
 
     if (pathname === '/api/theme') {
@@ -83,16 +119,16 @@ const server = Bun.serve({
       let customCss: string | null = null;
       const cssFile = r.ok && r.config ? r.config.theme?.['custom-css-file'] : undefined;
       if (cssFile) {
-        try {
-          customCss = readFileSync(resolve(dirname(CONFIG_PATH), cssFile), 'utf8');
-        } catch (e) {
-          console.log(`[glimpse] cannot read custom css file: ${(e as Error).message}`);
-        }
+        customCss = readThemeCss(cssFile);
       }
-      return json({
-        theme: r.ok && r.config ? r.config.theme ?? null : null,
-        customCss,
-      });
+      return json(
+        {
+          theme: r.ok && r.config ? r.config.theme ?? null : null,
+          customCss,
+        },
+        200,
+        { 'cache-control': 'public, max-age=60' },
+      );
     }
 
     const pageMatch = /^\/api\/page\/([^/]+)$/.exec(pathname);
@@ -103,7 +139,9 @@ const server = Bun.serve({
       const page = r.config?.pages.find((p) => p.slug === slug);
       if (!page) return json({ error: `page "${slug}" not found` }, 404);
       const payload = await buildPagePayload(page, ctx);
-      return json(payload);
+      return json(payload, 200, {
+        'cache-control': 'public, max-age=30, stale-while-revalidate=300',
+      });
     }
 
     return serveDist(pathname);
