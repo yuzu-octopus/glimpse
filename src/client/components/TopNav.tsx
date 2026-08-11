@@ -2,11 +2,9 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { useConfig } from '../hooks/useConfig';
+import { PAGE_WIDTHS } from '../../shared/layout';
 import { SettingsPanel } from './SettingsPanel';
 import styles from './top-nav.module.css';
-
-// glance docs §Pages & Columns: default 1600px / slim 1100px / wide 1920px.
-const NAV_WIDTHS = { default: 1600, slim: 1100, wide: 1920 } as const;
 
 function useNavPages() {
   const state = useConfig();
@@ -28,7 +26,7 @@ export function TopNav({ width }: { width?: 'default' | 'slim' | 'wide' }) {
       aria-label="Pages"
       className={styles.header}
       style={
-        width ? { maxWidth: NAV_WIDTHS[width], marginInline: 'auto' } : undefined
+        width ? { maxWidth: PAGE_WIDTHS[width], marginInline: 'auto' } : undefined
       }
     >
       <span className={styles.logo}>Glimpse</span>

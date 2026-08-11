@@ -118,8 +118,7 @@ describe('buildPagePayload', () => {
     expect(payload.headWidgets[0].data).toEqual({ items: [{ title: 'head' }] });
   });
 
-  it('fetches head-widgets concurrently with column widgets', async () => {
-    const { promise: hPromise, resolve: hResolve } = Promise.withResolvers<unknown>();
+  it('fetches head-widgets concurrently with column widgets', async () => {    const { promise: hPromise, resolve: hResolve } = Promise.withResolvers<unknown>();
     const { promise: cPromise, resolve: cResolve } = Promise.withResolvers<unknown>();
     const headFetcher = vi.fn(() => hPromise);
     const colFetcher = vi.fn(() => cPromise);
@@ -137,5 +136,34 @@ describe('buildPagePayload', () => {
     hResolve({ items: [] });
     cResolve({ sites: [] });
     await p;
+  });
+
+  it('defaults tiling to columns and minColumnWidth to 300', async () => {
+    const payload = await buildPagePayload(
+      page([{ size: 'full', widgets: [clockWidget] }]),
+      makeCtx(),
+    );
+    expect(payload.tiling).toBe('columns');
+    expect(payload.minColumnWidth).toBe(300);
+  });
+
+  it('resolves auto tiling config and carries column spans into the payload', async () => {
+    const payload = await buildPagePayload(
+      {
+        name: 'Home',
+        slug: 'home',
+        tiling: 'auto',
+        'min-column-width': 340,
+        columns: [
+          { size: 'small', span: 2, widgets: [clockWidget] },
+          { size: 'small', widgets: [clockWidget] },
+        ],
+      },
+      makeCtx(),
+    );
+    expect(payload.tiling).toBe('auto');
+    expect(payload.minColumnWidth).toBe(340);
+    expect(payload.columns[0].span).toBe(2);
+    expect(payload.columns[1].span).toBeUndefined();
   });
 });

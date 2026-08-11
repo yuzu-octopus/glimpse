@@ -1,36 +1,14 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 import { Banner, Card, Skeleton, Tab, TabList, Text } from '@astryxdesign/core';
 import { ChevronDown } from 'lucide-react';
-import type { ColumnPayload, WidgetPayload } from '../../shared/api';
+import type { WidgetPayload } from '../../shared/api';
 import type { Page } from '../../shared/config';
 import type { WidgetType } from '../../shared/config';
 import { WidgetChrome } from '../components/WidgetChrome';
 import { usePageData } from '../hooks/usePageData';
 import { clientWidgets } from '../widgets/registry';
+import { PAGE_WIDTHS } from '../../shared/layout';
 import styles from './page.module.css';
-
-// glance docs §Pages & Columns: default 1600px / slim 1100px / wide 1920px.
-const WIDTHS = { default: 1600, slim: 1100, wide: 1920 } as const;
-
-function widgetTitle(w: WidgetPayload): string | undefined {
-  const t = w.config.title;
-  return typeof t === 'string' ? t : undefined;
-}
-
-/** Stable key for config-driven widget lists (order is static per config). */
-function widgetKey(w: WidgetPayload, i: number): string {
-  const title = widgetTitle(w);
-  return title ? `${w.type}:${title}` : `${w.type}:${i}`;
-}
-
-function columnLabel(col: ColumnPayload, i: number): string {
-  return widgetTitle(col.widgets[0]) ?? `Column ${i + 1}`;
-}
-
-/** Stable key for config-static column lists (order is static per config). */
-function columnKey(col: ColumnPayload, i: number): string {
-  return col.widgets[0] ? widgetKey(col.widgets[0], 0) : `column-${i}`;
-}
 
 /** Config-page shape the loading skeleton needs (subset of WidgetConfig). */
 interface SkeletonWidget {
@@ -40,49 +18,61 @@ interface SkeletonWidget {
   widgets?: unknown[];
 }
 
-/** Title from a config widget, falling back to its first child (containers). */
-function skeletonTitle(w: SkeletonWidget): string | undefined {
-  if (typeof w.title === 'string' && w.title) return w.title;
+/** Widget shape the title/key helpers accept: a fetched payload widget
+ * (title under `.config.title`) or a config record (top-level title). */
+type WidgetLike = WidgetPayload | SkeletonWidget;
+
+/** Title from a widget: payload `.config.title`, config `title`, or the
+ * first child's title (containers). */
+function widgetTitle(w: WidgetLike | undefined): string | undefined {
+  if (!w) return undefined;
+  const t = 'config' in w ? w.config.title : w.title;
+  if (typeof t === 'string' && t) return t;
   const first = w.widgets?.[0];
-  if (first && typeof first === 'object' && 'title' in first) {
-    const t = first.title;
-    if (typeof t === 'string' && t) return t;
+  if (
+    first &&
+    typeof first === 'object' &&
+    'title' in first &&
+    typeof first.title === 'string' &&
+    first.title
+  ) {
+    return first.title;
   }
   return undefined;
 }
 
-/** Stable key for a config widget slot (title-based, falls back to index). */
-function skeletonKey(w: SkeletonWidget, i: number): string {
-  const t = skeletonTitle(w);
-  return t ? `${typeof w.type === 'string' ? w.type : 'widget'}:${t}` : `slot-${i}`;
+/** Stable key for a widget slot (title-based, falls back to index). */
+function widgetKey(w: WidgetLike, i: number): string {
+  const type = 'type' in w && typeof w.type === 'string' ? w.type : 'widget';
+  const title = widgetTitle(w);
+  return title ? `${type}:${title}` : `${type}:${i}`;
 }
 
-/** Stable key for a config column slot. */
-function skeletonColumnKey(
-  col: { widgets: SkeletonWidget[] },
+/** Column label from the first widget's title. */
+function columnLabel(
+  col: { size: 'small' | 'full'; widgets: WidgetLike[] },
   i: number,
 ): string {
-  const first = col.widgets[0];
-  return first ? skeletonKey(first, 0) : `column-${i}`;
+  return widgetTitle(col.widgets[0]) ?? `Column ${i + 1}`;
+}
+
+/** Stable key for a column slot (first widget's key, else index). */
+function columnKey(
+  col: { size: 'small' | 'full'; widgets: WidgetLike[] },
+  i: number,
+): string {
+  return col.widgets[0] ? widgetKey(col.widgets[0], 0) : `column-${i}`;
 }
 
 /** Skeleton card for one configured widget slot (WidgetChrome isLoading). */
 function WidgetSkeleton({ widget }: { widget: SkeletonWidget }) {
   return (
     <WidgetChrome
-      title={skeletonTitle(widget)}
+      title={widgetTitle(widget)}
       hideHeader={widget['hide-header'] === true}
       isLoading
     />
   );
-}
-
-function skeletonColumnLabel(
-  col: { size: 'small' | 'full'; widgets: SkeletonWidget[] },
-  i: number,
-): string {
-  const first = col.widgets[0];
-  return (first ? skeletonTitle(first) : undefined) ?? `Column ${i + 1}`;
 }
 
 /** Per-widget skeleton page mirroring the ready layout from the page config,
@@ -91,7 +81,7 @@ function PageSkeleton({ page }: { page: Page & { slug: string } }) {
   return (
     <div
       className={`${styles.page} ${page['center-vertically'] ? styles.centered : ''}`}
-      style={{ maxWidth: WIDTHS[page.width ?? 'default'] }}
+      style={{ maxWidth: PAGE_WIDTHS[page.width ?? 'default'] }}
       data-testid="page-skeleton"
     >
       {page['show-mobile-header'] ? (
@@ -100,20 +90,34 @@ function PageSkeleton({ page }: { page: Page & { slug: string } }) {
       {page['head-widgets'] && page['head-widgets'].length > 0 ? (
         <div className={styles.headWidgets}>
           {page['head-widgets'].map((w, i) => (
-            <WidgetSkeleton key={skeletonKey(w, i)} widget={w} />
+            <WidgetSkeleton key={widgetKey(w, i)} widget={w} />
           ))}
         </div>
       ) : null}
-      <div className={styles.columns}>
+      <div
+        className={
+          page.tiling === 'auto'
+            ? `${styles.columns} ${styles.autoTiling}`
+            : styles.columns
+        }
+        style={
+          page.tiling === 'auto'
+            ? ({
+                '--min-column-width': `${page['min-column-width'] ?? 300}px`,
+              } as CSSProperties)
+            : undefined
+        }
+      >
         {page.columns.map((col, i) => (
           <MobileColumn
-            key={skeletonColumnKey(col, i)}
-            label={skeletonColumnLabel(col, i)}
+            key={columnKey(col, i)}
+            label={columnLabel(col, i)}
             small={col.size === 'small'}
+            span={col.span ?? 1}
           >
             <div className={styles.columnWidgets}>
               {col.widgets.map((w, j) => (
-                <WidgetSkeleton key={skeletonKey(w, j)} widget={w} />
+                <WidgetSkeleton key={widgetKey(w, j)} widget={w} />
               ))}
             </div>
           </MobileColumn>
@@ -203,15 +207,20 @@ function ContainerWidget({ widget }: { widget: WidgetPayload }) {
 function MobileColumn({
   label,
   small,
+  span,
   children,
 }: {
   label: string;
   small: boolean;
+  /** Auto-tiling grid span (1-4); undefined keeps the default single track. */
+  span?: number;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(true);
   return (
     <div
+      // grid-column: span N is a no-op for 1 — only emit the hint above 1.
+      data-span={span && span > 1 ? String(span) : undefined}
       className={
         small
           ? `${styles.column} ${styles.smallColumn}`
@@ -269,7 +278,7 @@ export function PageView({
   return (
     <div
       className={`${styles.page} ${data['center-vertically'] ? styles.centered : ''}`}
-      style={{ maxWidth: WIDTHS[data.width] }}
+      style={{ maxWidth: PAGE_WIDTHS[data.width] }}
     >
       {data['show-mobile-header'] ? (
         <div className={styles.mobileHeader}>{data.name}</div>
@@ -282,14 +291,16 @@ export function PageView({
         </div>
       ) : null}
       <div
-        className={styles.columns}
-        style={{
-          // ponytail: kept verbatim for the pinned test assertion; inert on
-          // the flex layout (sizing lives in .fullColumn/.smallColumn).
-          gridTemplateColumns: data.columns
-            .map((c) => (c.size === 'small' ? '300px' : 'minmax(0, 1fr)'))
-            .join(' '),
-        }}
+        className={
+          data.tiling === 'auto'
+            ? `${styles.columns} ${styles.autoTiling}`
+            : styles.columns
+        }
+        style={
+          data.tiling === 'auto'
+            ? ({ '--min-column-width': `${data.minColumnWidth}px` } as CSSProperties)
+            : undefined
+        }
       >
         {data.columns.map((col, i) => (
           // Columns are a config-static list (never reordered at runtime),
@@ -298,6 +309,7 @@ export function PageView({
             key={columnKey(col, i)}
             label={columnLabel(col, i)}
             small={col.size === 'small'}
+            span={col.span ?? 1}
           >
             <div className={styles.columnWidgets}>
               {col.widgets.map((w, j) => (

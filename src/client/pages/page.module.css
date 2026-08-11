@@ -39,12 +39,44 @@
   margin-bottom: var(--widget-gap);
 }
 
-/* page-columns: flex row, gap var(--widget-gap). The inline
-   gridTemplateColumns below is kept verbatim for the pinned test assertion;
-   it is inert on a flex container. */
+/* page-columns: flex row, gap var(--widget-gap). Column sizing lives in
+   .fullColumn/.smallColumn — no inline grid template. */
 .columns {
   display: flex;
   gap: var(--widget-gap);
+  /* Query container: widget-internal container queries respond to the real
+     column width, and it anchors a future band-snapped tiling variant. */
+  container-type: inline-size;
+}
+
+/* tiling: auto — balanced grid tiles. small/full are ignored here; the
+   300px small-column rule is neutralized below. min() clamps the min track
+   to the container width so a min wider than the viewport can't overflow. */
+.autoTiling {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(var(--min-column-width, 300px), 100%), 1fr)
+  );
+  align-items: start; /* ragged bottoms; no row equalization */
+}
+
+/* auto mode treats every column as a tile — kill the explicit-mode widths */
+.autoTiling .smallColumn,
+.autoTiling .fullColumn {
+  width: 100%;
+  flex-shrink: 1;
+}
+
+/* per-column span hint (config `span`, 1-4); span 1 is the default track */
+.autoTiling [data-span='2'] {
+  grid-column: span 2;
+}
+.autoTiling [data-span='3'] {
+  grid-column: span 3;
+}
+.autoTiling [data-span='4'] {
+  grid-column: span 4;
 }
 
 .column {
@@ -160,6 +192,14 @@
 @media (max-width: 768px) {
   .columns {
     flex-direction: column;
+  }
+  /* auto grid collapses to a single track; span hints must not open
+     implicit tracks (1 / -1 forces full width of the one explicit track) */
+  .autoTiling {
+    grid-template-columns: 1fr;
+  }
+  .autoTiling [data-span] {
+    grid-column: 1 / -1;
   }
   .smallColumn {
     width: 100%;

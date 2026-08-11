@@ -6,6 +6,8 @@ export type { WidgetConfig, WidgetType } from './widgets';
 export const ColumnSchema = z.object({
   size: z.enum(['small', 'full']),
   widgets: z.array(WidgetSchema),
+  // NEW — auto tiling only; number of grid tracks this tile spans.
+  span: z.number().min(1).max(4).optional(),
 });
 export type Column = z.infer<typeof ColumnSchema>;
 
@@ -18,6 +20,10 @@ export const PageSchema = z.object({
   'hide-desktop-navigation': z.boolean().optional(),
   'show-mobile-header': z.boolean().optional(),
   'head-widgets': z.array(WidgetSchema).optional(),
+  // NEW — 'columns' (default) = current glance flex behavior; 'auto' = balanced grid tiles.
+  tiling: z.enum(['columns', 'auto']).optional(),
+  // NEW — auto mode only; minimum tile width for auto-fit in px, default 300.
+  'min-column-width': z.number().min(1).optional(),
   columns: z.array(ColumnSchema).min(1).max(3),
 });
 export type Page = z.infer<typeof PageSchema>;

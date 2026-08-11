@@ -117,6 +117,10 @@
 }
 
 @media (max-width: 768px) {
+  .header {
+    display: none;
+  }
+
   .mobileNav {
     display: flex;
     flex-direction: column-reverse;

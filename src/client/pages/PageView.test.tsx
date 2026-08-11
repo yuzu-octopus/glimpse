@@ -138,9 +138,11 @@ describe('PageView', () => {
     const page: Page & { slug: string } = {
       slug: 'home',
       name: 'Home',
+      tiling: 'auto',
       columns: [
         {
           size: 'full',
+          span: 2,
           widgets: [
             { type: 'clock', title: 'Clock', timezones: [] },
             { type: 'clock', title: 'Second Clock', timezones: [] },
@@ -156,6 +158,18 @@ describe('PageView', () => {
     // Loading: the config structure renders one skeleton card per widget.
     expect(screen.getByTestId('page-skeleton')).toBeInTheDocument();
     expect(screen.getAllByTestId('widget-loading')).toHaveLength(2);
+    // The skeleton mirrors the ready auto-tiling layout: same grid class,
+    // min-column-width var (default 300), and per-column span hint.
+    const skeletonGrid = screen
+      .getByTestId('page-skeleton')
+      .querySelector('[class*="columns"]') as HTMLElement;
+    expect(skeletonGrid.className).toContain('autoTiling');
+    expect(skeletonGrid.style.getPropertyValue('--min-column-width')).toBe('300px');
+    expect(
+      Array.from(skeletonGrid.querySelectorAll('[data-span]')).map((t) =>
+        t.getAttribute('data-span'),
+      ),
+    ).toEqual(['2']);
     // ...then the fetched data fills the widgets in.
     const widget = await screen.findByTestId('clock-widget');
     expect(within(widget).getByText('Clock')).toBeInTheDocument();
@@ -237,7 +251,7 @@ describe('PageView', () => {
     await waitFor(() => expect(screen.getByText('bad slug')).toBeInTheDocument());
   });
 
-  it('sets grid columns from column sizes', async () => {
+  it('keeps column sizes on the flex layout (no inline grid template)', async () => {
     renderPage(
       payload({
         columns: [
@@ -249,7 +263,71 @@ describe('PageView', () => {
     const widgets = await screen.findAllByTestId('clock-widget');
     expect(widgets).toHaveLength(2);
     const grid = document.querySelector('[class*="columns"]') as HTMLElement;
-    expect(grid?.style.gridTemplateColumns).toBe('300px minmax(0, 1fr)');
+    // columns mode: flex row; sizing lives in .smallColumn/.fullColumn
+    expect(grid?.className).not.toContain('autoTiling');
+    expect(grid?.style.gridTemplateColumns).toBe('');
+  });
+
+  it('keeps the flex columns layout without auto tiling by default', async () => {
+    renderPage(payload());
+    await screen.findByTestId('clock-widget');
+    const grid = document.querySelector('[class*="columns"]') as HTMLElement;
+    expect(grid.className).not.toContain('autoTiling');
+    // columns-mode: flex layout, sizing via .fullColumn/.smallColumn
+    expect(grid.style.gridTemplateColumns).toBe('');
+  });
+
+  it('renders the auto tiling class, min-column-width var, and per-column data-span in auto mode', async () => {
+    renderPage(
+      payload({
+        tiling: 'auto',
+        minColumnWidth: 340,
+        columns: [
+          { size: 'small', span: 2, widgets: [{ type: 'clock', config: { type: 'clock' }, data: null }] },
+          { size: 'small', widgets: [{ type: 'clock', config: { type: 'clock' }, data: null }] },
+          { size: 'full', widgets: [{ type: 'clock', config: { type: 'clock' }, data: null }] },
+        ],
+      }),
+    );
+    await screen.findAllByTestId('clock-widget');
+    const grid = document.querySelector('[class*="columns"]') as HTMLElement;
+    expect(grid.className).toContain('autoTiling');
+    expect(grid.style.getPropertyValue('--min-column-width')).toBe('340px');
+    // small/full sizes are ignored in auto mode — the pinned inline
+    // gridTemplateColumns is not applied (the CSS class drives the grid).
+    expect(grid.style.gridTemplateColumns).toBe('');
+    const tiles = Array.from(grid.querySelectorAll('[data-span]'));
+    // span 1 is the default track — only spans above 1 emit the hint
+    expect(tiles.map((t) => t.getAttribute('data-span'))).toEqual(['2']);
+  });
+
+  it('sets the min-column-width var from the payload in auto mode', async () => {
+    renderPage(
+      payload({
+        tiling: 'auto',
+        minColumnWidth: 300,
+        columns: [
+          { size: 'small', widgets: [{ type: 'clock', config: { type: 'clock' }, data: null }] },
+        ],
+      }),
+    );
+    await screen.findByTestId('clock-widget');
+    const grid = document.querySelector('[class*="columns"]') as HTMLElement;
+    expect(grid.style.getPropertyValue('--min-column-width')).toBe('300px');
+  });
+
+  it('keeps the mobile collapse toggles in auto mode (columns stay DOM children)', async () => {
+    renderPage(
+      payload({
+        tiling: 'auto',
+        columns: [
+          { size: 'small', widgets: [{ type: 'clock', config: { type: 'clock' }, data: null }] },
+          { size: 'small', widgets: [{ type: 'clock', config: { type: 'clock' }, data: null }] },
+        ],
+      }),
+    );
+    await screen.findAllByTestId('clock-widget');
+    expect(document.querySelectorAll('[class*="mobileToggle"]')).toHaveLength(2);
   });
 
   it('renders a mobile page-name header when show-mobile-header is set', async () => {

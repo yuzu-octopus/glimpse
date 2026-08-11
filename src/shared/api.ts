@@ -1,5 +1,17 @@
 /** Payload shapes shared between the Bun server and the React client. */
 
+import type { ResolvedConfig } from './config';
+
+/** /api/config success response. */
+export interface ConfigResponse {
+  ok: true;
+  config: ResolvedConfig;
+  /** Path of the loaded config file (CLI arg or GLIMPSE_CONFIG env). */
+  configPath: string;
+  /** package.json version; 'unknown' when it cannot be read. */
+  version: string;
+}
+
 export interface WidgetPayload {
   type: string;
   config: Record<string, unknown>;
@@ -12,6 +24,8 @@ export interface WidgetPayload {
 export interface ColumnPayload {
   size: 'small' | 'full';
   widgets: WidgetPayload[];
+  /** Auto-tiling span hint (1-4); only set when the config declares it. */
+  span?: number;
 }
 
 export interface PagePayload {
@@ -19,9 +33,13 @@ export interface PagePayload {
   name: string;
   width: 'default' | 'slim' | 'wide';
   'center-vertically'?: boolean;
-  'hide-desktop-navigation'?: boolean;
   'show-mobile-header'?: boolean;
-  'desktop-navigation-width'?: 'default' | 'slim' | 'wide';
+  /** 'columns' (default) = glance flex layout; 'auto' = balanced grid tiles.
+   * Server always resolves a value (page.tiling ?? 'columns'). */
+  tiling?: 'columns' | 'auto';
+  /** Auto-mode minimum tile width in px. Server always resolves
+   * (page['min-column-width'] ?? 300). */
+  minColumnWidth?: number;
   headWidgets: WidgetPayload[];
   columns: ColumnPayload[];
 }
