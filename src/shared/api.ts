@@ -34,9 +34,10 @@ export interface PagePayload {
   width: 'default' | 'slim' | 'wide';
   'center-vertically'?: boolean;
   'show-mobile-header'?: boolean;
-  /** 'columns' (default) = glance flex layout; 'auto' = balanced grid tiles.
+  /** 'columns' (default) = glance flex layout; 'auto' = balanced grid tiles;
+   * 'collage' = dense bento grid with measured row spans.
    * Server always resolves a value (page.tiling ?? 'columns'). */
-  tiling?: 'columns' | 'auto';
+  tiling?: 'columns' | 'auto' | 'collage';
   /** Auto-mode minimum tile width in px. Server always resolves
    * (page['min-column-width'] ?? 300). */
   minColumnWidth?: number;

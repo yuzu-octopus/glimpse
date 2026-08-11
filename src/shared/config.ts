@@ -20,8 +20,9 @@ export const PageSchema = z.object({
   'hide-desktop-navigation': z.boolean().optional(),
   'show-mobile-header': z.boolean().optional(),
   'head-widgets': z.array(WidgetSchema).optional(),
-  // NEW — 'columns' (default) = current glance flex behavior; 'auto' = balanced grid tiles.
-  tiling: z.enum(['columns', 'auto']).optional(),
+  // 'columns' (default) = current glance flex behavior; 'auto' = balanced
+  // grid tiles; 'collage' = dense bento grid + JS-measured row spans.
+  tiling: z.enum(['columns', 'auto', 'collage']).optional(),
   // NEW — auto mode only; minimum tile width for auto-fit in px, default 300.
   'min-column-width': z.number().min(1).optional(),
   columns: z.array(ColumnSchema).min(1).max(3),

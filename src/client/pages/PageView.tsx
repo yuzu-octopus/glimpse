@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Banner, Card, Skeleton, Tab, TabList, Text } from '@astryxdesign/core';
 import { ChevronDown } from 'lucide-react';
 import type { WidgetPayload } from '../../shared/api';
@@ -8,6 +8,7 @@ import { WidgetChrome } from '../components/WidgetChrome';
 import { usePageData } from '../hooks/usePageData';
 import { clientWidgets } from '../widgets/registry';
 import { PAGE_WIDTHS } from '../../shared/layout';
+import { useCollageTiling } from './useCollageTiling';
 import styles from './page.module.css';
 
 /** Config-page shape the loading skeleton needs (subset of WidgetConfig). */
@@ -15,6 +16,7 @@ interface SkeletonWidget {
   type?: string;
   title?: string;
   'hide-header'?: boolean;
+  limit?: number;
   widgets?: unknown[];
 }
 
@@ -64,6 +66,41 @@ function columnKey(
   return col.widgets[0] ? widgetKey(col.widgets[0], 0) : `column-${i}`;
 }
 
+/** Config-only row-span estimate for the loading skeleton (collage mode):
+ * bounds CLS between first paint and the measured pass on hydration.
+ * Mirrors the hook's 1-4 clamp. */
+function estimateRowSpan(w: SkeletonWidget): number {
+  const type = w.type ?? '';
+  // feed-ish widgets with a declared limit > 5 are tall lists
+  if (
+    (type === 'rss' || type === 'hacker-news' || type === 'lobsters' || type === 'reddit') &&
+    (w.limit ?? 0) > 5
+  ) {
+    return 3;
+  }
+  // mid-height: markets/twitch/videos/calendar; containers group content
+  if (
+    type === 'markets' ||
+    type === 'twitch-channels' ||
+    type === 'twitch-top-games' ||
+    type === 'videos' ||
+    type === 'calendar' ||
+    type === 'group' ||
+    type === 'split-column'
+  ) {
+    return 2;
+  }
+  // clock/weather/search/monitor/iframe/bookmarks + anything unknown: 1 row
+  return 1;
+}
+
+/** Skeleton tile (one column) spans the sum of its widgets' estimates,
+ * clamped to the hook's 1-4 bound. */
+function estimateColumnRowSpan(col: { widgets: SkeletonWidget[] }): number {
+  const total = col.widgets.reduce((sum, w) => sum + estimateRowSpan(w), 0);
+  return Math.min(Math.max(total, 1), 4);
+}
+
 /** Skeleton card for one configured widget slot (WidgetChrome isLoading). */
 function WidgetSkeleton({ widget }: { widget: SkeletonWidget }) {
   return (
@@ -96,12 +133,14 @@ function PageSkeleton({ page }: { page: Page & { slug: string } }) {
       ) : null}
       <div
         className={
-          page.tiling === 'auto'
-            ? `${styles.columns} ${styles.autoTiling}`
-            : styles.columns
+          page.tiling === 'collage'
+            ? `${styles.columns} ${styles.collageTiling}`
+            : page.tiling === 'auto'
+              ? `${styles.columns} ${styles.autoTiling}`
+              : styles.columns
         }
         style={
-          page.tiling === 'auto'
+          page.tiling === 'collage' || page.tiling === 'auto'
             ? ({
                 '--min-column-width': `${page['min-column-width'] ?? 300}px`,
               } as CSSProperties)
@@ -114,6 +153,9 @@ function PageSkeleton({ page }: { page: Page & { slug: string } }) {
             label={columnLabel(col, i)}
             small={col.size === 'small'}
             span={col.span ?? 1}
+            rowSpan={
+              page.tiling === 'collage' ? estimateColumnRowSpan(col) : undefined
+            }
           >
             <div className={styles.columnWidgets}>
               {col.widgets.map((w, j) => (
@@ -208,12 +250,16 @@ function MobileColumn({
   label,
   small,
   span,
+  rowSpan,
   children,
 }: {
   label: string;
   small: boolean;
   /** Auto-tiling grid span (1-4); undefined keeps the default single track. */
   span?: number;
+  /** Collage estimated row span (1-4); skeleton only — the live hook
+   * overwrites these with measured spans on hydrate. */
+  rowSpan?: number;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(true);
@@ -221,6 +267,7 @@ function MobileColumn({
     <div
       // grid-column: span N is a no-op for 1 — only emit the hint above 1.
       data-span={span && span > 1 ? String(span) : undefined}
+      data-row-span={rowSpan && rowSpan > 1 ? String(rowSpan) : undefined}
       className={
         small
           ? `${styles.column} ${styles.smallColumn}`
@@ -250,6 +297,16 @@ export function PageView({
   page?: Page & { slug: string };
 }) {
   const state = usePageData(slug);
+  const columnsRef = useRef<HTMLDivElement>(null);
+  // Collage measure pass: re-runs when the payload settles/refreshes. The
+  // ref is only attached in collage mode (ref={collage ? columnsRef : null}
+  // below), so the hook no-ops for every other tiling.
+  useCollageTiling(
+    columnsRef,
+    state.status === 'ready' && state.data.tiling === 'collage'
+      ? [state.data]
+      : [],
+  );
 
   if (state.status === 'loading') {
     if (page) return <PageSkeleton page={page} />;
@@ -291,13 +348,16 @@ export function PageView({
         </div>
       ) : null}
       <div
+        ref={data.tiling === 'collage' ? columnsRef : null}
         className={
-          data.tiling === 'auto'
-            ? `${styles.columns} ${styles.autoTiling}`
-            : styles.columns
+          data.tiling === 'collage'
+            ? `${styles.columns} ${styles.collageTiling}`
+            : data.tiling === 'auto'
+              ? `${styles.columns} ${styles.autoTiling}`
+              : styles.columns
         }
         style={
-          data.tiling === 'auto'
+          data.tiling === 'collage' || data.tiling === 'auto'
             ? ({ '--min-column-width': `${data.minColumnWidth}px` } as CSSProperties)
             : undefined
         }

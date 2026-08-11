@@ -16,6 +16,7 @@ export const rssSchema = z.object({
   feeds: z.array(feedSchema).min(1),
   limit: z.number().optional(),
   'collapse-after': z.number().optional(),
+  'source-header': z.boolean().optional(),
   style: z
     .enum(['vertical-list', 'detailed-list', 'horizontal-cards', 'horizontal-cards-2'])
     .optional(),
@@ -34,6 +35,7 @@ export const hackerNewsSchema = z.object({
   'extra-sort-by': z.enum(['engagement']).optional(),
   'comments-url-template': z.string().optional(),
   'collapse-after': z.number().optional(),
+  'source-header': z.boolean().optional(),
 });
 export type HackerNewsConfig = z.infer<typeof hackerNewsSchema>;
 
@@ -46,6 +48,7 @@ export const redditSchema = z.object({
   search: z.string().optional(),
   limit: z.number().optional(),
   'collapse-after': z.number().optional(),
+  'source-header': z.boolean().optional(),
   'show-thumbnails': z.boolean().optional(),
   'show-flairs': z.boolean().optional(),
   style: z.enum(['vertical-list', 'horizontal-cards', 'vertical-cards']).optional(),

@@ -166,4 +166,24 @@ describe('buildPagePayload', () => {
     expect(payload.columns[0].span).toBe(2);
     expect(payload.columns[1].span).toBeUndefined();
   });
+
+  it('resolves collage tiling config and carries column spans into the payload', async () => {
+    const payload = await buildPagePayload(
+      {
+        name: 'Home',
+        slug: 'home',
+        tiling: 'collage',
+        'min-column-width': 360,
+        columns: [
+          { size: 'small', span: 2, widgets: [clockWidget] },
+          { size: 'small', widgets: [clockWidget] },
+        ],
+      },
+      makeCtx(),
+    );
+    expect(payload.tiling).toBe('collage');
+    expect(payload.minColumnWidth).toBe(360);
+    expect(payload.columns[0].span).toBe(2);
+    expect(payload.columns[1].span).toBeUndefined();
+  });
 });

@@ -1,17 +1,98 @@
 # Glimpse example configuration.
 # Copy to config.yml and edit. Format mirrors glance's glance.yml:
 # pages -> columns (small = 300px fixed, full = remaining width) -> widgets.
+#
+# This showcase config demonstrates every widget type across three pages:
+#   Home   - overview dashboard (search, clock, weather, rss, monitor, ...)
+#   Dev    - developer widgets (releases, repository, markets, hacker-news, ...)
+#   Social - social/news widgets (reddit, lobsters, twitch, bookmarks, todo)
+#
+# New options shown off:
+#   tiling: auto          - balanced grid tiles (Social page)
+#   source-header: true   - show the feed source name on news widgets
+#   collapse-after        - collapse long feed lists to the first N items
+#   group / split-column  - container widgets
+#   head-widgets          - widgets spanning the full page width
+#   per-widget titles     - override the default widget title
+#
+# Optional secrets (comment these out if unused):
+#   ${GLIMPSE_GITHUB_TOKEN} - GitHub PAT for higher rate limits on
+#                             releases/repository widgets.
 
 pages:
   - name: Home
+    slug: home
+    head-widgets:
+      - type: markets
+        title: Market snapshot
+        markets:
+          - symbol: SPY
+            name: S&P 500
+          - symbol: BTC-USD
+            name: Bitcoin
+          - symbol: EURUSD=X
+            name: EUR/USD
     columns:
       - size: small
         widgets:
           - type: clock
+            title: World clock
+            hour-format: 24h
+            timezones:
+              - timezone: America/New_York
+                label: New York
+              - timezone: Europe/London
+                label: London
+              - timezone: Asia/Tokyo
+                label: Tokyo
           - type: weather
             location: London, United Kingdom
             units: metric
+          - type: group
+            title: Planner
+            widgets:
+              - type: calendar
+                first-day-of-week: monday
+              - type: todo
+                id: showcase-todo
+      - size: full
+        widgets:
+          - type: search
+            placeholder: Search the web or jump with a bang…
+            search-engine:
+              name: DuckDuckGo
+              url: https://duckduckgo.com/?q={QUERY}
+            bangs:
+              - title: GitHub
+                shortcut: gh
+                url: https://github.com/search?q={QUERY}
+              - title: Wikipedia
+                shortcut: wiki
+                url: https://en.wikipedia.org/wiki/Special:Search?search={QUERY}
+          - type: rss
+            title: Interesting reads
+            limit: 10
+            collapse-after: 3
+            source-header: true
+            feeds:
+              - url: https://selfh.st/rss/
+                title: selfh.st
+              - url: https://www.theverge.com/rss/index.xml
+                title: The Verge
+          - type: monitor
+            title: Service health
+            sites:
+              - url: https://github.com
+                title: GitHub
+                expected-status-code: 200
+              - url: https://duckduckgo.com
+                title: DuckDuckGo
+              - url: https://example.com
+                title: example.com
+      - size: small
+        widgets:
           - type: bookmarks
+            title: Quick links
             groups:
               - title: Dev
                 links:
@@ -21,39 +102,116 @@ pages:
                     url: https://news.ycombinator.com
                   - title: selfh.st
                     url: https://selfh.st
+              - title: Tools
+                links:
+                  - title: DuckDuckGo
+                    url: https://duckduckgo.com
+                  - title: Glance releases
+                    url: https://github.com/glanceapp/glance/releases
+          - type: hacker-news
+            title: Hacker News
+            limit: 8
+            sort-by: top
+            collapse-after: 5
+            source-header: true
+
+  - name: Dev
+    slug: dev
+    columns:
       - size: full
         widgets:
-          - type: search
-            search-engine:
-              name: DuckDuckGo
-              url: https://duckduckgo.com/?q={QUERY}
-          - type: rss
-            title: Interesting reads
+          - type: releases
+            title: New releases
+            repositories:
+              - glanceapp/glance
+              - glanceapp/git-activity
+              - glanceapp/rss-parser
+              - sharkdp/bat
+            show-source-icon: true
             limit: 10
-            collapse-after: 3
-            feeds:
-              - url: https://selfh.st/rss/
-                title: selfh.st
+          - type: split-column
+            title: Build & watch
+            widgets:
+              - type: videos
+                title: Recent videos
+                channels:
+                  - UCsBjURrPoezykLs9EqgamOA
+                  - UC8butISFwT-Wl7EV0hUK0BQ
+                limit: 6
+                style: vertical-list
+              - type: iframe
+                title: Embedded page
+                source: https://example.com
+                height: 400
       - size: small
         widgets:
-          - type: hacker-news
-            limit: 10
-          - type: todo
-            id: glance-todo
-          - type: monitor
-            sites:
-              - url: https://example.com
-                title: example.com
-              - url: https://definitely-not-a-real-site-xyz.com
-                title: broken site
+          - type: custom-api
+            title: GitHub stars
+            url: https://api.github.com/repos/glanceapp/glance
+            options:
+              path: $.stargazers_count
+              title: Stargazers
+              description: github.com/glanceapp/glance
           - type: markets
+            title: Watchlist
             markets:
-              - symbol: SPY
-                name: S&P 500
-              - symbol: BTC-USD
-                name: Bitcoin
-          - type: lobsters
+              - symbol: AAPL
+                name: Apple
+              - symbol: NVDA
+                name: NVIDIA
+              - symbol: TSLA
+                name: Tesla
+          - type: repository
+            title: glance repo
+            repository: glanceapp/glance
+            pull-requests-limit: 5
+            issues-limit: 5
+
+  - name: Social
+    slug: social
+    tiling: collage
+    min-column-width: 320
+    columns:
+      - size: full
+        span: 2
+        widgets:
+          - type: twitch-channels
+            title: Live on Twitch
+            channels:
+              - shroud
+              - xqc
+              - summit1g
             limit: 8
+            collapse-after: 4
+          - type: reddit
+            title: r/selfhosted
+            subreddit: selfhosted
+            sort-by: hot
+            limit: 10
+            collapse-after: 5
+            show-thumbnails: true
+            show-flairs: true
+            source-header: true
+          - type: lobsters
+            title: Lobsters
+            limit: 8
+            collapse-after: 5
+            source-header: true
+          - type: group
+            title: Bookmarks & tasks
+            widgets:
+              - type: bookmarks
+                groups:
+                  - title: Social
+                    links:
+                      - title: Reddit
+                        url: https://reddit.com
+                      - title: Lobsters
+                        url: https://lobste.rs
+                      - title: Twitch
+                        url: https://twitch.tv
+              - type: todo
+                id: showcase-todo
 
 # Optional custom theme in glance HSL format (h s l).
 # theme:

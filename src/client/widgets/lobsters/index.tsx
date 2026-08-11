@@ -41,9 +41,10 @@ function LobstersRow({ post }: { post: LobsterPost }) {
 function Lobsters({ config, data }: WidgetComponentProps) {
   const cfg = config as unknown as LobstersConfig;
   const posts = ((data as { posts?: LobsterPost[] } | null)?.posts ?? []) as LobsterPost[];
+  const title = cfg.title ?? (cfg['source-header'] ? 'Lobsters' : undefined);
   return (
     <WidgetChrome
-      title={cfg.title}
+      title={title}
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}

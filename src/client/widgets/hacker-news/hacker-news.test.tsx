@@ -53,4 +53,24 @@ describe('hacker-news widget', () => {
     fireEvent.click(screen.getByRole('button', { name: /show more/i }));
     expect(screen.getByText('HN story two')).toBeInTheDocument();
   });
+
+  it('renders Hacker News as a source header when enabled and no explicit title', () => {
+    render(<HackerNews config={{ type: 'hacker-news', 'source-header': true }} data={{ posts }} />);
+    expect(screen.getByText('Hacker News')).toBeInTheDocument();
+  });
+
+  it('ignores source-header when an explicit title is set', () => {
+    render(
+      <HackerNews config={{ type: 'hacker-news', title: 'Top Stories', 'source-header': true }} data={{ posts }} />,
+    );
+    expect(screen.getByText('Top Stories')).toBeInTheDocument();
+    expect(screen.queryByText('Hacker News')).toBeNull();
+  });
+
+  it('lets hide-header beat source-header', () => {
+    render(
+      <HackerNews config={{ type: 'hacker-news', 'source-header': true, 'hide-header': true }} data={{ posts }} />,
+    );
+    expect(screen.queryByText('Hacker News')).toBeNull();
+  });
 });

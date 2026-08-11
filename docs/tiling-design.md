@@ -179,3 +179,94 @@ Testing plan:
 - Browser (Playwright, manual or `webapp-testing`): the matrix in risk 2. This is the only place container-query layout is provable.
 
 Follow-up (out of scope): align mobile breakpoint with glance (1190px, tab nav), widget-internal container queries (`@container widget` bands) for multi-column widget interiors, band-snapped column counts if continuous wrap proves visually noisy.
+
+---
+
+# Magic tiling (v2)
+
+Status: proposal. Read-only research; no source changes.
+
+## 1. Why v1 `tiling: auto` isn't "magical" yet
+
+v1 (`page.module.css:48-90`, shipped) is an equal-tile grid: `repeat(auto-fit, minmax(min(300px, 100%), 1fr))` + `align-items: start`. It fixes column-count adaptivity but reads as "spreadsheet, but responsive":
+
+1. **No hole-filling.** `grid-auto-flow: row` (the default) leaves a gap whenever a `span: 2` tile doesn't fit the remaining tracks; the tile wraps to the next row and the hole stays empty.
+2. **No auto spans.** The `span` hint is manual config. Nothing adapts a tile's footprint to its content, so a 20-item RSS feed occupies the same cell as a clock. Rows are equalized to their tallest item; shorter tiles leave dead whitespace below them inside the row — the opposite of a packed collage.
+3. **Row-major ≠ reading flow.** Dashboard "magic" (Home Assistant, Grafana, Vercel bento) packs by *height*, not by row.
+
+Glance's own masonry (`glance/internal/glance/static/js/masonry.js`) is also not the answer at page level: it is count-balanced round-robin into flex columns, equal-width items only, widget-scoped, and JS-driven (layout flash + hydration cost). It proves the *mechanism* (ResizeObserver re-render) but not a collage aesthetic.
+
+## 2. Candidate techniques (2026)
+
+| Technique | Chrome | Firefox | Safari | Order | Perf | Config control | Verdict |
+|---|---|---|---|---|---|---|---|
+| CSS grid `grid-auto-flow: dense` + spans | 57+ ✅ | 52+ ✅ | 10.1+ ✅ | relative order kept (dense may backfill earlier) | native, zero JS | via `span` | **base layer — ship** |
+| CSS multi-column (`columns: N` + `break-inside: avoid`) | ✅ | ✅ | ✅ | **broken** (top-to-bottom per column; LTR readers see 1,4,7…) | native | no spans possible | reject (order is fatal for dashboards) |
+| JS height-balanced masonry (Pinterest-style, shortest-column) | ✅ | ✅ | ✅ | column-major | JS reflow + flash | none needed | good for feeds; equal-width only — glance's split-column already covers the niche |
+| Native masonry `grid-template-rows: masonry` | flag | flag (moving off) | flag | kept | native | spans on defined axis | **not production** — spec churn |
+| Native `display: masonry` (Chromium/WebKit proposal) | flag | — | flag | kept | native | same | abandoned — see below |
+| Native `display: grid-lanes` (CSS Grid L3, resolved Nov 2025) | none | none | TP only | kept | native | full grid placement | future (2027+ at earliest); **design so this is a drop-in later** |
+| Fixed bento cell templates (hand-authored 12-col) | ✅ | ✅ | ✅ | exact | native | total, but manual | reject — requires per-page art direction, not glance-config-friendly |
+
+Sources: sitepoint.com/css-masonry-layout-native-grid (Feb 2026); bordermedia.org/blog/css-masonry-syntax-wars (Jan 2026, CSSWG Nov 2025 resolution); caniuse `masonry` (Chrome not supported through 150).
+
+Key finding: native masonry is *unresolved* — Firefox wanted `grid-template-rows: masonry`, Chromium/WebKit wanted `display: masonry`, and the CSSWG resolved to a new `display: grid-lanes` in Nov 2025, currently Safari-TP-only. Building on it today means a flag-gated layout for most users. But the resolution tells us the *shape* of the future: tracks on one axis, free flow on the other, hole-free by spec.
+
+## 3. RECOMMENDED approach — `tiling: collage` (bento grid, dense flow + JS-measured row spans)
+
+Two layers; the first is a free upgrade to v1, the second is the actual "magic".
+
+**Layer 1 (CSS, zero JS — do now):** add `grid-auto-flow: dense` to `.autoTiling`. One line; every existing `span` config stops leaving holes. Keeps v1 semantics; strict superset.
+
+**Layer 2 (JS, opt-in via new mode):** `tiling: collage` = dense grid + a small ResizeObserver pass that makes footprints follow content:
+
+- Grid: `repeat(auto-fit, minmax(var(--min-column-width), 1fr))`, `grid-auto-flow: dense`, `grid-auto-rows: var(--tile-row)`, `align-items: stretch` (tiles fill their spanned cell).
+- Measure: on container resize and after data hydration (one `requestAnimationFrame` pass), read each tile's content height, compute `rowSpan = clamp(round(h / rowUnit), 1, 4)` with `rowUnit = min(tile heights)` at that pass, then set `grid-row: span N` inline. The shortest tile is the unit, so the smallest widget is always exactly 1×1 and everything else scales off it.
+- `span` (config, 1-4) remains a *minimum column footprint* hint; `rowSpan` is auto. Config authors can force a hero tile (`span: 2`) and the layout packs everything else around it.
+- Re-render guard identical to glance's `masonry.js` (`columnsCount`/`rowSpans` change check + `ResizeObserver` → `requestAnimationFrame`); ~50-70 lines, mirrors an existing codebase pattern, no new deps.
+- Degradation: JS disabled/failed → grid still renders with `grid-auto-flow: dense` and `grid-auto-rows: auto` fallback (layer 1 look). No `@supports` needed — every browser here supports dense grid.
+
+**Why not pure JS masonry or pure dense grid?** Pure masonry is column-major (breaks dashboard reading order) and equal-width (wasteful for a 3-tile-wide hero). Pure dense grid without measured spans keeps the equal-cell look. Bento = dense grid + row spans: hole-free *and* height-aware *and* order-preserving in the flow sense.
+
+**Config surface** (glance-compat preserved; default `columns` byte-for-byte unchanged):
+
+```yaml
+pages:
+  - name: Home
+    tiling: collage          # NEW. 'columns' (default) | 'auto' (v1) | 'collage' (v2)
+    min-column-width: 340    # shared with 'auto'; default 300
+    columns:
+      - size: small
+        span: 2              # existing hint; collage = min column footprint
+        widgets: [...]
+      - size: small
+        widgets: [...]
+```
+
+Schema: extend `tiling` enum with `'collage'` (`src/shared/config.ts`, `src/shared/api.ts` pass-through, defaults resolved server-side as today). No new per-widget keys — the whole point is zero-config magic; `span` stays as the only knob. Open question (flag for implementer): add optional `tile-row-height` (px) to override the measured `rowUnit` when the shortest widget is an outlier (e.g. a single-line clock making every other tile 3 rows tall). Defer until a real config asks for it.
+
+**Composition with existing machinery:**
+
+- *Skeleton mirroring* (`PageSkeleton`): emit estimated `rowSpan` from config-only heuristics (widget type + declared item counts — e.g. RSS/HN/Reddit with many items → taller) so first paint approximates the collage; accept one re-measure frame on hydration. This is the one place v2 adds CLS risk (see §4.1); the estimate bounds it.
+- *Mobile collapse*: below 768px the single-track rule already wins; force `grid-row: span 1` in that media query so measured spans can't overflow the single column.
+- *`span` + dense interplay*: document that a `span: 3-4` on a narrow container wraps (dense backfills beside it); same caveat as v1 risk 5.
+- *Widget-internal container queries*: unaffected; `container-type: inline-size` on `.columns` already in place.
+- *Future grid-lanes*: `display: grid-lanes` replaces the grid+JS layer wholesale when it ships (track list = `minmax(min-column-width, 1fr)`, everything else falls out). Keep the JS isolated in one module so the swap is a CSS class change.
+
+## 4. Risks + testing plan
+
+**Risks**
+
+1. **CLS on hydration** — measured spans land after data loads; skeleton estimates minimize but don't eliminate shift. Mitigate: only run the measure pass once per container-width + data-settle (not per scroll), and keep `rowSpan` churn bounded (round to 1-4).
+2. **jsdom cannot compute layout** — as v1: unit tests assert config→DOM mapping only (`tiling: 'collage'` → `collageTiling` class + dense flag; `span` → `data-span`; measured `rowSpan` is an inline style set by a mocked measure fn). Never assert geometry.
+3. **ResizeObserver loop** — setting inline `grid-row` changes heights, which re-triggers observation. Guard with the same change-detection as glance (`if spans unchanged return`) + `requestAnimationFrame` coalescing; cap re-renders per second as a backstop.
+4. **Dense backfill reorders visually** — a `span: 2` tile can render earlier than its DOM position (screen-reader order = DOM order, mismatch). Acceptable and documented (v1 risk 5, same shape); the collage look *requires* it.
+5. **Outlier shortest tile skews the row unit** — one tiny widget inflates every other tile's span. Deferred knob (`tile-row-height`) noted above; v1 ships with `rowUnit = min(tile heights)` and we watch real configs.
+
+**Testing plan**
+
+- Vitest+RTL (jsdom): enum schema accepts `'collage'` and rejects junk; `PageView` maps `tiling: 'collage'` → `collageTiling` class; `span` → `data-span`; measure module unit-tested with fixed fake heights (span computation, clamp 1-4, no-change guard). Existing assertions untouched (`gridTemplateColumns` pin stays).
+- Browser (Playwright): the v1 matrix plus — collage packs hole-free (assert every tile's bounding box touches either container edge or a sibling tile: no orphan gaps), container height strictly ≤ equal-tile grid for the same content, spans update on container resize (1440↔1920) and after feed data settles, mobile 380px renders single column with `grid-row: span 1`, keyboard tab order still visits every tile.
+- Perf: measure pass must stay under one frame at 30+ tiles; verify no continuous ResizeObserver churn in DevTools Performance.
+
+Follow-up (out of scope): adopt `display: grid-lanes` when two engines ship it unflagged (swap is isolated by design); per-widget `span` presets in config.example.yml showcasing collage; optional `tile-row-height` override if real configs hit risk 5.

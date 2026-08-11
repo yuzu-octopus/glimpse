@@ -136,12 +136,15 @@ function Rss({ config, data }: WidgetComponentProps) {
   const items = ((data as { items?: RssItem[] } | null)?.items ?? []) as RssItem[];
   const style = cfg.style ?? 'vertical-list';
   const collapseAfter = cfg['collapse-after'];
+  // explicit title wins; source-header fills in when the widget is untitled
+  const title =
+    cfg.title ?? (cfg['source-header'] ? cfg.feeds[0]?.title ?? 'RSS' : undefined);
 
   if (style === 'horizontal-cards' || style === 'horizontal-cards-2') {
     return (
       <Cards
         items={items}
-        title={cfg.title}
+        title={title}
         titleUrl={cfg['title-url']}
         hideHeader={cfg['hide-header']}
         cssClass={cfg['css-class']}
@@ -155,7 +158,7 @@ function Rss({ config, data }: WidgetComponentProps) {
   const singleLine = cfg['single-line-titles'] === true;
   return (
     <WidgetChrome
-      title={cfg.title}
+      title={title}
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}

@@ -10,6 +10,7 @@ export const lobstersSchema = z.object({
   tags: z.array(z.string()).optional(),
   limit: z.number().optional(),
   'collapse-after': z.number().optional(),
+  'source-header': z.boolean().optional(),
 });
 export type LobstersConfig = z.infer<typeof lobstersSchema>;
 

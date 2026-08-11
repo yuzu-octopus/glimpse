@@ -68,4 +68,42 @@ describe('rss widget', () => {
     expect(link().className).toContain(styles.titleClamp);
     expect(link().className).not.toContain(styles.titleSingle);
   });
+
+  it('renders the first feed title as a source header when enabled and no explicit title', () => {
+    render(
+      <Rss
+        config={{ type: 'rss', 'source-header': true, feeds: [{ url: 'https://example.com/feed', title: 'The Feed' }] }}
+        data={{ items }}
+      />,
+    );
+    expect(screen.getByText('The Feed')).toBeInTheDocument();
+  });
+
+  it('falls back to RSS as the source header when the first feed has no title', () => {
+    render(
+      <Rss config={{ type: 'rss', 'source-header': true, feeds: [{ url: 'https://example.com/feed' }] }} data={{ items }} />,
+    );
+    expect(screen.getByText('RSS')).toBeInTheDocument();
+  });
+
+  it('ignores source-header when an explicit title is set', () => {
+    render(
+      <Rss
+        config={{ type: 'rss', title: 'My Feed', 'source-header': true, feeds: [{ url: 'x', title: 'The Feed' }] }}
+        data={{ items }}
+      />,
+    );
+    expect(screen.getByText('My Feed')).toBeInTheDocument();
+    expect(screen.queryByText('The Feed')).toBeNull();
+  });
+
+  it('lets hide-header beat source-header', () => {
+    render(
+      <Rss
+        config={{ type: 'rss', 'source-header': true, 'hide-header': true, feeds: [{ url: 'x', title: 'The Feed' }] }}
+        data={{ items }}
+      />,
+    );
+    expect(screen.queryByText('The Feed')).toBeNull();
+  });
 });

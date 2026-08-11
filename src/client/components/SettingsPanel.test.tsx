@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { presetById, type Preset } from '../../shared/theme/presets';
@@ -209,6 +211,48 @@ describe('SettingsPanel section sidebar', () => {
     fireEvent.click(within(nav).getByText('Appearance'));
     expect(presetCard(gruvbox.name)).toBeInTheDocument();
     expect(screen.queryByText('/etc/glimpse/config.yml')).toBeNull();
+  });
+
+  it('keeps the same fixed-height content pane across tabs', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ ok: true, config: {}, version: '1.0.0' }),
+      }),
+    );
+    mockedUseThemeSettings.mockReturnValue(makeSettings());
+    render(<SettingsPanel />);
+
+    const pane = document.querySelector(`.${styles.content}`);
+    expect(pane).not.toBeNull();
+
+    fireEvent.click(within(screen.getByTestId('settings-nav')).getByText('About'));
+    await screen.findByText('1.0.0'); // flush the about fetch inside act
+
+    // tab switches swap only the inner section — the content pane box (the
+    // element carrying the fixed-height rule) stays mounted, so the dialog
+    // never resizes between Appearance and About
+    const paneAfter = document.querySelector(`.${styles.content}`);
+    expect(paneAfter).toBe(pane);
+    expect(paneAfter).toHaveClass(styles.content);
+  });
+});
+
+describe('SettingsPanel layout contract', () => {
+  it('pins the fixed content-pane height and lighten-on-hover treatment in the stylesheet', () => {
+    const css = readFileSync(resolve('src/client/components/settings-panel.module.css'), 'utf8');
+
+    // content pane height is fixed (85vh minus dialog chrome), not
+    // max-height, so switching tabs never changes the dialog size
+    expect(css).toMatch(/\.content\s*\{[^}]*height:\s*calc\(85vh - 96px\)/);
+
+    // hover lightens the card (content-border ring + highlight background)
+    // instead of greying it out with the subdue ring
+    const hoverRule = css.match(/\.card:hover\s*\{[^}]*\}/)?.[0] ?? '';
+    expect(hoverRule).toContain('var(--color-widget-content-border)');
+    expect(hoverRule).toContain('var(--color-widget-background-highlight)');
+    expect(hoverRule).not.toContain('--color-text-subdue');
   });
 });
 

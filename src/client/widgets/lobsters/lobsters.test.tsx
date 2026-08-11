@@ -61,4 +61,24 @@ describe('lobsters widget', () => {
     fireEvent.click(screen.getByRole('button', { name: /show more/i }));
     expect(screen.getByText('Second post')).toBeInTheDocument();
   });
+
+  it('renders Lobsters as a source header when enabled and no explicit title', () => {
+    render(<Lobsters config={{ type: 'lobsters', 'source-header': true }} data={{ posts }} />);
+    expect(screen.getByText('Lobsters')).toBeInTheDocument();
+  });
+
+  it('ignores source-header when an explicit title is set', () => {
+    render(
+      <Lobsters config={{ type: 'lobsters', title: 'My Lobsters', 'source-header': true }} data={{ posts }} />,
+    );
+    expect(screen.getByText('My Lobsters')).toBeInTheDocument();
+    expect(screen.queryByText('Lobsters')).toBeNull();
+  });
+
+  it('lets hide-header beat source-header', () => {
+    render(
+      <Lobsters config={{ type: 'lobsters', 'source-header': true, 'hide-header': true }} data={{ posts }} />,
+    );
+    expect(screen.queryByText('Lobsters')).toBeNull();
+  });
 });

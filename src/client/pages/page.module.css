@@ -51,32 +51,69 @@
 
 /* tiling: auto — balanced grid tiles. small/full are ignored here; the
    300px small-column rule is neutralized below. min() clamps the min track
-   to the container width so a min wider than the viewport can't overflow. */
+   to the container width so a min wider than the viewport can't overflow.
+   grid-auto-flow: dense backfills holes left by span tiles (v2 layer 1). */
 .autoTiling {
   display: grid;
   grid-template-columns: repeat(
     auto-fit,
     minmax(min(var(--min-column-width, 300px), 100%), 1fr)
   );
+  grid-auto-flow: dense;
   align-items: start; /* ragged bottoms; no row equalization */
 }
 
-/* auto mode treats every column as a tile — kill the explicit-mode widths */
+/* tiling: collage — bento grid. Dense flow + JS-measured row spans
+   (useCollageTiling sets --tile-row and inline grid-row: span N). Without
+   JS this degrades to the auto look: dense grid, auto rows. */
+.collageTiling {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(var(--min-column-width, 300px), 100%), 1fr)
+  );
+  grid-auto-flow: dense;
+  grid-auto-rows: var(--tile-row, auto);
+  align-items: stretch; /* tiles fill their spanned cell */
+  container-type: inline-size;
+}
+
+/* auto/collage mode treats every column as a tile — kill the explicit-mode
+   widths (collage inherits the same grid-item behavior) */
 .autoTiling .smallColumn,
-.autoTiling .fullColumn {
+.autoTiling .fullColumn,
+.collageTiling .smallColumn,
+.collageTiling .fullColumn {
   width: 100%;
   flex-shrink: 1;
 }
 
-/* per-column span hint (config `span`, 1-4); span 1 is the default track */
-.autoTiling [data-span='2'] {
+/* per-column span hint (config `span`, 1-4); span 1 is the default track.
+   Applies to both auto and collage — collage keeps span as the minimum
+   column footprint. */
+.autoTiling [data-span='2'],
+.collageTiling [data-span='2'] {
   grid-column: span 2;
 }
-.autoTiling [data-span='3'] {
+.autoTiling [data-span='3'],
+.collageTiling [data-span='3'] {
   grid-column: span 3;
 }
-.autoTiling [data-span='4'] {
+.autoTiling [data-span='4'],
+.collageTiling [data-span='4'] {
   grid-column: span 4;
+}
+
+/* Skeleton estimated row spans (config-only heuristics; see PageSkeleton).
+   The live hook overwrites these with measured inline spans on hydrate. */
+.collageTiling [data-row-span='2'] {
+  grid-row: span 2;
+}
+.collageTiling [data-row-span='3'] {
+  grid-row: span 3;
+}
+.collageTiling [data-row-span='4'] {
+  grid-row: span 4;
 }
 
 .column {
@@ -198,8 +235,18 @@
   .autoTiling {
     grid-template-columns: 1fr;
   }
-  .autoTiling [data-span] {
+  .autoTiling [data-span],
+  .collageTiling [data-span] {
     grid-column: 1 / -1;
+  }
+  /* collage: single track AND force measured row spans back to 1 so a
+     multi-row tile can't overflow the one column */
+  .collageTiling {
+    grid-template-columns: 1fr;
+  }
+  .collageTiling [data-row-span],
+  .collageTiling > * {
+    grid-row: span 1 !important;
   }
   .smallColumn {
     width: 100%;

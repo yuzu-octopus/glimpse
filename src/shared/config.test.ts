@@ -75,6 +75,26 @@ describe('ConfigSchema', () => {
     }
   });
 
+  it('accepts tiling collage alongside auto', () => {
+    const r = ConfigSchema.safeParse({
+      pages: [
+        {
+          name: 'Home',
+          tiling: 'collage',
+          'min-column-width': 340,
+          columns: [
+            { size: 'small', span: 2, widgets: [{ type: 'clock' }] },
+            { size: 'small', widgets: [{ type: 'rss', feeds: [{ url: 'https://example.com/feed.xml' }] }] },
+          ],
+        },
+      ],
+    });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.pages[0].tiling).toBe('collage');
+    }
+  });
+
   it('defaults tiling and span to undefined (columns mode)', () => {
     const r = ConfigSchema.safeParse(validYaml);
     expect(r.success).toBe(true);

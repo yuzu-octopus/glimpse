@@ -330,6 +330,66 @@ describe('PageView', () => {
     expect(document.querySelectorAll('[class*="mobileToggle"]')).toHaveLength(2);
   });
 
+  it('renders the collage tiling class and min-column-width var in collage mode', async () => {
+    renderPage(
+      payload({
+        tiling: 'collage',
+        minColumnWidth: 360,
+        columns: [
+          { size: 'small', span: 2, widgets: [{ type: 'clock', config: { type: 'clock' }, data: null }] },
+          { size: 'small', widgets: [{ type: 'clock', config: { type: 'clock' }, data: null }] },
+        ],
+      }),
+    );
+    await screen.findAllByTestId('clock-widget');
+    const grid = document.querySelector('[class*="columns"]') as HTMLElement;
+    expect(grid.className).toContain('collageTiling');
+    expect(grid.style.getPropertyValue('--min-column-width')).toBe('360px');
+    // span hints still emit their column footprint in collage mode
+    const tiles = Array.from(grid.querySelectorAll('[data-span]'));
+    expect(tiles.map((t) => t.getAttribute('data-span'))).toEqual(['2']);
+  });
+
+  it('emits estimated row spans on collage skeleton tiles', () => {
+    const page: Page & { slug: string } = {
+      slug: 'home',
+      name: 'Home',
+      tiling: 'collage',
+      'min-column-width': 360,
+      columns: [
+        // tall feed (limit > 5) + markets: 3 + 2 = 5, clamped to 4
+        {
+          size: 'full',
+          widgets: [
+            { type: 'rss', title: 'Feeds', feeds: [{ url: 'https://example.com/feed.xml' }], limit: 10 },
+            { type: 'markets', title: 'Markets', markets: [{ symbol: 'SPY' }] },
+          ],
+        },
+        // clock: 1
+        { size: 'small', widgets: [{ type: 'clock', title: 'Clock', timezones: [] }] },
+        // group container: 2
+        {
+          size: 'small',
+          widgets: [{ type: 'group', title: 'Group', widgets: [{ type: 'clock', title: 'Child' }] }],
+        },
+      ],
+    };
+    render(
+      <MemoryRouter>
+        <PageView slug="home" page={page} />
+      </MemoryRouter>,
+    );
+    const skeleton = screen.getByTestId('page-skeleton');
+    const grid = skeleton.querySelector('[class*="columns"]') as HTMLElement;
+    expect(grid.className).toContain('collageTiling');
+    expect(grid.style.getPropertyValue('--min-column-width')).toBe('360px');
+    const spans = Array.from(grid.querySelectorAll('[data-row-span]')).map(
+      (t) => t.getAttribute('data-row-span'),
+    );
+    // feed(3)+markets(2)=5→clamp 4; clock→1 (no hint); group→2
+    expect(spans).toEqual(['4', '2']);
+  });
+
   it('renders a mobile page-name header when show-mobile-header is set', async () => {
     renderPage(payload({ name: 'My Page', 'show-mobile-header': true }));
     const header = await screen.findByText('My Page');

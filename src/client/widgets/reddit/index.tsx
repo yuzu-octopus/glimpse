@@ -59,10 +59,11 @@ function Reddit({ config, data }: WidgetComponentProps) {
   const showThumb = cfg['show-thumbnails'] === true;
   const showFlair = cfg['show-flairs'] === true;
   const style = cfg.style ?? 'vertical-list';
+  const title = cfg.title ?? (cfg['source-header'] ? 'Reddit' : undefined);
 
   if (style === 'horizontal-cards' || style === 'vertical-cards') {
     return (
-      <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={[cfg['css-class'], styles.cards].filter(Boolean).join(' ') || undefined}>
+      <WidgetChrome title={title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={[cfg['css-class'], styles.cards].filter(Boolean).join(' ') || undefined}>
         <div className={style === 'horizontal-cards' ? styles.cardRow : styles.cardCol}>
           {posts.map((post) => (
             <Card key={post.url} post={post} showMeta={style === 'vertical-cards'} />
@@ -74,7 +75,7 @@ function Reddit({ config, data }: WidgetComponentProps) {
 
   return (
     <WidgetChrome
-      title={cfg.title}
+      title={title}
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}

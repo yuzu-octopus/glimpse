@@ -62,4 +62,24 @@ describe('reddit widget', () => {
     expect(container.querySelector('[data-testid="widget-body"]')).toBeInTheDocument();
     expect(screen.queryByText('First post title')).toBeNull();
   });
+
+  it('renders Reddit as a source header when enabled and no explicit title', () => {
+    render(<Reddit config={{ type: 'reddit', subreddit: 'test', 'source-header': true }} data={{ posts }} />);
+    expect(screen.getByText('Reddit')).toBeInTheDocument();
+  });
+
+  it('ignores source-header when an explicit title is set', () => {
+    render(
+      <Reddit config={{ type: 'reddit', subreddit: 'test', title: 'My Reddit', 'source-header': true }} data={{ posts }} />,
+    );
+    expect(screen.getByText('My Reddit')).toBeInTheDocument();
+    expect(screen.queryByText('Reddit')).toBeNull();
+  });
+
+  it('lets hide-header beat source-header', () => {
+    render(
+      <Reddit config={{ type: 'reddit', subreddit: 'test', 'source-header': true, 'hide-header': true }} data={{ posts }} />,
+    );
+    expect(screen.queryByText('Reddit')).toBeNull();
+  });
 });

@@ -64,7 +64,9 @@
   box-shadow: inset 2px 0 0 var(--color-primary);
 }
 
-/* Right content pane — generous padding, scrolls independently of the nav. */
+/* Right content pane — generous padding, scrolls independently of the nav.
+ * Fixed height (85vh minus dialog header + body chrome) so switching tabs
+ * never resizes the dialog: About stays as tall as the Appearance gallery. */
 .content {
   flex: 1;
   min-width: 0;
@@ -72,7 +74,7 @@
   flex-direction: column;
   gap: 22px;
   padding: 28px 30px;
-  max-height: calc(85vh - 96px);
+  height: calc(85vh - 96px);
   overflow-y: auto;
   scrollbar-width: thin;
 }
@@ -136,8 +138,11 @@
   cursor: pointer;
 }
 
+/* Hover lightens the card (content-border ring + highlight bg); the
+ * selected-state ring stays primary via the inline --_card-ring style. */
 .card:hover {
-  --_card-ring: inset 0 0 0 2px var(--color-text-subdue);
+  --_card-ring: inset 0 0 0 2px var(--color-widget-content-border);
+  background-color: var(--color-widget-background-highlight);
 }
 
 /* glance .theme-color */
@@ -227,6 +232,6 @@
 
   .content {
     padding: 20px;
-    max-height: 60vh;
+    height: 60vh;
   }
 }
