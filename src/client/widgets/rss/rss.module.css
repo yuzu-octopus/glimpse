@@ -5,6 +5,8 @@
   gap: 15px; /* glance .flex.gap-15 */
   align-items: flex-start;
   min-width: 0;
+  /* glance padding-block-5 — keep the title off the row/frame edge */
+  padding-top: 5px;
 }
 
 /* glance .list.list-with-separator */

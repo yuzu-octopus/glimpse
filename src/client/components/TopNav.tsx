@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { useConfig } from '../hooks/useConfig';
-import { ThemePicker } from './ThemePicker';
+import { SettingsPanel } from './SettingsPanel';
 import styles from './top-nav.module.css';
 
 // glance docs §Pages & Columns: default 1600px / slim 1100px / wide 1920px.
@@ -18,8 +18,8 @@ function useNavPages() {
   return { pages, homeSlug, isSelected };
 }
 
-/** Desktop header: glance's widget-frame bar (logo + page tabs + theme
- * picker, height 45px). The nav element carries the content-bounds width so
+/** Desktop header: glance's widget-frame bar (logo + page tabs + settings,
+ * height 45px). The nav element carries the content-bounds width so
  * the whole bar constrains like glance's header-container. */
 export function TopNav({ width }: { width?: 'default' | 'slim' | 'wide' }) {
   const { pages, homeSlug, isSelected } = useNavPages();
@@ -48,7 +48,7 @@ export function TopNav({ width }: { width?: 'default' | 'slim' | 'wide' }) {
           </Link>
         ))}
       </div>
-      <ThemePicker />
+      <SettingsPanel />
     </nav>
   );
 }
@@ -70,7 +70,7 @@ export function MobileNavigation() {
         >
           <Menu size={18} aria-hidden="true" />
         </button>
-        <ThemePicker />
+        <SettingsPanel />
       </div>
       {expanded ? (
         <div className={styles.mobileNavLinks}>

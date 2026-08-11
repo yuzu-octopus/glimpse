@@ -6,6 +6,8 @@
   align-items: center;
   gap: 15px; /* glance gap-15 */
   border: 1px solid transparent;
+  /* glance padding-inline-widget — keeps the border clear of the icon and kbd */
+  padding-inline: var(--widget-content-horizontal-padding);
   transition: border-color 0.2s;
 }
 

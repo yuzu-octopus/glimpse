@@ -6,7 +6,7 @@ import type { Config } from '../../shared/config';
 import { hslToHex } from '../../shared/theme/base16';
 import { buildConfigPresets, hslBlockToColors } from '../../shared/theme/glanceHsl';
 import { BASE16_KEYS } from '../../shared/theme/presets';
-import { ThemePicker } from '../components/ThemePicker';
+import { SettingsPanel } from '../components/SettingsPanel';
 import { GlimpseThemeProvider } from './GlimpseThemeProvider';
 
 function configWithPresets(): Config {
@@ -129,13 +129,13 @@ describe('buildConfigPresets', () => {
   });
 });
 
-describe('config presets in the picker', () => {
+describe('config presets in the settings panel', () => {
   it('renders config presets in a Custom group and persists a selection', async () => {
     stubApi(configWithPresets());
     render(
       <MemoryRouter>
         <GlimpseThemeProvider>
-          <ThemePicker />
+          <SettingsPanel />
           <ThemeProbe />
         </GlimpseThemeProvider>
       </MemoryRouter>,

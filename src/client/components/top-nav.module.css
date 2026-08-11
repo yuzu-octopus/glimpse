@@ -1,7 +1,8 @@
 /* glance site.css header port: the whole bar is a widget-frame card
-   (header + logo + nav links + theme picker, height 45px, gap 25px). */
+   (header + logo + nav links + settings, height 45px, gap 25px). */
 .header {
   display: flex;
+  align-items: center;
   height: 45px;
   gap: 25px;
   padding-inline: var(--widget-content-horizontal-padding);

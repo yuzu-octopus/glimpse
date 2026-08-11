@@ -1,0 +1,105 @@
+/* Settings dialog — appearance controls + glance theme gallery. */
+
+/* Gear trigger; fills the header/mobile-nav bar height so the icon centers
+ * in the 45px header row (align-items: center on the row). */
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: none;
+  border: none;
+  color: var(--color-text-base);
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.trigger:hover {
+  color: var(--color-text-highlight);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* glance .theme-choices label styling */
+.groupLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-subdue);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Scrollable gallery body (glance scrollbar comes from index.css). */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 52vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* glance .theme-choices: 3 columns. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* glance .theme-preset: swatch-row card. */
+.card {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--color-widget-content-border);
+  border-radius: var(--border-radius);
+  background-color: var(--color-widget-background);
+  min-width: 0;
+  cursor: pointer;
+}
+
+.card:hover {
+  --_card-ring: inset 0 0 0 2px var(--color-text-subdue);
+}
+
+/* glance .theme-color */
+.swatch {
+  background-color: var(--color);
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-base);
+  color: var(--color-text-base);
+}
+
+.tag {
+  flex-shrink: 0;
+  font-size: 10px;
+  text-transform: capitalize;
+  color: var(--color-text-subdue);
+}

@@ -136,7 +136,16 @@ const RAMP_VARS: ReadonlyArray<readonly [keyof GlanceRamp, string]> = [
 /** [light, dark] tuple source for Astryx light-dark() compilation. */
 const tuple = (light: string, dark: string): [string, string] => [light, dark];
 
-export function buildGlimpseTheme(pair: ThemeSourcePair): DefinedTheme {
+/**
+ * Every themed color var as [light, dark] tuples (glance ramp + Astryx
+ * semantic mapping). Shared by buildGlimpseTheme (via defineTheme tokens)
+ * and the provider's documentElement sync — the latter guarantees the
+ * html/body level (which sits OUTSIDE the Astryx Theme wrapper's scope)
+ * resolves theme colors instead of the :root fallbacks.
+ */
+export function glanceColorVars(
+  pair: ThemeSourcePair,
+): Record<string, [string, string]> {
   const dark = glanceRamp(
     pair.dark.bg,
     pair.dark.primary,
@@ -151,20 +160,14 @@ export function buildGlimpseTheme(pair: ThemeSourcePair): DefinedTheme {
     pair.light.positive,
     true,
   );
-  // glance accent blocks pass through the ramp unchanged, so this is
-  // per-mode only when the pair's sides were seeded differently.
   const onAccentLight = pair.light.primary.l >= 55 ? '#000000' : '#FFFFFF';
   const onAccentDark = pair.dark.primary.l >= 55 ? '#000000' : '#FFFFFF';
 
-  const rampTokens: Record<string, TokenValue> = {};
+  const out: Record<string, [string, string]> = {};
   for (const [key, cssName] of RAMP_VARS) {
-    rampTokens[cssName] = tuple(light[key], dark[key]);
+    out[cssName] = tuple(light[key], dark[key]);
   }
-
-  const tokens: Record<string, TokenValue> = {
-    ...DIMS,
-    ...rampTokens,
-    // Astryx semantic mapping (glance role → astryx token)
+  Object.assign(out, {
     '--color-background-body': tuple(light.background, dark.background),
     '--color-background-surface': tuple(light.widgetBackground, dark.widgetBackground),
     '--color-background-card': tuple(light.widgetBackground, dark.widgetBackground),
@@ -201,6 +204,16 @@ export function buildGlimpseTheme(pair: ThemeSourcePair): DefinedTheme {
     '--color-on-accent': tuple(onAccentLight, onAccentDark),
     '--color-on-success': tuple(onAccentLight, onAccentDark),
     '--color-on-error': tuple('#FFFFFF', '#FFFFFF'),
+  });
+  return out;
+}
+
+export function buildGlimpseTheme(pair: ThemeSourcePair): DefinedTheme {
+  const colorTokens = glanceColorVars(pair);
+
+  const tokens: Record<string, TokenValue> = {
+    ...DIMS,
+    ...colorTokens,
     // Radius: glance is uniformly 5px
     '--radius-inner': '4px',
     '--radius-element': '5px',
@@ -231,7 +244,6 @@ export function buildGlimpseTheme(pair: ThemeSourcePair): DefinedTheme {
           backgroundColor: 'var(--color-widget-background)',
           border: '1px solid var(--color-widget-content-border)',
           borderRadius: 'var(--border-radius)',
-          boxShadow: '0px 3px 0px 0px var(--color-widget-shadow)',
         },
       },
       button: {

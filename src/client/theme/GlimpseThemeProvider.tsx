@@ -12,11 +12,7 @@ import { LinkProvider } from '@astryxdesign/core/Link';
 import type { ThemeConfig } from '../../shared/config';
 import { presetById, type Preset } from '../../shared/theme/presets';
 import { buildConfigPresets, parseHsl } from '../../shared/theme/glanceHsl';
-import {
-  buildGlimpseTheme,
-  sourcePairFromPreset,
-  type ThemeSourcePair,
-} from '../../shared/theme/glimpseTheme';
+import { buildGlimpseTheme, glanceColorVars, sourcePairFromPreset, type ThemeSourcePair } from '../../shared/theme/glimpseTheme';
 import type { Hsl } from '../../shared/theme/glanceRamp';
 import { useConfig } from '../hooks/useConfig';
 
@@ -130,15 +126,33 @@ export function GlimpseThemeProvider({ children }: { children: ReactNode }) {
     [configState],
   );
 
-  const theme = useMemo(() => {
+  const pair = useMemo(() => {
     const preset =
       configPresets.find((p) => p.id === settings.presetId) ?? presetById(settings.presetId);
-    const pair = applyConfigTheme(
+    return applyConfigTheme(
       sourcePairFromPreset(preset),
       configState.status === 'ready' ? configState.config.theme : undefined,
     );
-    return buildGlimpseTheme(pair);
   }, [settings.presetId, configState, configPresets]);
+
+  const theme = useMemo(() => buildGlimpseTheme(pair), [pair]);
+
+  // The Astryx <Theme> emits its tokens on a wrapper INSIDE #root, so the
+  // html/body level (page background, :root consumers) would keep resolving
+  // the index.css fallbacks. Mirror the themed color vars onto
+  // documentElement so the page background follows the active theme/mode.
+  useEffect(() => {
+    const root = document.documentElement;
+    const decls = glanceColorVars(pair);
+    const applied: string[] = [];
+    for (const [name, [light, dark]] of Object.entries(decls)) {
+      root.style.setProperty(name, `light-dark(${light}, ${dark})`);
+      applied.push(name);
+    }
+    return () => {
+      for (const name of applied) root.style.removeProperty(name);
+    };
+  }, [pair]);
 
   const api = useMemo<ThemeSettings>(
     () => ({

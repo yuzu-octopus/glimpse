@@ -223,7 +223,8 @@ describe('buildGlimpseTheme', () => {
     expect(c.card?.base?.backgroundColor).toBe('var(--color-widget-background)');
     expect(c.card?.base?.border).toBe('1px solid var(--color-widget-content-border)');
     expect(c.card?.base?.borderRadius).toBe('var(--border-radius)');
-    expect(c.card?.base?.boxShadow).toBe('0px 3px 0px 0px var(--color-widget-shadow)');
+    // flat cards: no drop shadow (glance widget frame is border-only)
+    expect(c.card?.base?.boxShadow).toBeUndefined();
     expect(c.link?.base?.color).toBe('inherit');
     expect(c.link?.base?.[':hover']).toEqual({ color: 'var(--color-text-highlight)' });
     expect(c.button?.base?.borderRadius).toBe('var(--border-radius)');
