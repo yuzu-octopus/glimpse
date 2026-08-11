@@ -6,6 +6,7 @@ import {
   type Config,
   type ResolvedConfig,
 } from '../shared/config';
+import { isRecord } from './api';
 
 export interface LoadResult {
   ok: boolean;
@@ -13,10 +14,6 @@ export interface LoadResult {
   errors?: string[];
   /** Absolute paths of all files that were read (main + includes). */
   files: string[];
-}
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
 function slugify(name: string): string {

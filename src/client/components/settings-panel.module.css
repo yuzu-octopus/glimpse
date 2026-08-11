@@ -1,4 +1,4 @@
-/* Settings dialog — appearance controls + glance theme gallery. */
+/* Settings dialog — section sidebar + spacious content pane. */
 
 /* Gear trigger; fills the header/mobile-nav bar height so the icon centers
  * in the 45px header row (align-items: center on the row). */
@@ -20,14 +20,80 @@
 
 .body {
   display: flex;
+  align-items: stretch;
+  min-height: 0;
+}
+
+/* Left section nav — active item gets a primary accent bar on top of the
+ * highlight, mirroring Astryx SideNavItem's selected treatment. */
+.nav {
+  display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 4px;
+  flex-shrink: 0;
+  width: 190px;
+  padding: 8px;
+  border-right: 1px solid var(--color-separator);
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: none;
+  border-radius: var(--border-radius);
+  background: none;
+  color: var(--color-text-base);
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.navItem:hover {
+  color: var(--color-text-highlight);
+  background-color: var(--color-widget-background-highlight);
+}
+
+.navItemActive,
+.navItemActive:hover {
+  color: var(--color-text-highlight);
+  background-color: var(--color-widget-background-highlight);
+  box-shadow: inset 2px 0 0 var(--color-primary);
+}
+
+/* Right content pane — generous padding, scrolls independently of the nav. */
+.content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 28px 30px;
+  max-height: calc(85vh - 96px);
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--font-size-h3);
+  font-weight: 600;
+  color: var(--color-text-highlight);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 /* glance .theme-choices label styling */
@@ -42,31 +108,27 @@
 .group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
-/* Scrollable gallery body (glance scrollbar comes from index.css). */
-.list {
+.gallery {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  max-height: 52vh;
-  overflow-y: auto;
-  scrollbar-width: thin;
+  gap: 18px;
 }
 
-/* glance .theme-choices: 3 columns. */
+/* glance .theme-choices: 3 columns, roomier cards. */
 .grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 14px;
 }
 
 /* glance .theme-preset: swatch-row card. */
 .card {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
   border: 1px solid var(--color-widget-content-border);
   border-radius: var(--border-radius);
   background-color: var(--color-widget-background);
@@ -81,9 +143,9 @@
 /* glance .theme-color */
 .swatch {
   background-color: var(--color);
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
   flex-shrink: 0;
 }
 
@@ -93,7 +155,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-h4);
   color: var(--color-text-base);
 }
 
@@ -102,4 +164,69 @@
   font-size: 10px;
   text-transform: capitalize;
   color: var(--color-text-subdue);
+}
+
+/* About pane. */
+.aboutBlurb {
+  margin: 0;
+  color: var(--color-text-paragraph);
+}
+
+.aboutList {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aboutRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-separator);
+}
+
+.aboutRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.aboutRow dt {
+  color: var(--color-text-subdue);
+}
+
+.aboutRow dd {
+  margin: 0;
+  color: var(--color-text-highlight);
+}
+
+.code {
+  font-family: inherit;
+  color: var(--color-text-highlight);
+}
+
+/* Narrow screens: stack the nav above the content. */
+@media (max-width: 720px) {
+  .body {
+    flex-direction: column;
+  }
+
+  .nav {
+    flex-direction: row;
+    width: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--color-separator);
+  }
+
+  .navItemActive,
+  .navItemActive:hover {
+    box-shadow: inset 0 -2px 0 var(--color-primary);
+  }
+
+  .content {
+    padding: 20px;
+    max-height: 60vh;
+  }
 }

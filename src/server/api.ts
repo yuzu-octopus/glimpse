@@ -6,7 +6,7 @@ import {
   type WidgetFetchContext,
 } from './widgets/registry';
 
-function isRecord(v: unknown): v is Record<string, unknown> {
+export function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
@@ -69,12 +69,16 @@ export async function buildPagePayload(
   page: Page & { slug: string },
   ctx: WidgetFetchContext,
 ): Promise<PagePayload> {
-  const buildColumn = (col: { size: 'small' | 'full'; widgets: unknown[] }) =>
+  const buildColumn = (col: { size: 'small' | 'full'; span?: number; widgets: unknown[] }) =>
     Promise.all(
       col.widgets.map((w, i) =>
         fetchWidget(ctx, page.slug, `${col.size === 'small' ? 's' : 'f'}:${i}`, isRecord(w) ? w : { type: 'unknown' }),
       ),
-    );
+    ).then((widgets) => ({
+      size: col.size,
+      widgets,
+      ...(col.span !== undefined ? { span: col.span } : {}),
+    }));
 
   // Kick off head-widgets and columns together: neither depends on the other,
   // so awaiting head first would serialize the page's fetches.
@@ -86,14 +90,7 @@ export async function buildPagePayload(
       )
     : Promise.resolve([]);
 
-  const columnsPromise = Promise.all(
-    page.columns.map((col) =>
-      buildColumn(col).then((widgets) => ({
-        size: col.size,
-        widgets,
-      })),
-    ),
-  );
+  const columnsPromise = Promise.all(page.columns.map((col) => buildColumn(col)));
 
   const [headWidgets, columns] = await Promise.all([headPromise, columnsPromise]);
 
@@ -104,15 +101,12 @@ export async function buildPagePayload(
     ...(page['center-vertically'] !== undefined
       ? { 'center-vertically': page['center-vertically'] }
       : {}),
-    ...(page['hide-desktop-navigation'] !== undefined
-      ? { 'hide-desktop-navigation': page['hide-desktop-navigation'] }
-      : {}),
     ...(page['show-mobile-header'] !== undefined
       ? { 'show-mobile-header': page['show-mobile-header'] }
       : {}),
-    ...(page['desktop-navigation-width'] !== undefined
-      ? { 'desktop-navigation-width': page['desktop-navigation-width'] }
-      : {}),
+    // Tiling resolved server-side: defaults preserve glance behavior exactly.
+    tiling: page.tiling ?? 'columns',
+    minColumnWidth: page['min-column-width'] ?? 300,
     headWidgets,
     columns,
   };

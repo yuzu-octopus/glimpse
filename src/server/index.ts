@@ -10,6 +10,20 @@ const CONFIG_PATH =
   process.argv[2] ?? process.env.GLIMPSE_CONFIG ?? './config.yml';
 const PORT = Number(process.env.GLIMPSE_PORT ?? 3000);
 
+// Version from package.json (relative to repo root; the server runs with
+// cwd = repo root). Never fatal — the About pane falls back to 'unknown'.
+function readVersion(): string {
+  try {
+    const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as {
+      version?: string;
+    };
+    return pkg.version ?? 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+const VERSION = readVersion();
+
 const ctx: WidgetFetchContext = {
   fetch: globalThis.fetch.bind(globalThis),
   env: process.env as Record<string, string>,
@@ -110,7 +124,11 @@ const server = Bun.serve({
       const r = getConfig();
       const headers = { 'cache-control': 'no-store' };
       return r.ok
-        ? json({ ok: true, config: r.config }, 200, headers)
+        ? json(
+            { ok: true, config: r.config, configPath: CONFIG_PATH, version: VERSION },
+            200,
+            headers,
+          )
         : json({ ok: false, errors: r.errors }, 400, headers);
     }
 

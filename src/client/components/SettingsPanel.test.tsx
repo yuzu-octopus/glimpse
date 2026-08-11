@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { presetById, type Preset } from '../../shared/theme/presets';
 import { useThemeSettings, type ThemeSettings } from '../theme/GlimpseThemeProvider';
@@ -91,6 +91,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
@@ -159,6 +160,58 @@ describe('SettingsPanel theme gallery', () => {
   });
 });
 
+describe('SettingsPanel section sidebar', () => {
+  it('renders a nav with Appearance (active) and About', () => {
+    mockedUseThemeSettings.mockReturnValue(makeSettings());
+    render(<SettingsPanel />);
+
+    const nav = screen.getByTestId('settings-nav');
+    const appearance = within(nav).getByText('Appearance');
+    const about = within(nav).getByText('About');
+
+    expect(appearance.closest('button')).toHaveClass(styles.navItemActive);
+    expect(appearance.closest('button')?.getAttribute('aria-selected')).toBe('true');
+    expect(appearance.closest('button')?.getAttribute('role')).toBe('tab');
+    expect(about.closest('button')).not.toHaveClass(styles.navItemActive);
+    expect(about.closest('button')?.getAttribute('aria-selected')).toBe('false');
+  });
+
+  it('switches between the Appearance gallery and the About pane', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ok: true,
+            config: {},
+            configPath: '/etc/glimpse/config.yml',
+            version: '9.9.9',
+          }),
+      }),
+    );
+    mockedUseThemeSettings.mockReturnValue(makeSettings());
+    render(<SettingsPanel />);
+
+    const nav = screen.getByTestId('settings-nav');
+    const about = within(nav).getByText('About');
+
+    fireEvent.click(about);
+    expect(within(nav).getByText('About').closest('button')).toHaveClass(styles.navItemActive);
+    expect(screen.getByText('Glimpse — a glance-style dashboard for your homelab.')).toBeInTheDocument();
+    expect(screen.getByText('Version')).toBeInTheDocument();
+    expect(await screen.findByText('9.9.9')).toBeInTheDocument();
+    expect(screen.getByText('Config file')).toBeInTheDocument();
+    expect(await screen.findByText('/etc/glimpse/config.yml')).toBeInTheDocument();
+    // gallery is unmounted while About is shown
+    expect(screen.queryByText(gruvbox.name)).toBeNull();
+
+    fireEvent.click(within(nav).getByText('Appearance'));
+    expect(presetCard(gruvbox.name)).toBeInTheDocument();
+    expect(screen.queryByText('/etc/glimpse/config.yml')).toBeNull();
+  });
+});
+
 describe('SettingsPanel interaction', () => {
   it('selecting a preset calls setPresetId and persists to localStorage', () => {
     const settings = makeSettings();
@@ -198,7 +251,8 @@ describe('SettingsPanel trigger and dialog', () => {
 
     fireEvent.click(trigger);
     expect(document.querySelector('dialog')?.open).toBe(true);
-    expect(screen.getByText('Appearance')).toBeInTheDocument();
+    // the pane opens on Appearance, showing the section title and the nav
+    expect(screen.getAllByText('Appearance').length).toBeGreaterThanOrEqual(2);
 
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(document.querySelector('dialog')?.open).toBe(false);
