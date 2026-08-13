@@ -2,8 +2,8 @@
 
 Thorough audit of the whole codebase (fix / polish / refactor / cleanup). Every item below is a concrete, self-contained task. Check a box when done; add the commit hash or a note.
 
-- **Audited commit:** `d6e2695` (`feat: collage tiling, source headers, settings pane stability, search tightening, config showcase`)
-- **Verification baseline:** `bunx tsc --noEmit` ✅ clean · `bun run test` ✅ 42 files / 302 tests pass
+- **Audited commit:** `af1a69c` (`fix: TODO.md audit — 7 P0 bugs, P1 batch, review findings`) + `cbc1794` (collage fix)
+- **Verification baseline:** `bunx tsc --noEmit` ✅ clean · `bun run test` ✅ 44 files / 322 tests pass
 - **Not audited:** `glance/` (read-only reference repo, deliberately ignored by `doctor.config.json`); generated theme data `src/shared/theme/schemes.generated.ts` (auto-generated, spot-checked only); live network behavior of the fetchers (tests mock `fetch`).
 
 ## How to verify (run before/after every item)
