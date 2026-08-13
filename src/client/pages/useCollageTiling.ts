@@ -11,6 +11,12 @@ import { useEffect, type RefObject } from 'react';
  * hydration), and on container resize. The change guard (mirror of
  * glance's masonry.js `columnsCount === previousColumnsCount`) skips
  * identical passes so setting inline spans can't loop the ResizeObserver.
+ *
+ * Note on the deps array: React compares deps element-wise only over the
+ * shared prefix and never treats a LENGTH change as a change, so a deps
+ * array that grows from `[]` to `[data]` (the loading→ready transition
+ * below) would silently never re-run. `deps.length` is included as its own
+ * element to make that transition visible; do not remove it.
  */
 export function useCollageTiling(
   containerRef: RefObject<HTMLElement | null>,
@@ -27,9 +33,18 @@ export function useCollageTiling(
     let prevKey = '';
 
     const measure = () => {
+      // `align-items: stretch` (the grid's own rule) equalizes every tile
+      // to the tallest item in its row, so scrollHeight reports the row
+      // height instead of the tile's real content height and every span
+      // would come out 1. Measure with stretch overridden inline (layout
+      // reads are synchronous — the override is never painted), then
+      // restore before applying.
+      const prevAlign = container.style.alignItems;
+      container.style.alignItems = 'start';
       const heights = tiles.map(
         (t) => Math.max(t.scrollHeight, t.clientHeight, 0) || 0,
       );
+      container.style.alignItems = prevAlign;
       const rowUnit = Math.min(...heights);
       if (!(rowUnit > 0)) return; // no measurable layout (jsdom): no-op
       const spans = heights.map((h) =>
@@ -69,5 +84,5 @@ export function useCollageTiling(
       observer?.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [containerRef, ...deps]);
+  }, [containerRef, deps.length, ...deps]);
 }
