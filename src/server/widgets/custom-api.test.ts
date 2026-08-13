@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './custom-api';
-import type { CustomApiItem } from './custom-api';
+import type { CustomApiItem } from '../../shared/widgets/payloads';
 
 const API_PAYLOAD = {
   results: [

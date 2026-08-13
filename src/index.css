@@ -12,6 +12,14 @@
   src: url('/fonts/JetBrainsMono-Regular.woff2') format('woff2');
 }
 
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/JetBrainsMono-SemiBold.woff2') format('woff2');
+}
+
 :root {
   /* dimensions */
   --widget-gap: 23px;

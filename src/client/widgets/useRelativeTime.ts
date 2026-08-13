@@ -1,17 +1,40 @@
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 
-/** "5m ago" style relative time that ages by a minute per tick. */
-export function useRelativeTime(ageSeconds: number): string {
-  const [elapsed, setElapsed] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setElapsed((e) => e + 60), 60_000);
-    return () => clearInterval(id);
-  }, []);
-  return formatAge(ageSeconds + elapsed);
+const TICK_MS = 60_000;
+const listeners = new Set<() => void>();
+let tick = 0;
+let timer: ReturnType<typeof setInterval> | null = null;
+
+/** Single shared 60s ticker for the whole page: starts on first subscriber, stops on last. */
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  if (timer === null) {
+    timer = setInterval(() => {
+      tick++;
+      listeners.forEach((l) => l());
+    }, TICK_MS);
+  }
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0 && timer !== null) {
+      clearInterval(timer);
+      timer = null;
+    }
+  };
 }
 
-function formatAge(totalSeconds: number): string {
-  const s = Math.max(0, totalSeconds);
+function getSnapshot(): number {
+  return tick;
+}
+
+/** "5m ago" style relative time that ages by a minute per shared tick. */
+export function useRelativeTime(ageSeconds: number): string {
+  const ticks = useSyncExternalStore(subscribe, getSnapshot);
+  return formatAge(ageSeconds + (ticks * TICK_MS) / 1000);
+}
+
+export function formatAge(totalSeconds: number): string {
+  const s = Math.floor(Math.max(0, totalSeconds));
   if (s < 60) return `${s}s`;
   const m = Math.floor(s / 60);
   if (m < 60) return `${m}m`;

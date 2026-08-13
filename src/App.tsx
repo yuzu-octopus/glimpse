@@ -1,4 +1,4 @@
-import { Route, Routes, useLocation, useParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { Banner } from '@astryxdesign/core';
 import { MobileNavigation, TopNav } from './client/components/TopNav';
 import { useConfig } from './client/hooks/useConfig';
@@ -40,6 +40,12 @@ export default function App() {
   // the TopNav on desktop (kept on mobile), `desktop-navigation-width`
   // constrains its content (glance page props).
   const activeSlug = pathname === '/' ? homeSlug : pathname.slice(1);
+  // Unknown slugs (e.g. /nonsense) redirect home instead of rendering the
+  // fallback page's skeleton then a "page not found" banner; this also keeps
+  // RoutePage from ever receiving an invalid slug.
+  if (pathname !== '/' && !state.config.pages.some((p) => p.slug === activeSlug)) {
+    return <Navigate to="/" replace />;
+  }
   const activePage =
     state.config.pages.find((p) => p.slug === activeSlug) ??
     state.config.pages[0];

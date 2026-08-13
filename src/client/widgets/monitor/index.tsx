@@ -2,7 +2,7 @@ import { Link } from '@astryxdesign/core';
 import type { MonitorConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import type { MonitorSite } from '../../../server/widgets/monitor';
+import type { MonitorSite } from '../../../shared/widgets/payloads';
 import styles from './monitor.module.css';
 
 function SiteRow({ site }: { site: MonitorSite }) {

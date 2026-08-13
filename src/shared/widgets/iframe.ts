@@ -5,7 +5,7 @@ export const iframeSchema = z.object({
   type: z.literal('iframe'),
   ...sharedWidgetFields,
   source: z.string(),
-  height: z.number().min(50).optional(),
+  height: z.number().int().min(50).optional(),
 });
 export type IframeConfig = z.infer<typeof iframeSchema>;
 

@@ -2,16 +2,7 @@ import Parser from 'rss-parser';
 import { rssSchema } from '../../shared/widgets/feeds';
 import { registerWidget } from './registry';
 import { fetchText } from './http';
-
-export interface RssItem {
-  title: string;
-  url: string;
-  published: string | null;
-  source: string;
-  thumbnail: string | null;
-  description: string | null;
-  categories: string[];
-}
+import type { RssItem } from '../../shared/widgets/payloads';
 
 type ParserItem = Parser.Item & {
   mediaThumbnail?: { $?: { url?: string } };

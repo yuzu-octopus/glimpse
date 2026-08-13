@@ -4,7 +4,7 @@ import { CircleDot, GitPullRequest, Star } from 'lucide-react';
 import type { RepositoryConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import type { RepoPull, RepositoryData } from '../../../server/widgets/repository';
+import type { RepoPull, RepositoryData } from '../../../shared/widgets/payloads';
 import styles from './repository.module.css';
 
 function SubList({ icon, label, rows }: {

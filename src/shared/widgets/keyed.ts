@@ -8,8 +8,8 @@ export const lobstersSchema = z.object({
   'custom-url': z.string().optional(),
   'sort-by': z.enum(['hot', 'new']).optional(),
   tags: z.array(z.string()).optional(),
-  limit: z.number().optional(),
-  'collapse-after': z.number().optional(),
+  limit: z.number().int().min(0).optional(),
+  'collapse-after': z.number().int().min(-1).optional(),
   'source-header': z.boolean().optional(),
 });
 export type LobstersConfig = z.infer<typeof lobstersSchema>;
@@ -19,9 +19,9 @@ export const videosSchema = z.object({
   ...sharedWidgetFields,
   channels: z.array(z.string()).default([]),
   playlists: z.array(z.string()).default([]),
-  limit: z.number().optional(),
-  'collapse-after': z.number().optional(),
-  'collapse-after-rows': z.number().optional(),
+  limit: z.number().int().min(0).optional(),
+  'collapse-after': z.number().int().min(-1).optional(),
+  'collapse-after-rows': z.number().int().min(-1).optional(),
   style: z.enum(['horizontal-cards', 'vertical-list', 'grid-cards']).optional(),
   'include-shorts': z.boolean().optional(),
   'video-url-template': z.string().optional(),
@@ -60,11 +60,11 @@ export const monitorSchema = z.object({
         timeout: z.string().optional(),
         'allow-insecure': z.boolean().optional(),
         'same-tab': z.boolean().optional(),
-        'alt-status-codes': z.array(z.number()).optional(),
+        'alt-status-codes': z.array(z.number().int().positive()).optional(),
         'basic-auth': z
           .object({ username: z.string(), password: z.string() })
           .optional(),
-        'expected-status-code': z.number().optional(), // glimpse extension
+        'expected-status-code': z.number().int().positive().optional(), // glimpse extension
       }),
     )
     .min(1),
@@ -108,8 +108,8 @@ export const repositorySchema = z.object({
   ...sharedWidgetFields,
   repository: z.string(),
   token: z.string().optional(),
-  'pull-requests-limit': z.number().optional(),
-  'issues-limit': z.number().optional(),
+  'pull-requests-limit': z.number().int().positive().optional(),
+  'issues-limit': z.number().int().positive().optional(),
 });
 export type RepositoryConfig = z.infer<typeof repositorySchema>;
 
@@ -117,7 +117,7 @@ export const twitchChannelsSchema = z.object({
   type: z.literal('twitch-channels'),
   ...sharedWidgetFields,
   channels: z.array(z.string()).min(1),
-  'collapse-after': z.number().optional(),
+  'collapse-after': z.number().int().min(-1).optional(),
   'sort-by': z.enum(['viewers', 'live']).optional(),
 });
 export type TwitchChannelsConfig = z.infer<typeof twitchChannelsSchema>;
@@ -126,7 +126,7 @@ export const twitchTopGamesSchema = z.object({
   type: z.literal('twitch-top-games'),
   ...sharedWidgetFields,
   exclude: z.array(z.string()).default([]),
-  limit: z.number().optional(),
-  'collapse-after': z.number().optional(),
+  limit: z.number().int().min(0).optional(),
+  'collapse-after': z.number().int().min(-1).optional(),
 });
 export type TwitchTopGamesConfig = z.infer<typeof twitchTopGamesSchema>;

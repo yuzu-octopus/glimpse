@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './releases';
-import type { Release } from './releases';
+import type { Release } from '../../shared/widgets/payloads';
 
 function makeCtx(routes: Record<string, unknown>): { ctx: WidgetFetchContext; fetchMock: ReturnType<typeof vi.fn> } {
   const fetchMock = vi.fn(async (url: string) => {

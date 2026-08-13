@@ -2,14 +2,7 @@ import Parser from 'rss-parser';
 import { videosSchema } from '../../shared/widgets/keyed';
 import { fetchText } from './http';
 import { registerWidget } from './registry';
-
-export interface Video {
-  title: string;
-  url: string;
-  channel: string;
-  published: string | null;
-  thumbnail: string | null;
-}
+import type { Video } from '../../shared/widgets/payloads';
 
 type ParserItem = Parser.Item & {
   mediaGroup?: {

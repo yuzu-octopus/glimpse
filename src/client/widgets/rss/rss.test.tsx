@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import Rss from './index';
 import styles from './rss.module.css';
-import type { RssItem } from '../../../server/widgets/rss';
+import type { RssItem } from '../../../shared/widgets/payloads';
 
 const items: RssItem[] = [
   {

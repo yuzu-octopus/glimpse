@@ -3,7 +3,7 @@ import type { LobstersConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { useRelativeTime } from '../useRelativeTime';
-import type { LobsterPost } from '../../../server/widgets/lobsters';
+import type { LobsterPost } from '../../../shared/widgets/payloads';
 import styles from './lobsters.module.css';
 
 /** post source host, minus www (glance rss-list shows the channel/domain). */

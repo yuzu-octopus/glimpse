@@ -2,7 +2,7 @@ import { Link } from '@astryxdesign/core';
 import type { CustomApiConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import type { CustomApiItem } from '../../../server/widgets/custom-api';
+import type { CustomApiItem } from '../../../shared/widgets/payloads';
 import styles from './custom-api.module.css';
 
 function ItemRow({ item }: { item: CustomApiItem }) {

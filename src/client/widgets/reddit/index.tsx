@@ -3,7 +3,7 @@ import type { RedditConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { useRelativeTime } from '../useRelativeTime';
-import type { RedditPost } from '../../../server/widgets/reddit';
+import type { RedditPost } from '../../../shared/widgets/payloads';
 import styles from './reddit.module.css';
 
 function Row({ post, showThumb, showFlair }: { post: RedditPost; showThumb: boolean; showFlair: boolean }) {

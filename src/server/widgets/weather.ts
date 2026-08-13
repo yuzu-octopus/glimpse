@@ -1,6 +1,7 @@
 import { weatherSchema } from '../../shared/widgets/feeds';
 import { registerWidget } from './registry';
 import { fetchJson } from './http';
+import type { WeatherData, WeatherDay } from '../../shared/widgets/payloads';
 
 interface GeocodeResult {
   latitude?: number;
@@ -33,26 +34,6 @@ interface ForecastResponse {
   daily?: ForecastDaily;
 }
 
-export interface WeatherNow {
-  temp: number | null;
-  feelsLike: number | null;
-  humidity: number | null;
-  code: number | null;
-}
-
-export interface WeatherDay {
-  date: string;
-  code: number | null;
-  high: number | null;
-  low: number | null;
-}
-
-export interface WeatherData {
-  location: string;
-  current: WeatherNow;
-  daily: WeatherDay[];
-}
-
 registerWidget('weather', async (ctx, config) => {
   const cfg = weatherSchema.parse(config);
   const units = cfg.units ?? 'metric';
@@ -62,7 +43,7 @@ registerWidget('weather', async (ctx, config) => {
     `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cfg.location)}&count=1`,
   );
   const place = geo.results?.[0];
-  if (!place?.latitude || !place.longitude) {
+  if (place?.latitude == null || place.longitude == null) {
     throw new Error(`location not found: ${cfg.location}`);
   }
 

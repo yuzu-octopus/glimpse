@@ -474,4 +474,17 @@ describe('PageView', () => {
     await screen.findByTestId('clock-widget');
     expect(document.querySelector('[data-testid="mobile-navigation"]')).toBeTruthy();
   });
+
+  it('redirects an unknown slug to the home page', async () => {
+    renderApp('/nonsense');
+    await screen.findByTestId('clock-widget');
+    // After the redirect the active page is home, whose config hides the
+    // desktop navigation — the wrapper class proves the fallback config was
+    // not used and no error banner for a 404'd page payload was rendered.
+    const wrapper = document.querySelector(
+      '[data-testid="top-nav-wrapper"]',
+    ) as HTMLElement;
+    expect(wrapper.className).toContain('hideDesktopNav');
+    expect(screen.queryByText('page not found')).toBeNull();
+  });
 });

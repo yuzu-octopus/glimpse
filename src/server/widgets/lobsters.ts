@@ -1,17 +1,7 @@
 import { lobstersSchema } from '../../shared/widgets/keyed';
 import { fetchJson } from './http';
 import { registerWidget } from './registry';
-
-export interface LobsterPost {
-  id: number;
-  title: string;
-  url: string;
-  commentsUrl: string;
-  score: number;
-  comments: number;
-  ageSeconds: number;
-  tags: string[];
-}
+import type { LobsterPost } from '../../shared/widgets/payloads';
 
 interface LobstersStory {
   id?: number;

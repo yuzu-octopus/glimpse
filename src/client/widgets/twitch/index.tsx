@@ -2,7 +2,7 @@ import { Eye } from 'lucide-react';
 import type { TwitchChannelsConfig, TwitchTopGamesConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import type { TwitchChannel, TwitchGame } from '../../../server/widgets/twitch';
+import type { TwitchChannel, TwitchGame } from '../../../shared/widgets/payloads';
 import styles from './twitch.module.css';
 
 function ChannelRow({ channel }: { channel: TwitchChannel }) {

@@ -4,7 +4,7 @@ import type { ReleasesConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { useRelativeTime } from '../useRelativeTime';
-import type { Release } from '../../../server/widgets/releases';
+import type { Release } from '../../../shared/widgets/payloads';
 import styles from './releases.module.css';
 
 function SourceIcon({ source }: { source: Release['source'] }) {

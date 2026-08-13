@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './twitch';
-import type { TwitchChannel, TwitchGame } from './twitch';
+import type { TwitchChannel, TwitchGame } from '../../shared/widgets/payloads';
 
 const TOKEN_URL = 'https://id.twitch.tv/oauth2/token';
 

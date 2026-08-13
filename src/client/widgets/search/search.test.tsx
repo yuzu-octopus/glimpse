@@ -35,6 +35,13 @@ describe('search widget', () => {
     expect(document.activeElement).toBe(input);
   });
 
+  it('renders the configured shortcut in the kbd hint', () => {
+    renderSearch({ ...CONFIG, key: 'k' });
+    const kbd = screen.getByText('K');
+    expect(kbd.tagName).toBe('KBD');
+    expect(kbd).toHaveAttribute('title', 'Press [K] to focus the search input');
+  });
+
   it('does not hijack the shortcut while typing', () => {
     renderSearch();
     const input = screen.getByLabelText('Search');

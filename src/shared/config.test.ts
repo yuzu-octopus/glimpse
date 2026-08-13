@@ -132,7 +132,7 @@ describe('ConfigSchema', () => {
   });
 
   it('rejects a min-column-width below 1', () => {
-    for (const value of [0, -50]) {
+    for (const value of [0, -50, 1.5]) {
       const r = ConfigSchema.safeParse({
         pages: [
           {
@@ -147,7 +147,7 @@ describe('ConfigSchema', () => {
   });
 
   it('rejects out-of-range or non-number column spans', () => {
-    for (const span of [0, 5, '2']) {
+    for (const span of [0, 5, '2', 1.5, -1]) {
       const r = ConfigSchema.safeParse({
         pages: [
           {
@@ -159,5 +159,149 @@ describe('ConfigSchema', () => {
       });
       expect(r.success).toBe(false);
     }
+  });
+
+  it('rejects fractional or out-of-range integer-shaped widget fields', () => {
+    const fixtures: { type: string; base: Record<string, unknown>; fields: string[] }[] = [
+      {
+        type: 'rss',
+        base: { feeds: [{ url: 'https://example.com/feed.xml' }] },
+        fields: ['limit', 'collapse-after', 'thumbnail-height', 'card-height'],
+      },
+      { type: 'hacker-news', base: {}, fields: ['limit', 'collapse-after'] },
+      { type: 'videos', base: {}, fields: ['limit', 'collapse-after', 'collapse-after-rows'] },
+      {
+        type: 'repository',
+        base: { repository: 'owner/repo' },
+        fields: ['pull-requests-limit', 'issues-limit'],
+      },
+      { type: 'iframe', base: { source: 'https://example.com' }, fields: ['height'] },
+      { type: 'twitch-top-games', base: {}, fields: ['limit', 'collapse-after'] },
+    ];
+    const parseWidget = (widget: Record<string, unknown>) =>
+      ConfigSchema.safeParse({
+        pages: [{ name: 'Home', columns: [{ size: 'full', widgets: [widget] }] }],
+      });
+
+    // glance parity: 'collapse-after*' accepts -1 (never collapse) and 0 (collapse all);
+    // 'limit' accepts 0 (no additional per-feed limit); the rest must be positive ints.
+    const invalidFor = (field: string): number[] =>
+      field === 'collapse-after' || field === 'collapse-after-rows'
+        ? [-2, 1.5]
+        : field === 'limit'
+          ? [-2, -1, 1.5]
+          : [-1, 0, 1.5];
+
+    for (const { type, base, fields } of fixtures) {
+      for (const field of fields) {
+        for (const value of invalidFor(field)) {
+          const r = parseWidget({ type, ...base, [field]: value });
+          expect(r.success, `${type}.${field} = ${value} should fail`).toBe(false);
+        }
+      }
+    }
+  });
+
+  it('rejects fractional or non-positive monitor status codes', () => {
+    for (const code of [200.5, -1, 0]) {
+      const r = ConfigSchema.safeParse({
+        pages: [
+          {
+            name: 'Home',
+            columns: [
+              {
+                size: 'full',
+                widgets: [
+                  {
+                    type: 'monitor',
+                    sites: [
+                      {
+                        url: 'https://example.com',
+                        'expected-status-code': code,
+                        'alt-status-codes': [code],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+      expect(r.success, `status code ${code} should fail`).toBe(false);
+    }
+  });
+
+  it('accepts integer boundary values for all swept fields', () => {
+    const fixtures: { type: string; base: Record<string, unknown>; fields: string[] }[] = [
+      {
+        type: 'rss',
+        base: { feeds: [{ url: 'https://example.com/feed.xml' }] },
+        fields: ['limit', 'collapse-after', 'thumbnail-height', 'card-height'],
+      },
+      { type: 'hacker-news', base: {}, fields: ['limit', 'collapse-after'] },
+      { type: 'videos', base: {}, fields: ['limit', 'collapse-after', 'collapse-after-rows'] },
+      {
+        type: 'repository',
+        base: { repository: 'owner/repo' },
+        fields: ['pull-requests-limit', 'issues-limit'],
+      },
+      { type: 'iframe', base: { source: 'https://example.com' }, fields: ['height'] },
+      { type: 'twitch-top-games', base: {}, fields: ['limit', 'collapse-after'] },
+    ];
+
+    for (const { type, base, fields } of fixtures) {
+      const widget: Record<string, unknown> = { type, ...base };
+      for (const field of fields) widget[field] = field === 'height' ? 100 : 2;
+      const r = ConfigSchema.safeParse({
+        pages: [{ name: 'Home', columns: [{ size: 'full', widgets: [widget] }] }],
+      });
+      expect(r.success, `${type} with integer fields set should pass`).toBe(true);
+    }
+
+    // glance parity boundary values: collapse-after* -1 (never collapse), limit 0 (no per-feed limit)
+    for (const { type, base, fields } of fixtures) {
+      const widget: Record<string, unknown> = { type, ...base };
+      for (const field of fields) {
+        widget[field] =
+          field === 'collapse-after' || field === 'collapse-after-rows'
+            ? -1
+            : field === 'limit'
+              ? 0
+              : field === 'height'
+                ? 100
+                : 2;
+      }
+      const r = ConfigSchema.safeParse({
+        pages: [{ name: 'Home', columns: [{ size: 'full', widgets: [widget] }] }],
+      });
+      expect(r.success, `${type} with boundary values should pass`).toBe(true);
+    }
+
+    const monitor = ConfigSchema.safeParse({
+      pages: [
+        {
+          name: 'Home',
+          columns: [
+            {
+              size: 'full',
+              widgets: [
+                {
+                  type: 'monitor',
+                  sites: [
+                    {
+                      url: 'https://example.com',
+                      'expected-status-code': 200,
+                      'alt-status-codes': [204],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    expect(monitor.success).toBe(true);
   });
 });

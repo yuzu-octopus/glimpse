@@ -1,17 +1,7 @@
 import { JSONPath } from 'jsonpath-plus';
 import { customApiSchema } from '../../shared/widgets/keyed';
 import { registerWidget } from './registry';
-
-export interface CustomApiItem {
-  title: string;
-  url: string | null;
-  description: string | null;
-  icon: string | null;
-  subtitle: string | null;
-  value: string | null;
-  image: string | null;
-  timestamp: string | null;
-}
+import type { CustomApiItem } from '../../shared/widgets/payloads';
 
 const FIELD_KEYS = [
   'title',

@@ -1,17 +1,7 @@
 import { monitorSchema } from '../../shared/widgets/keyed';
 import { parseCacheDuration } from '../cache';
 import { registerWidget } from './registry';
-
-export interface MonitorSite {
-  url: string;
-  title: string;
-  ok: boolean;
-  status: number | null;
-  ms: number | null;
-  /** link used when the site is down; falls back to url */
-  errorUrl: string | null;
-  sameTab: boolean;
-}
+import type { MonitorSite } from '../../shared/widgets/payloads';
 
 registerWidget('monitor', async (ctx, config) => {
   const cfg = monitorSchema.parse(config);

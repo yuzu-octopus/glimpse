@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './videos';
-import type { Video } from './videos';
+import type { Video } from '../../shared/widgets/payloads';
 
 const FEED = `<?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">

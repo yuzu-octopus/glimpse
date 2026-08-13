@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './markets';
-import type { Market } from './markets';
+import type { Market } from '../../shared/widgets/payloads';
 
 function chartPayload(price: number, prevClose: number, closes: (number | null)[]) {
   return {

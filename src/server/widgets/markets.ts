@@ -1,15 +1,7 @@
 import { marketsSchema } from '../../shared/widgets/keyed';
 import { fetchJson } from './http';
 import { registerWidget } from './registry';
-
-export interface Market {
-  symbol: string;
-  name: string;
-  price: number | null;
-  change: number | null;
-  changePct: number | null;
-  chart: number[];
-}
+import type { Market } from '../../shared/widgets/payloads';
 
 interface YahooChartResponse {
   chart?: {

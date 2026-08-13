@@ -1,21 +1,7 @@
 import { repositorySchema } from '../../shared/widgets/keyed';
 import { fetchJson } from './http';
 import { registerWidget } from './registry';
-
-export interface RepoPull {
-  number: number;
-  title: string;
-  url: string;
-}
-
-export interface RepositoryData {
-  name: string;
-  description: string | null;
-  stars: number | null;
-  url: string;
-  pulls: RepoPull[];
-  issues: RepoPull[];
-}
+import type { RepoPull } from '../../shared/widgets/payloads';
 
 interface GitHubRepo {
   full_name?: string;

@@ -4,7 +4,7 @@ import { sharedWidgetFields } from './shared';
 const feedSchema = z.object({
   url: z.string(),
   title: z.string().optional(),
-  limit: z.number().optional(),
+  limit: z.number().int().min(0).optional(),
   headers: z.record(z.string(), z.string()).optional(),
   'hide-categories': z.boolean().optional(),
   'hide-description': z.boolean().optional(),
@@ -14,14 +14,14 @@ export const rssSchema = z.object({
   type: z.literal('rss'),
   ...sharedWidgetFields,
   feeds: z.array(feedSchema).min(1),
-  limit: z.number().optional(),
-  'collapse-after': z.number().optional(),
+  limit: z.number().int().min(0).optional(),
+  'collapse-after': z.number().int().min(-1).optional(),
   'source-header': z.boolean().optional(),
   style: z
     .enum(['vertical-list', 'detailed-list', 'horizontal-cards', 'horizontal-cards-2'])
     .optional(),
-  'thumbnail-height': z.number().optional(),
-  'card-height': z.number().optional(),
+  'thumbnail-height': z.number().int().positive().optional(),
+  'card-height': z.number().int().positive().optional(),
   'preserve-order': z.boolean().optional(),
   'single-line-titles': z.boolean().optional(),
 });
@@ -30,11 +30,11 @@ export type RssConfig = z.infer<typeof rssSchema>;
 export const hackerNewsSchema = z.object({
   type: z.literal('hacker-news'),
   ...sharedWidgetFields,
-  limit: z.number().optional(),
+  limit: z.number().int().min(0).optional(),
   'sort-by': z.enum(['top', 'new', 'best']).optional(),
   'extra-sort-by': z.enum(['engagement']).optional(),
   'comments-url-template': z.string().optional(),
-  'collapse-after': z.number().optional(),
+  'collapse-after': z.number().int().min(-1).optional(),
   'source-header': z.boolean().optional(),
 });
 export type HackerNewsConfig = z.infer<typeof hackerNewsSchema>;
@@ -46,8 +46,8 @@ export const redditSchema = z.object({
   'sort-by': z.enum(['hot', 'new', 'top', 'rising']).optional(),
   'top-period': z.string().optional(),
   search: z.string().optional(),
-  limit: z.number().optional(),
-  'collapse-after': z.number().optional(),
+  limit: z.number().int().min(0).optional(),
+  'collapse-after': z.number().int().min(-1).optional(),
   'source-header': z.boolean().optional(),
   'show-thumbnails': z.boolean().optional(),
   'show-flairs': z.boolean().optional(),
@@ -93,8 +93,8 @@ export const releasesSchema = z.object({
   'show-source-icon': z.boolean().optional(),
   token: z.string().optional(),
   'gitlab-token': z.string().optional(),
-  limit: z.number().optional(),
-  'collapse-after': z.number().optional(),
+  limit: z.number().int().min(0).optional(),
+  'collapse-after': z.number().int().min(-1).optional(),
 });
 export type ReleasesConfig = z.infer<typeof releasesSchema>;
 

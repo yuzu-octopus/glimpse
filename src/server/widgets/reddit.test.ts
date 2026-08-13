@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './reddit';
-import type { RedditPost } from './reddit';
+import type { RedditPost } from '../../shared/widgets/payloads';
 
 const LISTING = {
   data: {

@@ -10,6 +10,8 @@ export interface WidgetFetchContext {
   singleflight: Singleflight;
 }
 
+// Fetchers re-validate their config slice with zod per fetch: intentional
+// defense-in-depth (config is already validated at load) — keep it.
 export type WidgetFetcher = (
   ctx: WidgetFetchContext,
   config: Record<string, unknown>,

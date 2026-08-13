@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './monitor';
-import type { MonitorSite } from './monitor';
+import type { MonitorSite } from '../../shared/widgets/payloads';
 
 function makeCtx(fetchImpl: (url: string, init?: RequestInit) => Promise<Response>): {
   ctx: WidgetFetchContext;

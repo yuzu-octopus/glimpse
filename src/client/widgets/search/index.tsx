@@ -157,7 +157,12 @@ export function Search({ config }: WidgetComponentProps) {
           autoComplete="off"
           autoFocus={cfg.autofocus === true}
         />
-        <kbd className={styles.kbd} title="Press [S] to focus the search input">S</kbd>
+        <kbd
+          className={styles.kbd}
+          title={`Press [${shortcut.toUpperCase()}] to focus the search input`}
+        >
+          {shortcut.toUpperCase()}
+        </kbd>
       </form>
     </WidgetChrome>
   );

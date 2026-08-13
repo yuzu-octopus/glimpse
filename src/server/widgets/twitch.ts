@@ -4,22 +4,7 @@ import {
 } from '../../shared/widgets/keyed';
 import { fetchJson } from './http';
 import { registerWidget, type WidgetFetchContext } from './registry';
-
-export interface TwitchChannel {
-  login: string;
-  displayName: string;
-  live: boolean;
-  viewers: number;
-  title: string | null;
-  game: string | null;
-  thumbnail: string | null;
-}
-
-export interface TwitchGame {
-  id: string;
-  name: string;
-  thumbnail: string | null;
-}
+import type { TwitchChannel, TwitchGame } from '../../shared/widgets/payloads';
 
 interface TwitchTokenResponse {
   access_token?: string;

@@ -3,7 +3,7 @@ import type { RssConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { useRelativeTime } from '../useRelativeTime';
-import type { RssItem } from '../../../server/widgets/rss';
+import type { RssItem } from '../../../shared/widgets/payloads';
 import styles from './rss.module.css';
 
 // glance image-placeholder icon (heroicons photo, stroke inherits)

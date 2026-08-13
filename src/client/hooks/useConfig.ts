@@ -8,21 +8,29 @@ type ConfigState =
 
 let cached: Promise<{ config: ResolvedConfig }> | null = null;
 
-/** Loads the resolved config once per session and shares it across hooks. */
+/**
+ * Loads the resolved config once per session and shares it across hooks.
+ * Rejected fetches are not cached: the next consumer retries.
+ */
 export function useConfig(): ConfigState {
   const [state, setState] = useState<ConfigState>({ status: 'loading' });
 
   useEffect(() => {
     let cancelled = false;
-    cached ??= fetch('/api/config').then(async (res) => {
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as {
-          errors?: string[];
-        };
-        throw new Error(body.errors?.join('; ') ?? `HTTP ${res.status}`);
-      }
-      return (await res.json()) as { config: ResolvedConfig };
-    });
+    cached ??= fetch('/api/config')
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as {
+            errors?: string[];
+          };
+          throw new Error(body.errors?.join('; ') ?? `HTTP ${res.status}`);
+        }
+        return (await res.json()) as { config: ResolvedConfig };
+      })
+      .catch((e: unknown) => {
+        cached = null; // don't cache failures: next consumer retries
+        throw e;
+      });
     cached
       .then(({ config }) => {
         if (!cancelled) setState({ status: 'ready', config });

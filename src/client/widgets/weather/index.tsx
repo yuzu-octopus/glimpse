@@ -9,7 +9,7 @@ import {
 import type { WeatherConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import type { WeatherData } from '../../../server/widgets/weather';
+import type { WeatherData } from '../../../shared/widgets/payloads';
 import styles from './weather.module.css';
 
 /** WMO weather code → lucide icon (open-meteo codes). */
@@ -17,9 +17,11 @@ function weatherIcon(code: number | null) {
   if (code === null || code === 0) return <Sun size={18} />;
   if (code <= 3) return <CloudSun size={18} />;
   if (code <= 48) return <CloudFog size={18} />;
-  if (code <= 67 || code <= 82) return <CloudRain size={18} />;
-  if (code <= 77) return <CloudSnow size={18} />;
-  return <CloudLightning size={18} />;
+  if (code <= 67) return <CloudRain size={18} />; // drizzle + rain
+  if (code <= 77) return <CloudSnow size={18} />; // 71–77
+  if (code <= 82) return <CloudRain size={18} />; // rain showers
+  if (code <= 86) return <CloudSnow size={18} />; // snow showers
+  return <CloudLightning size={18} />;            // 95–99
 }
 
 /** WMO weather code → condition label (glance weatherCodeTable). */

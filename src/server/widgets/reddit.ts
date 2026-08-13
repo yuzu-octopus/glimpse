@@ -1,6 +1,7 @@
 import { redditSchema } from '../../shared/widgets/feeds';
 import { parseCacheDuration } from '../cache';
 import { registerWidget, type WidgetFetchContext } from './registry';
+import type { RedditPost } from '../../shared/widgets/payloads';
 
 interface RedditChild {
   data: {
@@ -17,17 +18,6 @@ interface RedditChild {
 
 interface RedditListing {
   data?: { children?: RedditChild[] };
-}
-
-export interface RedditPost {
-  title: string;
-  url: string;
-  commentsUrl: string;
-  thumbnail: string | null;
-  flair: string | null;
-  score: number;
-  comments: number;
-  ageSeconds: number;
 }
 
 const VALID_THUMB = (t: string | undefined): t is string =>

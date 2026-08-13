@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './lobsters';
-import type { LobsterPost } from './lobsters';
+import type { LobsterPost } from '../../shared/widgets/payloads';
 
 function makeCtx(routes: Record<string, unknown>): WidgetFetchContext {
   const fetchImpl = async (url: string) => {

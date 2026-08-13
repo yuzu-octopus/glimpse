@@ -3,7 +3,7 @@ import type { VideosConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { useRelativeTime } from '../useRelativeTime';
-import type { Video } from '../../../server/widgets/videos';
+import type { Video } from '../../../shared/widgets/payloads';
 import styles from './videos.module.css';
 
 function useVideoAge(video: Video): string | null {

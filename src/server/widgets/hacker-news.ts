@@ -1,6 +1,7 @@
 import { hackerNewsSchema } from '../../shared/widgets/feeds';
 import { registerWidget } from './registry';
 import { fetchJson } from './http';
+import type { HnPost } from '../../shared/widgets/payloads';
 
 interface HnItem {
   id: number;
@@ -9,16 +10,6 @@ interface HnItem {
   score?: number;
   descendants?: number;
   time?: number;
-}
-
-export interface HnPost {
-  id: number;
-  title: string;
-  url: string;
-  commentsUrl: string;
-  score: number;
-  comments: number;
-  ageSeconds: number;
 }
 
 registerWidget('hacker-news', async (ctx, config) => {

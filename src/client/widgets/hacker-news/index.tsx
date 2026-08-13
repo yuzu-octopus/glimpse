@@ -3,7 +3,7 @@ import type { HackerNewsConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { useRelativeTime } from '../useRelativeTime';
-import type { HnPost } from '../../../server/widgets/hacker-news';
+import type { HnPost } from '../../../shared/widgets/payloads';
 import styles from './hacker-news.module.css';
 
 /** post source host, minus www (glance rss-list shows the channel/domain). */

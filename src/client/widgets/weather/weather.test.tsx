@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import type { WeatherData } from '../../../server/widgets/weather';
+import type { WeatherData } from '../../../shared/widgets/payloads';
 import { Weather } from './index';
 
 function todayISO(): string {
@@ -44,5 +44,20 @@ describe('weather widget', () => {
     expect(screen.getByText('open-meteo unreachable')).toBeInTheDocument();
     expect(screen.getByTestId('widget-error-dot')).toBeInTheDocument();
     expect(screen.queryByText('No weather data.')).toBeNull();
+  });
+
+  it.each([
+    [71, 'cloud-snow'],   // snow
+    [85, 'cloud-snow'],   // snow showers
+    [82, 'cloud-rain'],   // rain showers
+    [95, 'cloud-lightning'], // thunderstorm
+  ])('maps WMO code %i to the %s icon', (code, icon) => {
+    const { container } = render(
+      <Weather
+        config={{ type: 'weather', location: 'London' }}
+        data={{ ...DATA, current: { ...DATA.current, code }, daily: [] }}
+      />,
+    );
+    expect(container.querySelector(`svg.lucide-${icon}`)).not.toBeNull();
   });
 });

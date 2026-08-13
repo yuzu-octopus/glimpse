@@ -29,6 +29,15 @@ describe('TtlCache', () => {
   it('returns undefined for a missing key', () => {
     expect(new TtlCache().get('nope')).toBeUndefined();
   });
+
+  it('clear() drops unexpired entries (config reload resets)', () => {
+    const cache = new TtlCache();
+    cache.set('a', 1, 60_000);
+    cache.set('b', 2, 60_000);
+    cache.clear();
+    expect(cache.get('a')).toBeUndefined();
+    expect(cache.get('b')).toBeUndefined();
+  });
 });
 
 describe('Singleflight', () => {

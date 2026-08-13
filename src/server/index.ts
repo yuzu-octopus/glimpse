@@ -32,6 +32,7 @@ const ctx: WidgetFetchContext = {
 };
 
 initConfig(CONFIG_PATH, (r) => {
+  if (r.ok) ctx.cache.clear(); // only on success: failed reload keeps last-good config, keys stay valid
   console.log(
     r.ok ? '[config] reloaded' : `[config] reload failed: ${r.errors?.join('; ')}`,
   );
@@ -99,9 +100,15 @@ function serveDist(pathname: string): Response {
   const dist = join(process.cwd(), 'dist');
   if (!existsSync(dist)) return json({ error: 'not found' }, 404);
 
-  let filePath = normalize(
-    join(dist, pathname === '/' ? 'index.html' : decodeURIComponent(pathname.slice(1))),
-  );
+  let filePath: string;
+  try {
+    filePath = normalize(
+      join(dist, pathname === '/' ? 'index.html' : decodeURIComponent(pathname.slice(1))),
+    );
+  } catch {
+    // malformed percent-encoding (e.g. %zz) → SPA fallback, same as unknown path
+    filePath = join(dist, 'index.html');
+  }
   if (!filePath.startsWith(dist + sep) && filePath !== dist + sep + 'index.html') {
     return json({ error: 'forbidden' }, 403);
   }
@@ -109,9 +116,26 @@ function serveDist(pathname: string): Response {
     filePath = join(dist, 'index.html'); // SPA fallback
   }
   const body = readFileSync(filePath);
-  return new Response(body, {
-    headers: { 'content-type': CONTENT_TYPES[extname(filePath)] ?? 'application/octet-stream' },
-  });
+  const headers: Record<string, string> = {
+    'content-type': CONTENT_TYPES[extname(filePath)] ?? 'application/octet-stream',
+  };
+  const rel = filePath.slice(dist.length + 1);
+  if (rel.startsWith('assets/')) {
+    // Vite hashes these filenames — cache forever.
+    headers['cache-control'] = 'public, max-age=31536000, immutable';
+  } else if (
+    rel === 'index.html' ||
+    rel.endsWith('.webmanifest') ||
+    rel === 'sw.js' ||
+    rel === 'registerSW.js' ||
+    rel === 'favicon.svg' ||
+    rel === 'icon.svg'
+  ) {
+    headers['cache-control'] = 'no-cache'; // unhashed root files: revalidate every load
+  } else if (extname(filePath) === '.woff2') {
+    headers['cache-control'] = 'public, max-age=86400'; // unhashed font, short cache
+  }
+  return new Response(body, { headers });
 }
 
 const server = Bun.serve({

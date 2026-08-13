@@ -1,14 +1,7 @@
 import { releasesSchema } from '../../shared/widgets/feeds';
 import { registerWidget, type WidgetFetchContext } from './registry';
 import { fetchJson } from './http';
-
-export interface Release {
-  name: string;
-  tag: string;
-  url: string;
-  published: string | null;
-  source: 'github' | 'gitlab' | 'codeberg' | 'docker-hub';
-}
+import type { Release } from '../../shared/widgets/payloads';
 
 interface GitHubRelease {
   name?: string | null;

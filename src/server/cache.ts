@@ -19,6 +19,11 @@ export class TtlCache {
   set(key: string, value: unknown, ttlMs: number): void {
     this.store.set(key, { value, expiresAt: Date.now() + ttlMs });
   }
+
+  /** Drop every entry (config reload: keys are slug:path, no longer trustworthy). */
+  clear(): void {
+    this.store.clear();
+  }
 }
 
 /**

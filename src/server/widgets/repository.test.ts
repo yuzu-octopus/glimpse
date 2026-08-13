@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './repository';
-import type { RepositoryData } from './repository';
+import type { RepositoryData } from '../../shared/widgets/payloads';
 
 const REPO = {
   full_name: 'acme/widget',

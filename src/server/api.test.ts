@@ -81,6 +81,20 @@ describe('buildPagePayload', () => {
     expect(fetcher).toHaveBeenCalledOnce();
   });
 
+  it('refetches after the cache is cleared on config reload', async () => {
+    const fetcher = vi.fn(async () => ({ items: [{ title: 'x' }] }));
+    registerWidget('rss', fetcher);
+    const ctx = makeCtx();
+
+    await buildPagePayload(page([{ size: 'full', widgets: [rssWidget] }]), ctx);
+    expect(fetcher).toHaveBeenCalledOnce();
+
+    ctx.cache.clear(); // what initConfig's onChange does on every reload
+
+    await buildPagePayload(page([{ size: 'full', widgets: [rssWidget] }]), ctx);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
   it('dedupes concurrent identical fetches via singleflight', async () => {
     const { promise, resolve } = Promise.withResolvers<unknown>();
     const fetcher = vi.fn(() => promise);

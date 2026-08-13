@@ -52,8 +52,6 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        // Stable vendor chunks: react/dom, Astryx core, icons. Keeps the
-        // main bundle small and lets the SW cache vendors across deploys.
         manualChunks(id) {
           // Stable vendor chunks: react/dom, Astryx core, icons. Keeps the
           // main bundle small and lets the SW cache vendors across deploys.
