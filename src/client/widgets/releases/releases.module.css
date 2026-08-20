@@ -181,35 +181,34 @@
   border-radius: var(--border-radius);
   padding: 1px 5px;
   font-size: var(--font-size-h6);
-  border: 1px solid transparent;
-  background-color: color-mix(in srgb, var(--color-tag-yellow) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-tag-yellow) 28%, transparent);
+  background-color: color-mix(in srgb, var(--color-tag-yellow) 22%, transparent);
   color: var(--color-tag-yellow);
 }
 
 .tag:nth-child(5n+2) {
-  background-color: color-mix(in srgb, var(--color-tag-green) 14%, transparent);
+  background-color: color-mix(in srgb, var(--color-tag-green) 22%, transparent);
   color: var(--color-tag-green);
-  border-color: color-mix(in srgb, var(--color-tag-green) 22%, transparent);
+  border-color: color-mix(in srgb, var(--color-tag-green) 28%, transparent);
 }
 
 .tag:nth-child(5n+3) {
-  background-color: color-mix(in srgb, var(--color-tag-cyan) 14%, transparent);
+  background-color: color-mix(in srgb, var(--color-tag-cyan) 22%, transparent);
   color: var(--color-tag-cyan);
-  border-color: color-mix(in srgb, var(--color-tag-cyan) 22%, transparent);
+  border-color: color-mix(in srgb, var(--color-tag-cyan) 28%, transparent);
 }
 
 .tag:nth-child(5n+4) {
-  background-color: color-mix(in srgb, var(--color-tag-blue) 14%, transparent);
+  background-color: color-mix(in srgb, var(--color-tag-blue) 22%, transparent);
   color: var(--color-tag-blue);
-  border-color: color-mix(in srgb, var(--color-tag-blue) 22%, transparent);
+  border-color: color-mix(in srgb, var(--color-tag-blue) 28%, transparent);
 }
 
 .tag:nth-child(5n+5) {
-  background-color: color-mix(in srgb, var(--color-tag-pink) 14%, transparent);
+  background-color: color-mix(in srgb, var(--color-tag-pink) 22%, transparent);
   color: var(--color-tag-pink);
-  border-color: color-mix(in srgb, var(--color-tag-pink) 22%, transparent);
+  border-color: color-mix(in srgb, var(--color-tag-pink) 28%, transparent);
 }
-
 
 /* glance .release-source-icon: 16px, opacity 0.4 */
 .icon {

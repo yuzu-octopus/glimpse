@@ -19,7 +19,7 @@ function Row({ post, showThumb, showFlair }: { post: RedditPost; showThumb: bool
         </Link>
         <div className={styles.meta}>
           {showFlair && post.flair ? <span className={styles.flair}>{post.flair}</span> : null}
-          <span>{post.score} points</span>
+          <span className={styles.score}>{post.score} points</span>
           <span className={styles.sep}>•</span>
           <Link href={post.commentsUrl} target="_blank" className={styles.metaLink}>
             {post.comments} comments

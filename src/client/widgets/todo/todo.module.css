@@ -65,6 +65,10 @@
   transition: border-color 0.2s, background-color 0.2s;
 }
 
+.checkbox:hover {
+  border-color: var(--color-primary);
+}
+
 .checkbox::after {
   content: '';
   position: absolute;
@@ -77,7 +81,7 @@
 
 .checkbox:checked {
   border-color: var(--color-success);
-  background-color: color-mix(in srgb, var(--color-success) 14%, transparent);
+  background-color: color-mix(in srgb, var(--color-success) 22%, transparent);
 }
 
 .checkbox:checked::after {
@@ -87,6 +91,7 @@
 .checkbox:focus-visible {
   outline: none;
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .itemText {

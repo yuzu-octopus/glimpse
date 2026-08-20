@@ -26,7 +26,7 @@ function LobstersRow({ post }: { post: LobsterPost }) {
       <div className={styles.meta}>
         {domain ? <span>{domain}</span> : null}
         {domain ? <span className={styles.sep}>•</span> : null}
-        <span>{post.score} points</span>
+        <span className={styles.score}>{post.score} points</span>
         <span className={styles.sep}>•</span>
         <Link href={post.commentsUrl} target="_blank" className={styles.metaLink}>
           {post.comments} comments

@@ -36,7 +36,6 @@
 .row:nth-child(7) { animation-delay: 180ms; }
 .row:nth-child(8) { animation-delay: 210ms; }
 
-/* glance rss-list: title truncates, unvisited links are primary */
 .title {
   display: block;
   font-size: var(--font-size-h4);
@@ -53,10 +52,13 @@
 }
 
 .title:hover {
-  color: var(--color-text-highlight);
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
+  text-underline-offset: 2px;
 }
 
-/* glance .list-horizontal-text: •-separated, subdued */
+/* glance .list-horizontal-text: •-separated, subdued — score vibrant orange */
 .meta {
   display: flex;
   align-items: center;
@@ -67,16 +69,24 @@
   min-width: 0;
 }
 
+.score {
+  color: var(--color-tag-orange);
+  font-weight: 600;
+}
+
 .sep {
   color: var(--color-text-subdue);
   margin: 0 4px;
 }
 
 .metaLink {
-  color: inherit;
+  color: var(--color-tag-cyan);
   text-decoration: none;
 }
 
 .metaLink:hover {
   color: var(--color-text-highlight);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-tag-cyan) 35%, transparent);
+  text-underline-offset: 2px;
 }

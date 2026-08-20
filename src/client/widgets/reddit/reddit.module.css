@@ -77,7 +77,10 @@
 }
 
 .title:hover {
-  color: var(--color-text-highlight);
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
+  text-underline-offset: 2px;
 }
 
 /* glance .list-horizontal-text: •-separated, bullets subdued */
@@ -91,53 +94,60 @@
   min-width: 0;
 }
 
+.score {
+  color: var(--color-tag-orange);
+  font-weight: 600;
+}
+
 .sep {
   color: var(--color-text-subdue);
   margin: 0 4px;
 }
 
 .metaLink {
-  color: inherit;
+  color: var(--color-tag-cyan);
   text-decoration: none;
 }
 
 .metaLink:hover {
   color: var(--color-text-highlight);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-tag-cyan) 35%, transparent);
+  text-underline-offset: 2px;
 }
 
 .flair {
-  background: color-mix(in srgb, var(--color-tag-cyan) 14%, transparent);
+  background: color-mix(in srgb, var(--color-tag-cyan) 22%, transparent);
   color: var(--color-tag-cyan);
-  border: 1px solid color-mix(in srgb, var(--color-tag-cyan) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-tag-cyan) 30%, transparent);
   border-radius: var(--border-radius);
   padding: 1px 5px;
   font-size: var(--font-size-h6);
 }
 
 .row:nth-child(5n+2) .flair {
-  background: color-mix(in srgb, var(--color-tag-yellow) 14%, transparent);
+  background: color-mix(in srgb, var(--color-tag-yellow) 22%, transparent);
   color: var(--color-tag-yellow);
-  border-color: color-mix(in srgb, var(--color-tag-yellow) 22%, transparent);
+  border-color: color-mix(in srgb, var(--color-tag-yellow) 30%, transparent);
 }
 
 .row:nth-child(5n+3) .flair {
-  background: color-mix(in srgb, var(--color-tag-green) 14%, transparent);
+  background: color-mix(in srgb, var(--color-tag-green) 22%, transparent);
   color: var(--color-tag-green);
-  border-color: color-mix(in srgb, var(--color-tag-green) 22%, transparent);
+  border-color: color-mix(in srgb, var(--color-tag-green) 30%, transparent);
 }
 
 .row:nth-child(5n+4) .flair {
-  background: color-mix(in srgb, var(--color-tag-pink) 14%, transparent);
+  background: color-mix(in srgb, var(--color-tag-pink) 22%, transparent);
   color: var(--color-tag-pink);
-  border-color: color-mix(in srgb, var(--color-tag-pink) 22%, transparent);
+  border-color: color-mix(in srgb, var(--color-tag-pink) 30%, transparent);
 }
 
 .row:nth-child(5n+5) .flair {
-  background: color-mix(in srgb, var(--color-tag-orange) 14%, transparent);
+  background: color-mix(in srgb, var(--color-tag-orange) 22%, transparent);
   color: var(--color-tag-orange);
-  border-color: color-mix(in srgb, var(--color-tag-orange) 22%, transparent);
+  border-color: color-mix(in srgb, var(--color-tag-orange) 30%, transparent);
 }
-
 
 .cardRow {
   display: flex;

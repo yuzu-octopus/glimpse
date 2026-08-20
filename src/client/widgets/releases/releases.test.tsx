@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import Releases from './index';
 
@@ -73,5 +74,42 @@ describe('releases widget', () => {
     expect(screen.queryByText(/Notes/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Show more/)).not.toBeInTheDocument();
     expect(screen.getByLabelText(/Show release notes/)).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('keeps expanded release open after data refresh with same url+tag (new object identity)', async () => {
+    const user = userEvent.setup();
+    const r1 = {
+      name: 'v1',
+      tag: 'v1',
+      url: 'https://example.com/v1',
+      published: null as string | null,
+      source: 'github' as const,
+      notes: '## Notes\nfix details',
+    };
+    const { rerender } = render(
+      <Releases config={{ type: 'releases', repositories: ['a/b'] }} data={{ releases: [r1] }} />,
+    );
+    // collapsed initially
+    expect(screen.queryByText(/fix details/)).not.toBeInTheDocument();
+    await user.click(screen.getByLabelText(/Show release notes/));
+    expect(screen.getByText(/fix details/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Hide release notes/)).toHaveAttribute('aria-expanded', 'true');
+
+    // Simulate LIVE poll: same release arrives as a new object (same url+tag), plus a new release on top
+    const r1Refreshed = { ...r1, notes: '## Notes\nfix details' };
+    const r0 = {
+      name: 'v2',
+      tag: 'v2',
+      url: 'https://example.com/v2',
+      published: null as string | null,
+      source: 'github' as const,
+      notes: 'new notes',
+    };
+    rerender(<Releases config={{ type: 'releases', repositories: ['a/b'] }} data={{ releases: [r0, r1Refreshed] }} />);
+    // r1 should still be expanded even though it shifted index and got a new object identity
+    expect(screen.getByText(/fix details/)).toBeInTheDocument();
+    expect(screen.getAllByLabelText(/release notes/)).toHaveLength(2);
+    // expanded Set is keyed by url::tag, so order change must not collapse
+    expect(screen.getAllByText(/fix details/)).toHaveLength(1);
   });
 });

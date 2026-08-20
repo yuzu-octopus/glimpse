@@ -3,8 +3,9 @@
 .page {
   margin: 0 auto;
   padding-block: var(--widget-gap);
-  /* uniform bottom gap like glance .page — explicit to survive grid stretch / flex collapse */
-  padding-bottom: var(--widget-gap);
+  /* uniform bottom gap like glance .page — explicit !important to survive grid stretch / flex collapse
+     and ensure SHOW LESS lobsters never touches viewport bottom */
+  padding-bottom: var(--widget-gap) !important;
   padding-inline: var(--content-bounds-padding);
   width: 100%;
   box-sizing: border-box;
@@ -88,6 +89,10 @@
   align-items: stretch; /* tiles fill their spanned cell */
   align-content: start;
   container-type: inline-size;
+  /* bottom spacer: grid gap only between rows, not after last row —
+     explicit padding guarantees gap below last tile (Social split-column
+     videos + lobsters) even if .page height collapses */
+  padding-bottom: var(--widget-gap);
 }
 
 /* auto/collage mode treats every column as a tile — kill the explicit-mode

@@ -14,8 +14,23 @@ function SourceIcon({ source }: { source: Release['source'] }) {
   return <Container size={16} className={styles.icon} />;
 }
 
-function ReleaseRow({ release, showIcon }: { release: Release; showIcon: boolean }) {
-  const [open, setOpen] = useState(false);
+function releaseKey(r: Release): string {
+  // Stable identity across poll refreshes: url is unique per release; tag
+  // added to guard docker-hub tags sharing one url path.
+  return `${r.url}::${r.tag}`;
+}
+
+function ReleaseRow({
+  release,
+  showIcon,
+  open,
+  onToggle,
+}: {
+  release: Release;
+  showIcon: boolean;
+  open: boolean;
+  onToggle: () => void;
+}) {
   const age = useRelativeTime(
     release.published ? (Date.now() - Date.parse(release.published)) / 1000 : 0,
   );
@@ -23,7 +38,7 @@ function ReleaseRow({ release, showIcon }: { release: Release; showIcon: boolean
   const hasNotes = trimmed.length > 0;
 
   const toggle = () => {
-    if (hasNotes) setOpen((v) => !v);
+    if (hasNotes) onToggle();
   };
 
   return (
@@ -62,7 +77,7 @@ function ReleaseRow({ release, showIcon }: { release: Release; showIcon: boolean
             className={styles.expandBtn}
             onClick={(e) => {
               e.stopPropagation();
-              setOpen((v) => !v);
+              onToggle();
             }}
           >
             <ChevronDown size={14} className={open ? styles.chevronOpen : styles.chevron} />
@@ -90,6 +105,14 @@ function Releases({ config, data, error, isLoading }: WidgetComponentProps) {
   const loading = isLoading ?? ((data as unknown) == null && !error);
   const releases = ((data as { releases?: Release[] } | null)?.releases ?? []) as Release[];
   const showIcon = cfg['show-source-icon'] === true;
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const toggle = (k: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
   return (
     <WidgetChrome
       title={cfg.title}
@@ -99,9 +122,18 @@ function Releases({ config, data, error, isLoading }: WidgetComponentProps) {
       error={error}
       isLoading={loading}
       collapseAfter={cfg['collapse-after']}
-      items={releases.map((r) => (
-        <ReleaseRow key={r.url + r.tag} release={r} showIcon={showIcon} />
-      ))}
+      items={releases.map((r) => {
+        const k = releaseKey(r);
+        return (
+          <ReleaseRow
+            key={k}
+            release={r}
+            showIcon={showIcon}
+            open={expanded.has(k)}
+            onToggle={() => toggle(k)}
+          />
+        );
+      })}
     />
   );
 }
