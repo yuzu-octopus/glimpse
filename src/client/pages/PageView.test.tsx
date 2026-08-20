@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -7,7 +8,6 @@ import App from '../../App';
 import { GlimpseThemeProvider } from '../theme/GlimpseThemeProvider';
 import { PageView } from './PageView';
 import { clientWidgets, registerWidgetComponent } from '../widgets/registry';
-
 function payload(overrides: Partial<PagePayload> = {}): PagePayload {
   return {
     slug: 'home',
@@ -481,10 +481,22 @@ describe('PageView', () => {
     // After the redirect the active page is home, whose config hides the
     // desktop navigation — the wrapper class proves the fallback config was
     // not used and no error banner for a 404'd page payload was rendered.
-    const wrapper = document.querySelector(
-      '[data-testid="top-nav-wrapper"]',
-    ) as HTMLElement;
+    const wrapper = document.querySelector('[data-testid="top-nav-wrapper"]') as HTMLElement;
     expect(wrapper.className).toContain('hideDesktopNav');
     expect(screen.queryByText('page not found')).toBeNull();
+  });
+
+  it('social collage page has bottom padding and align-content start', () => {
+    const css = readFileSync('src/client/pages/page.module.css', 'utf8');
+    expect(css).toMatch(/\.page\s*\{[^}]*padding-block:\s*var\(--widget-gap\)/);
+    expect(css).toMatch(/\.collageTiling\s*\{[^}]*align-content:\s*start/);
+    expect(css).toMatch(/\.splitColumn\s*\{[^}]*gap:\s*var\(--widget-gap\)/);
+  });
+
+  it('page content has uniform bottom gap regardless of tiling', () => {
+    const css = readFileSync('src/client/pages/page.module.css', 'utf8');
+    // .page must keep both padding-block and explicit padding-bottom so collage stretch can't collapse the footer gap
+    expect(css).toMatch(/\.page\s*\{[^}]*padding-bottom:\s*var\(--widget-gap\)/);
+    expect(css).toMatch(/\.autoTiling\s*\{[^}]*align-content:\s*start/);
   });
 });

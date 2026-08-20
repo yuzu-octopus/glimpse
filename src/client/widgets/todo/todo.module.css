@@ -58,11 +58,11 @@
   flex-shrink: 0;
   width: 14px;
   height: 14px;
-  border: 2px solid var(--color-text-subdue);
+  border: 1.5px solid var(--color-text-subdue);
   border-radius: 3px;
   cursor: pointer;
   position: relative;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, background-color 0.2s;
 }
 
 .checkbox::after {
@@ -70,9 +70,14 @@
   position: absolute;
   inset: 3px;
   border-radius: 1px;
-  background: var(--color-primary);
+  background: var(--color-success);
   opacity: 0;
   transition: opacity 0.2s;
+}
+
+.checkbox:checked {
+  border-color: var(--color-success);
+  background-color: color-mix(in srgb, var(--color-success) 14%, transparent);
 }
 
 .checkbox:checked::after {

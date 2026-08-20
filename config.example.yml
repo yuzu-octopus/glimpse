@@ -110,7 +110,7 @@ pages:
           - type: videos
             title: Tech — recent
             limit: 9
-            # style: horizontal-cards | vertical-list | grid-cards (default: horizontal-cards)
+            # style: horizontal-cards (1 row + overflow) | grid-cards (wrap) | vertical-list (rows) (default: horizontal-cards)
             style: grid-cards
             channels:
               - UCsBjURrPoezykLs9EqgamOA  # Fireship
@@ -166,7 +166,7 @@ pages:
               - type: videos
                 title: Tech creators
                 limit: 6
-                # style: horizontal-cards | vertical-list | grid-cards (default: horizontal-cards)
+                # style: horizontal-cards (1 row + overflow) | grid-cards (wrap) | vertical-list (rows) (default: horizontal-cards)
                 style: vertical-list
                 channels:
                   - UCsBjURrPoezykLs9EqgamOA  # Fireship
@@ -175,7 +175,7 @@ pages:
               - type: videos
                 title: Minecraft — Unstable Universe & friends
                 limit: 9
-                # style: horizontal-cards | vertical-list | grid-cards (default: horizontal-cards)
+                # style: horizontal-cards (1 row + overflow) | grid-cards (wrap) | vertical-list (rows) (default: horizontal-cards)
                 style: grid-cards
                 channels:
                   - UCGwHHBGD-1ysDvq1Z4xXw7g  # @UnstableUniverse
@@ -190,6 +190,10 @@ pages:
             show-thumbnails: true
             show-flairs: true
             source-header: true
+            # Reddit anonymous JSON now 403s; add one of:
+            # app-auth: { id: "CLIENT_ID", secret: "CLIENT_SECRET" }  # POST https://www.reddit.com/api/v1/access_token then GET https://oauth.reddit.com
+            # proxy: "https://user:pass@proxy.example.com:8080"
+            # request-url-template: "https://proxy.local/{REQUEST-URL}"
           - type: lobsters
             limit: 8
             collapse-after: 5

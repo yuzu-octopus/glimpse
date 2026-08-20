@@ -37,8 +37,10 @@ export interface ThemeSourcePair {
 
 /** Derive a source from a base16 palette: bg=base00, primary=base0D,
  * negative=base08, positive=base0B, warning=base0A, info=base0C,
- * magenta=base0E, orange=base09. This surfaces the full base16 vibrancy
- * instead of collapsing to just blues/purples. */
+ * magenta=base0E, orange=base09. For dracula this is:
+ * purple #bd93f9 / red #ff5555 / green #50fa7b / yellow #f1fa8c /
+ * cyan #8be9fd / pink #ff79c6 / orange #ffb86c — all 7 hues surface
+ * distinctly instead of collapsing to just blues/purples. */
 export function sourceFromBase16(
   id: string,
   name: string,
@@ -237,6 +239,8 @@ export function glanceColorVars(
     '--color-tag-green': tuple(hslStr(pair.light.success), hslStr(pair.dark.success)),
     '--color-tag-blue': tuple(light.primary, dark.primary),
     '--color-tag-pink': tuple(hslStr(pair.light.magenta), hslStr(pair.dark.magenta)),
+    '--color-orange': tuple(hslStr(pair.light.orange), hslStr(pair.dark.orange)),
+    '--color-magenta': tuple(hslStr(pair.light.magenta), hslStr(pair.dark.magenta)),
     '--color-track': tuple(light.widgetBackgroundHighlight, dark.widgetBackgroundHighlight),
     '--color-skeleton': tuple(light.widgetContentBorder, dark.widgetContentBorder),
     '--color-on-accent': tuple(onAccentLight, onAccentDark),

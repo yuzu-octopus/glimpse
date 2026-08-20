@@ -315,19 +315,14 @@ export function PageView({
   /** Page config from /api/config: drives the skeleton-first loading layout. */
   page?: Page & { slug: string };
 }) {
-  const state = usePageData(slug);
+  const { data, error } = usePageData(slug);
   const columnsRef = useRef<HTMLDivElement>(null);
   // Collage measure pass: re-runs when the payload settles/refreshes. The
   // ref is only attached in collage mode (ref={collage ? columnsRef : null}
   // below), so the hook no-ops for every other tiling.
-  useCollageTiling(
-    columnsRef,
-    state.status === 'ready' && state.data.tiling === 'collage'
-      ? [state.data]
-      : [],
-  );
+  useCollageTiling(columnsRef, data && data.tiling === 'collage' ? [data] : []);
 
-  if (state.status === 'loading') {
+  if (!data && !error) {
     if (page) return <PageSkeleton page={page} />;
     // Fallback when rendered without config (direct mounts): generic block.
     return (
@@ -341,50 +336,49 @@ export function PageView({
       </div>
     );
   }
-  if (state.status === 'error') {
+  if (error && !data) {
     return (
       <div className={styles.page}>
-        <Banner status="error" title={state.error ?? 'Failed to load page'} />
+        <Banner status="error" title={error ?? 'Failed to load page'} />
       </div>
     );
   }
 
-  const data = state.data;
-  const hideHeaders = data['hide-headers'] === true || data.hideHeaders === true;
-
-
+  // Stale-while-revalidate: data is still rendered while isValidating; no skeleton flicker
+  const resolved = data!;
+  const hideHeaders = resolved['hide-headers'] === true || resolved.hideHeaders === true;
   return (
     <HideHeadersContext.Provider value={hideHeaders}>
       <div
-        className={`${styles.page} ${data['center-vertically'] ? styles.centered : ''}`}
-        style={{ maxWidth: PAGE_WIDTHS[data.width] }}
+        className={`${styles.page} ${resolved['center-vertically'] ? styles.centered : ''}`}
+        style={{ maxWidth: PAGE_WIDTHS[resolved.width] }}
       >
-        {data['show-mobile-header'] ? (
-          <div className={styles.mobileHeader}>{data.name}</div>
+        {resolved['show-mobile-header'] ? (
+          <div className={styles.mobileHeader}>{resolved.name}</div>
         ) : null}
-        {data.headWidgets.length > 0 ? (
+        {resolved.headWidgets.length > 0 ? (
           <div className={styles.headWidgets}>
-            {data.headWidgets.map((w, i) => (
+            {resolved.headWidgets.map((w, i) => (
               <WidgetSlot key={widgetKey(w, i)} widget={w} />
             ))}
           </div>
         ) : null}
         <div
-          ref={data.tiling === 'collage' ? columnsRef : null}
+          ref={resolved.tiling === 'collage' ? columnsRef : null}
           className={
-            data.tiling === 'collage'
+            resolved.tiling === 'collage'
               ? `${styles.columns} ${styles.collageTiling}`
-              : data.tiling === 'auto'
+              : resolved.tiling === 'auto'
                 ? `${styles.columns} ${styles.autoTiling}`
                 : styles.columns
           }
           style={
-            data.tiling === 'collage' || data.tiling === 'auto'
-              ? ({ '--min-column-width': `${data.minColumnWidth}px` } as CSSProperties)
+            resolved.tiling === 'collage' || resolved.tiling === 'auto'
+              ? ({ '--min-column-width': `${resolved.minColumnWidth}px` } as CSSProperties)
               : undefined
           }
         >
-          {data.columns.map((col, i) => (
+          {resolved.columns.map((col, i) => (
             // Columns are a config-static list (never reordered at runtime),
             // so the positional index is their stable identity.
             <MobileColumn

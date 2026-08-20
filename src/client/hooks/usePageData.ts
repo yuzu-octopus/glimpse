@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import type { PagePayload, WidgetPayload } from '../../shared/api';
 
-type PageDataState =
-  | { status: 'loading' }
-  | { status: 'ready'; data: PagePayload }
-  | { status: 'error'; error: string };
+export type PageDataResult = {
+  data: PagePayload | null;
+  error: string | null;
+  isValidating: boolean;
+  status: 'loading' | 'ready' | 'error';
+};
 
 const LIVE_TYPES = new Set(['clock', 'weather', 'markets', 'monitor']);
 const LIVE_POLL_MS = 30_000;
@@ -27,40 +29,63 @@ function hasLiveWidget(payload: PagePayload): boolean {
 /** Fetches a page's widget data; refetches on window focus when stale.
  * Live pages (clock/weather/markets/monitor) poll every 30s; static pages
  * are reload-only (no interval) and rely on server's 1h TTL.
+ * Stale-while-revalidate: polling keeps previous data and sets
+ * isValidating true until the new fetch resolves — no skeleton flicker.
  */
-export function usePageData(slug: string): PageDataState {
-  const [state, setState] = useState<PageDataState>({ status: 'loading' });
+export function usePageData(slug: string): PageDataResult {
+  const [data, setData] = useState<PagePayload | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isValidating, setIsValidating] = useState(true);
   const lastFetch = useRef(0);
+  const dataRef = useRef<PagePayload | null>(null);
   const loadRef = useRef<() => void>(() => {});
 
   useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+
+  useEffect(() => {
     let cancelled = false;
+
+    // Reset for new slug: clear stale from previous page
+    setData(null);
+    setError(null);
+    setIsValidating(true);
+    dataRef.current = null;
+
     const load = async () => {
-      setState({ status: 'loading' });
+      // Keep stale data, just mark validating
+      setIsValidating(true);
       try {
         const res = await fetch(`/api/page/${encodeURIComponent(slug)}`);
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as { error?: string };
           throw new Error(body.error ?? `HTTP ${res.status}`);
         }
-        const data = (await res.json()) as PagePayload;
+        const next = (await res.json()) as PagePayload;
         if (!cancelled) {
           lastFetch.current = Date.now();
-          setState({ status: 'ready', data });
+          dataRef.current = next;
+          setData(next);
+          setError(null);
+          setIsValidating(false);
         }
       } catch (e) {
         if (!cancelled) {
-          setState({
-            status: 'error',
-            error: e instanceof Error ? e.message : String(e),
-          });
+          // Keep stale data on revalidation error; only surface error if no data
+          if (!dataRef.current) {
+            setError(e instanceof Error ? e.message : String(e));
+          }
+          setIsValidating(false);
         }
       }
     };
+
     loadRef.current = () => {
       void load();
     };
     void load();
+
     const onFocus = () => {
       if (Date.now() - lastFetch.current > 30_000) void load();
     };
@@ -72,15 +97,16 @@ export function usePageData(slug: string): PageDataState {
   }, [slug]);
 
   useEffect(() => {
-    if (state.status !== 'ready') return;
-    if (!hasLiveWidget(state.data)) return;
+    if (!data) return;
+    if (!hasLiveWidget(data)) return;
     const id = window.setInterval(() => {
       if (Date.now() - lastFetch.current >= LIVE_POLL_MS) {
         loadRef.current();
       }
     }, LIVE_POLL_MS);
     return () => window.clearInterval(id);
-  }, [state]);
+  }, [data]);
 
-  return state;
+  const status: PageDataResult['status'] = error ? 'error' : data ? 'ready' : 'loading';
+  return { data, error, isValidating, status };
 }

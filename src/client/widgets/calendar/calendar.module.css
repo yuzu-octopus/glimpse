@@ -22,13 +22,16 @@
 .day {
   font-size: var(--font-size-base);
   color: var(--color-text-base);
-  padding: 4px 0;
+  padding: 3px 0;
+  border: 1px solid transparent;
   border-radius: var(--border-radius);
 }
 
 .today {
-  background-color: var(--color-popover-border);
-  color: var(--color-text-highlight);
+  background-color: color-mix(in srgb, var(--color-primary) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 28%, transparent);
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
 .other {

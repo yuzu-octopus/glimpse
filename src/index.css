@@ -38,9 +38,10 @@
   --font-size-h6: 11px;
 
   /* default dark ramp (glance defaults: bg 240 8 9, primary 43 50 70,
-     negative 0 70 70) + vibrant base16 dracula accents for pre-theme paint.
+     negative 0 70 70) + dracula accents for pre-theme paint:
+     purple #bd93f9 / green #50fa7b / red #ff5555 / yellow #f1fa8c /
+     cyan #8be9fd / pink #ff79c6 / orange #ffb86c.
      Light/dark tuples are injected at runtime via GlimpseThemeProvider. */
-  --color-background: #151519;
   --color-widget-background: #17171c;
   --color-widget-content-border: #1e1e24;
   --color-widget-background-highlight: #1e1e24;
@@ -70,6 +71,8 @@
   --color-tag-blue: #bd93f9;
   --color-tag-pink: #ff79c6;
   --color-tag-magenta: #ff79c6;
+  --color-orange: #ffb86c;
+  --color-magenta: #ff79c6;
   --color-accent: #bd93f9;
   --color-accent-muted: #8be9fd;
   --color-error: #ff5555;

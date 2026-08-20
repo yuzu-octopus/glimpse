@@ -113,7 +113,7 @@ describe('reddit fetcher', () => {
   it('fetches an app-auth token and sends it as a Bearer header', async () => {
     const { ctx, fetchMock } = makeCtx({
       'https://www.reddit.com/api/v1/access_token': { access_token: 'tok123', expires_in: 3600 },
-      'https://www.reddit.com/r/selfhosted/hot.json?limit=10&t=day': { data: { children: [] } },
+      'https://oauth.reddit.com/r/selfhosted/hot.json?limit=10&t=day': { data: { children: [] } },
     });
     await redditFetcher()(ctx, {
       type: 'reddit',
@@ -127,14 +127,16 @@ describe('reddit fetcher', () => {
     expect(tokenOpts.headers.Authorization).toBe(`Basic ${btoa('client-id:client-secret')}`);
     expect(tokenOpts.body).toBe('grant_type=client_credentials');
 
-    const [, listingOpts] = fetchMock.mock.calls[1];
+    const [listingUrl, listingOpts] = fetchMock.mock.calls[1];
+    expect(listingUrl).toBe('https://oauth.reddit.com/r/selfhosted/hot.json?limit=10&t=day');
     expect(listingOpts.headers.Authorization).toBe('Bearer tok123');
+    expect(listingOpts.headers['User-Agent']).toMatch(/Mozilla/);
   });
 
   it('reuses the cached token across calls', async () => {
     const { ctx, fetchMock } = makeCtx({
       'https://www.reddit.com/api/v1/access_token': { access_token: 'tok123' },
-      'https://www.reddit.com/r/selfhosted/hot.json?limit=10&t=day': { data: { children: [] } },
+      'https://oauth.reddit.com/r/selfhosted/hot.json?limit=10&t=day': { data: { children: [] } },
     });
     const cfg = { type: 'reddit', subreddit: 'selfhosted', 'app-auth': { id: 'a', secret: 'b' } };
     await redditFetcher()(ctx, cfg);
@@ -142,6 +144,44 @@ describe('reddit fetcher', () => {
     const tokenCalls = fetchMock.mock.calls.filter(([url]) => url === 'https://www.reddit.com/api/v1/access_token');
     expect(tokenCalls).toHaveLength(1);
   });
+
+  it('uses oauth host for search when app-auth present', async () => {
+    const { ctx, fetchMock } = makeCtx({
+      'https://www.reddit.com/api/v1/access_token': { access_token: 'tok' },
+      'https://oauth.reddit.com/search.json?q=docker&sort=hot&t=day&limit=10': { data: { children: [] } },
+    });
+    await redditFetcher()(ctx, { type: 'reddit', subreddit: 'selfhosted', search: 'docker', 'app-auth': { id: 'id', secret: 'sec' } });
+    const [secondUrl] = fetchMock.mock.calls[1];
+    expect(String(secondUrl)).toContain('oauth.reddit.com/search.json');
+  });
+
+  it('throws hint on 403 without app-auth', async () => {
+    const fetchMock = vi.fn(async () => new Response('blocked', { status: 403 }));
+    const ctx: WidgetFetchContext = { fetch: fetchMock as unknown as typeof fetch, env: {}, cache: new TtlCache(), singleflight: new Singleflight() };
+    await expect(redditFetcher()(ctx, { type: 'reddit', subreddit: 'selfhosted' })).rejects.toThrow(/add reddit\.app-auth id\/secret or.*proxy\/request-url-template/);
+    const firstOpts = (fetchMock.mock.calls[0] as unknown as [string, { headers: Record<string, string> }])[1];
+    expect(firstOpts.headers['User-Agent']).toMatch(/Mozilla/);
+  });
+
+
+
+
+
+
+
+  it('reddit with app-auth uses oauth token (sequential mock, TDD red-green)', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: 'tok' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: { children: [{ data: { title: 'hi', permalink: '/r/selfhosted/comments/1/hi/', created_utc: 1 } }] } }), { status: 200 }));
+    const ctx: WidgetFetchContext = { fetch: fetchMock as unknown as typeof fetch, env: {}, cache: new TtlCache(), singleflight: new Singleflight() };
+    const data = (await redditFetcher()(ctx, { type: 'reddit', subreddit: 'selfhosted', 'app-auth': { id: 'id', secret: 'sec' } })) as { posts: RedditPost[] };
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('access_token'), expect.any(Object));
+    expect(data.posts.length).toBe(1);
+    // second call was oauth host
+    expect(String(fetchMock.mock.calls[1][0])).toContain('oauth.reddit.com');
+  });
+
 
   it('sorts by engagement when extra-sort-by is set', async () => {
     const listing = {

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import Videos from './index';
@@ -57,5 +58,13 @@ describe('videos widget', () => {
     expect(screen.getByText('HTTP 403 for feed')).toBeInTheDocument();
     expect(screen.getByTestId('widget-error-dot')).toBeInTheDocument();
     expect(screen.queryByText('Bun 1.3 release')).toBeNull();
+  });
+
+  it('grid wraps, horizontal scrolls (css distinct)', () => {
+    const css = readFileSync('src/client/widgets/videos/videos.module.css', 'utf8');
+    expect(css).toMatch(/\.gridWrap[\s\S]*?grid-template-columns:\s*repeat\(auto-fill/);
+    expect(css).toMatch(/\.cards[\s\S]*?overflow-x:\s*auto/);
+    // grid must wrap at 220px per spec (horizontal is 180px single row)
+    expect(css).toMatch(/minmax\(220px/);
   });
 });

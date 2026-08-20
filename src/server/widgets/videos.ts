@@ -31,6 +31,14 @@ function isChannelId(channel: string): boolean {
   return /^UC[A-Za-z0-9_-]{22}$/.test(channel);
 }
 
+// Why channel_id and not UULF (glance's UC→UULF playlist trick):
+// Glance builds a playlist feed via UULF<id without UC> (the channel's uploads playlist).
+// As of 2024-2025 YouTube returns empty/0 entries for that UULF feed for many channels,
+// while ?channel_id=UC... remains populated and reliable. We therefore prefer
+// https://www.youtube.com/feeds/videos.xml?channel_id=<UC...> directly. Handles (@handle)
+// still work data-driven: resolveHandleToChannelId fetches https://www.youtube.com/@handle
+// and extracts the UC id via regex on externalId/browseId/channelId, so config stays
+// UC-first but accepts @handles without a code map.
 function feedUrlForId(id: string, _includeShorts: boolean): string {
   if (id.startsWith(PLAYLIST_PREFIX)) {
     return `https://www.youtube.com/feeds/videos.xml?playlist_id=${encodeURIComponent(id.slice(PLAYLIST_PREFIX.length))}`;

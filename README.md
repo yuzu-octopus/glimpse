@@ -95,9 +95,7 @@ See `config.example.yml` for a working starting point.
 | `reddit` | Subreddit posts or search results | Reddit JSON API; sends a `User-Agent` header |
 | `releases` | Latest releases of tracked projects | GitHub, GitLab, Codeberg, Docker Hub; optional `GITHUB_TOKEN` / `gitlab-token` |
 | `weather` | Current conditions + 7-day forecast | [open-meteo](https://open-meteo.com) (geocoding + forecast); no API key |
-| `lobsters` | Lobsters stories | lobste.rs JSON API (`hottest` / `newest`); `instance-url` configurable |
 | `videos` | Latest videos from channels / playlists | YouTube RSS feeds (channel ID, `@handle`, or playlist ID); no API key |
-| `markets` | Quotes with 21-day sparkline | Yahoo Finance chart API |
 | `monitor` | HTTP health checks with response time | Server-side fetch, 5s timeout; `expected-status-code` (default 200) |
 | `custom-api` | Items mapped from any JSON endpoint | JSONPath field mapping via `jsonpath-plus` |
 | `repository` | GitHub repo stats + open PRs / issues | GitHub REST API; optional `GITHUB_TOKEN` |
@@ -105,9 +103,15 @@ See `config.example.yml` for a working starting point.
 | `twitch-top-games` | Top games on Twitch | Twitch Helix API; requires `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET` |
 | `group` | Tabbed container of widgets | Config-only |
 | `split-column` | Two widgets side by side | Config-only |
-
 Feed widgets respect the `cache` prop; unauthenticated GitHub and Reddit requests are rate-limited, so raise `cache` for those if you hit limits.
 
+### YouTube — from handles to channel_id
+
+What changed vs glance's `widget-videos.go` and vs the earlier `videos.ts`:
+
+- **Before:** `feedUrlFor` tried `?user=<handle>` (deprecated, 404 for many channels) with an `isChannelId` branch, no `User-Agent`, sequential `await` per channel, no cache/stale fallback, and Shorts were not filtered.
+- **Now:** `feedUrlForId` always uses `channel_id` (or `playlist_id` for `playlist:` entries) — e.g. `https://www.youtube.com/feeds/videos.xml?channel_id=UC…` — sends a Mozilla `User-Agent`, fans out with `Promise.allSettled` (≈30 workers conceptually), caches each feed for 1h with stale-on-error fallback (`ctx.cache` `1h`), and filters Shorts via `/shorts/` link check unless `include-shorts` is set. Handles still work data-driven: `@handle` → `UC…` is resolved by fetching `https://www.youtube.com/@handle` and regex-matching `externalId`/`browseId`/`channelId` (no code map, UC IDs stay in YAML).
+- **Why:** Glance's `UC` → `UULF` uploads-playlist trick now returns 0/empty for many channels on YouTube; `channel_id` is more reliable. Handle resolution keeps the config data-driven — prefer `channels: [UC…]` in YAML (e.g. `UCsBj…` Fireship) but `@Handle` still resolves.
 ## Environment variables
 
 All variables are optional. They are read from the process environment (`export` them or run under your process manager); `.env` file loading is not built in.

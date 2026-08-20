@@ -46,21 +46,59 @@
   color: var(--color-primary);
 }
 
-/* keep muted chip */
+/* muted chip base — dracula tints cycle per item for subtle vibrancy */
 .iconContainer {
   margin-block: 1px;
   background-color: var(--color-widget-background-highlight);
+  border: 1px solid transparent;
   border-radius: var(--border-radius);
   padding: 5px;
-  opacity: 0.7;
   flex-shrink: 0;
+  color: var(--color-text-subdue);
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.linkItem:nth-child(6n+1) .iconContainer {
+  background-color: color-mix(in srgb, var(--color-tag-blue) 13%, transparent);
+  border-color: color-mix(in srgb, var(--color-tag-blue) 20%, transparent);
+  color: var(--color-tag-blue);
+}
+
+.linkItem:nth-child(6n+2) .iconContainer {
+  background-color: color-mix(in srgb, var(--color-tag-green) 13%, transparent);
+  border-color: color-mix(in srgb, var(--color-tag-green) 20%, transparent);
+  color: var(--color-tag-green);
+}
+
+.linkItem:nth-child(6n+3) .iconContainer {
+  background-color: color-mix(in srgb, var(--color-tag-yellow) 13%, transparent);
+  border-color: color-mix(in srgb, var(--color-tag-yellow) 20%, transparent);
+  color: var(--color-tag-yellow);
+}
+
+.linkItem:nth-child(6n+4) .iconContainer {
+  background-color: color-mix(in srgb, var(--color-tag-cyan) 13%, transparent);
+  border-color: color-mix(in srgb, var(--color-tag-cyan) 20%, transparent);
+  color: var(--color-tag-cyan);
+}
+
+.linkItem:nth-child(6n+5) .iconContainer {
+  background-color: color-mix(in srgb, var(--color-tag-orange) 13%, transparent);
+  border-color: color-mix(in srgb, var(--color-tag-orange) 20%, transparent);
+  color: var(--color-tag-orange);
+}
+
+.linkItem:nth-child(6n+6) .iconContainer {
+  background-color: color-mix(in srgb, var(--color-tag-pink) 13%, transparent);
+  border-color: color-mix(in srgb, var(--color-tag-pink) 20%, transparent);
+  color: var(--color-tag-pink);
 }
 
 .icon {
   display: block;
   width: 20px;
   height: 20px;
-  opacity: 0.8;
+  color: currentColor;
 }
 
 .linkTitle {

@@ -22,7 +22,9 @@ interface RedditListing {
 const VALID_THUMB = (t: string | undefined): t is string =>
   typeof t === 'string' && t.startsWith('http');
 
-const USER_AGENT = 'glimpse/0.1 (dashboard) by /u/glimpse-app';
+const UA_MOZILLA = 'Mozilla/5.0 (compatible; glimpse/0.1)';
+const USER_AGENT = UA_MOZILLA;
+
 
 interface ProxyConfig {
   url: string;
@@ -70,9 +72,11 @@ registerWidget('reddit', async (ctx, config) => {
     );
   }
 
+  const isAuthed = !!cfg['app-auth'];
+  const host = isAuthed ? 'https://oauth.reddit.com' : 'https://www.reddit.com';
   let url = cfg.search
-    ? `https://www.reddit.com/search.json?q=${encodeURIComponent(cfg.search)}&sort=${sort}&t=${period}&limit=${limit}`
-    : `https://www.reddit.com/r/${encodeURIComponent(cfg.subreddit)}/${sort}.json?limit=${limit}&t=${period}`;
+    ? `${host}/search.json?q=${encodeURIComponent(cfg.search)}&sort=${sort}&t=${period}&limit=${limit}`
+    : `${host}/r/${encodeURIComponent(cfg.subreddit)}/${sort}.json?limit=${limit}&t=${period}`;
   if (cfg['request-url-template']) {
     url = cfg['request-url-template'].replace('{REQUEST-URL}', url);
   }
@@ -90,7 +94,7 @@ registerWidget('reddit', async (ctx, config) => {
   if (!res.ok) {
     const hint =
       res.status === 403 && !cfg['app-auth']
-        ? ' — anonymous Reddit JSON is now blocked (403); add reddit.app-auth id/secret or a proxy/request-url-template to fetch via OAuth'
+        ? ' — anonymous Reddit JSON is now blocked (403); add reddit.app-auth id/secret or proxy/request-url-template to fetch via OAuth'
         : '';
     throw new Error(`HTTP ${res.status} for ${url}${hint}`);
   }

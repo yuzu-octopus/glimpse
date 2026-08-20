@@ -15,7 +15,7 @@
 }
 
 .currentIcon {
-  color: var(--color-text-highlight);
+  color: var(--color-tag-orange);
 }
 
 /* glance weather.html: condition = size-h2, feels-like = size-h4 */
@@ -102,11 +102,11 @@
 .temps {
   text-align: end;
   font-variant-numeric: tabular-nums;
-  color: var(--color-text-highlight);
+  color: var(--color-tag-orange);
 }
 
 .low {
-  color: var(--color-text-subdue);
+  color: var(--color-tag-cyan);
 }
 
 .empty {
