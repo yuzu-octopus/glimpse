@@ -1,8 +1,8 @@
 /* Glimpse global styles — glance-compatible surface (main.css + site.css port).
  * The :root block holds literal fallbacks for the default dark ramp
- * (bg 240 8 9, primary 43 50 70, negative 0 70 70) so isolated renders and
- * pre-theme paint have real values; the Theme provider overrides them at
- * runtime via its own :scope tokens.
+ * (dracula #282a36 via glanceRamp) so isolated renders and pre-theme
+ * paint have real values; the Theme provider overrides them at runtime
+ * via documentElement light-dark() tokens (glimpseTheme.ts).
  *
  * Semantic mapping (mirrors src/shared/theme/glimpseTheme.ts):
  *  purple (#bd93f9) primary/tag-blue/accent = links & titles (unvisited; visited→text-base, hover→primary)
@@ -12,7 +12,7 @@
  *  yellow (#f1fa8c) warning/tag-yellow       = tags/chips cycle
  *  cyan   (#8be9fd) info/tag-cyan            = info / secondary links (metaLink)
  *  pink   (#ff79c6) tag-pink/magenta         = accent/flair
- *  subdue (#525260) text-subdue/separator   = metadata & separators
+ *  subdue (#4c5067) text-subdue/separator   = metadata & separators (glanceRamp 35% on dracula bg)
  */
 
 @font-face {
@@ -48,27 +48,29 @@
   --font-size-h5: 12px;
   --font-size-h6: 11px;
 
-  /* default dark ramp (glance defaults: bg 240 8 9, primary 43 50 70,
-     negative 0 70 70) + dracula accents for pre-theme paint:
+  /* default dark ramp — dracula (#282a36) via glanceRamp (src/shared/theme/glanceRamp.ts)
+     + dracula accents for pre-theme paint (matches src/shared/theme/glimpseTheme.ts sourceFromBase16):
      purple #bd93f9 / green #50fa7b / red #ff5555 / yellow #f1fa8c /
      cyan #8be9fd / pink #ff79c6 / orange #ffb86c.
-     Light/dark tuples are injected at runtime via GlimpseThemeProvider. */
-  --color-widget-background: #17171c;
-  --color-widget-content-border: #1e1e24;
-  --color-widget-background-highlight: #1e1e24;
-  --color-separator: #1e1e24;
-  --color-popover-background: #1b1b22;
-  --color-popover-border: #31313a;
-  --color-progress-border: #2d2d34;
-  --color-progress-value: #525260;
-  --color-vertical-progress-value: #575766;
-  --color-graph-gridlines: #232329;
-  --color-widget-shadow: #141417;
-  --color-text-highlight: #d6d6dc;
-  --color-text-paragraph: #b5b5c0;
-  --color-text-base: #8b8b9c;
-  --color-text-base-muted: #7b7b8e;
-  --color-text-subdue: #525260;
+     Light/dark tuples are injected at runtime via GlimpseThemeProvider (glanceColorVars → documentElement).
+     --color-background is the page bg (glanceRamp background); aliases below are the dark-side hsl() ramp. */
+  --color-background: #282a36;
+  --color-widget-background: #2a2c39;
+  --color-widget-content-border: #313342;
+  --color-widget-background-highlight: #313342;
+  --color-separator: #313342;
+  --color-popover-background: #2d3040;
+  --color-popover-border: #424559;
+  --color-progress-border: #3e4153;
+  --color-progress-value: #606582;
+  --color-vertical-progress-value: #656a88;
+  --color-graph-gridlines: #353848;
+  --color-widget-shadow: #272935;
+  --color-text-highlight: #d3d5de;
+  --color-text-paragraph: #b0b3c4;
+  --color-text-base: #8489a4;
+  --color-text-base-muted: #727897;
+  --color-text-subdue: #4c5067;
   --color-primary: #bd93f9;
   --color-positive: #50fa7b;
   --color-negative: #ff5555;

@@ -111,11 +111,12 @@
 .row:nth-child(7) { animation-delay: 180ms; }
 .row:nth-child(8) { animation-delay: 210ms; }
 
-/* glance .video-horizontal-list-thumbnail: 40px tall, 16/8.9, radius, hover */
+/* glance .video-horizontal-list-thumbnail: 16/9, radius, hover — same as card */
 .rowThumb,
 .rowThumbPlaceholder {
-  width: 40px;
-  height: 40px;
+  width: 72px;
+  aspect-ratio: 16 / 9;
+  height: auto;
   flex-shrink: 0;
   object-fit: cover;
   border: 1px solid var(--color-separator);

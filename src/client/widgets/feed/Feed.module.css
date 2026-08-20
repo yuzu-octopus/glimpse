@@ -44,11 +44,12 @@
 .row:nth-child(7) { animation-delay: 180ms; }
 .row:nth-child(8) { animation-delay: 210ms; }
 
-/* image — glance .thumbnail-container / rss-detailed-thumbnail, flat, full colour, hover scale */
+/* image — glance .thumbnail-container / rss-detailed-thumbnail, flat, full colour, hover scale — 16:9 like videos cardThumb (16/8.9) */
 .thumbWrap {
   flex-shrink: 0;
-  width: 56px;
-  height: 56px;
+  width: 72px;
+  aspect-ratio: 16 / 9;
+  height: auto;
   border-radius: var(--border-radius);
   overflow: hidden;
   background-color: var(--color-widget-background-highlight);

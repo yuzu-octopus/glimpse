@@ -24,7 +24,7 @@ interface ParsedFeed {
 const YT_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const PLAYLIST_PREFIX = 'playlist:';
 
-// ponytail: simple regex cache, handle lookup via youtube @ page (no API key) — kept as fallback, config prefers UC IDs
+// ponytail: simple handle→UC cache, resolved via youtube @ page (no API key) — UC and @handle both work
 const handleChannelCache = new Map<string, string>();
 
 function isChannelId(channel: string): boolean {
@@ -38,7 +38,7 @@ function isChannelId(channel: string): boolean {
 // https://www.youtube.com/feeds/videos.xml?channel_id=<UC...> directly. Handles (@handle)
 // still work data-driven: resolveHandleToChannelId fetches https://www.youtube.com/@handle
 // and extracts the UC id via regex on externalId/browseId/channelId, so config stays
-// UC-first but accepts @handles without a code map.
+// flexible — use UC... for stability or @handle for convenience (e.g. @spokeishere, @Bug-I).
 function feedUrlForId(id: string, _includeShorts: boolean): string {
   if (id.startsWith(PLAYLIST_PREFIX)) {
     return `https://www.youtube.com/feeds/videos.xml?playlist_id=${encodeURIComponent(id.slice(PLAYLIST_PREFIX.length))}`;
@@ -86,15 +86,24 @@ async function feedUrlsForChannels(
   const results = await Promise.all(
     channels.map(async (c) => {
       let id = c;
-      if (!isChannelId(c) && !c.startsWith(PLAYLIST_PREFIX) && !c.startsWith('UC')) {
-        const needsResolve = c.startsWith('@') || !isChannelId(c);
-        if (needsResolve) {
-          try {
-            const handle = c.startsWith('@') ? c : `@${c}`;
-            id = await resolveHandleToChannelId(ctx, handle);
-          } catch {
-            id = c;
-          }
+      const isPlaylist = c.startsWith(PLAYLIST_PREFIX);
+      const isUcLike = c.startsWith('UC');
+      const isUcId = isChannelId(c);
+      if (isUcId || isPlaylist || isUcLike) {
+        // UC ID (or playlist:) — use directly; malformed UC falls through to feed fetch (404) without handle lookup
+        id = c;
+      } else if (c.startsWith('@')) {
+        try {
+          id = await resolveHandleToChannelId(ctx, c);
+        } catch {
+          id = c;
+        }
+      } else {
+        // bare handle without @ (e.g. spokeishere, Bug-I) — try @handle resolution
+        try {
+          id = await resolveHandleToChannelId(ctx, `@${c}`);
+        } catch {
+          id = c;
         }
       }
       const url = feedUrlForId(id, includeShorts);

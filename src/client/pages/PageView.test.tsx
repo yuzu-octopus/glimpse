@@ -495,8 +495,8 @@ describe('PageView', () => {
 
   it('page content has uniform bottom gap regardless of tiling', () => {
     const css = readFileSync('src/client/pages/page.module.css', 'utf8');
-    // .page must keep both padding-block and explicit padding-bottom so collage stretch can't collapse the footer gap
-    expect(css).toMatch(/\.page\s*\{[^}]*padding-bottom:\s*var\(--widget-gap\)/);
+    // .page must keep both padding-block and explicit padding-bottom (calc allowed) so collage stretch can't collapse the footer gap
+    expect(css).toMatch(/\.page\s*\{[^}]*padding-bottom:\s*(var\(--widget-gap\)|calc\(var\(--widget-gap\))/);
     expect(css).toMatch(/\.autoTiling\s*\{[^}]*align-content:\s*start/);
   });
 });

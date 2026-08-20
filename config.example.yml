@@ -2,8 +2,8 @@
 # Copy to config.yml and edit. See README for full widget reference.
 # Pages: Home (daily feeds) · Dev (releases / repos / videos) · Social (collage / reddit / twitch) · Lab (homelab).
 # Flat style: 1px border / 5px radius / JetBrains Mono / no shadows — applied by the theme, not the config.
-# All `videos` channels are data-driven UC IDs (no handle map); Singapore weather repeated on Home/Dev/Lab for parity.
-
+# videos: channels accept UC IDs (UC...) or @handles (e.g. @spokeishere, @Bug-I, @CalebWritesCode, @AZisk) — both work via resolveHandleToChannelId.
+# Singapore weather repeated on Home/Dev/Lab for parity.
 pages:
   - name: Home
     slug: home
@@ -33,8 +33,8 @@ pages:
                 label: Singapore
               - timezone: America/New_York
                 label: New York
-              - timezone: Europe/London
-                label: London
+              - timezone: America/Los_Angeles
+                label: California
           - type: weather
             location: Singapore
             units: metric
@@ -114,14 +114,19 @@ pages:
             title: Tech — recent
             limit: 9
             # style: horizontal-cards (1 row + overflow) | grid-cards (wrap) | vertical-list (rows) (default: horizontal-cards)
+            # channels accepts either form — pick what you know:
+            #   UC ID: "UCsBjURrPoezykLs9EqgamOA"  (stable, copy from channel URL)
+            #   @handle: "@spokeishere" / "@Bug-I" / "@CalebWritesCode" / "@AZisk"  (easy, auto-resolved via youtube.com/@handle → UC)
+            # Both resolve to the same YouTube RSS feed; mix freely. Bare handles ("spokeishere") also work (normalized to @handle).
             style: grid-cards
             channels:
-              - UCsBjURrPoezykLs9EqgamOA  # Fireship
-              - UC6r0JH23PKZfogSwn2Q-oMw  # @ByCloud
-              - UCkVfrGwV-iG9bSsgCbrNPxQ  # @BetterStack
-              - UCQx_JXdo1Ug5GYmvJ6tgHIw  # @CalebCurry
-              - UCwpXw5c2M9Ry4odACXsebdA  # @bugsnag / Bugsnag
-              - UCkQS_dP6GJTmYnMlox-YiKQ  # @JiaBinHuang
+              - UCsBjURrPoezykLs9EqgamOA  # Fireship — UC ID example
+              - "@ByCloud"                # @handle example (same as UC6r0JH23PKZfogSwn2Q-oMw)
+              - "@BetterStack"            # @handle example (same as UCkVfrGwV-iG9bSsgCbrNPxQ)
+              - "@Bug-I"                  # https://www.youtube.com/@Bug-I → UCeUHo1UGx4p97AQllOYuneA
+              - "@CalebWritesCode"        # https://www.youtube.com/@CalebWritesCode → UCuU9jE4MHHEIyYMbDfUPSew
+              - "@AZisk"                  # https://www.youtube.com/@AZisk → UCajiMK_CY9icRhLepS8_3ug
+              - UCkQS_dP6GJTmYnMlox-YiKQ  # @JiaBinHuang — UC ID also works
           - type: repository
             repository: glanceapp/glance
             pull-requests-limit: 5
@@ -170,22 +175,24 @@ pages:
                 title: Tech creators
                 limit: 6
                 # style: horizontal-cards (1 row + overflow) | grid-cards (wrap) | vertical-list (rows) (default: horizontal-cards)
+                # channels: UC ID or @handle — e.g. "@spokeishere" also works
                 style: vertical-list
                 channels:
-                  - UCsBjURrPoezykLs9EqgamOA  # Fireship
-                  - UC6r0JH23PKZfogSwn2Q-oMw  # @ByCloud
-                  - UCkVfrGwV-iG9bSsgCbrNPxQ  # @BetterStack
+                  - UCsBjURrPoezykLs9EqgamOA  # Fireship (UC)
+                  - "@ByCloud"                # @handle (same as UC6r0JH23PKZfogSwn2Q-oMw)
+                  - "@BetterStack"            # @handle
               - type: videos
                 title: Minecraft — Unstable Universe & friends
                 limit: 9
                 # style: horizontal-cards (1 row + overflow) | grid-cards (wrap) | vertical-list (rows) (default: horizontal-cards)
+                # Mix UC and @handle freely — e.g. "@SpokeIsHere" ↔ UCK... ; handles with hyphens like @Bug-I also work
                 style: grid-cards
                 channels:
-                  - UCGwHHBGD-1ysDvq1Z4xXw7g  # @UnstableUniverse
+                  - UCGwHHBGD-1ysDvq1Z4xXw7g  # @UnstableUniverse (UC)
                   - UCPLMPHT-d8GZOqL_AHJFdQQ  # @ParrotX2
                   - UCkzzNLnuM-VsATWC53ehwOQ  # @Wemmbu (@wemmbumc)
                   - UCkvg04omHN08nuKdvKZoNuA  # @FlameFrags
-                  - UCk2uxbWi5py_iJXaEsh2YRA  # @SpokeIsHere
+                  - "@SpokeIsHere"            # @handle example — also works as UCk2uxbWi5py_iJXaEsh2YRA, try "@spokeishere" lower-case too
           - type: reddit
             subreddit: selfhosted
             limit: 10
