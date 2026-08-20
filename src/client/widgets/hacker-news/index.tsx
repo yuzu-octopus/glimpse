@@ -38,8 +38,9 @@ function HnRow({ post }: { post: HnPost }) {
   );
 }
 
-function HackerNews({ config, data }: WidgetComponentProps) {
+function HackerNews({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as HackerNewsConfig;
+  const loading = isLoading ?? ((data as unknown) == null && !error);
   const posts = ((data as { posts?: HnPost[] } | null)?.posts ?? []) as HnPost[];
   const title = cfg.title ?? (cfg['source-header'] ? 'Hacker News' : undefined);
   return (
@@ -49,6 +50,8 @@ function HackerNews({ config, data }: WidgetComponentProps) {
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
       collapseAfter={cfg['collapse-after']}
+      isLoading={loading}
+      error={error}
       items={posts.map((p) => <HnRow key={p.id} post={p} />)}
     />
   );

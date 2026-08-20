@@ -5,6 +5,7 @@ export interface WidgetComponentProps {
   config: Record<string, unknown>;
   data: unknown;
   error?: string;
+  isLoading?: boolean;
 }
 
 export type WidgetComponent = ComponentType<WidgetComponentProps>;

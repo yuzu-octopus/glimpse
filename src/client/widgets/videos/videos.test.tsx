@@ -45,6 +45,11 @@ describe('videos widget', () => {
     expect(screen.queryByText('Bun 1.3 release')).toBeNull();
   });
 
+  it('videos empty shows placeholder No videos', () => {
+    render(<Videos config={{ type: 'videos', channels: ['UCx'] }} data={{ videos: [] }} />);
+    expect(screen.getByText(/No videos/)).toBeInTheDocument();
+  });
+
   it('surfaces a fetch error via the widget chrome', () => {
     render(
       <Videos config={{ type: 'videos', title: 'Videos' }} data={null} error="HTTP 403 for feed" />,

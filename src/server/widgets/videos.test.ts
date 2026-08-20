@@ -119,4 +119,42 @@ describe('videos fetcher', () => {
     expect(data.videos[0].url).toBe('https://invidious.local/watch?v=aaa');
     expect(data.videos[1].url).toBe('https://invidious.local/watch?v=bbb');
   });
+
+  it('429 returns cached stale', async () => {
+    const cachedVideos = [
+      { title: 'cached', url: 'https://www.youtube.com/watch?v=cached', channel: 'Cached', published: null, thumbnail: null },
+    ] as Video[];
+    const ctx = makeCtx(async () => new Response('', { status: 429 }));
+    ctx.cache.set('videos:feed:UCx', cachedVideos, 3600_000);
+    ctx.cache.set('videos:feed:UCx::::noshorts', cachedVideos, 3600_000);
+    const data = (await videosFetcher()(ctx, { type: 'videos', channels: ['UCx'] })) as { videos: Video[] };
+    expect(data.videos[0].title).toBe('cached');
+  });
+
+  it('500 returns cached stale', async () => {
+    const cachedVideos = [
+      { title: 'cached500', url: 'https://www.youtube.com/watch?v=cached500', channel: 'Cached', published: null, thumbnail: null },
+    ] as Video[];
+    const ctx = makeCtx(async () => new Response('', { status: 500 }));
+    ctx.cache.set('videos:feed:UCx::::noshorts', cachedVideos, 3600_000);
+    ctx.cache.set('videos:feed:UCx', cachedVideos, 3600_000);
+    const data = (await videosFetcher()(ctx, { type: 'videos', channels: ['UCx'] })) as { videos: Video[] };
+    expect(data.videos[0].title).toBe('cached500');
+  });
+
+  it('sends Mozilla User-Agent on youtube fetches', async () => {
+    let ua: string | null = null;
+    const trackingCtx: WidgetFetchContext = {
+      fetch: vi.fn(async (_url: string, init?: RequestInit) => {
+        const h = (init?.headers as Record<string, string> | undefined) ?? {};
+        ua = h['User-Agent'] ?? null;
+        return new Response(FEED, { status: 200 });
+      }) as unknown as typeof fetch,
+      env: {},
+      cache: new TtlCache(),
+      singleflight: new Singleflight(),
+    };
+    await videosFetcher()(trackingCtx, { type: 'videos', channels: ['UC1234567890123456789012'] });
+    expect(ua).toMatch(/Mozilla\/5\.0/);
+  });
 });

@@ -50,11 +50,41 @@ function Row({ video }: { video: Video }) {
   );
 }
 
-function Videos({ config, data, error }: WidgetComponentProps) {
+function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as VideosConfig;
+  const loading = isLoading ?? ((data as unknown) == null && !error);
   const videos = ((data as { videos?: Video[] } | null)?.videos ?? []) as Video[];
   const style = cfg.style ?? 'horizontal-cards';
   const collapseAfter = style === 'grid-cards' ? cfg['collapse-after-rows'] : cfg['collapse-after'];
+
+  // Loading: data is null and no error yet (fetch in flight). Keep chrome
+  // so PageView skeleton and WidgetChrome isLoading stay consistent.
+  if (loading) {
+    return (
+      <WidgetChrome
+        title={cfg.title}
+        titleUrl={cfg['title-url']}
+        hideHeader={cfg['hide-header']}
+        cssClass={cfg['css-class']}
+        isLoading
+      />
+    );
+  }
+
+  // Empty: valid response but no videos (e.g. no channels, all feeds failed,
+  // or channels have no recent videos). Show actionable placeholder.
+  if (videos.length === 0 && !error) {
+    return (
+      <WidgetChrome
+        title={cfg.title}
+        titleUrl={cfg['title-url']}
+        hideHeader={cfg['hide-header']}
+        cssClass={cfg['css-class']}
+      >
+        <div className={styles.placeholder}>No videos — check channels</div>
+      </WidgetChrome>
+    );
+  }
 
   if (style === 'vertical-list') {
     return (

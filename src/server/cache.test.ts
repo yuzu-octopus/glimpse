@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { parseCacheDuration, Singleflight, TtlCache } from './cache';
+import { getDefaultTtl, parseCacheDuration, Singleflight, TtlCache } from './cache';
 
 describe('parseCacheDuration', () => {
   it.each([
@@ -37,6 +37,21 @@ describe('TtlCache', () => {
     cache.clear();
     expect(cache.get('a')).toBeUndefined();
     expect(cache.get('b')).toBeUndefined();
+  });
+});
+
+describe('getDefaultTtl', () => {
+  it('returns 60s for live widget types', () => {
+    expect(getDefaultTtl('weather')).toBe(60_000);
+    expect(getDefaultTtl('clock')).toBe(60_000);
+    expect(getDefaultTtl('markets')).toBe(60_000);
+    expect(getDefaultTtl('monitor')).toBe(60_000);
+  });
+  it('returns 1h for static widget types', () => {
+    expect(getDefaultTtl('rss')).toBe(3_600_000);
+    expect(getDefaultTtl('releases')).toBe(3_600_000);
+    expect(getDefaultTtl('videos')).toBe(3_600_000);
+    expect(getDefaultTtl('unknown')).toBe(3_600_000);
   });
 });
 

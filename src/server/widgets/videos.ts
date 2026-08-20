@@ -124,8 +124,9 @@ registerWidget('videos', async (ctx, config) => {
   const settled = await Promise.allSettled(
     feeds.map(async ({ url, source, cacheKey }) => {
       const fullCacheKey = `videos:feed:${cacheKey}::${cfg['video-url-template'] ?? ''}::${includeShorts ? 'shorts' : 'noshorts'}`;
-      const cached = ctx.cache.get<Video[]>(fullCacheKey);
-      if (cached) return cached;
+      const simpleCacheKey = `videos:feed:${cacheKey}`;
+      const getCached = (): Video[] | undefined =>
+        ctx.cache.get<Video[]>(fullCacheKey) ?? ctx.cache.get<Video[]>(simpleCacheKey);
       try {
         const raw = await fetchText(ctx, url, { headers: { 'User-Agent': YT_UA } });
         const parsed = (await parser.parseString(raw)) as ParsedFeed;
@@ -146,8 +147,10 @@ registerWidget('videos', async (ctx, config) => {
               ],
         );
         ctx.cache.set(fullCacheKey, videos, CACHE_TTL_MS);
+        ctx.cache.set(simpleCacheKey, videos, CACHE_TTL_MS);
         return videos;
       } catch (err) {
+        const cached = getCached();
         if (cached) return cached;
         throw err;
       }

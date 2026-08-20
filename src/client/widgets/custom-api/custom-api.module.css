@@ -29,6 +29,18 @@
   flex: 1;
 }
 
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.starIcon {
+  color: var(--color-tag-yellow);
+  flex-shrink: 0;
+}
+
 .title {
   display: block;
   font-size: var(--font-size-h4);
@@ -98,3 +110,4 @@ a.title:hover {
   font-size: var(--font-size-h6);
   color: var(--color-text-subdue);
 }
+

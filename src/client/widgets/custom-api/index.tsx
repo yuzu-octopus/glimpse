@@ -1,3 +1,4 @@
+import { Star } from 'lucide-react';
 import { Link } from '@astryxdesign/core';
 import type { CustomApiConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
@@ -6,6 +7,7 @@ import type { CustomApiItem } from '../../../shared/widgets/payloads';
 import styles from './custom-api.module.css';
 
 function ItemRow({ item }: { item: CustomApiItem }) {
+  const showStar = /star/i.test(item.title);
   const title = item.url ? (
     <Link href={item.url} target="_blank" className={styles.title} hasUnderline={false}>
       {item.title}
@@ -22,7 +24,10 @@ function ItemRow({ item }: { item: CustomApiItem }) {
         <img src={item.icon} alt="" loading="lazy" className={styles.icon} />
       ) : null}
       <div className={styles.rowBody}>
-        {title}
+        <div className={styles.titleRow}>
+          {showStar ? <Star size={14} data-testid="custom-api-star" className={styles.starIcon} /> : null}
+          {title}
+        </div>
         {subtitle ? <div className={styles.subtitle}>{subtitle}</div> : null}
       </div>
       <div className={styles.rowRight}>
@@ -33,14 +38,22 @@ function ItemRow({ item }: { item: CustomApiItem }) {
   );
 }
 
-function CustomApi({ config, data, error }: WidgetComponentProps) {
+function CustomApi({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as CustomApiConfig;
+  const loading = isLoading ?? ((data as unknown) == null && !error);
   const items = ((data as { items?: CustomApiItem[] } | null)?.items ?? []) as CustomApiItem[];
   const frameless = cfg.frameless === true;
 
   const rows = items.map((item) => <ItemRow key={item.title + (item.url ?? '')} item={item} />);
   if (frameless) {
-    // frameless has no chrome to hang the error on — surface it inline
+    // frameless has no chrome to hang error/loading on — surface inline
+    if (loading) {
+      return (
+        <div className={styles.frameless} data-testid="custom-api-frameless">
+          <div data-testid="widget-loading">Loading…</div>
+        </div>
+      );
+    }
     return (
       <div className={styles.frameless} data-testid="custom-api-frameless">
         {error ? <div className={styles.framelessError}>{error}</div> : rows}
@@ -54,6 +67,7 @@ function CustomApi({ config, data, error }: WidgetComponentProps) {
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
       error={error}
+      isLoading={loading}
       items={rows}
     />
   );

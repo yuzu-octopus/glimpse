@@ -14,24 +14,13 @@ function SourceIcon({ source }: { source: Release['source'] }) {
   return <Container size={16} className={styles.icon} />;
 }
 
-function ReleaseRow({
-  release,
-  showIcon,
-  defaultExpanded,
-}: {
-  release: Release;
-  showIcon: boolean;
-  defaultExpanded?: boolean;
-}) {
-  const [open, setOpen] = useState(Boolean(defaultExpanded));
+function ReleaseRow({ release, showIcon }: { release: Release; showIcon: boolean }) {
+  const [open, setOpen] = useState(false);
   const age = useRelativeTime(
     release.published ? (Date.now() - Date.parse(release.published)) / 1000 : 0,
   );
   const trimmed = release.notes?.trim() ?? '';
   const hasNotes = trimmed.length > 0;
-  const preview = hasNotes ? trimmed.replace(/\s+/g, ' ').slice(0, 160) : '';
-  const isLong = hasNotes && trimmed.length > preview.length;
-  const needsClamp = hasNotes && trimmed.replace(/\s+/g, ' ').length > 80;
 
   const toggle = () => {
     if (hasNotes) setOpen((v) => !v);
@@ -86,41 +75,9 @@ function ReleaseRow({
         {release.published ? <span>· {age}</span> : null}
       </div>
       {hasNotes ? (
-        <div className={styles.body}>
-          {!open ? (
-            <div className={styles.previewRow}>
-              <span className={`${styles.preview} ${needsClamp ? styles.previewClamp : ''}`}>
-                {preview}
-                {isLong ? '…' : ''}
-              </span>
-              {isLong ? (
-                <button
-                  type="button"
-                  className={styles.toggle}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setOpen(true);
-                  }}
-                >
-                  Show more
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-          <div className={`${styles.collapse} ${open ? styles.collapseOpen : ''}`}>
-            <div className={styles.collapseInner}>
-              <pre className={styles.notes}>{trimmed}</pre>
-              <button
-                type="button"
-                className={styles.toggle}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpen(false);
-                }}
-              >
-                Show less
-              </button>
-            </div>
+        <div className={`${styles.collapse} ${open ? styles.collapseOpen : ''}`}>
+          <div className={styles.collapseInner}>
+            {open ? <pre className={styles.notes}>{trimmed}</pre> : null}
           </div>
         </div>
       ) : null}
@@ -128,8 +85,9 @@ function ReleaseRow({
   );
 }
 
-function Releases({ config, data, error }: WidgetComponentProps) {
+function Releases({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as ReleasesConfig;
+  const loading = isLoading ?? ((data as unknown) == null && !error);
   const releases = ((data as { releases?: Release[] } | null)?.releases ?? []) as Release[];
   const showIcon = cfg['show-source-icon'] === true;
   return (
@@ -139,14 +97,10 @@ function Releases({ config, data, error }: WidgetComponentProps) {
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
       error={error}
+      isLoading={loading}
       collapseAfter={cfg['collapse-after']}
-      items={releases.map((r, i) => (
-        <ReleaseRow
-          key={r.url + r.tag}
-          release={r}
-          showIcon={showIcon}
-          defaultExpanded={i === 0 && Boolean(r.notes?.trim())}
-        />
+      items={releases.map((r) => (
+        <ReleaseRow key={r.url + r.tag} release={r} showIcon={showIcon} />
       ))}
     />
   );

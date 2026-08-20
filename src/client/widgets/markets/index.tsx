@@ -92,8 +92,9 @@ function Row({ market, symbolLink, chartLink }: { market: Market } & RowLinks) {
   );
 }
 
-function Markets({ config, data }: WidgetComponentProps) {
+function Markets({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as MarketsConfig;
+  const loading = isLoading ?? ((data as unknown) == null && !error);
   const markets = ((data as { markets?: Market[] } | null)?.markets ?? []) as Market[];
   const links = new Map<string, RowLinks>(
     cfg.markets.map((m) => [
@@ -110,6 +111,8 @@ function Markets({ config, data }: WidgetComponentProps) {
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
+      error={error}
+      isLoading={loading}
     >
       <div className={styles.rows}>
         {markets.map((m) => (

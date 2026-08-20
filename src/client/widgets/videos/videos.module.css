@@ -159,3 +159,9 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.placeholder {
+  padding: 12px 0;
+  font-size: var(--font-size-h5);
+  color: var(--color-text-subdue);
+}

@@ -110,6 +110,7 @@ pages:
           - type: videos
             title: Tech — recent
             limit: 9
+            # style: horizontal-cards | vertical-list | grid-cards (default: horizontal-cards)
             style: grid-cards
             channels:
               - UCsBjURrPoezykLs9EqgamOA  # Fireship
@@ -165,6 +166,7 @@ pages:
               - type: videos
                 title: Tech creators
                 limit: 6
+                # style: horizontal-cards | vertical-list | grid-cards (default: horizontal-cards)
                 style: vertical-list
                 channels:
                   - UCsBjURrPoezykLs9EqgamOA  # Fireship
@@ -173,6 +175,7 @@ pages:
               - type: videos
                 title: Minecraft — Unstable Universe & friends
                 limit: 9
+                # style: horizontal-cards | vertical-list | grid-cards (default: horizontal-cards)
                 style: grid-cards
                 channels:
                   - UCGwHHBGD-1ysDvq1Z4xXw7g  # @UnstableUniverse

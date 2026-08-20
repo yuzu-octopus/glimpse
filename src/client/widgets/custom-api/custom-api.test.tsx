@@ -68,4 +68,23 @@ describe('custom-api widget', () => {
     expect(screen.getByTestId('custom-api-frameless')).toBeInTheDocument();
     expect(screen.getByText('upstream down')).toBeInTheDocument();
   });
+
+  it('stargazers shows star icon', () => {
+    render(
+      <CustomApi
+        config={{ type: 'custom-api', url: 'https://api.github.com/repos/a/b' }}
+        data={{ items: [{ title: 'Stargazers', value: '36462' }], frameless: false }}
+      />,
+    );
+    expect(screen.getByTestId('custom-api-star')).toBeInTheDocument();
+  });
+  it('non-star title does not show star icon', () => {
+    render(
+      <CustomApi
+        config={{ type: 'custom-api', url: 'https://api.github.com/repos/a/b' }}
+        data={{ items: [{ title: 'Forks', value: '100' }], frameless: false }}
+      />,
+    );
+    expect(screen.queryByTestId('custom-api-star')).not.toBeInTheDocument();
+  });
 });

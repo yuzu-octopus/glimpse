@@ -58,4 +58,20 @@ describe('releases widget', () => {
     expect(screen.getByText('GitHub rate limit exceeded')).toBeInTheDocument();
     expect(screen.getByTestId('widget-error-dot')).toBeInTheDocument();
   });
+
+  it('release collapsed by default, no Show more text', () => {
+    render(
+      <Releases
+        config={{ type: 'releases', repositories: ['a/b'] }}
+        data={{
+          releases: [
+            { name: 'v1', tag: 'v1', url: '#', published: null, source: 'github', notes: '## Notes\nfix' },
+          ],
+        }}
+      />,
+    );
+    expect(screen.queryByText(/Notes/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Show more/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/Show release notes/)).toHaveAttribute('aria-expanded', 'false');
+  });
 });

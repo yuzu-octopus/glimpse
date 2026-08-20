@@ -23,8 +23,9 @@ function SiteRow({ site }: { site: MonitorSite }) {
   );
 }
 
-function Monitor({ config, data, error }: WidgetComponentProps) {
+function Monitor({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as MonitorConfig;
+  const loading = isLoading ?? ((data as unknown) == null && !error);
   const sites = ((data as { sites?: MonitorSite[] } | null)?.sites ?? []) as MonitorSite[];
   const visible = cfg['show-failing-only'] ? sites.filter((s) => !s.ok) : sites;
   return (
@@ -34,6 +35,7 @@ function Monitor({ config, data, error }: WidgetComponentProps) {
       hideHeader={cfg['hide-header']}
       cssClass={[cfg['css-class'], cfg.style === 'compact' ? styles.compact : undefined].filter(Boolean).join(' ') || undefined}
       error={error}
+      isLoading={loading}
       items={visible.map((s) => <SiteRow key={s.url} site={s} />)}
     />
   );

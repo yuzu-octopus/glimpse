@@ -58,9 +58,15 @@ const WEATHER_CODES: Record<number, string> = {
 
 const DAY_NAMES = new Intl.DateTimeFormat('en-GB', { weekday: 'short' });
 
-export function Weather({ config, data, error }: WidgetComponentProps) {
+export function Weather({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as WeatherConfig;
+  const loading = isLoading === true;
   const w = data as WeatherData | null;
+  if (loading) {
+    return (
+      <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']} isLoading error={error} />
+    );
+  }
   if (!w) {
     return (
       <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']} error={error}>
@@ -68,7 +74,6 @@ export function Weather({ config, data, error }: WidgetComponentProps) {
       </WidgetChrome>
     );
   }
-
   const today = new Date().toISOString().slice(0, 10);
   const day = (date: string) => (date === today ? 'Today' : DAY_NAMES.format(new Date(date + 'T00:00:00')));
 

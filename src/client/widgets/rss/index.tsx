@@ -131,8 +131,9 @@ function Cards({ items, title, titleUrl, hideHeader, cssClass, cardHeight, thumb
   );
 }
 
-function Rss({ config, data }: WidgetComponentProps) {
+function Rss({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as RssConfig;
+  const loading = isLoading ?? ((data as unknown) == null && !error);
   const items = ((data as { items?: RssItem[] } | null)?.items ?? []) as RssItem[];
   const style = cfg.style ?? 'vertical-list';
   const collapseAfter = cfg['collapse-after'];
@@ -140,6 +141,18 @@ function Rss({ config, data }: WidgetComponentProps) {
   const title =
     cfg.title ?? (cfg['source-header'] ? cfg.feeds[0]?.title ?? 'RSS' : undefined);
 
+  if (loading) {
+    return (
+      <WidgetChrome
+        title={title}
+        titleUrl={cfg['title-url']}
+        hideHeader={cfg['hide-header']}
+        cssClass={cfg['css-class']}
+        isLoading
+        error={error}
+      />
+    );
+  }
   if (style === 'horizontal-cards' || style === 'horizontal-cards-2') {
     return (
       <Cards
@@ -163,6 +176,8 @@ function Rss({ config, data }: WidgetComponentProps) {
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
       collapseAfter={collapseAfter}
+      isLoading={loading}
+      error={error}
       items={items.map((item) => (
         <Row key={item.url} item={item} detailed={detailed} singleLine={singleLine} />
       ))}

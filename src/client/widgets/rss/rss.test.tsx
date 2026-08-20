@@ -106,4 +106,9 @@ describe('rss widget', () => {
     );
     expect(screen.queryByText('The Feed')).toBeNull();
   });
+
+  it('shows skeleton while loading when data is null', () => {
+    render(<Rss config={{ feeds: [{ url: 'https://example.com/rss' }] } as unknown as Record<string, unknown>} data={null} />);
+    expect(screen.getByTestId('widget-loading')).toBeInTheDocument();
+  });
 });

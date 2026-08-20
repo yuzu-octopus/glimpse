@@ -53,17 +53,31 @@ function Card({ post, showMeta }: { post: RedditPost; showMeta: boolean }) {
   );
 }
 
-function Reddit({ config, data }: WidgetComponentProps) {
+function Reddit({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as RedditConfig;
+  const loading = isLoading ?? ((data as unknown) == null && !error);
   const posts = ((data as { posts?: RedditPost[] } | null)?.posts ?? []) as RedditPost[];
   const showThumb = cfg['show-thumbnails'] === true;
   const showFlair = cfg['show-flairs'] === true;
   const style = cfg.style ?? 'vertical-list';
   const title = cfg.title ?? (cfg['source-header'] ? 'Reddit' : undefined);
 
+  if (loading) {
+    return (
+      <WidgetChrome
+        title={title}
+        titleUrl={cfg['title-url']}
+        hideHeader={cfg['hide-header']}
+        cssClass={cfg['css-class']}
+        isLoading
+        error={error}
+      />
+    );
+  }
+
   if (style === 'horizontal-cards' || style === 'vertical-cards') {
     return (
-      <WidgetChrome title={title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={[cfg['css-class'], styles.cards].filter(Boolean).join(' ') || undefined}>
+      <WidgetChrome title={title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={[cfg['css-class'], styles.cards].filter(Boolean).join(' ') || undefined} isLoading={loading} error={error}>
         <div className={style === 'horizontal-cards' ? styles.cardRow : styles.cardCol}>
           {posts.map((post) => (
             <Card key={post.url} post={post} showMeta={style === 'vertical-cards'} />
@@ -80,6 +94,8 @@ function Reddit({ config, data }: WidgetComponentProps) {
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
       collapseAfter={cfg['collapse-after']}
+      isLoading={loading}
+      error={error}
       items={posts.map((p) => <Row key={p.url} post={p} showThumb={showThumb} showFlair={showFlair} />)}
     />
   );

@@ -38,8 +38,9 @@ function LobstersRow({ post }: { post: LobsterPost }) {
   );
 }
 
-function Lobsters({ config, data }: WidgetComponentProps) {
+function Lobsters({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as LobstersConfig;
+  const loading = isLoading ?? ((data as unknown) == null && !error);
   const posts = ((data as { posts?: LobsterPost[] } | null)?.posts ?? []) as LobsterPost[];
   const title = cfg.title ?? (cfg['source-header'] ? 'Lobsters' : undefined);
   return (
@@ -49,6 +50,8 @@ function Lobsters({ config, data }: WidgetComponentProps) {
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
       collapseAfter={cfg['collapse-after']}
+      isLoading={loading}
+      error={error}
       items={posts.map((p) => <LobstersRow key={p.id} post={p} />)}
     />
   );

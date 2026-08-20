@@ -44,8 +44,9 @@ function ChannelRow({ channel }: { channel: TwitchChannel }) {
   );
 }
 
-function TwitchChannels({ config, data, error }: WidgetComponentProps) {
+function TwitchChannels({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as TwitchChannelsConfig;
+  const loading = isLoading ?? ((data as unknown) == null && !error);
   const channels = ((data as { channels?: TwitchChannel[] } | null)?.channels ?? []) as TwitchChannel[];
   return (
     <WidgetChrome
@@ -54,12 +55,12 @@ function TwitchChannels({ config, data, error }: WidgetComponentProps) {
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
       error={error}
+      isLoading={loading}
       collapseAfter={cfg['collapse-after']}
       items={channels.map((c) => <ChannelRow key={c.login} channel={c} />)}
     />
   );
 }
-
 function GameCard({ game, rank }: { game: TwitchGame; rank: number }) {
   return (
     <div className={styles.gameCard}>
@@ -75,9 +76,9 @@ function GameCard({ game, rank }: { game: TwitchGame; rank: number }) {
     </div>
   );
 }
-
-function TwitchTopGames({ config, data, error }: WidgetComponentProps) {
+function TwitchTopGames({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as TwitchTopGamesConfig;
+  const loading = isLoading ?? ((data as unknown) == null && !error);
   const games = ((data as { games?: TwitchGame[] } | null)?.games ?? []) as TwitchGame[];
   return (
     <WidgetChrome
@@ -86,6 +87,7 @@ function TwitchTopGames({ config, data, error }: WidgetComponentProps) {
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
       error={error}
+      isLoading={loading}
       collapseAfter={cfg['collapse-after']}
       items={games.map((g, i) => <GameCard key={g.id} game={g} rank={i + 1} />)}
     />

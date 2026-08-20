@@ -189,11 +189,13 @@ function WidgetSlot({ widget }: { widget: WidgetPayload }) {
       </WidgetChrome>
     );
   }
+  const isLoading = widget.data == null && !widget.error;
   return (
     <Component
       config={widget.config}
       data={widget.data}
       error={widget.error}
+      isLoading={isLoading}
     />
   );
 }

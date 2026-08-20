@@ -29,8 +29,9 @@ function SubList({ icon, label, rows }: {
   );
 }
 
-function Repository({ config, data, error }: WidgetComponentProps) {
+function Repository({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as RepositoryConfig;
+  const loading = isLoading === true;
   const repo = (data ?? {}) as Partial<RepositoryData>;
   const pulls = repo.pulls ?? [];
   const issues = repo.issues ?? [];
@@ -41,6 +42,7 @@ function Repository({ config, data, error }: WidgetComponentProps) {
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
       error={error}
+      isLoading={loading}
       items={[
         <div key="header" className={styles.header}>
           <Link href={repo.url ?? '#'} target="_blank" className={styles.repoName} hasUnderline={false}>

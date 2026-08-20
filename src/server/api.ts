@@ -1,11 +1,10 @@
 import type { Page } from '../shared/config';
 import type { PagePayload, WidgetPayload } from '../shared/api';
-import { parseCacheDuration } from './cache';
+import { getDefaultTtl, parseCacheDuration } from './cache';
 import {
   serverWidgets,
   type WidgetFetchContext,
 } from './widgets/registry';
-
 export function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
@@ -41,9 +40,10 @@ async function fetchWidget(
   if (!fetcher) return payload; // config-only widget
 
   const cacheKey = `${pageSlug}:${path}`;
-  const ttlMs = parseCacheDuration(
-    typeof widget.cache === 'string' ? widget.cache : undefined,
-  );
+  const ttlMs =
+    typeof widget.cache === 'string'
+      ? parseCacheDuration(widget.cache)
+      : getDefaultTtl(type);
 
   const cached = ctx.cache.get<WidgetPayload['data']>(cacheKey);
   if (cached !== undefined) {
