@@ -357,7 +357,7 @@ describe('PageView', () => {
       tiling: 'collage',
       'min-column-width': 360,
       columns: [
-        // tall feed (limit > 5) + markets: 3 + 2 = 5, clamped to 4
+        // tall feed (limit > 5) + markets: 3 + 2 = 5 (new clamp 8, so 5 not clamped)
         {
           size: 'full',
           widgets: [
@@ -386,8 +386,8 @@ describe('PageView', () => {
     const spans = Array.from(grid.querySelectorAll('[data-row-span]')).map(
       (t) => t.getAttribute('data-row-span'),
     );
-    // feed(3)+markets(2)=5→clamp 4; clock→1 (no hint); group→2
-    expect(spans).toEqual(['4', '2']);
+    // feed(3)+markets(2)=5→now 5 (clamp 8); clock→1 omitted (rowSpan>1 only); group→2
+    expect(spans).toEqual(['5', '2']);
   });
 
   it('renders a mobile page-name header when show-mobile-header is set', async () => {

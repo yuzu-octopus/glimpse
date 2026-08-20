@@ -48,7 +48,7 @@ export function useCollageTiling(
       const rowUnit = Math.min(...heights);
       if (!(rowUnit > 0)) return; // no measurable layout (jsdom): no-op
       const spans = heights.map((h) =>
-        Math.min(Math.max(Math.round(h / rowUnit), 1), 4),
+        Math.min(Math.max(Math.round(h / rowUnit), 1), 8),
       );
       const key = spans.join(',');
       if (key === prevKey) return; // change guard: skip identical passes

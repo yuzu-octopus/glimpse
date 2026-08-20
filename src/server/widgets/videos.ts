@@ -4,6 +4,7 @@ import { fetchText } from './http';
 import { registerWidget } from './registry';
 import type { Video } from '../../shared/widgets/payloads';
 import type { WidgetFetchContext } from './registry';
+import { STATIC_TTL_MS } from '../../shared/live';
 
 type ParserItem = Parser.Item & {
   mediaGroup?: {
@@ -22,7 +23,6 @@ interface ParsedFeed {
 
 const YT_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const PLAYLIST_PREFIX = 'playlist:';
-const CACHE_TTL_MS = 60 * 60 * 1000;
 
 // ponytail: simple regex cache, handle lookup via youtube @ page (no API key) — kept as fallback, config prefers UC IDs
 const handleChannelCache = new Map<string, string>();
@@ -106,12 +106,13 @@ async function feedUrlsForChannels(
 }
 
 function videoUrlFor(link: string, template: string | undefined): string {
+  if (!template) return link;
   try {
     const id = new URL(link).searchParams.get('v') ?? '';
-    if (!id) return link || '#';
-    return template ? template.replace('{VIDEO-ID}', id) : `https://www.youtube.com/watch?v=${id}`;
+    if (!id) return link;
+    return template.replace('{VIDEO-ID}', id).replace('{VIDEO-URL}', link);
   } catch {
-    return link || '#';
+    return link;
   }
 }
 
@@ -135,6 +136,10 @@ registerWidget('videos', async (ctx, config) => {
       const simpleCacheKey = `videos:feed:${cacheKey}`;
       const getCached = (): Video[] | undefined =>
         ctx.cache.get<Video[]>(fullCacheKey) ?? ctx.cache.get<Video[]>(simpleCacheKey);
+      const setCached = (videos: Video[]) => {
+        ctx.cache.set(fullCacheKey, videos, STATIC_TTL_MS);
+        ctx.cache.set(simpleCacheKey, videos, STATIC_TTL_MS);
+      };
       try {
         const raw = await fetchText(ctx, url, { headers: { 'User-Agent': YT_UA } });
         const parsed = (await parser.parseString(raw)) as ParsedFeed;
@@ -154,8 +159,7 @@ registerWidget('videos', async (ctx, config) => {
                 } as Video,
               ],
         );
-        ctx.cache.set(fullCacheKey, videos, CACHE_TTL_MS);
-        ctx.cache.set(simpleCacheKey, videos, CACHE_TTL_MS);
+        setCached(videos);
         return videos;
       } catch (err) {
         const cached = getCached();

@@ -2,7 +2,18 @@
  * The :root block holds literal fallbacks for the default dark ramp
  * (bg 240 8 9, primary 43 50 70, negative 0 70 70) so isolated renders and
  * pre-theme paint have real values; the Theme provider overrides them at
- * runtime via its own :scope tokens. */
+ * runtime via its own :scope tokens.
+ *
+ * Semantic mapping (mirrors src/shared/theme/glimpseTheme.ts):
+ *  purple (#bd93f9) primary/tag-blue/accent = links & titles (unvisited; visited→text-base, hover→primary)
+ *  green  (#50fa7b) positive/success/tag-green = positive (monitor up, market up, scores)
+ *  red    (#ff5555) negative/error           = negative (monitor down, market down)
+ *  orange (#ffb86c) tag-orange               = warning/attention (secondary — now scores unified to green)
+ *  yellow (#f1fa8c) warning/tag-yellow       = tags/chips cycle
+ *  cyan   (#8be9fd) info/tag-cyan            = info / secondary links (metaLink)
+ *  pink   (#ff79c6) tag-pink/magenta         = accent/flair
+ *  subdue (#525260) text-subdue/separator   = metadata & separators
+ */
 
 @font-face {
   font-family: 'JetBrains Mono';

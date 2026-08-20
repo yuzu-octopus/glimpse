@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { PagePayload, WidgetPayload } from '../../shared/api';
+import { LIVE_POLL_MS, LIVE_TYPES } from '../../shared/live';
 
 export type PageDataResult = {
   data: PagePayload | null;
@@ -8,13 +9,10 @@ export type PageDataResult = {
   status: 'loading' | 'ready' | 'error';
 };
 
-const LIVE_TYPES = new Set(['clock', 'weather', 'markets', 'monitor']);
-const LIVE_POLL_MS = 30_000;
-
 function hasLiveWidget(payload: PagePayload): boolean {
   const check = (widgets: WidgetPayload[]): boolean => {
     for (const w of widgets) {
-      if (LIVE_TYPES.has(w.type)) return true;
+      if (LIVE_TYPES[w.type]) return true;
       if (w.widgets && check(w.widgets)) return true;
     }
     return false;

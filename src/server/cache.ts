@@ -1,3 +1,5 @@
+import { LIVE_TTL_MS, LIVE_TYPES, STATIC_TTL_MS } from '../shared/live';
+
 /**
  * In-memory TTL cache + singleflight dedupe, mirroring glance's per-widget
  * cache prop and internal/singleflight.go. Widgets share one instance.
@@ -26,16 +28,10 @@ export class TtlCache {
   }
 }
 
-/**
- * Live widgets need short TTL so data stays fresh without hammering
- * backends; everything else is effectively static and reload-only.
- * Mirrors glance's per-widget cache defaults (weather ≈ 1h there, but
- * we front it with a 60s server TTL + 30s client poll for liveness).
- */
-export const LIVE_TYPES = new Set(['clock', 'weather', 'markets', 'monitor']);
+export { LIVE_POLL_MS, LIVE_TYPES, LIVE_TTL_MS, STATIC_TTL_MS } from '../shared/live';
 
 export function getDefaultTtl(type: string): number {
-  return LIVE_TYPES.has(type) ? 60_000 : 3_600_000;
+  return LIVE_TYPES[type] ? LIVE_TTL_MS : STATIC_TTL_MS;
 }
 
 /**

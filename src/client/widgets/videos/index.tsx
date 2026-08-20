@@ -13,7 +13,7 @@ function useVideoAge(video: Video): string | null {
 function Card({ video }: { video: Video }) {
   const age = useVideoAge(video);
   return (
-    <Link href={video.url} target="_blank" className={styles.card} hasUnderline={false}>
+    <Link href={video.url} target="_blank" className={styles.card} hasUnderline={false} color="inherit">
       {video.thumbnail ? (
         <img src={video.thumbnail} alt="" loading="lazy" className={styles.cardThumb} />
       ) : (
@@ -38,7 +38,7 @@ function Row({ video }: { video: Video }) {
         <div className={styles.rowThumbPlaceholder} />
       )}
       <div className={styles.rowBody}>
-        <Link href={video.url} target="_blank" className={styles.title} hasUnderline={false}>
+        <Link href={video.url} target="_blank" className={styles.title} hasUnderline={false} color="inherit">
           {video.title}
         </Link>
         <div className={styles.rowMeta}>

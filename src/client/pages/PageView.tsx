@@ -68,8 +68,7 @@ function columnKey(
 }
 
 /** Config-only row-span estimate for the loading skeleton (collage mode):
- * bounds CLS between first paint and the measured pass on hydration.
- * Mirrors the hook's 1-4 clamp. */
+ * Mirrors the hook's 1-8 clamp. */
 function estimateRowSpan(w: SkeletonWidget): number {
   const type = w.type ?? '';
   // feed-ish widgets with a declared limit > 5 are tall lists
@@ -96,10 +95,10 @@ function estimateRowSpan(w: SkeletonWidget): number {
 }
 
 /** Skeleton tile (one column) spans the sum of its widgets' estimates,
- * clamped to the hook's 1-4 bound. */
+ * clamped to the hook's 1-8 bound. */
 function estimateColumnRowSpan(col: { widgets: SkeletonWidget[] }): number {
   const total = col.widgets.reduce((sum, w) => sum + estimateRowSpan(w), 0);
-  return Math.min(Math.max(total, 1), 4);
+  return Math.min(Math.max(total, 1), 8);
 }
 
 /** Skeleton card for one configured widget slot (WidgetChrome isLoading). */

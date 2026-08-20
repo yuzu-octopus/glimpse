@@ -98,7 +98,7 @@ describe('useCollageTiling', () => {
     expect(tiles.map((t) => t.dataset.rowSpan)).toEqual(['1', '2', '3']);
   });
 
-  it('clamps row spans to the 1-4 bound', () => {
+  it('clamps row spans to the 1-8 bound', () => {
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
       rafCb = cb;
       return 1;
@@ -108,11 +108,11 @@ describe('useCollageTiling', () => {
     const { container: root } = render(<Harness heights={[0, 0]} />);
     const container = root.querySelector('[data-testid="container"]') as HTMLElement;
     const tiles = tileEls(container);
-    // 100/800 → round(8) = 8 → clamp 4
+    // 100/800 → round(8) = 8 → clamp 8 (raised from 4 to allow tall Social col)
     setHeights(tiles, [100, 800]);
     flushMeasure();
 
-    expect(tiles.map((t) => t.dataset.rowSpan)).toEqual(['1', '4']);
+    expect(tiles.map((t) => t.dataset.rowSpan)).toEqual(['1', '8']);
   });
 
   it('skips identical passes (change guard)', () => {

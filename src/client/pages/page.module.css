@@ -10,6 +10,16 @@
   width: 100%;
   box-sizing: border-box;
   animation: pageContentEntrance 0.3s cubic-bezier(0.25, 1, 0.5, 1) backwards;
+  /* ensure bottom padding is outside any flex/overflow clipping context;
+     display: flow-root prevents last-child margin collapse from eating it */
+  display: flow-root;
+}
+
+.page:not(.centered)::after {
+  content: '';
+  display: block;
+  height: var(--widget-gap);
+  flex-shrink: 0;
 }
 
 .centered {
@@ -139,6 +149,18 @@
 }
 .collageTiling [data-row-span='4'] {
   grid-row: span 4;
+}
+.collageTiling [data-row-span='5'] {
+  grid-row: span 5;
+}
+.collageTiling [data-row-span='6'] {
+  grid-row: span 6;
+}
+.collageTiling [data-row-span='7'] {
+  grid-row: span 7;
+}
+.collageTiling [data-row-span='8'] {
+  grid-row: span 8;
 }
 
 .column {

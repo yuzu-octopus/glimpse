@@ -83,7 +83,7 @@
   text-underline-offset: 2px;
 }
 
-/* glance .list-horizontal-text: •-separated, bullets subdued */
+/* glance .list-horizontal-text: •-separated, bullets subdued — score green (positive/success) unified with lobsters/hn */
 .meta {
   display: flex;
   flex-wrap: wrap;
@@ -95,7 +95,7 @@
 }
 
 .score {
-  color: var(--color-tag-orange);
+  color: var(--color-tag-green);
   font-weight: 600;
 }
 

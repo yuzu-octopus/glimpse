@@ -4,6 +4,29 @@
  * A ThemeSource is the seed data for one mode: background + accent blocks
  * in HSL. `buildGlimpseTheme` runs the glance ramp for both modes and maps
  * the resulting colors onto glance CSS vars AND Astryx semantic tokens.
+ *
+ * Semantic colour mapping (data-driven, flat minimal — ui-ux-pro-max + Astryx):
+ *  Primitives (dracula hex) → Semantic tokens → Component usage
+ *  ─────────────────────────────────────────────────────────────
+ *  Purple  #bd93f9  --color-primary / --color-tag-blue / --color-accent / --color-text-accent
+ *           = Links & titles (unvisited). Visited → --color-text-base, hover → primary + underline.
+ *           All .title / .cardTitle / .linkTitle unvisited MUST use primary so user learns “purple = tappable title”.
+ *  Green   #50fa7b  --color-positive / --color-success / --color-tag-green
+ *           = Positive / success (monitor .dotUp, markets .up, scores/points, +change).
+ *  Red     #ff5555  --color-negative / --color-error
+ *           = Negative / error (monitor .dotDown, markets .down).
+ *  Orange  #ffb86c  --color-tag-orange / --color-orange
+ *           = Warning / attention (secondary score accent when green reserved — now unified to green).
+ *  Yellow  #f1fa8c  --color-warning / --color-tag-yellow
+ *           = Tags / chips (rss .chip, releases .tag — 5-way cycle, yellow is first).
+ *  Cyan    #8be9fd  --color-info / --color-tag-cyan / --color-accent-muted
+ *           = Info / secondary links (HN/Lobsters .metaLink, bookmarks subtle).
+ *  Pink    #ff79c6  --color-tag-pink / --color-magenta
+ *           = Accent / flair (reddit .flair, bookmarks icon nth-cycle).
+ *  Subdued            --color-text-subdue / --color-separator
+ *           = Metadata / separators (•, timestamps, borders).
+ *  Keep the mapping in sync with src/index.css :root fallbacks and glanceColorVars() below.
+ *  Astryx: defineTheme tokens are [light, dark] tuples → light-dark() — see @astryxdesign/core/theme defineTheme.
  */
 import {
   defineTheme,

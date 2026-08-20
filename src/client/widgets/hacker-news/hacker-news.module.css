@@ -58,7 +58,7 @@
   text-underline-offset: 2px;
 }
 
-/* glance .list-horizontal-text: •-separated, subdued — score vibrant orange */
+/* glance .list-horizontal-text: •-separated, subdued — score unified to green (positive/success) */
 .meta {
   display: flex;
   align-items: center;
@@ -70,7 +70,7 @@
 }
 
 .score {
-  color: var(--color-tag-orange);
+  color: var(--color-tag-green);
   font-weight: 600;
 }
 

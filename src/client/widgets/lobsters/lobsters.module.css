@@ -59,7 +59,7 @@
   text-underline-offset: 2px;
 }
 
-/* glance .list-horizontal-text: •-separated, subdued — score in dracula green */
+/* glance .list-horizontal-text: •-separated, subdued — score green (positive/success) unified with hn/reddit */
 .meta {
   display: flex;
   align-items: center;
