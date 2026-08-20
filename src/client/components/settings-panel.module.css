@@ -138,10 +138,11 @@
   cursor: pointer;
 }
 
-/* Hover lightens the card (content-border ring + highlight bg); the
- * selected-state ring stays primary via the inline --_card-ring style. */
-.card:hover {
-  --_card-ring: inset 0 0 0 2px var(--color-widget-content-border);
+/* Hover — subtle muted accent, distinct from selected primary.
+   Blank-out was caused by overriding the selected --_card-ring;
+   now hover only applies to non-selected and uses subdue. */
+.card:hover:not([data-selected='true']) {
+  --_card-ring: inset 0 0 0 1px var(--color-text-subdue);
   background-color: var(--color-widget-background-highlight);
 }
 

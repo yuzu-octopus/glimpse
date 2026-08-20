@@ -16,9 +16,17 @@
 .row:nth-child(6) { animation-delay: 150ms; }
 .row:nth-child(7) { animation-delay: 180ms; }
 .row:nth-child(8) { animation-delay: 210ms; }
+/* header row for title + expand button */
+.rowHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
 
 /* glance releases.html: name is the size-h4 block text-truncate link */
 .title {
+  flex: 1;
   display: block;
   font-size: var(--font-size-h4);
   color: var(--color-text-highlight);
@@ -30,6 +38,50 @@
 
 .title:hover {
   color: var(--color-primary);
+}
+
+.expandBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--color-widget-content-border);
+  border-radius: var(--border-radius);
+  background: var(--color-widget-background-highlight);
+  color: var(--color-text-subdue);
+  cursor: pointer;
+}
+
+.expandBtn:hover {
+  border-color: var(--color-text-subdue);
+  color: var(--color-text-base);
+}
+
+.chevron {
+  transition: transform 0.2s;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+  transition: transform 0.2s;
+}
+
+.notes {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: var(--font-size-h6);
+  line-height: 1.5;
+  color: var(--color-text-paragraph);
+  background: var(--color-widget-background-highlight);
+  border: 1px solid var(--color-widget-content-border);
+  border-radius: var(--border-radius);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 220px;
+  overflow: auto;
 }
 
 /* glance list-horizontal-text: subdue meta row under the name */

@@ -247,12 +247,13 @@ describe('SettingsPanel layout contract', () => {
     // max-height, so switching tabs never changes the dialog size
     expect(css).toMatch(/\.content\s*\{[^}]*height:\s*calc\(85vh - 96px\)/);
 
-    // hover lightens the card (content-border ring + highlight background)
-    // instead of greying it out with the subdue ring
-    const hoverRule = css.match(/\.card:hover\s*\{[^}]*\}/)?.[0] ?? '';
-    expect(hoverRule).toContain('var(--color-widget-content-border)');
+    // hover uses muted accent (subdue 1px ring + highlight bg), distinct from
+    // selected primary 2px ring
+    const hoverRule = css.match(/\.card:hover[^{]*\{[^}]*\}/)?.[0] ?? '';
+    expect(hoverRule).toContain('var(--color-text-subdue)');
     expect(hoverRule).toContain('var(--color-widget-background-highlight)');
-    expect(hoverRule).not.toContain('--color-text-subdue');
+    // selected is primary, hover should not be primary
+    expect(hoverRule).not.toContain('var(--color-primary)');
   });
 });
 
@@ -270,17 +271,6 @@ describe('SettingsPanel interaction', () => {
       presetId?: string;
     };
     expect(stored).toEqual({ mode: 'system', presetId: gruvbox.id });
-  });
-
-  it('mode toggle calls setMode', () => {
-    const settings = makeSettings();
-    mockedUseThemeSettings.mockReturnValue(settings);
-    render(<SettingsPanel />);
-
-    // the mode control lives inside the dialog — open it first
-    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    fireEvent.click(screen.getByRole('radio', { name: 'Dark' }));
-    expect(settings.setMode).toHaveBeenCalledWith('dark');
   });
 });
 

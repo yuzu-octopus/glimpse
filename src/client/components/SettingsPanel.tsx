@@ -1,12 +1,5 @@
 import { useMemo, useState, type CSSProperties } from 'react';
-import {
-  Dialog,
-  DialogHeader,
-  Divider,
-  SegmentedControl,
-  SegmentedControlItem,
-  SelectableCard,
-} from '@astryxdesign/core';
+import { Dialog, DialogHeader, SelectableCard } from '@astryxdesign/core';
 import { Info, Palette, Settings } from 'lucide-react';
 import { presets, type Preset } from '../../shared/theme/presets';
 import type { ConfigResponse } from '../../shared/api';
@@ -27,7 +20,7 @@ interface AboutInfo {
 }
 
 export function SettingsPanel() {
-  const { mode, presetId, setMode, setPresetId, configPresets } = useThemeSettings();
+  const { presetId, setPresetId, configPresets } = useThemeSettings();
   const [open, setOpen] = useState(false);
   const [section, setSection] = useState<SettingsSection>('appearance');
   const [about, setAbout] = useState<AboutInfo | null>(null);
@@ -162,23 +155,7 @@ export function SettingsPanel() {
                 role="tabpanel"
                 aria-labelledby="settings-tab-appearance"
               >
-                <h2 className={styles.sectionTitle}>
-                  Appearance
-                </h2>
-                <div className={styles.field}>
-                  <span className={styles.groupLabel}>Color mode</span>
-                  <SegmentedControl
-                    value={mode}
-                    onChange={(v) => setMode(v as 'system' | 'light' | 'dark')}
-                    label="Color mode"
-                    size="sm"
-                  >
-                    <SegmentedControlItem value="system" label="System" />
-                    <SegmentedControlItem value="light" label="Light" />
-                    <SegmentedControlItem value="dark" label="Dark" />
-                  </SegmentedControl>
-                </div>
-                <Divider />
+                <h2 className={styles.sectionTitle}>Appearance</h2>
                 <div className={styles.gallery}>
                   {renderGroup('Dark', dark)}
                   {renderGroup('Light', light)}

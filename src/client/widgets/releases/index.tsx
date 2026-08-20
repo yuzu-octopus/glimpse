@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { Link } from '@astryxdesign/core';
-import { Container, GitBranch } from 'lucide-react';
+import { ChevronDown, Container, GitBranch } from 'lucide-react';
 import type { ReleasesConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
@@ -14,19 +15,35 @@ function SourceIcon({ source }: { source: Release['source'] }) {
 }
 
 function ReleaseRow({ release, showIcon }: { release: Release; showIcon: boolean }) {
+  const [open, setOpen] = useState(false);
   const age = useRelativeTime(
     release.published ? (Date.now() - Date.parse(release.published)) / 1000 : 0,
   );
+  const hasNotes = Boolean(release.notes?.trim());
   return (
     <div className={styles.row}>
-      <Link href={release.url} target="_blank" className={styles.title} hasUnderline={false}>
-        {release.name || release.tag}
-      </Link>
+      <div className={styles.rowHeader}>
+        <Link href={release.url} target="_blank" className={styles.title} hasUnderline={false}>
+          {release.name || release.tag}
+        </Link>
+        {hasNotes ? (
+          <button
+            type="button"
+            aria-label={open ? 'Hide release notes' : 'Show release notes'}
+            aria-expanded={open}
+            className={styles.expandBtn}
+            onClick={() => setOpen((v) => !v)}
+          >
+            <ChevronDown size={14} className={open ? styles.chevronOpen : styles.chevron} />
+          </button>
+        ) : null}
+      </div>
       <div className={styles.meta}>
         {showIcon ? <SourceIcon source={release.source} /> : null}
         {release.tag ? <span className={styles.tag}>{release.tag}</span> : null}
         {release.published ? <span>· {age}</span> : null}
       </div>
+      {hasNotes && open ? <pre className={styles.notes}>{release.notes}</pre> : null}
     </div>
   );
 }

@@ -10,6 +10,7 @@ interface GitHubRelease {
   published_at?: string;
   prerelease?: boolean;
   draft?: boolean;
+  body?: string | null;
 }
 
 interface GitLabRelease {
@@ -112,6 +113,7 @@ async function fetchReleases(
       url: r.html_url ?? `https://github.com/${path}/releases`,
       published: r.published_at ?? null,
       source,
+      notes: r.body ?? null,
     }));
   }
   if (source === 'docker-hub') {

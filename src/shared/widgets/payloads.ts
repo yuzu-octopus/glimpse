@@ -112,6 +112,7 @@ export interface Release {
   url: string;
   published: string | null;
   source: 'github' | 'gitlab' | 'codeberg' | 'docker-hub';
+  notes?: string | null;
 }
 
 export interface RepoPull {

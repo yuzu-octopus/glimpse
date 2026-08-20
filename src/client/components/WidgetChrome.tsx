@@ -1,10 +1,8 @@
-import { createContext, useContext, useRef, useState, type ReactNode } from 'react';
+import { useContext, useRef, useState, type ReactNode } from 'react';
 import { Banner, Card, Link, Skeleton } from '@astryxdesign/core';
 import { ChevronRight } from 'lucide-react';
+import { HideHeadersContext } from './HideHeadersContext';
 import styles from './widget-chrome.module.css';
-
-/** Page-level hide-headers flag. PageView provides it; WidgetChrome consumes it. */
-export const HideHeadersContext = createContext(false);
 
 interface WidgetChromeProps {
   title?: string;

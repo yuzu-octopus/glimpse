@@ -72,29 +72,28 @@ async function feedUrlsForChannels(
   ctx: WidgetFetchContext,
   channels: string[],
 ): Promise<Array<{ url: string; source: string }>> {
-  const out: Array<{ url: string; source: string }> = [];
-  for (const c of channels) {
-    if (isChannelId(c)) {
-      out.push({ url: `https://www.youtube.com/feeds/videos.xml?channel_id=${c}`, source: c });
-    } else if (c.startsWith('@')) {
-      try {
-        const id = await resolveHandleToChannelId(ctx, c);
-        out.push({ url: `https://www.youtube.com/feeds/videos.xml?channel_id=${id}`, source: c });
-      } catch {
-        // fallback: keep deprecated user feed as last resort (will likely 404 but preserves partial feeds)
-        out.push({ url: feedUrlFor(c), source: c });
+  const results = await Promise.all(
+    channels.map(async (c) => {
+      if (isChannelId(c)) {
+        return { url: `https://www.youtube.com/feeds/videos.xml?channel_id=${c}`, source: c };
       }
-    } else {
-      // bare handle without @ or unknown — try handle resolution, fallback to user
+      if (c.startsWith('@')) {
+        try {
+          const id = await resolveHandleToChannelId(ctx, c);
+          return { url: `https://www.youtube.com/feeds/videos.xml?channel_id=${id}`, source: c };
+        } catch {
+          return { url: feedUrlFor(c), source: c };
+        }
+      }
       try {
         const id = await resolveHandleToChannelId(ctx, `@${c}`);
-        out.push({ url: `https://www.youtube.com/feeds/videos.xml?channel_id=${id}`, source: c });
+        return { url: `https://www.youtube.com/feeds/videos.xml?channel_id=${id}`, source: c };
       } catch {
-        out.push({ url: feedUrlFor(c), source: c });
+        return { url: feedUrlFor(c), source: c };
       }
-    }
-  }
-  return out;
+    }),
+  );
+  return results;
 }
 
 /** Default link, or the configured template with {VIDEO-ID} from the v= param. */

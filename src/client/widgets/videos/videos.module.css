@@ -29,22 +29,16 @@
   flex: 0 0 180px;
 }
 
-/* glance .video-thumbnail: full-width 16/8.9, radius top, thumbnail hover */
+/* glance .video-thumbnail: 16/8.9, radius top — flat, always full colour */
 .cardThumb,
 .cardThumbPlaceholder {
   width: 100%;
   aspect-ratio: 16 / 8.9;
   object-fit: cover;
   border-radius: var(--border-radius) var(--border-radius) 0 0;
-  filter: grayscale(0.2) contrast(0.9);
-  opacity: 0.8;
-  transition: filter 0.2s, opacity 0.2s;
-  background: var(--color-widget-background-highlight);
-}
-
-.card:hover .cardThumb {
   opacity: 1;
   filter: none;
+  background: var(--color-widget-background-highlight);
 }
 
 /* glance video-card-contents: 2-line clamp title, then time • author */
@@ -116,21 +110,15 @@
 /* glance .video-horizontal-list-thumbnail: 40px tall, 16/8.9, radius, hover */
 .rowThumb,
 .rowThumbPlaceholder {
+  width: 40px;
   height: 40px;
-  aspect-ratio: 16 / 8.9;
   flex-shrink: 0;
   object-fit: cover;
   border: 1px solid var(--color-separator);
   border-radius: var(--border-radius);
-  filter: grayscale(0.2) contrast(0.9);
-  opacity: 0.8;
-  transition: filter 0.2s, opacity 0.2s;
-  background: var(--color-widget-background-highlight);
-}
-
-.row:hover .rowThumb {
   opacity: 1;
   filter: none;
+  background: var(--color-widget-background-highlight);
 }
 
 .rowBody {
