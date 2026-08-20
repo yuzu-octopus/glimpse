@@ -204,10 +204,10 @@ pages:
             # app-auth: { id: "CLIENT_ID", secret: "CLIENT_SECRET" }  # POST https://www.reddit.com/api/v1/access_token then GET https://oauth.reddit.com
             # proxy: "https://user:pass@proxy.example.com:8080"
             # request-url-template: "https://proxy.local/{REQUEST-URL}"
-          - type: lobsters
-            limit: 8
-            collapse-after: 5
-            source-header: true
+          # - type: lobsters
+          #   limit: 8
+          #   collapse-after: 5
+          #   source-header: true
       - size: full
         widgets:
           - type: twitch-channels
