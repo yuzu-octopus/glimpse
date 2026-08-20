@@ -20,37 +20,33 @@ function Bookmarks({ config }: WidgetComponentProps) {
       {groups.map((group) => {
         const links = group.links ?? [];
         return (
-        <div key={group.title ?? links[0]?.url ?? 'untitled'} className={styles.group}>
-          {group.title ? (
-            <div
-              className={styles.groupTitle}
-              style={group.color ? { color: group.color } : undefined}
-            >
-              {group.title}
-            </div>
-          ) : null}
-          <div className={styles.links}>
-            {links.map((link, j) => (
-              <Link
-                key={`${link.title}-${j}`}
-                href={link.url}
-                target={link['same-tab'] || group['same-tab'] || cfg['same-tab'] ? undefined : '_blank'}
-                className={styles.linkCard}
-                hasUnderline={false}
-              >
-                {link.icon ? (
-                  <span className={styles.iconContainer}>
-                    <img src={link.icon} alt="" loading="lazy" className={styles.icon} />
-                  </span>
-                ) : null}
-                <span className={styles.linkTitle}>{link.title}</span>
-                {link.description ? (
-                  <span className={styles.linkDesc}>{link.description}</span>
-                ) : null}
-              </Link>
-            ))}
+          <div key={group.title ?? links[0]?.url ?? 'untitled'} className={styles.group}>
+            {group.title ? (
+              <div className={styles.groupTitle} style={group.color ? { color: group.color } : undefined}>
+                {group.title}
+              </div>
+            ) : null}
+            <ul className={styles.links}>
+              {links.map((link, j) => (
+                <li key={`${link.title}-${j}`} className={styles.linkItem}>
+                  <Link
+                    href={link.url}
+                    target={link['same-tab'] || group['same-tab'] || cfg['same-tab'] ? undefined : '_blank'}
+                    className={styles.linkCard}
+                    hasUnderline={false}
+                  >
+                    {link.icon ? (
+                      <span className={styles.iconContainer}>
+                        <img src={link.icon} alt="" loading="lazy" className={styles.icon} />
+                      </span>
+                    ) : null}
+                    <span className={styles.linkTitle}>{link.title}</span>
+                  </Link>
+                  {link.description ? <span className={styles.linkDesc}>{link.description}</span> : null}
+                </li>
+              ))}
+            </ul>
           </div>
-        </div>
         );
       })}
     </WidgetChrome>

@@ -1,7 +1,7 @@
-/* Glance bookmarks look: group headers + cards-grid of icon + title. */
+/* Glance bookmarks look: group headers + flat list rows (flex row, left-aligned). */
 
 .group {
-  margin-bottom: 12px; /* glance .list-gap-24 between groups */
+  margin-bottom: 12px;
 }
 
 .group:last-child {
@@ -9,47 +9,44 @@
 }
 
 .groupTitle {
-  font-size: var(--font-size-h3); /* glance .size-h3 */
-  color: var(--color-primary); /* glance --bookmarks-group-color default */
-  margin-bottom: 3px; /* glance .margin-bottom-3 */
+  font-size: var(--font-size-h3);
+  color: var(--color-primary);
+  margin-bottom: 3px;
 }
 
-/* glance .cards-grid (6 per row, collapses with container width) */
+/* flat list per group */
 .links {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
-  gap: 7px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
 }
 
+.linkItem {
+  display: flex;
+  flex-direction: column;
+}
+
+/* row: icon left, title inline, gap 10px */
 .linkCard {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 5px;
-  min-width: 0;
-  border-radius: var(--border-radius);
+  gap: 10px;
   text-decoration: none;
-}
-
-/* The Astryx Link wraps children in one `.astryx-text` span (block, no
-   shrink). Reclaim the card layout through it: make the wrapper the flex
-   column so icon/title/desc stack centered, and let it shrink so the
-   nowrap ellipsis on .linkTitle/.linkDesc actually clips. */
-.linkCard :global(.astryx-text) {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
   min-width: 0;
-  max-width: 100%;
 }
 
-.linkCard:hover {
-  background: var(--color-widget-background-highlight);
+/* flatten Astryx Text wrapper so icon + title become direct flex children */
+.linkCard > span {
+  display: contents !important;
 }
 
-/* glance .bookmarks-icon-container */
+.linkCard:hover .linkTitle {
+  color: var(--color-primary);
+}
+
+/* keep muted chip */
 .iconContainer {
   margin-block: 1px;
   background-color: var(--color-widget-background-highlight);
@@ -59,7 +56,6 @@
   flex-shrink: 0;
 }
 
-/* glance .bookmarks-icon */
 .icon {
   display: block;
   width: 20px;
@@ -68,23 +64,22 @@
 }
 
 .linkTitle {
-  max-width: 100%;
-  font-size: var(--font-size-h5);
+  min-width: 0;
+  font-size: var(--font-size-h4);
   color: var(--color-text-highlight);
-  text-align: center;
+  text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .linkDesc {
-  max-width: 100%;
   font-size: var(--font-size-h6);
   color: var(--color-text-paragraph);
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-align: left;
+  display: block;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .empty {
