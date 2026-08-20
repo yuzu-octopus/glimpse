@@ -127,7 +127,7 @@ export function Search({ config }: WidgetComponentProps) {
       title={cfg.title}
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
-      cssClass={cfg['css-class']}
+      cssClass={[cfg['css-class'], styles.searchChrome].filter(Boolean).join(' ') || undefined}
     >
       <form className={styles.search} onSubmit={submit}>
         <span className={styles.iconContainer} aria-hidden="true">

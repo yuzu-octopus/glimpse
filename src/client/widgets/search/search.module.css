@@ -1,26 +1,32 @@
-/* glance widget-search.css: .search is the framed bar whose border reacts
-   to hover (--color-text-subdue) and focus-within (--color-primary) */
+/* Inner bar - layout only. The outer widget Card (searchChrome) owns the
+   frame's border hover/focus, so the purple ring surrounds the entire box
+   (glance parity: .search widget-content-frame focus-within), not just
+   the inner input. Flat, no shadow. */
 .search {
   position: relative;
   display: flex;
   align-items: center;
   gap: 15px; /* glance gap-15 */
-  border: 1px solid transparent;
-  /* keeps the border clear of the icon and kbd */
+  /* keeps hit area clear of the icon and kbd */
   padding-inline: 10px;
   /* Pull the bar out of the chrome body's 15/17px padding so the ring of
      empty space around the input is ~8px vertical / ~10px horizontal
      (var-driven: holds for any theme values). */
   margin: calc(8px - var(--widget-content-vertical-padding))
     calc(10px - var(--widget-content-horizontal-padding));
+}
+
+/* Outer Card frame owns hover/focus border - applied via WidgetChrome
+   cssClass so :focus-within on the whole widget highlights the entire box */
+.searchChrome {
   transition: border-color 0.2s;
 }
 
-.search:hover {
+.searchChrome:hover {
   border-color: var(--color-text-subdue);
 }
 
-.search:focus-within {
+.searchChrome:focus-within {
   border-color: var(--color-primary);
 }
 

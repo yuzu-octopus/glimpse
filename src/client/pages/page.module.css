@@ -2,7 +2,8 @@
    content-bounds wrapper (maxWidth inline from the page width prop). */
 .page {
   margin: 0 auto;
-  padding: var(--widget-gap) var(--content-bounds-padding);
+  padding-block: var(--widget-gap);
+  padding-inline: var(--content-bounds-padding);
   width: 100%;
   animation: pageContentEntrance 0.3s cubic-bezier(0.25, 1, 0.5, 1) backwards;
 }
@@ -174,51 +175,61 @@
   align-items: start;
 }
 
-/* Group tabs (widget-group.css port): uppercase, subdue, dotted underline
-   on the current tab. */
+/* Group tabs (widget-group.css port): flat inline text, uppercase, no pills.
+   Overrides Astryx TabList/Tab stylex (hover pill + white bottom indicator)
+   to match glance flat philosophy — no shadows, no backgrounds. */
 .groupTabs {
   display: flex;
-  gap: 10px;
+  gap: 18px;
   overflow-x: auto;
   scrollbar-width: thin;
   padding: var(--widget-content-vertical-padding)
     var(--widget-content-horizontal-padding);
   border-bottom: 1px solid var(--color-widget-content-border);
   font-size: var(--font-size-h4);
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
 }
 
 .groupTabs button,
-.groupTabs a {
-  background: none;
-  border: none;
-  border-bottom: 1px dotted transparent;
-  font: inherit;
+.groupTabs a,
+.groupTabs [data-tab-value] {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px dotted transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font: inherit !important;
+  font-size: var(--font-size-h4) !important;
   text-transform: uppercase;
-  color: var(--color-text-subdue);
+  color: var(--color-text-subdue) !important;
   line-height: calc(1.6em - 1px);
   cursor: pointer;
   flex-shrink: 0;
-  padding: 0;
+  padding: 0 !important;
   transition: color 0.3s, border-color 0.3s;
 }
 
 .groupTabs button:hover:not(.groupTabCurrent),
-.groupTabs a:hover:not(.groupTabCurrent) {
-  color: var(--color-text-base);
+.groupTabs a:hover:not(.groupTabCurrent),
+.groupTabs [data-tab-value]:hover:not(.groupTabCurrent) {
+  color: var(--color-text-base) !important;
 }
 
 .groupTabs .groupTabCurrent {
-  border-bottom-color: var(--color-text-base-muted);
-  color: var(--color-text-base);
+  border-bottom-color: var(--color-text-base-muted) !important;
+  color: var(--color-text-highlight) !important;
 }
 
-/* Hide the Astryx hover-pill (first child) and selected indicator (last
-   child) spans — glance group tabs are plain text with the dotted border. */
+/* Kill Astryx hover pill (first span) and selected white indicator (last span) */
+.groupTabs [data-tab-value] > span:first-child,
+.groupTabs [data-tab-value] > span:last-child,
 .groupTabs button > span:first-child,
 .groupTabs button > span:last-child,
 .groupTabs a > span:first-child,
 .groupTabs a > span:last-child {
-  display: none;
+  display: none !important;
 }
 
 .tabContent {

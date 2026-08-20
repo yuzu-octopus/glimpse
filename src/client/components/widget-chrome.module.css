@@ -3,11 +3,10 @@
 }
 
 .bodyCard {
-  /* glance widgets.css .widget-content frame — border + flat 3px bottom edge */
+  /* glance widgets.css .widget-content frame — flat border only, no shadow */
   background: var(--color-widget-background);
   border: 1px solid var(--color-widget-content-border);
   border-radius: var(--border-radius);
-  box-shadow: 0 3px 0 0 var(--color-widget-shadow);
   padding: 0;
   /* override Astryx Card's withBorder padding-inset math */
   --container-padding-inline-start: 0px;

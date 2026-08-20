@@ -1,8 +1,11 @@
-/* TopNav wrapper: glance header-container (margin-top) — hidden on desktop
-   when the page sets `hide-desktop-navigation` (glance keeps it visible on
-   mobile). */
+/* TopNav wrapper: glance header-container — margin-top calc(gap/2) gives
+   breathing room above the 45px header; inline padding mirrors
+   glance content-bounds (15px) so header and .page align. Flat: no shadow. */
 .headerContainer {
   margin-top: calc(var(--widget-gap) / 2);
+  padding-inline: var(--content-bounds-padding);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .hideDesktopNav {
