@@ -48,11 +48,7 @@ export function WidgetChrome({
   };
 
   return (
-    <Card
-      ref={cardRef}
-      className={cssClass ? `${styles.card} ${cssClass}` : styles.card}
-      padding={0}
-    >
+    <div className={styles.widget}>
       {!hideHeader && title ? (
         <div
           className={error ? `${styles.header} ${styles.errorHeader}` : styles.header}
@@ -75,42 +71,44 @@ export function WidgetChrome({
           </span>
         </div>
       ) : null}
-      <div className={styles.body} data-testid="widget-body">
-        {isLoading ? (
-          <div className={styles.skeleton} data-testid="widget-loading">
-            <Skeleton width="100%" height={14} />
-            <Skeleton width="92%" height={14} />
-            <Skeleton width="97%" height={14} />
-          </div>
-        ) : error ? (
-          <Banner status="error" title={error} />
-        ) : (
-          <>
-            {visible}
-            {hasCollapse ? (
-              expanded ? (
-                <button
-                  type="button"
-                  className={`${styles.more} ${styles.moreExpanded}`}
-                  onClick={collapse}
-                >
-                  Show less
-                  <ChevronRight size={12} className={styles.chevron} />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className={styles.more}
-                  onClick={() => setExpanded(true)}
-                >
-                  {`Show more (${list.length - count})`}
-                  <ChevronRight size={12} className={styles.chevron} />
-                </button>
-              )
-            ) : null}
-          </>
-        )}
-      </div>
-    </Card>
+      <Card ref={cardRef} className={cssClass ? `${styles.bodyCard} ${cssClass}` : styles.bodyCard} padding={0}>
+        <div className={styles.body} data-testid="widget-body">
+          {isLoading ? (
+            <div className={styles.skeleton} data-testid="widget-loading">
+              <Skeleton width="100%" height={14} />
+              <Skeleton width="92%" height={14} />
+              <Skeleton width="97%" height={14} />
+            </div>
+          ) : error ? (
+            <Banner status="error" title={error} />
+          ) : (
+            <>
+              {visible}
+              {hasCollapse ? (
+                expanded ? (
+                  <button
+                    type="button"
+                    className={`${styles.more} ${styles.moreExpanded}`}
+                    onClick={collapse}
+                  >
+                    Show less
+                    <ChevronRight size={12} className={styles.chevron} />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className={styles.more}
+                    onClick={() => setExpanded(true)}
+                  >
+                    {`Show more (${list.length - count})`}
+                    <ChevronRight size={12} className={styles.chevron} />
+                  </button>
+                )
+              ) : null}
+            </>
+          )}
+        </div>
+      </Card>
+    </div>
   );
 }

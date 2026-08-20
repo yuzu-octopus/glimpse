@@ -1,10 +1,24 @@
-.card {
-  /* Card's own spacing is neutralized; the .body below owns the content
-     padding so widget contents align with glance's widget-content. */
-  padding: 0;
+.widget {
+  min-width: 0;
 }
 
-/* glance widgets.css .widget-header */
+.bodyCard {
+  /* glance widgets.css .widget-content frame — border + flat 3px bottom edge */
+  background: var(--color-widget-background);
+  border: 1px solid var(--color-widget-content-border);
+  border-radius: var(--border-radius);
+  box-shadow: 0 3px 0 0 var(--color-widget-shadow);
+  padding: 0;
+  /* override Astryx Card's withBorder padding-inset math */
+  --container-padding-inline-start: 0px;
+  --container-padding-inline-end: 0px;
+  --container-padding-block-start: 0px;
+  --container-padding-block-end: 0px;
+}
+
+
+/* glance widgets.css .widget-header — sits ABOVE the bordered content box,
+   not inside it. Left-aligned, uppercase, mono, 1.4rem. */
 .header {
   display: flex;
   align-items: center;
@@ -12,7 +26,9 @@
   padding: 0 calc(var(--widget-content-horizontal-padding) + 1px);
   margin-bottom: 9px;
   font-size: var(--font-size-h4);
+  line-height: 1.4;
   color: var(--color-text-highlight);
+  text-align: left;
 }
 
 /* glance widgets.css .widget-error-header — negative-tinted backdrop

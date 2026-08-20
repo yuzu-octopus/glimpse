@@ -1,15 +1,12 @@
-/* glance site.css header port: the whole bar is a widget-frame card
-   (header + logo + nav links + settings, height 45px, gap 25px). */
+/* glance site.css .header — bare flex bar on the page bg (height 45px,
+   gap 25px). No card frame; in glance the bar is transparent with only the
+   logo's right border separating it. */
 .header {
   display: flex;
   align-items: center;
   height: 45px;
   gap: 25px;
-  padding-inline: var(--widget-content-horizontal-padding);
-  background: var(--color-widget-background);
-  border: 1px solid var(--color-widget-content-border);
-  border-radius: var(--border-radius);
-  box-shadow: 0 3px 0 0 var(--color-widget-shadow);
+  padding-inline: 0;
 }
 
 .logo {
