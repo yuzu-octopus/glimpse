@@ -24,6 +24,7 @@ export const rssSchema = z.object({
   'card-height': z.number().int().positive().optional(),
   'preserve-order': z.boolean().optional(),
   'single-line-titles': z.boolean().optional(),
+  overlay: z.boolean().optional(),
 });
 export type RssConfig = z.infer<typeof rssSchema>;
 

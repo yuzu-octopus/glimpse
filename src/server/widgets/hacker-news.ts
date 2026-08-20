@@ -1,6 +1,7 @@
 import { hackerNewsSchema } from '../../shared/widgets/feeds';
 import { registerWidget } from './registry';
 import { fetchJson } from './http';
+import { widgetLimit } from './runtime';
 import type { HnPost } from '../../shared/widgets/payloads';
 
 interface HnItem {
@@ -15,7 +16,7 @@ interface HnItem {
 registerWidget('hacker-news', async (ctx, config) => {
   const cfg = hackerNewsSchema.parse(config);
   const sort = cfg['sort-by'] ?? 'top';
-  const limit = cfg.limit ?? 5;
+  const limit = widgetLimit(cfg);
 
   const ids = await fetchJson<number[]>(
     ctx,

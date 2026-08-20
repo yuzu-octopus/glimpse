@@ -1,10 +1,7 @@
 import type { Page } from '../shared/config';
 import type { PagePayload, WidgetPayload } from '../shared/api';
-import { getDefaultTtl, parseCacheDuration } from './cache';
-import {
-  serverWidgets,
-  type WidgetFetchContext,
-} from './widgets/registry';
+import { serverWidgets, type WidgetFetchContext } from './widgets/registry';
+import { fetchWidgetData } from './widgets/runtime';
 export function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
@@ -40,24 +37,9 @@ async function fetchWidget(
   if (!fetcher) return payload; // config-only widget
 
   const cacheKey = `${pageSlug}:${path}`;
-  const ttlMs =
-    typeof widget.cache === 'string'
-      ? parseCacheDuration(widget.cache)
-      : getDefaultTtl(type);
-
-  const cached = ctx.cache.get<WidgetPayload['data']>(cacheKey);
-  if (cached !== undefined) {
-    payload.data = cached;
-    return payload;
-  }
-
   try {
-    const data = await ctx.singleflight.run(cacheKey, () =>
-      fetcher(ctx, widget),
-    );
-    // Cache successes only: a broken endpoint retries on the next request.
-    ctx.cache.set(cacheKey, data, ttlMs);
-    payload.data = data;
+    const data = await fetchWidgetData(ctx, type, widget, cacheKey, fetcher);
+    payload.data = data as WidgetPayload['data'];
   } catch (e) {
     payload.error = e instanceof Error ? e.message : String(e);
   }

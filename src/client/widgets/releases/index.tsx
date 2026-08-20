@@ -4,7 +4,7 @@ import { ChevronDown, Container, GitBranch } from 'lucide-react';
 import type { ReleasesConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import { useRelativeTime } from '../useRelativeTime';
+import { useAge } from '../useAge';
 import type { Release } from '../../../shared/widgets/payloads';
 import styles from './releases.module.css';
 
@@ -31,9 +31,7 @@ function ReleaseRow({
   open: boolean;
   onToggle: () => void;
 }) {
-  const age = useRelativeTime(
-    release.published ? (Date.now() - Date.parse(release.published)) / 1000 : 0,
-  );
+  const age = useAge(release.published);
   const trimmed = release.notes?.trim() ?? '';
   const hasNotes = trimmed.length > 0;
 

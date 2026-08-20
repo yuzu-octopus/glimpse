@@ -6,58 +6,18 @@ import {
   type KeyboardEvent,
 } from 'react';
 import type { SearchConfig } from '../../../shared/widgets/search';
-import { bangs as heliumBangs } from '../../../shared/widgets/bangs';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
+import { listBangs, resolveSearch } from './engine';
+import type { Bang } from './engine';
 import styles from './search.module.css';
-
-const ENGINE_PRESETS: Record<string, string> = {
-  duckduckgo: 'https://duckduckgo.com/?q={QUERY}',
-  google: 'https://www.google.com/search?q={QUERY}',
-  bing: 'https://www.bing.com/search?q={QUERY}',
-  perplexity: 'https://www.perplexity.ai/search?q={QUERY}',
-  kagi: 'https://kagi.com/search?q={QUERY}',
-  startpage: 'https://www.startpage.com/search?q={QUERY}',
-};
-
-/** glance search-engine: preset name, custom URL with {QUERY}, or object. */
-function resolveEngine(engine: SearchConfig['search-engine']): string {
-  if (typeof engine === 'object' && engine) return engine.url;
-  if (typeof engine === 'string') {
-    const preset = ENGINE_PRESETS[engine.toLowerCase()];
-    if (preset) return preset;
-    if (engine.includes('{QUERY}')) return engine;
-  }
-  return ENGINE_PRESETS.duckduckgo;
-}
-
-type Bang = SearchConfig['bangs'][number];
-
-/** bang match: shortcut (leading '!' optional) equals the first word of the query. */
-function matchBang(
-  query: string,
-  bangs: Bang[],
-): { bang?: Bang; rest: string } {
-  const firstWord = query.split(/\s+/)[0];
-  if (!firstWord || bangs.length === 0) return { rest: query };
-  const needle = firstWord.replace(/^!/, '').toLowerCase();
-  const bang =
-    needle &&
-    bangs.find(
-      (b) => b.shortcut.replace(/^!/, '').toLowerCase() === needle,
-    );
-  if (!bang) return { rest: query };
-  return { bang, rest: query.slice(firstWord.length).trim() };
-}
 
 export function Search({ config }: WidgetComponentProps) {
   const cfg = config as unknown as SearchConfig;
-  // Helium curated list is the default; cfg.bangs overrides when non-empty
-  const bangs = cfg.bangs?.length ? (cfg.bangs as Bang[]) : (heliumBangs as unknown as Bang[]);
+  const bangs = listBangs(cfg.bangs as Bang[]);
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const lastQueryRef = useRef('');
-  const engineUrl = resolveEngine(cfg['search-engine']);
   const shortcut = cfg.key ?? 's';
 
   useEffect(() => {
@@ -84,18 +44,18 @@ export function Search({ config }: WidgetComponentProps) {
   }, [shortcut]);
 
   const search = (raw: string, newTab: boolean) => {
-    const q = raw.trim();
-    if (!q) return;
-    const { bang, rest } = matchBang(q, bangs);
-    if (!bang && rest.length === 0) return;
-    const url = (bang?.url ?? engineUrl).replace(
-      '{QUERY}',
-      encodeURIComponent(rest),
-    );
+    const { url, target, rest } = resolveSearch(raw, {
+      engine: cfg['search-engine'],
+      bangs,
+      target: cfg.target,
+      newTab,
+    });
+    if (!url) return;
     if (newTab) {
-      window.open(url, cfg.target ?? '_blank', 'noopener,noreferrer');
+      window.open(url, target, 'noopener,noreferrer');
     } else {
-      window.open(url, '_self');
+      if (target === '_blank') window.open(url, '_blank', 'noopener,noreferrer');
+      else window.location.href = url;
     }
     lastQueryRef.current = rest;
     setQuery('');

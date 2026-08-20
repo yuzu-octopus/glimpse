@@ -4,6 +4,7 @@ import { ChevronRight } from 'lucide-react';
 import type { VideosConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
+import { useAge } from '../useAge';
 import { formatAge } from '../useRelativeTime';
 import type { Video } from '../../../shared/widgets/payloads';
 import styles from './videos.module.css';
@@ -11,7 +12,8 @@ import Feed, { type FeedItem } from '../feed/Feed';
 import chromeStyles from '../../components/widget-chrome.module.css';
 
 function Card({ video }: { video: Video }) {
-  const age = video.published ? formatAge((Date.now() - Date.parse(video.published)) / 1000) : null;
+  const rawAge = useAge(video.published);
+  const age = rawAge || null;
   return (
     <Link href={video.url} target="_blank" className={styles.card} hasUnderline={false} color="inherit">
       {video.thumbnail ? (

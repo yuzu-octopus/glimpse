@@ -1,4 +1,4 @@
-import { useContext, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useContext, useRef, useState, type ReactNode } from 'react';
 import { Banner, Card, Skeleton, Tab, TabList, Text } from '@astryxdesign/core';
 import { ChevronDown } from 'lucide-react';
 import type { WidgetPayload } from '../../shared/api';
@@ -9,6 +9,7 @@ import { WidgetChrome } from '../components/WidgetChrome';
 import { usePageData } from '../hooks/usePageData';
 import { clientWidgets } from '../widgets/registry';
 import { PAGE_WIDTHS } from '../../shared/layout';
+import { getTilingProps } from './tiling';
 import { useCollageTiling } from './useCollageTiling';
 import styles from './page.module.css';
 
@@ -116,6 +117,7 @@ function WidgetSkeleton({ widget }: { widget: SkeletonWidget }) {
  * so first paint shows the real structure with no layout shift on fill. */
 function PageSkeleton({ page }: { page: Page & { slug: string } }) {
   const hideHeaders = page['hide-headers'] === true;
+  const tilingProps = getTilingProps(page.tiling, page['min-column-width']);
   return (
     <HideHeadersContext.Provider value={hideHeaders}>
       <div
@@ -133,22 +135,7 @@ function PageSkeleton({ page }: { page: Page & { slug: string } }) {
             ))}
           </div>
         ) : null}
-        <div
-          className={
-            page.tiling === 'collage'
-              ? `${styles.columns} ${styles.collageTiling}`
-              : page.tiling === 'auto'
-                ? `${styles.columns} ${styles.autoTiling}`
-                : styles.columns
-          }
-          style={
-            page.tiling === 'collage' || page.tiling === 'auto'
-              ? ({
-                  '--min-column-width': `${page['min-column-width'] ?? 300}px`,
-                } as CSSProperties)
-              : undefined
-          }
-        >
+        <div className={tilingProps.className} style={tilingProps.style}>
           {page.columns.map((col, i) => (
             <MobileColumn
               key={columnKey(col, i)}
@@ -316,10 +303,11 @@ export function PageView({
 }) {
   const { data, error } = usePageData(slug);
   const columnsRef = useRef<HTMLDivElement>(null);
+  const tilingForMeasure = getTilingProps(data?.tiling, data?.minColumnWidth);
   // Collage measure pass: re-runs when the payload settles/refreshes. The
-  // ref is only attached in collage mode (ref={collage ? columnsRef : null}
-  // below), so the hook no-ops for every other tiling.
-  useCollageTiling(columnsRef, data && data.tiling === 'collage' ? [data] : []);
+  // ref is only attached in collage mode (tilingProps.measure), so the hook
+  // no-ops for every other tiling.
+  useCollageTiling(columnsRef, tilingForMeasure.measure && data ? [data] : []);
 
   if (!data && !error) {
     if (page) return <PageSkeleton page={page} />;
@@ -346,6 +334,7 @@ export function PageView({
   // Stale-while-revalidate: data is still rendered while isValidating; no skeleton flicker
   const resolved = data!;
   const hideHeaders = resolved['hide-headers'] === true || resolved.hideHeaders === true;
+  const tilingProps = getTilingProps(resolved.tiling, resolved.minColumnWidth);
   return (
     <HideHeadersContext.Provider value={hideHeaders}>
       <div
@@ -362,21 +351,7 @@ export function PageView({
             ))}
           </div>
         ) : null}
-        <div
-          ref={resolved.tiling === 'collage' ? columnsRef : null}
-          className={
-            resolved.tiling === 'collage'
-              ? `${styles.columns} ${styles.collageTiling}`
-              : resolved.tiling === 'auto'
-                ? `${styles.columns} ${styles.autoTiling}`
-                : styles.columns
-          }
-          style={
-            resolved.tiling === 'collage' || resolved.tiling === 'auto'
-              ? ({ '--min-column-width': `${resolved.minColumnWidth}px` } as CSSProperties)
-              : undefined
-          }
-        >
+        <div ref={tilingProps.measure ? columnsRef : null} className={tilingProps.className} style={tilingProps.style}>
           {resolved.columns.map((col, i) => (
             // Columns are a config-static list (never reordered at runtime),
             // so the positional index is their stable identity.

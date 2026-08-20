@@ -1,6 +1,7 @@
 import { lobstersSchema } from '../../shared/widgets/keyed';
 import { fetchJson } from './http';
 import { registerWidget } from './registry';
+import { widgetLimit } from './runtime';
 import type { LobsterPost } from '../../shared/widgets/payloads';
 
 interface LobstersStory {
@@ -28,7 +29,7 @@ registerWidget('lobsters', async (ctx, config) => {
       ? stories.filter((s) => (s.tags ?? []).some((t) => tagSet.has(t)))
       : stories;
 
-  const limit = cfg.limit ?? 5;
+  const limit = widgetLimit(cfg);
   const posts: LobsterPost[] = filtered.slice(0, limit).map((s) => {
     const created = Date.parse(s.created_at ?? '');
     return {

@@ -2,6 +2,7 @@ import Parser from 'rss-parser';
 import { rssSchema } from '../../shared/widgets/feeds';
 import { registerWidget } from './registry';
 import { fetchText } from './http';
+import { widgetLimit } from './runtime';
 import type { RssItem } from '../../shared/widgets/payloads';
 
 type ParserItem = Parser.Item & {
@@ -29,7 +30,7 @@ registerWidget('rss', async (ctx, config) => {
     cfg.feeds.map(async (feed) => {
       const raw = await fetchText(ctx, feed.url, { headers: feed.headers });
       const parsed = (await parser.parseString(raw)) as ParsedFeed;
-      const perFeedLimit = feed.limit ?? cfg.limit ?? 5;
+      const perFeedLimit = feed.limit ?? widgetLimit(cfg);
       return parsed.items.slice(0, perFeedLimit).map((item) => ({
         title: item.title ?? '',
         url: item.link ?? '',
@@ -61,6 +62,6 @@ registerWidget('rss', async (ctx, config) => {
       return tb - ta;
     });
   }
-  const limit = cfg.limit ?? 5;
+  const limit = widgetLimit(cfg);
   return { items: items.slice(0, limit) };
 });
