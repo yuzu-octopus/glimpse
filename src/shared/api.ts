@@ -27,13 +27,16 @@ export interface ColumnPayload {
   /** Auto-tiling span hint (1-4); only set when the config declares it. */
   span?: number;
 }
-
 export interface PagePayload {
   slug: string;
   name: string;
   width: 'default' | 'slim' | 'wide';
   'center-vertically'?: boolean;
   'show-mobile-header'?: boolean;
+  /** When true every widget header is hidden (page-level override for `hide-header`). */
+  'hide-headers'?: boolean;
+  /** CamelCase alias so clients can use `page.hideHeaders` or `page['hide-headers']`. */
+  hideHeaders?: boolean;
   /** 'columns' (default) = glance flex layout; 'auto' = balanced grid tiles;
    * 'collage' = dense bento grid with measured row spans.
    * Server always resolves a value (page.tiling ?? 'columns'). */

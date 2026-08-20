@@ -21,7 +21,7 @@ function SubList({ icon, label, rows }: {
       </div>
       {rows.map((r) => (
         <Link key={r.number} href={r.url} target="_blank" className={styles.subRow} hasUnderline={false}>
-          <span className={styles.subNumber}>#{r.number}</span>
+          <span className={styles.subNumber}>#{r.number}{' '}</span>
           <span className={styles.subTitle}>{r.title}</span>
         </Link>
       ))}

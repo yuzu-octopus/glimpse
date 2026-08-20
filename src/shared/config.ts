@@ -19,6 +19,7 @@ export const PageSchema = z.object({
   'center-vertically': z.boolean().optional(),
   'hide-desktop-navigation': z.boolean().optional(),
   'show-mobile-header': z.boolean().optional(),
+  'hide-headers': z.boolean().optional(),
   'head-widgets': z.array(WidgetSchema).optional(),
   // 'columns' (default) = current glance flex behavior; 'auto' = balanced
   // grid tiles; 'collage' = dense bento grid + JS-measured row spans.

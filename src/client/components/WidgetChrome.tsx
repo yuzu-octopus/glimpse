@@ -1,7 +1,10 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useRef, useState, type ReactNode } from 'react';
 import { Banner, Card, Link, Skeleton } from '@astryxdesign/core';
 import { ChevronRight } from 'lucide-react';
 import styles from './widget-chrome.module.css';
+
+/** Page-level hide-headers flag. PageView provides it; WidgetChrome consumes it. */
+export const HideHeadersContext = createContext(false);
 
 interface WidgetChromeProps {
   title?: string;
@@ -30,6 +33,8 @@ export function WidgetChrome({
   items,
   children,
 }: WidgetChromeProps) {
+  const globalHide = useContext(HideHeadersContext);
+  const effectiveHide = hideHeader || globalHide;
   const [expanded, setExpanded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const list = items ?? (children === undefined ? [] : [children]);
@@ -49,7 +54,7 @@ export function WidgetChrome({
 
   return (
     <div className={styles.widget}>
-      {!hideHeader && title ? (
+      {!effectiveHide && title ? (
         <div
           className={error ? `${styles.header} ${styles.errorHeader}` : styles.header}
         >

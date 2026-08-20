@@ -32,9 +32,12 @@
 .desc {
   font-size: var(--font-size-base);
   color: var(--color-text-paragraph);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 /* glance: hr margin-block-8 between sections */

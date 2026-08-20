@@ -94,6 +94,21 @@ export async function buildPagePayload(
 
   const [headWidgets, columns] = await Promise.all([headPromise, columnsPromise]);
 
+  const hideHeaders = page['hide-headers'] === true;
+  // When page hide-headers is set, force every widget's config hide-header so
+  // even widgets that read cfg['hide-header'] directly are hidden, including
+  // nested group/split-column children.
+  if (hideHeaders) {
+    const forceHide = (widgets: WidgetPayload[]) => {
+      for (const w of widgets) {
+        w.config = { ...w.config, 'hide-header': true };
+        if (w.widgets) forceHide(w.widgets);
+      }
+    };
+    forceHide(headWidgets);
+    for (const col of columns) forceHide(col.widgets);
+  }
+
   return {
     slug: page.slug,
     name: page.name,
@@ -104,6 +119,7 @@ export async function buildPagePayload(
     ...(page['show-mobile-header'] !== undefined
       ? { 'show-mobile-header': page['show-mobile-header'] }
       : {}),
+    ...(hideHeaders ? { 'hide-headers': true as const, hideHeaders: true as const } : {}),
     // Tiling resolved server-side: defaults preserve glance behavior exactly.
     tiling: page.tiling ?? 'columns',
     minColumnWidth: page['min-column-width'] ?? 300,

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { Button, TextInput } from '@astryxdesign/core';
+import { Button } from '@astryxdesign/core';
 import { Pencil, Trash2 } from 'lucide-react';
 import type { TodoConfig } from '../../../shared/widgets/todo';
 import { WidgetChrome } from '../../components/WidgetChrome';
@@ -108,15 +108,14 @@ export function Todo({ config }: WidgetComponentProps) {
   return (
     <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
       <div className={styles.form}>
-        <TextInput
+        <input
           ref={inputRef}
-          label="New task"
-          isLabelHidden
+          aria-label="New task"
           value={text}
-          onChange={setText}
+          onChange={(e) => setText(e.target.value)}
           placeholder="Add a task…"
           onKeyDown={handleInputKeyDown}
-          hasClear
+          className={styles.todoInput}
         />
         <Button label="Add" size="sm" onClick={add} />
       </div>
@@ -133,14 +132,16 @@ export function Todo({ config }: WidgetComponentProps) {
               aria-label={item.text}
             />
             {editingId === item.id ? (
-              <TextInput
-                label="Edit task"
-                isLabelHidden
+              <input
+                aria-label="Edit task"
                 value={editText}
-                onChange={setEditText}
-                onEnter={commitEdit}
-                hasAutoFocus
-                className={styles.editInput}
+                onChange={(e) => setEditText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') commitEdit();
+                  if (e.key === 'Escape') setEditingId(null);
+                }}
+                autoFocus
+                className={`${styles.todoInput} ${styles.editInput}`}
               />
             ) : (
               <span className={`${styles.itemText} ${item.done ? styles.done : ''}`}>

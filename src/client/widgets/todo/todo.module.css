@@ -5,6 +5,41 @@
   margin-bottom: 12px;
 }
 
+/* Flat glance-style input: single clean border, no double ring/shadow.
+   Matches glance todo widget: 1px solid --color-widget-content-border,
+   rounded 5px (--border-radius), focus purple (--color-primary) like search. */
+.todoInput {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--color-widget-content-border);
+  border-radius: var(--border-radius);
+  background: var(--color-widget-background-highlight);
+  color: var(--color-text-base);
+  font: inherit;
+  font-size: var(--font-size-base);
+  padding: 6px 10px;
+  outline: none;
+  box-shadow: none;
+  transition: border-color 0.2s;
+}
+
+.todoInput::placeholder {
+  color: var(--color-text-subdue);
+  opacity: 1;
+}
+
+.todoInput:hover {
+  border-color: var(--color-text-subdue);
+}
+
+.todoInput:focus,
+.todoInput:focus-visible {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: none;
+}
+
+
 .item {
   display: flex;
   align-items: center;
@@ -65,6 +100,7 @@
 .editInput {
   flex: 1;
 }
+
 
 .iconBtn {
   display: inline-flex;

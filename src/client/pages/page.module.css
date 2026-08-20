@@ -197,14 +197,14 @@
 .groupTabs [data-tab-value] {
   background: transparent !important;
   border: none !important;
-  border-bottom: 1px dotted transparent !important;
+  border-bottom: 2px solid transparent !important;
   border-radius: 0 !important;
   box-shadow: none !important;
   font: inherit !important;
   font-size: var(--font-size-h4) !important;
   text-transform: uppercase;
   color: var(--color-text-subdue) !important;
-  line-height: calc(1.6em - 1px);
+  line-height: calc(1.6em - 2px);
   cursor: pointer;
   flex-shrink: 0;
   padding: 0 !important;
@@ -214,11 +214,12 @@
 .groupTabs button:hover:not(.groupTabCurrent),
 .groupTabs a:hover:not(.groupTabCurrent),
 .groupTabs [data-tab-value]:hover:not(.groupTabCurrent) {
-  color: var(--color-text-base) !important;
+  color: var(--color-text-highlight) !important;
+  border-bottom-color: var(--color-text-subdue) !important;
 }
 
 .groupTabs .groupTabCurrent {
-  border-bottom-color: var(--color-text-base-muted) !important;
+  border-bottom-color: var(--color-primary) !important;
   color: var(--color-text-highlight) !important;
 }
 

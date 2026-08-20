@@ -4,7 +4,7 @@ import { ChevronDown } from 'lucide-react';
 import type { WidgetPayload } from '../../shared/api';
 import type { Page } from '../../shared/config';
 import type { WidgetType } from '../../shared/config';
-import { WidgetChrome } from '../components/WidgetChrome';
+import { HideHeadersContext, WidgetChrome } from '../components/WidgetChrome';
 import { usePageData } from '../hooks/usePageData';
 import { clientWidgets } from '../widgets/registry';
 import { PAGE_WIDTHS } from '../../shared/layout';
@@ -115,57 +115,60 @@ function WidgetSkeleton({ widget }: { widget: SkeletonWidget }) {
 /** Per-widget skeleton page mirroring the ready layout from the page config,
  * so first paint shows the real structure with no layout shift on fill. */
 function PageSkeleton({ page }: { page: Page & { slug: string } }) {
+  const hideHeaders = page['hide-headers'] === true;
   return (
-    <div
-      className={`${styles.page} ${page['center-vertically'] ? styles.centered : ''}`}
-      style={{ maxWidth: PAGE_WIDTHS[page.width ?? 'default'] }}
-      data-testid="page-skeleton"
-    >
-      {page['show-mobile-header'] ? (
-        <div className={styles.mobileHeader}>{page.name}</div>
-      ) : null}
-      {page['head-widgets'] && page['head-widgets'].length > 0 ? (
-        <div className={styles.headWidgets}>
-          {page['head-widgets'].map((w, i) => (
-            <WidgetSkeleton key={widgetKey(w, i)} widget={w} />
+    <HideHeadersContext.Provider value={hideHeaders}>
+      <div
+        className={`${styles.page} ${page['center-vertically'] ? styles.centered : ''}`}
+        style={{ maxWidth: PAGE_WIDTHS[page.width ?? 'default'] }}
+        data-testid="page-skeleton"
+      >
+        {page['show-mobile-header'] ? (
+          <div className={styles.mobileHeader}>{page.name}</div>
+        ) : null}
+        {page['head-widgets'] && page['head-widgets'].length > 0 ? (
+          <div className={styles.headWidgets}>
+            {page['head-widgets'].map((w, i) => (
+              <WidgetSkeleton key={widgetKey(w, i)} widget={w} />
+            ))}
+          </div>
+        ) : null}
+        <div
+          className={
+            page.tiling === 'collage'
+              ? `${styles.columns} ${styles.collageTiling}`
+              : page.tiling === 'auto'
+                ? `${styles.columns} ${styles.autoTiling}`
+                : styles.columns
+          }
+          style={
+            page.tiling === 'collage' || page.tiling === 'auto'
+              ? ({
+                  '--min-column-width': `${page['min-column-width'] ?? 300}px`,
+                } as CSSProperties)
+              : undefined
+          }
+        >
+          {page.columns.map((col, i) => (
+            <MobileColumn
+              key={columnKey(col, i)}
+              label={columnLabel(col, i)}
+              small={col.size === 'small'}
+              span={col.span ?? 1}
+              rowSpan={
+                page.tiling === 'collage' ? estimateColumnRowSpan(col) : undefined
+              }
+            >
+              <div className={styles.columnWidgets}>
+                {col.widgets.map((w, j) => (
+                  <WidgetSkeleton key={widgetKey(w, j)} widget={w} />
+                ))}
+              </div>
+            </MobileColumn>
           ))}
         </div>
-      ) : null}
-      <div
-        className={
-          page.tiling === 'collage'
-            ? `${styles.columns} ${styles.collageTiling}`
-            : page.tiling === 'auto'
-              ? `${styles.columns} ${styles.autoTiling}`
-              : styles.columns
-        }
-        style={
-          page.tiling === 'collage' || page.tiling === 'auto'
-            ? ({
-                '--min-column-width': `${page['min-column-width'] ?? 300}px`,
-              } as CSSProperties)
-            : undefined
-        }
-      >
-        {page.columns.map((col, i) => (
-          <MobileColumn
-            key={columnKey(col, i)}
-            label={columnLabel(col, i)}
-            small={col.size === 'small'}
-            span={col.span ?? 1}
-            rowSpan={
-              page.tiling === 'collage' ? estimateColumnRowSpan(col) : undefined
-            }
-          >
-            <div className={styles.columnWidgets}>
-              {col.widgets.map((w, j) => (
-                <WidgetSkeleton key={widgetKey(w, j)} widget={w} />
-              ))}
-            </div>
-          </MobileColumn>
-        ))}
       </div>
-    </div>
+    </HideHeadersContext.Provider>
   );
 }
 
@@ -331,54 +334,58 @@ export function PageView({
   }
 
   const data = state.data;
+  const hideHeaders = data['hide-headers'] === true || data.hideHeaders === true;
+
 
   return (
-    <div
-      className={`${styles.page} ${data['center-vertically'] ? styles.centered : ''}`}
-      style={{ maxWidth: PAGE_WIDTHS[data.width] }}
-    >
-      {data['show-mobile-header'] ? (
-        <div className={styles.mobileHeader}>{data.name}</div>
-      ) : null}
-      {data.headWidgets.length > 0 ? (
-        <div className={styles.headWidgets}>
-          {data.headWidgets.map((w, i) => (
-            <WidgetSlot key={widgetKey(w, i)} widget={w} />
+    <HideHeadersContext.Provider value={hideHeaders}>
+      <div
+        className={`${styles.page} ${data['center-vertically'] ? styles.centered : ''}`}
+        style={{ maxWidth: PAGE_WIDTHS[data.width] }}
+      >
+        {data['show-mobile-header'] ? (
+          <div className={styles.mobileHeader}>{data.name}</div>
+        ) : null}
+        {data.headWidgets.length > 0 ? (
+          <div className={styles.headWidgets}>
+            {data.headWidgets.map((w, i) => (
+              <WidgetSlot key={widgetKey(w, i)} widget={w} />
+            ))}
+          </div>
+        ) : null}
+        <div
+          ref={data.tiling === 'collage' ? columnsRef : null}
+          className={
+            data.tiling === 'collage'
+              ? `${styles.columns} ${styles.collageTiling}`
+              : data.tiling === 'auto'
+                ? `${styles.columns} ${styles.autoTiling}`
+                : styles.columns
+          }
+          style={
+            data.tiling === 'collage' || data.tiling === 'auto'
+              ? ({ '--min-column-width': `${data.minColumnWidth}px` } as CSSProperties)
+              : undefined
+          }
+        >
+          {data.columns.map((col, i) => (
+            // Columns are a config-static list (never reordered at runtime),
+            // so the positional index is their stable identity.
+            <MobileColumn
+              key={columnKey(col, i)}
+              label={columnLabel(col, i)}
+              small={col.size === 'small'}
+              span={col.span ?? 1}
+            >
+              <div className={styles.columnWidgets}>
+                {col.widgets.map((w, j) => (
+                  <WidgetSlot key={widgetKey(w, j)} widget={w} />
+                ))}
+              </div>
+            </MobileColumn>
           ))}
         </div>
-      ) : null}
-      <div
-        ref={data.tiling === 'collage' ? columnsRef : null}
-        className={
-          data.tiling === 'collage'
-            ? `${styles.columns} ${styles.collageTiling}`
-            : data.tiling === 'auto'
-              ? `${styles.columns} ${styles.autoTiling}`
-              : styles.columns
-        }
-        style={
-          data.tiling === 'collage' || data.tiling === 'auto'
-            ? ({ '--min-column-width': `${data.minColumnWidth}px` } as CSSProperties)
-            : undefined
-        }
-      >
-        {data.columns.map((col, i) => (
-          // Columns are a config-static list (never reordered at runtime),
-          // so the positional index is their stable identity.
-          <MobileColumn
-            key={columnKey(col, i)}
-            label={columnLabel(col, i)}
-            small={col.size === 'small'}
-            span={col.span ?? 1}
-          >
-            <div className={styles.columnWidgets}>
-              {col.widgets.map((w, j) => (
-                <WidgetSlot key={widgetKey(w, j)} widget={w} />
-              ))}
-            </div>
-          </MobileColumn>
-        ))}
       </div>
-    </div>
+    </HideHeadersContext.Provider>
   );
 }
