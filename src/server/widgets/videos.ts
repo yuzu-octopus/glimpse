@@ -31,14 +31,11 @@ function isChannelId(channel: string): boolean {
   return /^UC[A-Za-z0-9_-]{22}$/.test(channel);
 }
 
-function feedUrlForId(id: string, includeShorts: boolean): string {
+function feedUrlForId(id: string, _includeShorts: boolean): string {
   if (id.startsWith(PLAYLIST_PREFIX)) {
     return `https://www.youtube.com/feeds/videos.xml?playlist_id=${encodeURIComponent(id.slice(PLAYLIST_PREFIX.length))}`;
   }
-  if (!includeShorts && id.startsWith('UC')) {
-    const playlistId = 'UULF' + id.slice(2);
-    return `https://www.youtube.com/feeds/videos.xml?playlist_id=${playlistId}`;
-  }
+  // Use channel_id feed directly; shorts filtered via link check (more reliable than UULF playlist which 404s for many channels)
   return `https://www.youtube.com/feeds/videos.xml?channel_id=${id}`;
 }
 
