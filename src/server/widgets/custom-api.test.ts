@@ -185,4 +185,18 @@ describe('custom-api fetcher', () => {
     })) as { items: CustomApiItem[] };
     expect(data.items).toHaveLength(1);
   });
+
+  it('respects limit 3 over a larger feed (TDD: limit top n)', async () => {
+    const payload = { results: Array.from({ length: 10 }, (_, i) => ({ title: `Item ${i}`, link: `https://example.com/${i}` })) };
+    const ctx = makeCtx(async () => new Response(JSON.stringify(payload), { status: 200 }));
+    const data = (await customApiFetcher()(ctx, {
+      type: 'custom-api',
+      url: 'https://api.example.com/x',
+      limit: 3,
+      options: { path: '$.results[*]', title: '$.title', url: '$.link' },
+    })) as { items: CustomApiItem[] };
+    expect(data.items).toHaveLength(3);
+    expect(data.items[0].title).toBe('Item 0');
+    expect(data.items[2].title).toBe('Item 2');
+  });
 });

@@ -79,7 +79,9 @@ registerWidget('custom-api', async (ctx, config) => {
   const rootResult = JSONPath({ path: cfg.options.path, json: payload as object }) as unknown;
   const list: unknown[] = Array.isArray(rootResult) ? rootResult : [rootResult];
 
-  const items: CustomApiItem[] = list.map((item) => {
+  const limit = cfg.limit ?? 10;
+  const sliced = list.slice(0, limit);
+  const items: CustomApiItem[] = sliced.map((item) => {
     const mapped: CustomApiItem = {
       title: '',
       url: null,
@@ -98,16 +100,11 @@ registerWidget('custom-api', async (ctx, config) => {
       if (key === 'title') mapped.title = value ?? '';
       else mapped[key] = value;
     }
-    // When options.path selects a scalar (e.g. $.stargazers_count → 36462),
-    // the scalar itself is the data to display. Fall back to it when no
-    // field maps to it — e.g. title="Stargazers" (literal) leaves value null.
     if (item !== null && typeof item !== 'object') {
       const scalar = String(item);
       if (scalar !== '' && mapped.value === null) mapped.value = scalar;
       if (mapped.title === '') mapped.title = scalar;
     }
-    // Empty string list entry (JSONPath miss) yields no usable item — filter later hides it,
-    // but keeping title empty would render a blank row; use scalar fallback already handled.
     return mapped;
   });
   return { items, frameless: cfg.frameless ?? false };

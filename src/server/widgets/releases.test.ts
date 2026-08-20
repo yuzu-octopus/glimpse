@@ -138,4 +138,25 @@ describe('releases fetcher', () => {
       source: 'docker-hub',
     });
   });
+
+  it('respects limit 3 over a larger feed (TDD: limit top n)', async () => {
+    const ghReleases = Array.from({ length: 10 }, (_, i) => ({
+      tag_name: `v1.${i}.0`,
+      html_url: `https://github.com/o/r/releases/tag/v1.${i}.0`,
+      published_at: `2024-01-${String(10 - i).padStart(2, '0')}T00:00:00Z`,
+      draft: false,
+      prerelease: false,
+    }));
+    const routes = {
+      'https://api.github.com/repos/o/r/releases?per_page=3': ghReleases.slice(0, 3),
+      'https://api.github.com/repos/o/r/releases?per_page=10': ghReleases,
+    };
+    const { ctx } = makeCtx(routes);
+    const data = (await releasesFetcher()(ctx, {
+      type: 'releases',
+      repositories: ['o/r'],
+      limit: 3,
+    })) as { releases: Release[] };
+    expect(data.releases).toHaveLength(3);
+  });
 });

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import Rss from './index';
-import styles from './rss.module.css';
+import feedStyles from '../feed/Feed.module.css';
 import type { RssItem } from '../../../shared/widgets/payloads';
 
 const items: RssItem[] = [
@@ -35,7 +35,7 @@ describe('rss widget', () => {
     );
     expect(screen.getByText('Feed')).toBeInTheDocument();
     expect(screen.getByText('First post')).toBeInTheDocument();
-    expect(screen.getAllByText('Test Feed')).toHaveLength(2);
+    expect(screen.getAllByText(/Test Feed/)).toHaveLength(2);
     expect(screen.getByText(/· \d+d/)).toBeInTheDocument();
   });
 
@@ -52,8 +52,8 @@ describe('rss widget', () => {
     expect(screen.getByText('Some description')).toBeInTheDocument();
     expect(screen.getByText('News')).toBeInTheDocument();
     expect(screen.getByText('Tech')).toBeInTheDocument();
-    // only the item with categories gets chips
-    expect(document.querySelectorAll(`.${styles.chip}`)).toHaveLength(2);
+    // chips now rendered via generic Feed (feedStyles.chip) — rss chip styles deprecated for lists
+    expect(document.querySelectorAll(`.${feedStyles.chip}`)).toHaveLength(2);
   });
 
   it('applies single-line titles only when configured', () => {
@@ -61,12 +61,12 @@ describe('rss widget', () => {
       <Rss config={{ type: 'rss', 'single-line-titles': true, feeds: [{ url: 'x' }] }} data={{ items }} />,
     );
     const link = () => screen.getByRole('link', { name: 'First post' });
-    expect(link().className).toContain(styles.titleSingle);
-    expect(link().className).not.toContain(styles.titleClamp);
+    expect(link().className).toContain(feedStyles.titleSingle);
+    expect(link().className).not.toContain(feedStyles.titleClamp);
 
     rerender(<Rss config={{ type: 'rss', feeds: [{ url: 'x' }] }} data={{ items }} />);
-    expect(link().className).toContain(styles.titleClamp);
-    expect(link().className).not.toContain(styles.titleSingle);
+    expect(link().className).toContain(feedStyles.titleClamp);
+    expect(link().className).not.toContain(feedStyles.titleSingle);
   });
 
   it('renders the first feed title as a source header when enabled and no explicit title', () => {

@@ -2,16 +2,13 @@ import { Link } from '@astryxdesign/core';
 import type { VideosConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import { useRelativeTime } from '../useRelativeTime';
+import { formatAge } from '../useRelativeTime';
 import type { Video } from '../../../shared/widgets/payloads';
 import styles from './videos.module.css';
-
-function useVideoAge(video: Video): string | null {
-  return useRelativeTime(video.published ? (Date.now() - Date.parse(video.published)) / 1000 : 0);
-}
+import Feed, { type FeedItem } from '../feed/Feed';
 
 function Card({ video }: { video: Video }) {
-  const age = useVideoAge(video);
+  const age = video.published ? formatAge((Date.now() - Date.parse(video.published)) / 1000) : null;
   return (
     <Link href={video.url} target="_blank" className={styles.card} hasUnderline={false} color="inherit">
       {video.thumbnail ? (
@@ -21,32 +18,10 @@ function Card({ video }: { video: Video }) {
       )}
       <span className={styles.cardTitle}>{video.title}</span>
       <span className={styles.cardMeta}>
-        {video.published ? <span className={styles.cardTime}>{age}</span> : null}
+        {age ? <span className={styles.cardTime}>{age}</span> : null}
         <span className={styles.cardChannel}>{video.channel}</span>
       </span>
     </Link>
-  );
-}
-
-function Row({ video }: { video: Video }) {
-  const age = useVideoAge(video);
-  return (
-    <div className={styles.row}>
-      {video.thumbnail ? (
-        <img src={video.thumbnail} alt="" loading="lazy" className={styles.rowThumb} />
-      ) : (
-        <div className={styles.rowThumbPlaceholder} />
-      )}
-      <div className={styles.rowBody}>
-        <Link href={video.url} target="_blank" className={styles.title} hasUnderline={false} color="inherit">
-          {video.title}
-        </Link>
-        <div className={styles.rowMeta}>
-          {video.published ? <span className={styles.rowTime}>{age}</span> : null}
-          <span className={styles.rowChannel}>{video.channel}</span>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -57,8 +32,6 @@ function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
   const style = cfg.style ?? 'horizontal-cards';
   const collapseAfter = style === 'grid-cards' ? cfg['collapse-after-rows'] : cfg['collapse-after'];
 
-  // Loading: data is null and no error yet (fetch in flight). Keep chrome
-  // so PageView skeleton and WidgetChrome isLoading stay consistent.
   if (loading) {
     return (
       <WidgetChrome
@@ -71,8 +44,6 @@ function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
     );
   }
 
-  // Empty: valid response but no videos (e.g. no channels, all feeds failed,
-  // or channels have no recent videos). Show actionable placeholder.
   if (videos.length === 0 && !error) {
     return (
       <WidgetChrome
@@ -87,6 +58,16 @@ function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
   }
 
   if (style === 'vertical-list') {
+    const feedItems: FeedItem[] = videos.map((v) => {
+      const age = v.published ? formatAge((Date.now() - Date.parse(v.published)) / 1000) : null;
+      const meta = [age, v.channel].filter(Boolean).join(' • ');
+      return {
+        title: v.title,
+        url: v.url,
+        meta: meta || null,
+        image: v.thumbnail,
+      };
+    });
     return (
       <WidgetChrome
         title={cfg.title}
@@ -95,7 +76,9 @@ function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
         cssClass={cfg['css-class']}
         error={error}
         collapseAfter={collapseAfter}
-        items={videos.map((v) => <Row key={v.url} video={v} />)}
+        items={feedItems.map((fi) => (
+          <Feed key={fi.url} items={[fi]} />
+        ))}
       />
     );
   }

@@ -31,10 +31,10 @@ describe('videos widget', () => {
   it('renders a vertical list with thumbnails', () => {
     render(<Videos config={{ type: 'videos', style: 'vertical-list' }} data={{ videos }} />);
     expect(screen.getByText('Bun 1.3 release')).toBeInTheDocument();
-    expect(screen.getByText('Dev Talk')).toBeInTheDocument();
+    expect(screen.getByText(/Dev Talk/)).toBeInTheDocument();
     const img = screen.getByAltText('');
     expect(img).toHaveAttribute('src', 'https://i.ytimg.com/vi/1/hqdefault.jpg');
-    // glance meta row: relative time next to the channel
+    // glance meta row: relative time next to the channel (combined "596d • Bun")
     expect(screen.getAllByText(/\d+d/).length).toBeGreaterThan(0);
   });
 

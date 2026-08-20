@@ -29,13 +29,13 @@ describe('hacker-news widget', () => {
     expect(screen.getByText('Hacker News')).toBeInTheDocument();
     expect(screen.getByText('HN story one')).toBeInTheDocument();
     expect(screen.getByText('HN story two')).toBeInTheDocument();
-    // domain is derived from the post url; absent for unparsable urls
-    expect(screen.getByText('example.com')).toBeInTheDocument();
-    expect(screen.queryAllByText('example.com')).toHaveLength(1);
-    expect(screen.getByText('100 points')).toBeInTheDocument();
-    expect(screen.getByText('25 comments')).toBeInTheDocument();
-    expect(screen.getByText('1h')).toBeInTheDocument();
-    expect(screen.getByText('1m')).toBeInTheDocument();
+    // generic Feed combines meta into single line "example.com • 100 points • 25 comments • 1h"
+    expect(screen.getByText(/example\.com/)).toBeInTheDocument();
+    expect(screen.queryAllByText(/example\.com/)).toHaveLength(1);
+    expect(screen.getByText(/100 points/)).toBeInTheDocument();
+    expect(screen.getByText(/25 comments/)).toBeInTheDocument();
+    expect(screen.getByText(/1h/)).toBeInTheDocument();
+    expect(screen.getByText(/1m/)).toBeInTheDocument();
   });
 
   it('renders an empty chrome without crashing on empty data', () => {

@@ -87,6 +87,8 @@ export const customApiSchema = z.object({
   frameless: z.boolean().optional(),
   'allow-insecure': z.boolean().optional(),
   'skip-json-validation': z.boolean().optional(),
+  limit: z.number().int().min(0).optional(),
+  'collapse-after': z.number().int().min(-1).optional(),
   options: z
     .object({
       path: z.string(),

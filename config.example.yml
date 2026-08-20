@@ -1,5 +1,8 @@
-# Glimpse showcase — flat glance-faithful demo (3 pages, hide-headers, Singapore).
+# Glimpse showcase — flat glance-faithful demo (4 pages, hide-headers, Singapore).
 # Copy to config.yml and edit. See README for full widget reference.
+# Pages: Home (daily feeds) · Dev (releases / repos / videos) · Social (collage / reddit / twitch) · Lab (homelab).
+# Flat style: 1px border / 5px radius / JetBrains Mono / no shadows — applied by the theme, not the config.
+# All `videos` channels are data-driven UC IDs (no handle map); Singapore weather repeated on Home/Dev/Lab for parity.
 
 pages:
   - name: Home
@@ -219,3 +222,159 @@ pages:
                     url: https://twitch.tv
           - type: todo
             id: social-todo
+
+  - name: Lab
+    slug: lab
+    hide-headers: true
+    # Homelab showcase — every required Lab widget in one page.
+    # Columns stay `columns` (flex) so small = 300px fixed; Lab intentionally
+    # repeats weather/calendar/todo/markets/bookmarks/videos/releases/monitor
+    # so all four pages together exercise every element/usecase even repeated.
+    columns:
+      - size: small
+        widgets:
+          - type: calendar
+            first-day-of-week: monday
+          - type: todo
+            id: lab-todo
+          - type: weather
+            location: Singapore
+            units: metric
+          - type: bookmarks
+            groups:
+              - title: Homelab
+                links:
+                  - title: Grafana
+                    url: https://grafana.lab
+                    icon: si:grafana
+                  - title: Immich
+                    url: https://immich.lab
+                    icon: si:immich
+                  - title: Home Assistant
+                    url: https://home.lab
+                    icon: si:homeassistant
+                  - title: Jellyfin
+                    url: https://jellyfin.lab
+                    icon: si:jellyfin
+                  - title: Pi-hole
+                    url: https://pihole.lab
+                    icon: si:pihole
+              - title: Infra
+                links:
+                  - title: Proxmox
+                    url: https://proxmox.lab
+                  - title: Portainer
+                    url: https://portainer.lab
+                  - title: TrueNAS
+                    url: https://truenas.lab
+                  - title: Authentik
+                    url: https://auth.lab
+          - type: markets
+            markets:
+              - symbol: SPY
+                name: S&P 500
+              - symbol: BTC-USD
+                name: Bitcoin
+              - symbol: ETH-USD
+                name: Ethereum
+              - symbol: NVDA
+                name: NVIDIA
+      - size: full
+        widgets:
+          - type: monitor
+            title: Homelab — health
+            sites:
+              - url: https://grafana.lab
+                title: Grafana
+              - url: https://immich.lab
+                title: Immich
+              - url: https://jellyfin.lab
+                title: Jellyfin
+              - url: https://home.lab
+                title: Home Assistant
+              - url: https://pihole.lab
+                title: Pi-hole
+              - url: https://portainer.lab
+                title: Portainer
+              - url: https://proxmox.lab
+                title: Proxmox
+              - url: https://truenas.lab
+                title: TrueNAS
+              - url: https://auth.lab
+                title: Authentik
+              - url: https://code.lab
+                title: Gitea
+          - type: custom-api
+            title: Homelab stats
+            url: https://api.github.com/repos/home-assistant/core
+            options:
+              path: $.stargazers_count
+              title: Home Assistant stars
+              description: github.com/home-assistant/core — proxy for lab stats
+          - type: rss
+            title: Self-hosted blogs
+            limit: 10
+            collapse-after: 5
+            source-header: true
+            feeds:
+              - url: https://selfh.st/rss/
+                title: selfh.st
+              - url: https://blog.immich.app/rss.xml
+                title: Immich
+              - url: https://jellyfin.org/posts/rss.xml
+                title: Jellyfin
+              - url: https://www.home-assistant.io/atom.xml
+                title: Home Assistant
+              - url: https://blog.cloudflare.com/rss/
+                title: Cloudflare Blog
+          - type: hacker-news
+            limit: 8
+            sort-by: top
+            collapse-after: 5
+            source-header: true
+          - type: reddit
+            subreddit: homelab
+            limit: 8
+            collapse-after: 5
+            show-thumbnails: true
+            source-header: true
+            # Reddit anonymous JSON now 403s; add one of:
+            # app-auth: { id: "CLIENT_ID", secret: "CLIENT_SECRET" }
+            # proxy: "https://user:pass@proxy.example.com:8080"
+      - size: small
+        widgets:
+          - type: videos
+            title: Homelab — recent
+            limit: 8
+            style: grid-cards
+            channels:
+              - UCXuqSBlHAE6Xw-yeJA0Tunw  # Linus Tech Tips
+              - UCR-DXc1voovS8nhAvccRZhg  # Jeff Geerling
+              - UCsBjURrPoezykLs9EqgamOA  # Fireship — UC ID, data-driven
+              - UCBJycsmduvYEL83R_U4JriQ  # Marques Brownlee (placeholder homelab-adjacent)
+          - type: releases
+            title: Homelab releases
+            repositories:
+              - immich-app/immich
+              - home-assistant/core
+              - jellyfin/jellyfin
+              - grafana/grafana
+            show-source-icon: true
+            limit: 8
+            collapse-after: 5
+          - type: repository
+            repository: home-assistant/core
+            pull-requests-limit: 5
+            issues-limit: 5
+          - type: twitch-channels
+            title: Lab streams
+            channels:
+              - shroud
+              - theprimeagen
+              - j_blow
+            limit: 6
+            collapse-after: 4
+          - type: iframe
+            title: Grafana
+            source: https://grafana.lab/d/000000001/homelab?orgId=1&kiosk
+            height: 420

@@ -30,10 +30,10 @@ describe('reddit widget', () => {
     render(<Reddit config={{ type: 'reddit', title: 'Reddit', subreddit: 'test' }} data={{ posts }} />);
     expect(screen.getByText('Reddit')).toBeInTheDocument();
     expect(screen.getByText('First post title')).toBeInTheDocument();
-    expect(screen.getByText('120 points')).toBeInTheDocument();
-    expect(screen.getByText('30 comments')).toBeInTheDocument();
-    expect(screen.getByText('2h')).toBeInTheDocument();
-    expect(screen.getByText('5m')).toBeInTheDocument();
+    expect(screen.getByText(/120 points/)).toBeInTheDocument();
+    expect(screen.getByText(/30 comments/)).toBeInTheDocument();
+    expect(screen.getByText(/2h/)).toBeInTheDocument();
+    expect(screen.getByText(/5m/)).toBeInTheDocument();
   });
 
   it('renders thumbnails and flair only when enabled', () => {

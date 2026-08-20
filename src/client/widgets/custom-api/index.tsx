@@ -43,10 +43,11 @@ function CustomApi({ config, data, error, isLoading }: WidgetComponentProps) {
   const loading = isLoading ?? ((data as unknown) == null && !error);
   const items = ((data as { items?: CustomApiItem[] } | null)?.items ?? []) as CustomApiItem[];
   const frameless = cfg.frameless === true;
+  const collapseAfter = cfg['collapse-after'];
 
   const rows = items.map((item) => <ItemRow key={item.title + (item.url ?? '')} item={item} />);
   if (frameless) {
-    // frameless has no chrome to hang error/loading on — surface inline
+    // frameless has no chrome to hang error/loading on — surface inline but still respect collapseAfter
     if (loading) {
       return (
         <div className={styles.frameless} data-testid="custom-api-frameless">
@@ -54,9 +55,24 @@ function CustomApi({ config, data, error, isLoading }: WidgetComponentProps) {
         </div>
       );
     }
+    if (error) {
+      return (
+        <div className={styles.frameless} data-testid="custom-api-frameless">
+          <div className={styles.framelessError}>{error}</div>
+        </div>
+      );
+    }
+    // Reuse WidgetChrome collapse UI for consistency when collapseAfter is set; otherwise plain group
+    if (typeof collapseAfter === 'number' && collapseAfter >= 0 && rows.length > collapseAfter) {
+      return (
+        <div className={styles.frameless} data-testid="custom-api-frameless">
+          <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']} collapseAfter={collapseAfter} items={rows} />
+        </div>
+      );
+    }
     return (
       <div className={styles.frameless} data-testid="custom-api-frameless">
-        {error ? <div className={styles.framelessError}>{error}</div> : rows}
+        {rows}
       </div>
     );
   }
@@ -68,6 +84,7 @@ function CustomApi({ config, data, error, isLoading }: WidgetComponentProps) {
       cssClass={cfg['css-class']}
       error={error}
       isLoading={loading}
+      collapseAfter={collapseAfter}
       items={rows}
     />
   );

@@ -36,9 +36,9 @@ describe('lobsters widget', () => {
     expect(screen.getByText('Lobsters')).toBeInTheDocument();
     expect(screen.getByText('First post')).toBeInTheDocument();
     expect(screen.getByText('Second post')).toBeInTheDocument();
-    expect(screen.getByText('42 points')).toBeInTheDocument();
-    expect(screen.getByText('7 comments')).toBeInTheDocument();
-    expect(screen.getByText('1h')).toBeInTheDocument();
+    expect(screen.getByText(/42 points/)).toBeInTheDocument();
+    expect(screen.getByText(/7 comments/)).toBeInTheDocument();
+    expect(screen.getByText(/1h/)).toBeInTheDocument();
   });
 
   it('renders an empty chrome without crashing on empty data', () => {

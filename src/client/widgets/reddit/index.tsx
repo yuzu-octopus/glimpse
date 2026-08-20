@@ -2,38 +2,13 @@ import { Link } from '@astryxdesign/core';
 import type { RedditConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import { useRelativeTime } from '../useRelativeTime';
+import { formatAge } from '../useRelativeTime';
 import type { RedditPost } from '../../../shared/widgets/payloads';
 import styles from './reddit.module.css';
-
-function Row({ post, showThumb, showFlair }: { post: RedditPost; showThumb: boolean; showFlair: boolean }) {
-  const age = useRelativeTime(post.ageSeconds);
-  return (
-    <div className={styles.row}>
-      {showThumb && post.thumbnail ? (
-        <img src={post.thumbnail} alt="" loading="lazy" className={styles.thumb} />
-      ) : null}
-      <div className={styles.rowBody}>
-        <Link href={post.url} target="_blank" className={styles.title} hasUnderline={false}>
-          {post.title}
-        </Link>
-        <div className={styles.meta}>
-          {showFlair && post.flair ? <span className={styles.flair}>{post.flair}</span> : null}
-          <span className={styles.score}>{post.score} points</span>
-          <span className={styles.sep}>•</span>
-          <Link href={post.commentsUrl} target="_blank" className={styles.metaLink}>
-            {post.comments} comments
-          </Link>
-          <span className={styles.sep}>•</span>
-          <span>{age}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
+import Feed, { type FeedItem } from '../feed/Feed';
 
 function Card({ post, showMeta }: { post: RedditPost; showMeta: boolean }) {
-  const age = useRelativeTime(post.ageSeconds);
+  const age = formatAge(post.ageSeconds);
   return (
     <Link key={post.url} href={post.url} target="_blank" className={styles.card} hasUnderline={false}>
       {post.thumbnail ? (
@@ -87,6 +62,17 @@ function Reddit({ config, data, error, isLoading }: WidgetComponentProps) {
     );
   }
 
+  const feedItems: FeedItem[] = posts.map((post) => {
+    const age = formatAge(post.ageSeconds);
+    return {
+      title: post.title,
+      url: post.url,
+      meta: `${post.score} points • ${post.comments} comments • ${age}`,
+      image: showThumb ? post.thumbnail : null,
+      tags: showFlair && post.flair ? [post.flair] : [],
+    };
+  });
+
   return (
     <WidgetChrome
       title={title}
@@ -96,7 +82,9 @@ function Reddit({ config, data, error, isLoading }: WidgetComponentProps) {
       collapseAfter={cfg['collapse-after']}
       isLoading={loading}
       error={error}
-      items={posts.map((p) => <Row key={p.url} post={p} showThumb={showThumb} showFlair={showFlair} />)}
+      items={feedItems.map((fi) => (
+        <Feed key={fi.url} items={[fi]} />
+      ))}
     />
   );
 }

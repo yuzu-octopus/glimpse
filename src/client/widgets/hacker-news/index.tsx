@@ -1,10 +1,9 @@
-import { Link } from '@astryxdesign/core';
 import type { HackerNewsConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import { useRelativeTime } from '../useRelativeTime';
+import { formatAge } from '../useRelativeTime';
 import type { HnPost } from '../../../shared/widgets/payloads';
-import styles from './hacker-news.module.css';
+import Feed, { type FeedItem } from '../feed/Feed';
 
 /** post source host, minus www (glance rss-list shows the channel/domain). */
 function domainOf(url: string): string | null {
@@ -15,27 +14,20 @@ function domainOf(url: string): string | null {
   }
 }
 
-function HnRow({ post }: { post: HnPost }) {
-  const age = useRelativeTime(post.ageSeconds);
+function toFeedItem(post: HnPost): FeedItem {
+  const age = formatAge(post.ageSeconds);
   const domain = domainOf(post.url);
-  return (
-    <div className={styles.row}>
-      <Link href={post.url} target="_blank" className={styles.title} hasUnderline={false}>
-        {post.title}
-      </Link>
-      <div className={styles.meta}>
-        {domain ? <span>{domain}</span> : null}
-        {domain ? <span className={styles.sep}>•</span> : null}
-        <span className={styles.score}>{post.score} points</span>
-        <span className={styles.sep}>•</span>
-        <Link href={post.commentsUrl} target="_blank" className={styles.metaLink}>
-          {post.comments} comments
-        </Link>
-        <span className={styles.sep}>•</span>
-        <span>{age}</span>
-      </div>
-    </div>
-  );
+  const parts = [
+    domain,
+    `${post.score} points`,
+    `${post.comments} comments`,
+    age,
+  ].filter(Boolean) as string[];
+  return {
+    title: post.title,
+    url: post.url || post.commentsUrl,
+    meta: parts.join(' • '),
+  };
 }
 
 function HackerNews({ config, data, error, isLoading }: WidgetComponentProps) {
@@ -43,6 +35,7 @@ function HackerNews({ config, data, error, isLoading }: WidgetComponentProps) {
   const loading = isLoading ?? ((data as unknown) == null && !error);
   const posts = ((data as { posts?: HnPost[] } | null)?.posts ?? []) as HnPost[];
   const title = cfg.title ?? (cfg['source-header'] ? 'Hacker News' : undefined);
+  const feedItems = posts.map(toFeedItem);
   return (
     <WidgetChrome
       title={title}
@@ -52,7 +45,9 @@ function HackerNews({ config, data, error, isLoading }: WidgetComponentProps) {
       collapseAfter={cfg['collapse-after']}
       isLoading={loading}
       error={error}
-      items={posts.map((p) => <HnRow key={p.id} post={p} />)}
+      items={feedItems.map((fi, i) => (
+        <Feed key={posts[i]?.id ?? fi.url} items={[fi]} />
+      ))}
     />
   );
 }

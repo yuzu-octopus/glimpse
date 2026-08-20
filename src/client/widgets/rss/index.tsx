@@ -2,9 +2,10 @@ import { Link } from '@astryxdesign/core';
 import type { RssConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import { useRelativeTime } from '../useRelativeTime';
+import { formatAge } from '../useRelativeTime';
 import type { RssItem } from '../../../shared/widgets/payloads';
 import styles from './rss.module.css';
+import Feed, { type FeedItem } from '../feed/Feed';
 
 // glance image-placeholder icon (heroicons photo, stroke inherits)
 const IMAGE_ICON_PATH =
@@ -25,56 +26,20 @@ function ImageIcon({ className }: { className?: string }) {
   );
 }
 
-function Meta({ item, className }: { item: RssItem; className?: string }) {
-  const age = item.published ? (Date.now() - Date.parse(item.published)) / 1000 : 0;
-  const ageText = useRelativeTime(age);
-  return (
-    <div className={className}>
-      <span>{item.source}</span>
-      {item.published ? <span>· {ageText}</span> : null}
-    </div>
-  );
-}
-
-function Row({ item, detailed, singleLine }: {
-  item: RssItem; detailed: boolean; singleLine: boolean;
-}) {
-  const titleClass = [
-    styles.title,
-    detailed ? styles.titleDetailed : undefined,
-    singleLine ? styles.titleSingle : styles.titleClamp,
-  ].filter(Boolean).join(' ');
-  return (
-    <div className={styles.row}>
-      {detailed ? (
-        <div className={styles.thumbContainer}>
-          {item.thumbnail ? (
-            <img src={item.thumbnail} alt="" loading="lazy" className={styles.thumb} />
-          ) : (
-            <ImageIcon className={styles.thumbPlaceholder} />
-          )}
-        </div>
-      ) : null}
-      <div className={styles.content}>
-        <Link href={item.url} target="_blank" className={titleClass} hasUnderline={false}>
-          {item.title}
-        </Link>
-        <Meta item={item} className={styles.meta} />
-        {detailed && item.description ? (
-          <div className={styles.desc}>{item.description}</div>
-        ) : null}
-        {detailed && (item.categories ?? []).length > 0 ? (
-          <div className={styles.chips}>
-            {(item.categories ?? []).map((c) => (
-              <span key={c} className={styles.chip}>
-                {c}
-              </span>
-            ))}
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
+function toFeedItems(items: RssItem[], detailed: boolean): FeedItem[] {
+  return items.map((item) => {
+    const ageSec = item.published ? (Date.now() - Date.parse(item.published)) / 1000 : 0;
+    const meta = item.published ? `${item.source} · ${formatAge(ageSec)}` : item.source;
+    return {
+      title: item.title,
+      url: item.url,
+      meta,
+      // vertical-list hides extra fields (matches original Row non-detailed branch)
+      description: detailed ? item.description : null,
+      tags: detailed ? item.categories ?? [] : [],
+      image: detailed ? item.thumbnail : null,
+    };
+  });
 }
 
 function Cards({ items, title, titleUrl, hideHeader, cssClass, cardHeight, thumbnailHeight, overlay }: {
@@ -101,7 +66,10 @@ function Cards({ items, title, titleUrl, hideHeader, cssClass, cardHeight, thumb
               )}
               <div className={styles.card2Content}>
                 <span className={styles.card2Title}>{item.title}</span>
-                <Meta item={item} className={styles.cardMeta} />
+                <div className={styles.cardMeta}>
+                  <span>{item.source}</span>
+                  {item.published ? <span>· {formatAge((Date.now() - Date.parse(item.published)) / 1000)}</span> : null}
+                </div>
               </div>
             </Link>
           ) : (
@@ -121,7 +89,10 @@ function Cards({ items, title, titleUrl, hideHeader, cssClass, cardHeight, thumb
               )}
               <div className={styles.cardContent}>
                 <span className={styles.cardTitle}>{item.title}</span>
-                <Meta item={item} className={styles.cardMeta} />
+                <div className={styles.cardMeta}>
+                  <span>{item.source}</span>
+                  {item.published ? <span>· {formatAge((Date.now() - Date.parse(item.published)) / 1000)}</span> : null}
+                </div>
               </div>
             </Link>
           ),
@@ -137,7 +108,6 @@ function Rss({ config, data, error, isLoading }: WidgetComponentProps) {
   const items = ((data as { items?: RssItem[] } | null)?.items ?? []) as RssItem[];
   const style = cfg.style ?? 'vertical-list';
   const collapseAfter = cfg['collapse-after'];
-  // explicit title wins; source-header fills in when the widget is untitled
   const title =
     cfg.title ?? (cfg['source-header'] ? cfg.feeds[0]?.title ?? 'RSS' : undefined);
 
@@ -169,6 +139,7 @@ function Rss({ config, data, error, isLoading }: WidgetComponentProps) {
   }
   const detailed = style === 'detailed-list';
   const singleLine = cfg['single-line-titles'] === true;
+  const feedItems = toFeedItems(items, detailed);
   return (
     <WidgetChrome
       title={title}
@@ -178,8 +149,13 @@ function Rss({ config, data, error, isLoading }: WidgetComponentProps) {
       collapseAfter={collapseAfter}
       isLoading={loading}
       error={error}
-      items={items.map((item) => (
-        <Row key={item.url} item={item} detailed={detailed} singleLine={singleLine} />
+      items={feedItems.map((fi) => (
+        // Wrap Feed single-row? Instead pass whole list to Feed and let WidgetChrome handle collapse via items slicing.
+        // To keep WidgetChrome collapse semantics (slice items), we render Feed with all items and let WidgetChrome slice via its own collapse.
+        // Simpler: let WidgetChrome manage collapse; we render Feed's rows as individual items sliced by WidgetChrome.
+        // But Feed already batches; we need per-item rendering to let collapse slice.
+        // So we expand Feed inline: render each FeedItem as a Feed with single item, so collapse slices rows.
+        <Feed key={fi.url || fi.title} items={[fi]} singleLine={singleLine} />
       ))}
     />
   );
