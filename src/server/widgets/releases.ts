@@ -16,6 +16,7 @@ interface GitHubRelease {
 interface GitLabRelease {
   name?: string | null;
   tag_name?: string;
+  description?: string | null;
   _links?: { self?: string };
   released_at?: string;
 }
@@ -147,6 +148,7 @@ async function fetchReleases(
     url: r._links?.self ?? `https://${host}/${path}/-/releases`,
     published: r.released_at ?? null,
     source,
+    notes: r.description ?? null,
   }));
 }
 

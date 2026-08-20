@@ -20,22 +20,27 @@ interface ParsedFeed {
   items: ParserItem[];
 }
 
+const YT_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+const PLAYLIST_PREFIX = 'playlist:';
+const CACHE_TTL_MS = 60 * 60 * 1000;
+
+// ponytail: simple regex cache, handle lookup via youtube @ page (no API key) — kept as fallback, config prefers UC IDs
+const handleChannelCache = new Map<string, string>();
+
 function isChannelId(channel: string): boolean {
   return /^UC[A-Za-z0-9_-]{22}$/.test(channel);
 }
 
-function feedUrlFor(channel: string): string {
-  if (isChannelId(channel)) {
-    return `https://www.youtube.com/feeds/videos.xml?channel_id=${channel}`;
+function feedUrlForId(id: string, includeShorts: boolean): string {
+  if (id.startsWith(PLAYLIST_PREFIX)) {
+    return `https://www.youtube.com/feeds/videos.xml?playlist_id=${encodeURIComponent(id.slice(PLAYLIST_PREFIX.length))}`;
   }
-  const handle = channel.startsWith('@') ? channel.slice(1) : channel;
-  // deprecated ?user= path kept for backward compat but YouTube no longer serves
-  // handles via ?user= — callers should resolve handles to channel_id first
-  return `https://www.youtube.com/feeds/videos.xml?user=${encodeURIComponent(handle)}`;
+  if (!includeShorts && id.startsWith('UC')) {
+    const playlistId = 'UULF' + id.slice(2);
+    return `https://www.youtube.com/feeds/videos.xml?playlist_id=${playlistId}`;
+  }
+  return `https://www.youtube.com/feeds/videos.xml?channel_id=${id}`;
 }
-
-// ponytail: simple regex cache, handle lookup via youtube @ page (no API key)
-const handleChannelCache = new Map<string, string>();
 
 export function extractChannelId(html: string): string | null {
   const patterns = [
@@ -60,7 +65,7 @@ async function resolveHandleToChannelId(
   if (cached) return cached;
   const clean = rawHandle.replace(/^@/, '');
   const html = await fetchText(ctx, `https://www.youtube.com/@${encodeURIComponent(clean)}`, {
-    headers: { 'User-Agent': 'Mozilla/5.0' },
+    headers: { 'User-Agent': YT_UA },
   });
   const id = extractChannelId(html);
   if (!id) throw new Error(`Could not resolve handle @${clean} to channel_id`);
@@ -71,74 +76,84 @@ async function resolveHandleToChannelId(
 async function feedUrlsForChannels(
   ctx: WidgetFetchContext,
   channels: string[],
-): Promise<Array<{ url: string; source: string }>> {
+  includeShorts: boolean,
+): Promise<Array<{ url: string; source: string; cacheKey: string }>> {
   const results = await Promise.all(
     channels.map(async (c) => {
-      if (isChannelId(c)) {
-        return { url: `https://www.youtube.com/feeds/videos.xml?channel_id=${c}`, source: c };
-      }
-      if (c.startsWith('@')) {
-        try {
-          const id = await resolveHandleToChannelId(ctx, c);
-          return { url: `https://www.youtube.com/feeds/videos.xml?channel_id=${id}`, source: c };
-        } catch {
-          return { url: feedUrlFor(c), source: c };
+      let id = c;
+      if (!isChannelId(c) && !c.startsWith(PLAYLIST_PREFIX) && !c.startsWith('UC')) {
+        const needsResolve = c.startsWith('@') || !isChannelId(c);
+        if (needsResolve) {
+          try {
+            const handle = c.startsWith('@') ? c : `@${c}`;
+            id = await resolveHandleToChannelId(ctx, handle);
+          } catch {
+            id = c;
+          }
         }
       }
-      try {
-        const id = await resolveHandleToChannelId(ctx, `@${c}`);
-        return { url: `https://www.youtube.com/feeds/videos.xml?channel_id=${id}`, source: c };
-      } catch {
-        return { url: feedUrlFor(c), source: c };
-      }
+      const url = feedUrlForId(id, includeShorts);
+      const cacheKey = id;
+      return { url, source: c, cacheKey };
     }),
   );
   return results;
 }
 
-/** Default link, or the configured template with {VIDEO-ID} from the v= param. */
 function videoUrlFor(link: string, template: string | undefined): string {
-  const id = new URL(link).searchParams.get('v') ?? '';
-  return template
-    ? template.replace('{VIDEO-ID}', id)
-    : `https://www.youtube.com/watch?v=${id}`;
+  try {
+    const id = new URL(link).searchParams.get('v') ?? '';
+    if (!id) return link || '#';
+    return template ? template.replace('{VIDEO-ID}', id) : `https://www.youtube.com/watch?v=${id}`;
+  } catch {
+    return link || '#';
+  }
 }
 
 registerWidget('videos', async (ctx, config) => {
   const cfg = videosSchema.parse(config);
+  const includeShorts = cfg['include-shorts'] ?? false;
   const parser = new Parser<VideoFeedSummary, ParserItem>({
     customFields: { item: [['media:group', 'mediaGroup']] },
   });
 
-  const channelFeeds = await feedUrlsForChannels(ctx, cfg.channels);
-  const feeds = [
-    ...channelFeeds,
-    ...cfg.playlists.map((p) => ({
-      url: `https://www.youtube.com/feeds/videos.xml?playlist_id=${encodeURIComponent(p)}`,
-      source: p,
-    })),
-  ];
+  const channelFeeds = await feedUrlsForChannels(ctx, cfg.channels, includeShorts);
+  const playlistFeeds = cfg.playlists.map((p) => {
+    const pid = p.startsWith(PLAYLIST_PREFIX) ? p : `${PLAYLIST_PREFIX}${p}`;
+    return { url: feedUrlForId(pid, includeShorts), source: p, cacheKey: pid };
+  });
+  const feeds = [...channelFeeds, ...playlistFeeds];
 
   const settled = await Promise.allSettled(
-    feeds.map(async ({ url, source }) => {
-      const raw = await fetchText(ctx, url);
-      const parsed = (await parser.parseString(raw)) as ParsedFeed;
-      return parsed.items.flatMap((item) =>
-        !cfg['include-shorts'] && (item.link ?? '').includes('/shorts/')
-          ? []
-          : [
-              {
-                title: item.title ?? '',
-                url: videoUrlFor(item.link ?? '', cfg['video-url-template']),
-                channel: parsed.title ?? source,
-                published: item.isoDate ?? item.pubDate ?? null,
-                thumbnail:
-                  item.mediaGroup?.['media:thumbnail']?.[0]?.$?.url ??
-                  item.enclosure?.url ??
-                  null,
-              } as Video,
-            ],
-      );
+    feeds.map(async ({ url, source, cacheKey }) => {
+      const fullCacheKey = `videos:feed:${cacheKey}::${cfg['video-url-template'] ?? ''}::${includeShorts ? 'shorts' : 'noshorts'}`;
+      const cached = ctx.cache.get<Video[]>(fullCacheKey);
+      if (cached) return cached;
+      try {
+        const raw = await fetchText(ctx, url, { headers: { 'User-Agent': YT_UA } });
+        const parsed = (await parser.parseString(raw)) as ParsedFeed;
+        const videos = parsed.items.flatMap((item) =>
+          !includeShorts && (item.link ?? '').includes('/shorts/')
+            ? []
+            : [
+                {
+                  title: item.title ?? '',
+                  url: videoUrlFor(item.link ?? '', cfg['video-url-template']),
+                  channel: parsed.title ?? source,
+                  published: item.isoDate ?? item.pubDate ?? null,
+                  thumbnail:
+                    item.mediaGroup?.['media:thumbnail']?.[0]?.$?.url ??
+                    item.enclosure?.url ??
+                    null,
+                } as Video,
+              ],
+        );
+        ctx.cache.set(fullCacheKey, videos, CACHE_TTL_MS);
+        return videos;
+      } catch (err) {
+        if (cached) return cached;
+        throw err;
+      }
     }),
   );
 
@@ -152,6 +167,6 @@ registerWidget('videos', async (ctx, config) => {
     return tb - ta;
   });
 
-  const limit = cfg.limit ?? 10;
+  const limit = cfg.limit ?? 25;
   return { videos: videos.slice(0, limit) };
 });

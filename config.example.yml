@@ -113,11 +113,11 @@ pages:
             style: grid-cards
             channels:
               - UCsBjURrPoezykLs9EqgamOA  # Fireship
-              - "@ByCloud"
-              - "@BetterStack"
-              - "@CalebCurry"
-              - "@bugsnag"  # Bugs Lab
-              - "@JiaBinHuang"
+              - UC6r0JH23PKZfogSwn2Q-oMw  # @ByCloud
+              - UCkVfrGwV-iG9bSsgCbrNPxQ  # @BetterStack
+              - UCQx_JXdo1Ug5GYmvJ6tgHIw  # @CalebCurry
+              - UCwpXw5c2M9Ry4odACXsebdA  # @bugsnag / Bugsnag
+              - UCkQS_dP6GJTmYnMlox-YiKQ  # @JiaBinHuang
           - type: repository
             repository: glanceapp/glance
             pull-requests-limit: 5
@@ -167,9 +167,9 @@ pages:
                 limit: 6
                 style: vertical-list
                 channels:
-                  - UCsBjURrPoezykLs9EqgamOA
-                  - "@ByCloud"
-                  - "@BetterStack"
+                  - UCsBjURrPoezykLs9EqgamOA  # Fireship
+                  - UC6r0JH23PKZfogSwn2Q-oMw  # @ByCloud
+                  - UCkVfrGwV-iG9bSsgCbrNPxQ  # @BetterStack
               - type: videos
                 title: Minecraft — Unstable Universe & friends
                 limit: 9
@@ -182,7 +182,6 @@ pages:
                   - UCk2uxbWi5py_iJXaEsh2YRA  # @SpokeIsHere
           - type: reddit
             subreddit: selfhosted
-            sort-by: hot
             limit: 10
             collapse-after: 5
             show-thumbnails: true

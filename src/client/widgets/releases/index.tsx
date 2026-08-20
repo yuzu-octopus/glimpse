@@ -14,16 +14,55 @@ function SourceIcon({ source }: { source: Release['source'] }) {
   return <Container size={16} className={styles.icon} />;
 }
 
-function ReleaseRow({ release, showIcon }: { release: Release; showIcon: boolean }) {
-  const [open, setOpen] = useState(false);
+function ReleaseRow({
+  release,
+  showIcon,
+  defaultExpanded,
+}: {
+  release: Release;
+  showIcon: boolean;
+  defaultExpanded?: boolean;
+}) {
+  const [open, setOpen] = useState(Boolean(defaultExpanded));
   const age = useRelativeTime(
     release.published ? (Date.now() - Date.parse(release.published)) / 1000 : 0,
   );
-  const hasNotes = Boolean(release.notes?.trim());
+  const trimmed = release.notes?.trim() ?? '';
+  const hasNotes = trimmed.length > 0;
+  const preview = hasNotes ? trimmed.replace(/\s+/g, ' ').slice(0, 160) : '';
+  const isLong = hasNotes && trimmed.length > preview.length;
+  const needsClamp = hasNotes && trimmed.replace(/\s+/g, ' ').length > 80;
+
+  const toggle = () => {
+    if (hasNotes) setOpen((v) => !v);
+  };
+
   return (
-    <div className={styles.row}>
+    <div
+      className={`${styles.row} ${hasNotes ? styles.rowExpandable : ''} ${open ? styles.rowOpen : ''}`}
+      onClick={hasNotes ? toggle : undefined}
+      role={hasNotes ? 'button' : undefined}
+      tabIndex={hasNotes ? 0 : undefined}
+      aria-expanded={hasNotes ? open : undefined}
+      onKeyDown={
+        hasNotes
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggle();
+              }
+            }
+          : undefined
+      }
+    >
       <div className={styles.rowHeader}>
-        <Link href={release.url} target="_blank" className={styles.title} hasUnderline={false}>
+        <Link
+          href={release.url}
+          target="_blank"
+          className={styles.title}
+          hasUnderline={false}
+          onClick={(e) => e.stopPropagation()}
+        >
           {release.name || release.tag}
         </Link>
         {hasNotes ? (
@@ -32,7 +71,10 @@ function ReleaseRow({ release, showIcon }: { release: Release; showIcon: boolean
             aria-label={open ? 'Hide release notes' : 'Show release notes'}
             aria-expanded={open}
             className={styles.expandBtn}
-            onClick={() => setOpen((v) => !v)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen((v) => !v);
+            }}
           >
             <ChevronDown size={14} className={open ? styles.chevronOpen : styles.chevron} />
           </button>
@@ -43,7 +85,45 @@ function ReleaseRow({ release, showIcon }: { release: Release; showIcon: boolean
         {release.tag ? <span className={styles.tag}>{release.tag}</span> : null}
         {release.published ? <span>· {age}</span> : null}
       </div>
-      {hasNotes && open ? <pre className={styles.notes}>{release.notes}</pre> : null}
+      {hasNotes ? (
+        <div className={styles.body}>
+          {!open ? (
+            <div className={styles.previewRow}>
+              <span className={`${styles.preview} ${needsClamp ? styles.previewClamp : ''}`}>
+                {preview}
+                {isLong ? '…' : ''}
+              </span>
+              {isLong ? (
+                <button
+                  type="button"
+                  className={styles.toggle}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpen(true);
+                  }}
+                >
+                  Show more
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+          <div className={`${styles.collapse} ${open ? styles.collapseOpen : ''}`}>
+            <div className={styles.collapseInner}>
+              <pre className={styles.notes}>{trimmed}</pre>
+              <button
+                type="button"
+                className={styles.toggle}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpen(false);
+                }}
+              >
+                Show less
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -60,7 +140,14 @@ function Releases({ config, data, error }: WidgetComponentProps) {
       cssClass={cfg['css-class']}
       error={error}
       collapseAfter={cfg['collapse-after']}
-      items={releases.map((r) => <ReleaseRow key={r.url + r.tag} release={r} showIcon={showIcon} />)}
+      items={releases.map((r, i) => (
+        <ReleaseRow
+          key={r.url + r.tag}
+          release={r}
+          showIcon={showIcon}
+          defaultExpanded={i === 0 && Boolean(r.notes?.trim())}
+        />
+      ))}
     />
   );
 }

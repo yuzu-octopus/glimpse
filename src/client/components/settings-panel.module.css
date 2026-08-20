@@ -138,12 +138,11 @@
   cursor: pointer;
 }
 
-/* Hover — subtle muted accent, distinct from selected primary.
-   Blank-out was caused by overriding the selected --_card-ring;
-   now hover only applies to non-selected and uses subdue. */
+/* Hover — 1px subdue ring only, distinct from selected 2px primary. No
+   background lighten so the card stays flat; border/ring change is the
+   sole hover affordance. */
 .card:hover:not([data-selected='true']) {
   --_card-ring: inset 0 0 0 1px var(--color-text-subdue);
-  background-color: var(--color-widget-background-highlight);
 }
 
 /* glance .theme-color */
