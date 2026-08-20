@@ -138,11 +138,10 @@
   cursor: pointer;
 }
 
-/* Hover — 1px subdue ring only, distinct from selected 2px primary. No
-   background lighten so the card stays flat; border/ring change is the
-   sole hover affordance. */
+/* Hover — 1px accent ring only, distinct from selected 2px primary.
+   Minimal border change (accent purple muted) — no background lighten. */
 .card:hover:not([data-selected='true']) {
-  --_card-ring: inset 0 0 0 1px var(--color-text-subdue);
+  --_card-ring: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 55%, transparent);
 }
 
 /* glance .theme-color */

@@ -247,13 +247,13 @@ describe('SettingsPanel layout contract', () => {
     // max-height, so switching tabs never changes the dialog size
     expect(css).toMatch(/\.content\s*\{[^}]*height:\s*calc\(85vh - 96px\)/);
 
-    // hover uses muted accent (subdue 1px ring), distinct from selected primary 2px ring
+    // hover uses muted accent (primary 55% mix 1px ring), distinct from selected 2px solid primary
     // — no background lightening, only border/corner change
     const hoverRule = css.match(/\.card:hover[^{]*\{[^}]*\}/)?.[0] ?? '';
-    expect(hoverRule).toContain('var(--color-text-subdue)');
+    expect(hoverRule).toContain('color-mix');
+    expect(hoverRule).toContain('var(--color-primary)');
+    expect(hoverRule).toContain('55%');
     expect(hoverRule).not.toContain('var(--color-widget-background-highlight)');
-    // selected is primary, hover should not be primary
-    expect(hoverRule).not.toContain('var(--color-primary)');
   });
 });
 
