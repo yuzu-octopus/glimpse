@@ -37,8 +37,8 @@
 }
 
 @media (max-width: 768px) {
-  .hideDesktopNav {
-    display: block;
+  .headerContainer {
+    display: none;
   }
   .mobileNavigationOffset {
     display: block;

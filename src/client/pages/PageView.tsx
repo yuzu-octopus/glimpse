@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useContext, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Banner, Card, Skeleton, Tab, TabList, Text } from '@astryxdesign/core';
 import { ChevronDown } from 'lucide-react';
 import type { WidgetPayload } from '../../shared/api';
@@ -199,12 +199,25 @@ function WidgetSlot({ widget }: { widget: WidgetPayload }) {
 
 /** group (tabs) and split-column (side-by-side) containers. */
 function ContainerWidget({ widget }: { widget: WidgetPayload }) {
+  const globalHide = useContext(HideHeadersContext);
   const children = widget.widgets ?? [];
   const [active, setActive] = useState(0);
 
   if (widget.type === 'split-column') {
     return (
       <div className={styles.splitColumn}>
+        {children.map((w, i) => (
+          <WidgetSlot key={widgetKey(w, i)} widget={w} />
+        ))}
+      </div>
+    );
+  }
+  // When page hide-headers is true, hide the tab strip entirely. Stack
+  // all tab panes so no content is trapped behind hidden navigation; the
+  // stack gap reuses --widget-gap to stay uniform with columnWidgets.
+  if (globalHide) {
+    return (
+      <div className={styles.groupStack}>
         {children.map((w, i) => (
           <WidgetSlot key={widgetKey(w, i)} widget={w} />
         ))}

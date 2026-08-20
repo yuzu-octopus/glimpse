@@ -83,11 +83,16 @@ describe('glanceRamp (light inversion)', () => {
 });
 
 describe('sources', () => {
-  it('sourceFromBase16 maps base00/base0D/base08 and positive=primary', () => {
+  it('sourceFromBase16 maps base00/base0D/base08 and surfaces vibrant accents (positive=base0B distinct from primary)', () => {
     const s = sourceFromBase16('t', 'T', presetById('catppuccin-mocha').dark, 'dark');
     expect(s.id).toBe('t');
     expect(s.variant).toBe('dark');
-    expect(s.positive).toEqual(s.primary);
+    expect(s.positive).toEqual(s.success);
+    expect(s.positive).not.toEqual(s.primary);
+    expect(s.warning).toBeDefined();
+    expect(s.info).toBeDefined();
+    expect(s.magenta).toBeDefined();
+    expect(s.orange).toBeDefined();
     expect(s.bg.h).toBeGreaterThanOrEqual(0);
     expect(s.bg.l).toBeGreaterThan(0);
     expect(s.negative).not.toEqual(s.primary);
@@ -97,7 +102,9 @@ describe('sources', () => {
     const s = sourceFromHslBlock('t', 'T', DEFAULT_BG);
     expect(s.primary).toEqual({ h: 43, s: 50, l: 70 });
     expect(s.negative).toEqual({ h: 0, s: 70, l: 70 });
-    expect(s.positive).toEqual(s.primary);
+    expect(s.positive).toEqual({ h: 135, s: 94, l: 66 });
+    expect(s.success).toEqual(s.positive);
+    expect(s.warning).toEqual({ h: 45, s: 100, l: 70 });
     expect(s.variant).toBe('dark');
   });
 
@@ -119,10 +126,12 @@ describe('sources', () => {
     expect(pair.dark.bg.l).toBeLessThan(pair.light.bg.l);
   });
 
-  it('sourcePairFromPreset falls back to the dark side when no light exists', () => {
+  it('sourcePairFromPreset derives light via luminance inversion when no light exists', () => {
     const darkOnly = { ...presetById('catppuccin-mocha'), light: undefined };
     const pair = sourcePairFromPreset(darkOnly);
-    expect(pair.light).toEqual(pair.dark);
+    expect(pair.light.variant).toBe('light');
+    expect(pair.light.bg.l).toBeGreaterThan(50);
+    expect(pair.dark.bg.l).toBeLessThan(50);
   });
 });
 
@@ -160,7 +169,8 @@ describe('buildGlimpseTheme', () => {
     expect(t['--color-widget-content-border']).toBe(ld('hsl(240 8% 5%)', 'hsl(240 8% 13%)'));
     expect(t['--color-text-highlight']).toBe(ld('hsl(240 8% 15%)', 'hsl(240 8% 85%)'));
     expect(t['--color-primary']).toBe(ld('hsl(43 50% 70%)', 'hsl(43 50% 70%)'));
-    expect(t['--color-positive']).toBe(t['--color-primary']);
+    expect(t['--color-positive']).toBe(ld('hsl(135 94% 66%)', 'hsl(135 94% 66%)'));
+    expect(t['--color-positive']).not.toBe(t['--color-primary']);
     expect(t['--color-separator']).toBe(t['--color-widget-content-border']);
     expect(t['--color-negative']).toBe(ld('hsl(0 70% 70%)', 'hsl(0 70% 70%)'));
   });
@@ -185,10 +195,12 @@ describe('buildGlimpseTheme', () => {
     expect(t['--color-icon-disabled']).toBe(t['--color-text-subdue']);
     expect(t['--color-icon-accent']).toBe(t['--color-primary']);
     expect(t['--color-accent']).toBe(t['--color-primary']);
-    expect(t['--color-accent-muted']).toBe(t['--color-primary']);
+    expect(t['--color-accent-muted']).not.toBe(t['--color-primary']);
     expect(t['--color-success']).toBe(t['--color-positive']);
+    expect(t['--color-success']).not.toBe(t['--color-primary']);
     expect(t['--color-error']).toBe(t['--color-negative']);
-    expect(t['--color-warning']).toBe(t['--color-primary']);
+    expect(t['--color-warning']).not.toBe(t['--color-primary']);
+    expect(t['--color-info']).toBe(t['--color-accent-muted']);
     expect(t['--color-track']).toBe(t['--color-widget-background-highlight']);
     expect(t['--color-skeleton']).toBe(t['--color-widget-content-border']);
   });

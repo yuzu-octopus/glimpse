@@ -3,6 +3,7 @@ import { videosSchema } from '../../shared/widgets/keyed';
 import { fetchText } from './http';
 import { registerWidget } from './registry';
 import type { Video } from '../../shared/widgets/payloads';
+import type { WidgetFetchContext } from './registry';
 
 type ParserItem = Parser.Item & {
   mediaGroup?: {
@@ -19,12 +20,81 @@ interface ParsedFeed {
   items: ParserItem[];
 }
 
+function isChannelId(channel: string): boolean {
+  return /^UC[A-Za-z0-9_-]{22}$/.test(channel);
+}
+
 function feedUrlFor(channel: string): string {
-  if (/^UC[A-Za-z0-9_-]{22}$/.test(channel)) {
+  if (isChannelId(channel)) {
     return `https://www.youtube.com/feeds/videos.xml?channel_id=${channel}`;
   }
   const handle = channel.startsWith('@') ? channel.slice(1) : channel;
+  // deprecated ?user= path kept for backward compat but YouTube no longer serves
+  // handles via ?user= — callers should resolve handles to channel_id first
   return `https://www.youtube.com/feeds/videos.xml?user=${encodeURIComponent(handle)}`;
+}
+
+// ponytail: simple regex cache, handle lookup via youtube @ page (no API key)
+const handleChannelCache = new Map<string, string>();
+
+export function extractChannelId(html: string): string | null {
+  const patterns = [
+    /"externalId":"(UC[^"]+)"/,
+    /channel_id=(UC[A-Za-z0-9_-]{22,})/,
+    /"channelId":"(UC[^"]+)"/,
+    /"browseId":"(UC[^"]+)"/,
+  ];
+  for (const p of patterns) {
+    const m = html.match(p);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+async function resolveHandleToChannelId(
+  ctx: WidgetFetchContext,
+  rawHandle: string,
+): Promise<string> {
+  const key = rawHandle.toLowerCase();
+  const cached = handleChannelCache.get(key);
+  if (cached) return cached;
+  const clean = rawHandle.replace(/^@/, '');
+  const html = await fetchText(ctx, `https://www.youtube.com/@${encodeURIComponent(clean)}`, {
+    headers: { 'User-Agent': 'Mozilla/5.0' },
+  });
+  const id = extractChannelId(html);
+  if (!id) throw new Error(`Could not resolve handle @${clean} to channel_id`);
+  handleChannelCache.set(key, id);
+  return id;
+}
+
+async function feedUrlsForChannels(
+  ctx: WidgetFetchContext,
+  channels: string[],
+): Promise<Array<{ url: string; source: string }>> {
+  const out: Array<{ url: string; source: string }> = [];
+  for (const c of channels) {
+    if (isChannelId(c)) {
+      out.push({ url: `https://www.youtube.com/feeds/videos.xml?channel_id=${c}`, source: c });
+    } else if (c.startsWith('@')) {
+      try {
+        const id = await resolveHandleToChannelId(ctx, c);
+        out.push({ url: `https://www.youtube.com/feeds/videos.xml?channel_id=${id}`, source: c });
+      } catch {
+        // fallback: keep deprecated user feed as last resort (will likely 404 but preserves partial feeds)
+        out.push({ url: feedUrlFor(c), source: c });
+      }
+    } else {
+      // bare handle without @ or unknown — try handle resolution, fallback to user
+      try {
+        const id = await resolveHandleToChannelId(ctx, `@${c}`);
+        out.push({ url: `https://www.youtube.com/feeds/videos.xml?channel_id=${id}`, source: c });
+      } catch {
+        out.push({ url: feedUrlFor(c), source: c });
+      }
+    }
+  }
+  return out;
 }
 
 /** Default link, or the configured template with {VIDEO-ID} from the v= param. */
@@ -41,8 +111,9 @@ registerWidget('videos', async (ctx, config) => {
     customFields: { item: [['media:group', 'mediaGroup']] },
   });
 
+  const channelFeeds = await feedUrlsForChannels(ctx, cfg.channels);
   const feeds = [
-    ...cfg.channels.map((c) => ({ url: feedUrlFor(c), source: c })),
+    ...channelFeeds,
     ...cfg.playlists.map((p) => ({
       url: `https://www.youtube.com/feeds/videos.xml?playlist_id=${encodeURIComponent(p)}`,
       source: p,

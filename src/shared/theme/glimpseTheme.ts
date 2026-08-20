@@ -11,7 +11,7 @@ import {
   type TokenValue,
 } from '@astryxdesign/core/theme';
 import { neutralTheme } from '@astryxdesign/theme-neutral/built';
-import { hexToRgb, rgbToHsl, type Base16Colors } from './base16';
+import { hexToRgb, invertLuminance, rgbToHsl, type Base16Colors } from './base16';
 import { glanceRamp, type GlanceRamp, type Hsl } from './glanceRamp';
 import type { Preset } from './presets';
 
@@ -23,6 +23,11 @@ export interface ThemeSource {
   primary: Hsl;
   negative: Hsl;
   positive: Hsl;
+  warning: Hsl;
+  success: Hsl;
+  info: Hsl;
+  magenta: Hsl;
+  orange: Hsl;
 }
 
 export interface ThemeSourcePair {
@@ -31,7 +36,9 @@ export interface ThemeSourcePair {
 }
 
 /** Derive a source from a base16 palette: bg=base00, primary=base0D,
- * negative=base08, positive defaults to primary (glance has no green). */
+ * negative=base08, positive=base0B, warning=base0A, info=base0C,
+ * magenta=base0E, orange=base09. This surfaces the full base16 vibrancy
+ * instead of collapsing to just blues/purples. */
 export function sourceFromBase16(
   id: string,
   name: string,
@@ -42,24 +49,34 @@ export function sourceFromBase16(
     const [h, s, l] = rgbToHsl(r, g, b);
     return { h, s, l };
   };
-  const [br, bg, bb] = hexToRgb(colors.base00);
-  const [pr, pg, pb] = hexToRgb(colors.base0D);
-  const [nr, ng, nb] = hexToRgb(colors.base08);
-  const primary = toHsl(pr, pg, pb);
+  const hslOf = (key: keyof Base16Colors): Hsl => {
+    const [r, g, b] = hexToRgb(colors[key]);
+    return toHsl(r, g, b);
+  };
   return {
     id,
     name,
     variant,
-    bg: toHsl(br, bg, bb),
-    primary,
-    negative: toHsl(nr, ng, nb),
-    positive: primary,
+    bg: hslOf('base00'),
+    primary: hslOf('base0D'),
+    negative: hslOf('base08'),
+    positive: hslOf('base0B'),
+    warning: hslOf('base0A'),
+    success: hslOf('base0B'),
+    info: hslOf('base0C'),
+    magenta: hslOf('base0E'),
+    orange: hslOf('base09'),
   };
 }
 
 /** Glance documented fallbacks (docs/configuration.md §Theme). */
 const DEFAULT_PRIMARY: Hsl = { h: 43, s: 50, l: 70 };
 const DEFAULT_NEGATIVE: Hsl = { h: 0, s: 70, l: 70 };
+const DEFAULT_WARNING: Hsl = { h: 45, s: 100, l: 70 };
+const DEFAULT_SUCCESS: Hsl = { h: 135, s: 94, l: 66 };
+const DEFAULT_INFO: Hsl = { h: 191, s: 97, l: 77 };
+const DEFAULT_MAGENTA: Hsl = { h: 326, s: 100, l: 74 };
+const DEFAULT_ORANGE: Hsl = { h: 24, s: 100, l: 65 };
 
 export function sourceFromHslBlock(
   id: string,
@@ -70,6 +87,7 @@ export function sourceFromHslBlock(
   positive?: Hsl,
   variant: 'dark' | 'light' = 'dark',
 ): ThemeSource {
+  const pos = positive ?? DEFAULT_SUCCESS;
   return {
     id,
     name,
@@ -77,17 +95,23 @@ export function sourceFromHslBlock(
     bg,
     primary,
     negative,
-    positive: positive ?? primary,
+    positive: pos,
+    warning: DEFAULT_WARNING,
+    success: pos,
+    info: DEFAULT_INFO,
+    magenta: DEFAULT_MAGENTA,
+    orange: DEFAULT_ORANGE,
   };
 }
 
 /** Dark side from preset.dark; light side from preset.light when the family
- * ships one, else the dark side itself. */
+ * ships one, else derive light via luminance inversion so light mode is
+ * actually light for dark-only presets (dracula etc). */
 export function sourcePairFromPreset(preset: Preset): ThemeSourcePair {
   const dark = sourceFromBase16(preset.id, preset.name, preset.dark, 'dark');
   const light = preset.light
     ? sourceFromBase16(preset.id, preset.name, preset.light, 'light')
-    : dark;
+    : sourceFromBase16(preset.id, preset.name, invertLuminance(preset.dark), 'light');
   return { dark, light };
 }
 
@@ -160,8 +184,14 @@ export function glanceColorVars(
     pair.light.positive,
     true,
   );
-  const onAccentLight = pair.light.primary.l >= 55 ? '#000000' : '#FFFFFF';
-  const onAccentDark = pair.dark.primary.l >= 55 ? '#000000' : '#FFFFFF';
+  const hslStr = (c: Hsl) => `hsl(${Math.round(c.h * 100) / 100} ${Math.round(c.s * 100) / 100}% ${Math.round(c.l * 100) / 100}%)`;
+  const onFor = (c: Hsl) => (c.l >= 55 ? '#000000' : '#FFFFFF');
+  const onAccentLight = onFor(pair.light.primary);
+  const onAccentDark = onFor(pair.dark.primary);
+  const onSuccessLight = onFor(pair.light.success);
+  const onSuccessDark = onFor(pair.dark.success);
+  const onWarningLight = onFor(pair.light.warning);
+  const onWarningDark = onFor(pair.dark.warning);
 
   const out: Record<string, [string, string]> = {};
   for (const [key, cssName] of RAMP_VARS) {
@@ -195,14 +225,23 @@ export function glanceColorVars(
     '--color-icon-disabled': tuple(light.textSubdue, dark.textSubdue),
     '--color-icon-accent': tuple(light.primary, dark.primary),
     '--color-accent': tuple(light.primary, dark.primary),
-    '--color-accent-muted': tuple(light.primary, dark.primary),
-    '--color-success': tuple(light.positive, dark.positive),
+    '--color-accent-muted': tuple(hslStr(pair.light.info), hslStr(pair.dark.info)),
+    '--color-success': tuple(hslStr(pair.light.success), hslStr(pair.dark.success)),
     '--color-error': tuple(light.negative, dark.negative),
-    '--color-warning': tuple(light.primary, dark.primary),
+    '--color-warning': tuple(hslStr(pair.light.warning), hslStr(pair.dark.warning)),
+    '--color-info': tuple(hslStr(pair.light.info), hslStr(pair.dark.info)),
+    '--color-tag-orange': tuple(hslStr(pair.light.orange), hslStr(pair.dark.orange)),
+    '--color-tag-magenta': tuple(hslStr(pair.light.magenta), hslStr(pair.dark.magenta)),
+    '--color-tag-cyan': tuple(hslStr(pair.light.info), hslStr(pair.dark.info)),
+    '--color-tag-yellow': tuple(hslStr(pair.light.warning), hslStr(pair.dark.warning)),
+    '--color-tag-green': tuple(hslStr(pair.light.success), hslStr(pair.dark.success)),
+    '--color-tag-blue': tuple(light.primary, dark.primary),
+    '--color-tag-pink': tuple(hslStr(pair.light.magenta), hslStr(pair.dark.magenta)),
     '--color-track': tuple(light.widgetBackgroundHighlight, dark.widgetBackgroundHighlight),
     '--color-skeleton': tuple(light.widgetContentBorder, dark.widgetContentBorder),
     '--color-on-accent': tuple(onAccentLight, onAccentDark),
-    '--color-on-success': tuple(onAccentLight, onAccentDark),
+    '--color-on-success': tuple(onSuccessLight, onSuccessDark),
+    '--color-on-warning': tuple(onWarningLight, onWarningDark),
     '--color-on-error': tuple('#FFFFFF', '#FFFFFF'),
   });
   return out;

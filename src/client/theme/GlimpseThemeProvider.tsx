@@ -80,8 +80,11 @@ function applyConfigTheme(pair: ThemeSourcePair, theme?: ThemeConfig): ThemeSour
   const bg = parse(theme['background-color'], FALLBACK_BG) ?? side.bg;
   const primary = parse(theme['primary-color'], FALLBACK_PRIMARY) ?? side.primary;
   const negative = parse(theme['negative-color'], FALLBACK_NEGATIVE) ?? side.negative;
-  const positive = parse(theme['positive-color'], primary) ?? primary;
-  return { ...pair, [authored]: { ...side, bg, primary, negative, positive } };
+  const positive = parse(theme['positive-color'], primary) ?? side.positive;
+  // Keep vibrant:: positive drives success, retain other accents from the preset
+  // unless the user explicitly set them (glance only exposes positive, so success
+  // follows positive to keep green distinct from primary).
+  return { ...pair, [authored]: { ...side, bg, primary, negative, positive, success: positive, warning: side.warning, info: side.info, magenta: side.magenta, orange: side.orange } };
 }
 
 /** Injects the YAML custom-css-file contents (glance appends it last). */

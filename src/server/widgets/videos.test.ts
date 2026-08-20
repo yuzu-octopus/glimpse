@@ -47,9 +47,13 @@ describe('videos fetcher', () => {
     expect(data.videos[1].thumbnail).toBeNull();
   });
 
-  it('resolves @handles to the user feed', async () => {
+  it('resolves @handles to channel_id via handle page', async () => {
+    const handleHtml = `{"externalId":"UC1234567890123456789012"}`;
     const ctx = makeCtx(async (url) => {
-      expect(url).toBe('https://www.youtube.com/feeds/videos.xml?user=handle');
+      if (url.includes('/@handle')) {
+        return new Response(handleHtml, { status: 200 });
+      }
+      expect(url).toBe('https://www.youtube.com/feeds/videos.xml?channel_id=UC1234567890123456789012');
       return new Response(FEED, { status: 200 });
     });
     await videosFetcher()(ctx, { type: 'videos', channels: ['@handle'] });

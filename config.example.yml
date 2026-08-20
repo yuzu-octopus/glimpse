@@ -5,8 +5,8 @@ pages:
   - name: Home
     slug: home
     hide-headers: true
-    tiling: collage
-    min-column-width: 320
+    # columns (default) keeps small at 300px — preferred-size for clock/weather/calendar
+    # (previous collage+320 stretched small to ~500px). Social keeps collage as bento demo.
     head-widgets:
       - type: search
         placeholder: Search the web or jump with a bang…
@@ -175,11 +175,11 @@ pages:
                 limit: 9
                 style: grid-cards
                 channels:
-                  - "@UnstableUniverse"
-                  - "@ParrotX2"
-                  - "@Wemmbu"
-                  - "@FlameFrags"
-                  - "@SpokeIsHere"
+                  - UCGwHHBGD-1ysDvq1Z4xXw7g  # @UnstableUniverse
+                  - UCPLMPHT-d8GZOqL_AHJFdQQ  # @ParrotX2
+                  - UCkzzNLnuM-VsATWC53ehwOQ  # @Wemmbu (@wemmbumc)
+                  - UCkvg04omHN08nuKdvKZoNuA  # @FlameFrags
+                  - UCk2uxbWi5py_iJXaEsh2YRA  # @SpokeIsHere
           - type: reddit
             subreddit: selfhosted
             sort-by: hot

@@ -33,14 +33,13 @@ registerWidget('custom-api', async (ctx, config) => {
   }
 
   const headers: Record<string, string> = { ...cfg.headers };
+  if (!Object.keys(headers).some((k) => k.toLowerCase() === 'user-agent')) headers['User-Agent'] = 'glimpse/0.1 (https://github.com/glanceapp/glance)';
+  if (!Object.keys(headers).some((k) => k.toLowerCase() === 'accept')) headers['Accept'] = 'application/json';
   const method = cfg.method ?? 'GET';
   // Glance sends JSON bodies when body-type is json; a map body implies json
   // even when body-type is absent (glance default with a map body).
   const bodyIsMap = cfg.body !== undefined && typeof cfg.body !== 'string';
-  const hasContentType = Object.keys(headers).some(
-    (k) => k.toLowerCase() === 'content-type',
-  );
-  if ((cfg['body-type'] === 'json' || bodyIsMap) && !hasContentType) {
+  if ((cfg['body-type'] === 'json' || bodyIsMap) && !Object.keys(headers).some((k) => k.toLowerCase() === 'content-type')) {
     headers['content-type'] = 'application/json';
   }
 
@@ -94,12 +93,22 @@ registerWidget('custom-api', async (ctx, config) => {
     for (const key of FIELD_KEYS) {
       const expr = cfg.options[key];
       if (!expr) continue;
-      const value = evalFirst(expr, item);
+      const isJsonPath = expr.startsWith('$') || expr.startsWith('@');
+      const value = isJsonPath ? evalFirst(expr, item) : expr;
       if (key === 'title') mapped.title = value ?? '';
       else mapped[key] = value;
     }
+    // When options.path selects a scalar (e.g. $.stargazers_count → 36462),
+    // the scalar itself is the data to display. Fall back to it when no
+    // field maps to it — e.g. title="Stargazers" (literal) leaves value null.
+    if (item !== null && typeof item !== 'object') {
+      const scalar = String(item);
+      if (scalar !== '' && mapped.value === null) mapped.value = scalar;
+      if (mapped.title === '') mapped.title = scalar;
+    }
+    // Empty string list entry (JSONPath miss) yields no usable item — filter later hides it,
+    // but keeping title empty would render a blank row; use scalar fallback already handled.
     return mapped;
   });
-
   return { items, frameless: cfg.frameless ?? false };
 });

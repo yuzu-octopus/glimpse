@@ -38,7 +38,8 @@
   --font-size-h6: 11px;
 
   /* default dark ramp (glance defaults: bg 240 8 9, primary 43 50 70,
-     negative 0 70 70; positive defaults to primary) */
+     negative 0 70 70) + vibrant base16 dracula accents for pre-theme paint.
+     Light/dark tuples are injected at runtime via GlimpseThemeProvider. */
   --color-background: #151519;
   --color-widget-background: #17171c;
   --color-widget-content-border: #1e1e24;
@@ -56,9 +57,26 @@
   --color-text-base: #8b8b9c;
   --color-text-base-muted: #7b7b8e;
   --color-text-subdue: #525260;
-  --color-primary: #d9c38c;
-  --color-positive: #d9c38c;
-  --color-negative: #e87d7d;
+  --color-primary: #bd93f9;
+  --color-positive: #50fa7b;
+  --color-negative: #ff5555;
+  --color-success: #50fa7b;
+  --color-warning: #f1fa8c;
+  --color-info: #8be9fd;
+  --color-tag-orange: #ffb86c;
+  --color-tag-yellow: #f1fa8c;
+  --color-tag-green: #50fa7b;
+  --color-tag-cyan: #8be9fd;
+  --color-tag-blue: #bd93f9;
+  --color-tag-pink: #ff79c6;
+  --color-tag-magenta: #ff79c6;
+  --color-accent: #bd93f9;
+  --color-accent-muted: #8be9fd;
+  --color-error: #ff5555;
+  --color-on-accent: #000000;
+  --color-on-success: #000000;
+  --color-on-warning: #000000;
+  --color-on-error: #ffffff;
 }
 
 * {

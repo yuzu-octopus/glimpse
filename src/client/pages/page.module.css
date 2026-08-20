@@ -3,8 +3,11 @@
 .page {
   margin: 0 auto;
   padding-block: var(--widget-gap);
+  /* uniform bottom gap like glance .page — explicit to survive grid stretch / flex collapse */
+  padding-bottom: var(--widget-gap);
   padding-inline: var(--content-bounds-padding);
   width: 100%;
+  box-sizing: border-box;
   animation: pageContentEntrance 0.3s cubic-bezier(0.25, 1, 0.5, 1) backwards;
 }
 
@@ -53,7 +56,10 @@
 /* tiling: auto — balanced grid tiles. small/full are ignored here; the
    300px small-column rule is neutralized below. min() clamps the min track
    to the container width so a min wider than the viewport can't overflow.
-   grid-auto-flow: dense backfills holes left by span tiles (v2 layer 1). */
+   grid-auto-flow: dense backfills holes left by span tiles (v2 layer 1).
+   align-content: start keeps the grid packed to the top so the page's
+   bottom padding (var(--widget-gap)) is the only footer gap — consistent
+   across Home/Dev/Social regardless of column heights. */
 .autoTiling {
   display: grid;
   grid-template-columns: repeat(
@@ -62,11 +68,15 @@
   );
   grid-auto-flow: dense;
   align-items: start; /* ragged bottoms; no row equalization */
+  align-content: start;
 }
 
 /* tiling: collage — bento grid. Dense flow + JS-measured row spans
    (useCollageTiling sets --tile-row and inline grid-row: span N). Without
-   JS this degrades to the auto look: dense grid, auto rows. */
+   JS this degrades to the auto look: dense grid, auto rows. align-content:
+   start prevents a short rightmost tile from stretching the grid and leaving
+   a huge phantom gap below it (Social) while keeping Home's bottom padding
+   uniform at var(--widget-gap). */
 .collageTiling {
   display: grid;
   grid-template-columns: repeat(
@@ -76,16 +86,25 @@
   grid-auto-flow: dense;
   grid-auto-rows: var(--tile-row, auto);
   align-items: stretch; /* tiles fill their spanned cell */
+  align-content: start;
   container-type: inline-size;
 }
 
 /* auto/collage mode treats every column as a tile — kill the explicit-mode
-   widths (collage inherits the same grid-item behavior) */
+   widths. Small tiles get a preferred-size cap (360px ≈ glance small + gap)
+   so clock/weather/calendar stay compact and the composer respects the
+   element's natural size instead of stretching to ~500px per track. */
 .autoTiling .smallColumn,
+.collageTiling .smallColumn {
+  width: 100%;
+  max-width: 360px;
+  justify-self: start;
+  flex-shrink: 1;
+}
 .autoTiling .fullColumn,
-.collageTiling .smallColumn,
 .collageTiling .fullColumn {
   width: 100%;
+  min-width: 0;
   flex-shrink: 1;
 }
 
@@ -173,6 +192,11 @@
   grid-template-columns: 1fr 1fr;
   gap: var(--widget-gap);
   align-items: start;
+}
+
+.groupStack {
+  display: grid;
+  gap: var(--widget-gap);
 }
 
 /* Group tabs (widget-group.css port): flat inline text, uppercase, no pills.

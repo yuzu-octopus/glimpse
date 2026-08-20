@@ -2,7 +2,6 @@ import { redditSchema } from '../../shared/widgets/feeds';
 import { parseCacheDuration } from '../cache';
 import { registerWidget, type WidgetFetchContext } from './registry';
 import type { RedditPost } from '../../shared/widgets/payloads';
-
 interface RedditChild {
   data: {
     title?: string;
@@ -85,12 +84,16 @@ registerWidget('reddit', async (ctx, config) => {
 
   const res = await ctx.fetch(url, {
     headers,
-    signal: AbortSignal.timeout(
-      proxy?.timeout ? parseCacheDuration(proxy.timeout) : 15_000,
-    ),
+    signal: AbortSignal.timeout(proxy?.timeout ? parseCacheDuration(proxy.timeout) : 15_000),
     ...(proxy ? { proxy: proxy.url } : {}),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+  } as unknown as RequestInit & { proxy?: string });
+  if (!res.ok) {
+    const hint =
+      res.status === 403 && !cfg['app-auth']
+        ? ' — anonymous Reddit JSON is now blocked (403); add reddit.app-auth id/secret or a proxy/request-url-template to fetch via OAuth'
+        : '';
+    throw new Error(`HTTP ${res.status} for ${url}${hint}`);
+  }
   const listing = (await res.json()) as RedditListing;
 
   const posts: RedditPost[] = (listing.data?.children ?? []).flatMap((c) =>

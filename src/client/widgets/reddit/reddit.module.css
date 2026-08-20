@@ -106,12 +106,38 @@
 }
 
 .flair {
-  background: var(--color-separator);
-  color: var(--color-text-base-muted);
+  background: color-mix(in srgb, var(--color-tag-cyan) 14%, transparent);
+  color: var(--color-tag-cyan);
+  border: 1px solid color-mix(in srgb, var(--color-tag-cyan) 22%, transparent);
   border-radius: var(--border-radius);
   padding: 1px 5px;
   font-size: var(--font-size-h6);
 }
+
+.row:nth-child(5n+2) .flair {
+  background: color-mix(in srgb, var(--color-tag-yellow) 14%, transparent);
+  color: var(--color-tag-yellow);
+  border-color: color-mix(in srgb, var(--color-tag-yellow) 22%, transparent);
+}
+
+.row:nth-child(5n+3) .flair {
+  background: color-mix(in srgb, var(--color-tag-green) 14%, transparent);
+  color: var(--color-tag-green);
+  border-color: color-mix(in srgb, var(--color-tag-green) 22%, transparent);
+}
+
+.row:nth-child(5n+4) .flair {
+  background: color-mix(in srgb, var(--color-tag-pink) 14%, transparent);
+  color: var(--color-tag-pink);
+  border-color: color-mix(in srgb, var(--color-tag-pink) 22%, transparent);
+}
+
+.row:nth-child(5n+5) .flair {
+  background: color-mix(in srgb, var(--color-tag-orange) 14%, transparent);
+  color: var(--color-tag-orange);
+  border-color: color-mix(in srgb, var(--color-tag-orange) 22%, transparent);
+}
+
 
 .cardRow {
   display: flex;

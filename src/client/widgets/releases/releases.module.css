@@ -42,13 +42,40 @@
   margin-top: 2px;
 }
 
-/* glance .attachments > *: chip with separator bg, h6, radius */
+/* glance .attachments > *: chip with separator bg, h6, radius — now vibrant per tag */
 .tag {
   border-radius: var(--border-radius);
   padding: 1px 5px;
   font-size: var(--font-size-h6);
-  background-color: var(--color-separator);
+  border: 1px solid transparent;
+  background-color: color-mix(in srgb, var(--color-tag-yellow) 14%, transparent);
+  color: var(--color-tag-yellow);
 }
+
+.tag:nth-child(5n+2) {
+  background-color: color-mix(in srgb, var(--color-tag-green) 14%, transparent);
+  color: var(--color-tag-green);
+  border-color: color-mix(in srgb, var(--color-tag-green) 22%, transparent);
+}
+
+.tag:nth-child(5n+3) {
+  background-color: color-mix(in srgb, var(--color-tag-cyan) 14%, transparent);
+  color: var(--color-tag-cyan);
+  border-color: color-mix(in srgb, var(--color-tag-cyan) 22%, transparent);
+}
+
+.tag:nth-child(5n+4) {
+  background-color: color-mix(in srgb, var(--color-tag-blue) 14%, transparent);
+  color: var(--color-tag-blue);
+  border-color: color-mix(in srgb, var(--color-tag-blue) 22%, transparent);
+}
+
+.tag:nth-child(5n+5) {
+  background-color: color-mix(in srgb, var(--color-tag-pink) 14%, transparent);
+  color: var(--color-tag-pink);
+  border-color: color-mix(in srgb, var(--color-tag-pink) 22%, transparent);
+}
+
 
 /* glance .release-source-icon: 16px, opacity 0.4 */
 .icon {
