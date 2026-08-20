@@ -108,3 +108,25 @@ export async function fetchWidgetData<T = unknown>(
   ctx.cache.set(cacheKey, data, ttlMs);
   return data;
 }
+
+/** Helper for per-feed sub-fetches: cache-first + singleflight + negative cache (30s). */
+export async function cachedFetch<T>(
+  ctx: WidgetFetchContext,
+  key: string,
+  fetcher: () => Promise<T>,
+  ttlMs?: number,
+): Promise<T> {
+  const cached = ctx.cache.get<T>(key);
+  if (cached !== undefined) return cached;
+  const neg = ctx.cache.getError(key);
+  if (neg !== undefined) throw neg;
+  try {
+    const data = await ctx.singleflight.run(key, fetcher);
+    if (ttlMs !== undefined) ctx.cache.set(key, data, ttlMs);
+    return data;
+  } catch (err) {
+    ctx.cache.setError(key, err, 30_000);
+    throw err;
+  }
+}
+

@@ -109,3 +109,54 @@ export async function buildPagePayload(
     columns,
   };
 }
+
+export interface StreamChunk {
+  path: string;
+  payload: WidgetPayload;
+}
+
+/**
+ * Progressive version of buildPagePayload: yields each top-level widget as
+ * soon as its fetch settles so the server can flush NDJSON early. Slow
+ * widgets (e.g. videos) don't block head widgets or fast columns.
+ */
+export async function* streamPagePayload(
+  page: Page & { slug: string },
+  ctx: WidgetFetchContext,
+): AsyncGenerator<StreamChunk> {
+  type Pending = Promise<StreamChunk>;
+  const pending: Pending[] = [];
+
+  const push = (path: string, cachePath: string, widget: Record<string, unknown>) => {
+    pending.push(
+      fetchWidget(ctx, page.slug, cachePath, widget).then((payload) => ({ path, payload })),
+    );
+  };
+
+  if (Array.isArray(page['head-widgets'])) {
+    page['head-widgets'].forEach((w, i) => {
+      push(`headWidgets[${i}]`, `h:${i}`, isRecord(w) ? w : { type: 'unknown' });
+    });
+  }
+  page.columns.forEach((col, ci) => {
+    col.widgets.forEach((w, wi) => {
+      const cachePath = `${col.size === 'small' ? 's' : 'f'}:${wi}`;
+      // NOTE: cachePath is per-column widget index; if the same column size
+      // appears twice, keys collide — keep buildPagePayload's original key
+      // scheme for now. Streaming consumers key by `path` not cacheKey.
+      // A future change could use `${ci}:${wi}` as cacheKey.
+      push(`columns[${ci}].widgets[${wi}]`, cachePath, isRecord(w) ? w : { type: 'unknown' });
+    });
+  });
+
+  // Flush in settlement order (head widgets typically win). Use indexed race
+  // so the winner's position can be removed without re-creating promises.
+  const remaining = pending.slice();
+  while (remaining.length) {
+    const raced = await Promise.race(
+      remaining.map((p, idx) => p.then((v) => ({ v, idx }))),
+    );
+    yield raced.v;
+    remaining.splice(raced.idx, 1);
+  }
+}

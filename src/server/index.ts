@@ -2,7 +2,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
 import { initConfig, getConfig } from './config';
 import { Singleflight, TtlCache } from './cache';
-import { buildPagePayload } from './api';
+import { buildPagePayload, streamPagePayload } from './api';
 import type { WidgetFetchContext } from './widgets/registry';
 import './widgets'; // side-effect: registers all widget fetchers
 
@@ -31,13 +31,13 @@ const ctx: WidgetFetchContext = {
   singleflight: new Singleflight(),
 };
 
-initConfig(CONFIG_PATH, (r) => {
-  if (r.ok) ctx.cache.clear(); // only on success: failed reload keeps last-good config, keys stay valid
-  console.log(
-    r.ok ? '[config] reloaded' : `[config] reload failed: ${r.errors?.join('; ')}`,
-  );
-});
-console.log(`[glimpse] watching ${CONFIG_PATH}`);
+initConfig(
+  CONFIG_PATH,
+  (r) => {
+    console.log(r.ok ? '[config] reloaded' : `[config] reload failed: ${r.errors?.join('; ')}`);
+  },
+  ctx,
+);
 
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}): Response =>
   new Response(JSON.stringify(body), {
@@ -115,7 +115,6 @@ function serveDist(pathname: string): Response {
   if (!existsSync(filePath) || !filePath.startsWith(dist + sep)) {
     filePath = join(dist, 'index.html'); // SPA fallback
   }
-  const body = readFileSync(filePath);
   const headers: Record<string, string> = {
     'content-type': CONTENT_TYPES[extname(filePath)] ?? 'application/octet-stream',
   };
@@ -135,11 +134,14 @@ function serveDist(pathname: string): Response {
   } else if (extname(filePath) === '.woff2') {
     headers['cache-control'] = 'public, max-age=86400'; // unhashed font, short cache
   }
-  return new Response(body, { headers });
+  // Bun.file enables sendfile(2) zero-copy when served via Bun.serve
+  return new Response(Bun.file(filePath), { headers });
 }
-
 const server = Bun.serve({
   port: PORT,
+  routes: {
+    '/health': new Response('OK', { headers: { 'content-type': 'text/plain; charset=utf-8' } }),
+  },
   async fetch(req) {
     const url = new URL(req.url);
     const pathname = url.pathname;
@@ -180,12 +182,37 @@ const server = Bun.serve({
       const slug = decodeURIComponent(pageMatch[1]);
       const page = r.config?.pages.find((p) => p.slug === slug);
       if (!page) return json({ error: `page "${slug}" not found` }, 404);
+      if (url.searchParams.has('stream')) {
+        const stream = new ReadableStream({
+          async start(controller) {
+            const enc = new TextEncoder();
+            for await (const chunk of streamPagePayload(page, ctx)) {
+              controller.enqueue(enc.encode(`${JSON.stringify(chunk)}\n`));
+            }
+            controller.close();
+          },
+        });
+        return new Response(stream, {
+          headers: {
+            'content-type': 'application/x-ndjson',
+            'cache-control': 'no-store',
+          },
+        });
+      }
       const payload = await buildPagePayload(page, ctx);
-      return json(payload, 200, {
-        'cache-control': 'public, max-age=30, stale-while-revalidate=300',
+      const body = JSON.stringify(payload);
+      const etag = `W/"${Bun.hash(body).toString(16)}"`;
+      if (req.headers.get('if-none-match') === etag) {
+        return new Response(null, { status: 304, headers: { etag } });
+      }
+      return new Response(body, {
+        headers: {
+          'content-type': 'application/json',
+          etag,
+          'cache-control': 'private, max-age=10, stale-while-revalidate=30',
+        },
       });
     }
-
     return serveDist(pathname);
   },
 });

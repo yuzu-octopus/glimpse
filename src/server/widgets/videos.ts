@@ -24,8 +24,7 @@ interface ParsedFeed {
 const YT_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const PLAYLIST_PREFIX = 'playlist:';
 
-// ponytail: simple handle→UC cache, resolved via youtube @ page (no API key) — UC and @handle both work
-const handleChannelCache = new Map<string, string>();
+// handle→UC cached in ctx.cache (TTL 24h) + singleflight — no global Map (stale isolated per-ctx)
 
 function isChannelId(channel: string): boolean {
   return /^UC[A-Za-z0-9_-]{22}$/.test(channel);
@@ -65,17 +64,21 @@ async function resolveHandleToChannelId(
   ctx: WidgetFetchContext,
   rawHandle: string,
 ): Promise<string> {
-  const key = rawHandle.toLowerCase();
-  const cached = handleChannelCache.get(key);
+  const cacheKey = `yt:handle:${rawHandle.toLowerCase()}`;
+  const cached = ctx.cache.get<string>(cacheKey) ?? ctx.cache.getStale<string>(cacheKey);
   if (cached) return cached;
-  const clean = rawHandle.replace(/^@/, '');
-  const html = await fetchText(ctx, `https://www.youtube.com/@${encodeURIComponent(clean)}`, {
-    headers: { 'User-Agent': YT_UA },
+  return ctx.singleflight.run(cacheKey, async () => {
+    const again = ctx.cache.get<string>(cacheKey) ?? ctx.cache.getStale<string>(cacheKey);
+    if (again) return again;
+    const clean = rawHandle.replace(/^@/, '');
+    const html = await fetchText(ctx, `https://www.youtube.com/@${encodeURIComponent(clean)}`, {
+      headers: { 'User-Agent': YT_UA },
+    });
+    const id = extractChannelId(html);
+    if (!id) throw new Error(`Could not resolve handle @${clean} to channel_id`);
+    ctx.cache.set(cacheKey, id, 24 * 60 * 60 * 1000);
+    return id;
   });
-  const id = extractChannelId(html);
-  if (!id) throw new Error(`Could not resolve handle @${clean} to channel_id`);
-  handleChannelCache.set(key, id);
-  return id;
 }
 
 async function feedUrlsForChannels(
@@ -144,10 +147,20 @@ registerWidget('videos', async (ctx, config) => {
       const fullCacheKey = `videos:feed:${cacheKey}::${cfg['video-url-template'] ?? ''}::${includeShorts ? 'shorts' : 'noshorts'}`;
       const simpleCacheKey = `videos:feed:${cacheKey}`;
       const getCached = (): Video[] | undefined =>
-        ctx.cache.get<Video[]>(fullCacheKey) ?? ctx.cache.get<Video[]>(simpleCacheKey);
+        ctx.cache.get<Video[]>(fullCacheKey) ??
+        ctx.cache.get<Video[]>(simpleCacheKey) ??
+        ctx.cache.getStale<Video[]>(fullCacheKey) ??
+        ctx.cache.getStale<Video[]>(simpleCacheKey) ??
+        ctx.cache.get<Video[]>(`${fullCacheKey}:stale`) ??
+        ctx.cache.get<Video[]>(`${simpleCacheKey}:stale`) ??
+        ctx.cache.getStale<Video[]>(`${fullCacheKey}:stale`) ??
+        ctx.cache.getStale<Video[]>(`${simpleCacheKey}:stale`);
       const setCached = (videos: Video[]) => {
         ctx.cache.set(fullCacheKey, videos, STATIC_TTL_MS);
         ctx.cache.set(simpleCacheKey, videos, STATIC_TTL_MS);
+        // stale copy retained for fallback after TTL expiry
+        ctx.cache.set(`${fullCacheKey}:stale`, videos, 24 * 60 * 60 * 1000);
+        ctx.cache.set(`${simpleCacheKey}:stale`, videos, 24 * 60 * 60 * 1000);
       };
       try {
         const raw = await fetchText(ctx, url, { headers: { 'User-Agent': YT_UA } });

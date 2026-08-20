@@ -57,7 +57,7 @@ describe('search widget', () => {
     renderSearch();
     fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'hello world' } });
     fireEvent.submit(screen.getByLabelText('Search').closest('form')!);
-    expect(open).toHaveBeenCalledWith('https://duckduckgo.com/?q=hello%20world', '_self');
+    expect(open).toHaveBeenCalledWith('https://duckduckgo.com/?q=hello%20world', '_self', 'noopener,noreferrer');
   });
 
   it('routes bang queries to the matching bang url', () => {
@@ -65,7 +65,7 @@ describe('search widget', () => {
     renderSearch();
     fireEvent.change(screen.getByLabelText('Search'), { target: { value: '!gh astryx' } });
     fireEvent.submit(screen.getByLabelText('Search').closest('form')!);
-    expect(open).toHaveBeenCalledWith('https://github.com/search?q=astryx', '_self');
+    expect(open).toHaveBeenCalledWith('https://github.com/search?q=astryx', '_self', 'noopener,noreferrer');
   });
 
   it('opens in a new tab when new-tab is configured', () => {
@@ -82,7 +82,7 @@ describe('search widget', () => {
     const input = screen.getByLabelText('Search');
     fireEvent.change(input, { target: { value: 'cats' } });
     fireEvent.keyDown(input, { key: 'Enter' });
-    expect(open).toHaveBeenLastCalledWith('https://duckduckgo.com/?q=cats', '_self');
+    expect(open).toHaveBeenLastCalledWith('https://duckduckgo.com/?q=cats', '_self', 'noopener,noreferrer');
     fireEvent.change(input, { target: { value: 'dogs' } });
     fireEvent.keyDown(input, { key: 'Enter', ctrlKey: true });
     expect(open).toHaveBeenLastCalledWith(
@@ -105,7 +105,7 @@ describe('search widget', () => {
     );
     fireEvent.change(input, { target: { value: 'dogs' } });
     fireEvent.keyDown(input, { key: 'Enter', ctrlKey: true });
-    expect(open).toHaveBeenLastCalledWith('https://duckduckgo.com/?q=dogs', '_self');
+    expect(open).toHaveBeenLastCalledWith('https://duckduckgo.com/?q=dogs', '_self', 'noopener,noreferrer');
   });
 
   it('respects the target option when opening a new tab', () => {
@@ -146,6 +146,7 @@ describe('search widget', () => {
     expect(open).toHaveBeenCalledWith(
       'https://www.youtube.com/results?search_query=cats',
       '_self',
+      'noopener,noreferrer',
     );
   });
 
@@ -154,7 +155,7 @@ describe('search widget', () => {
     renderSearch();
     fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'yt' } });
     fireEvent.submit(screen.getByLabelText('Search').closest('form')!);
-    expect(open).toHaveBeenCalledWith('https://www.youtube.com/results?search_query=', '_self');
+    expect(open).toHaveBeenCalledWith('https://www.youtube.com/results?search_query=', '_self', 'noopener,noreferrer');
   });
 
   it('does not treat a shortcut prefix as a bang when it is not a full word', () => {
@@ -165,6 +166,7 @@ describe('search widget', () => {
     expect(open).toHaveBeenCalledWith(
       'https://duckduckgo.com/?q=youtube%20results',
       '_self',
+      'noopener,noreferrer',
     );
   });
 
@@ -175,14 +177,14 @@ describe('search widget', () => {
       'search-engine': 'https://example.com/search?q={QUERY}',
     });
     submitQuery('hello world');
-    expect(open).toHaveBeenCalledWith('https://example.com/search?q=hello%20world', '_self');
+    expect(open).toHaveBeenCalledWith('https://example.com/search?q=hello%20world', '_self', 'noopener,noreferrer');
   });
 
   it('falls back to duckduckgo for an unknown engine name', () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null);
     renderSearch({ ...CONFIG, 'search-engine': 'yahoo' });
     submitQuery('hello');
-    expect(open).toHaveBeenCalledWith('https://duckduckgo.com/?q=hello', '_self');
+    expect(open).toHaveBeenCalledWith('https://duckduckgo.com/?q=hello', '_self', 'noopener,noreferrer');
   });
   it('does nothing for an empty query', () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null);

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Column, WidgetConfig } from '../shared/config';
-import { buildPagePayload } from './api';
+import { buildPagePayload, streamPagePayload } from './api';
 import { registerWidget, serverWidgets, type WidgetFetchContext } from './widgets/registry';
 import { Singleflight, TtlCache } from './cache';
 
@@ -29,8 +29,8 @@ const rssWidget: WidgetConfig = {
 afterEach(() => {
   serverWidgets.delete('rss' as never);
   serverWidgets.delete('monitor' as never);
+  serverWidgets.delete('videos' as never);
 });
-
 describe('buildPagePayload', () => {
   it('returns null data for config-only widgets without a fetcher', async () => {
     const payload = await buildPagePayload(
@@ -200,5 +200,31 @@ describe('buildPagePayload', () => {
     expect(payload.minColumnWidth).toBe(360);
     expect(payload.columns[0].span).toBe(2);
     expect(payload.columns[1].span).toBeUndefined();
+  });
+});
+
+describe('streamPagePayload', () => {
+  it('stream page flushes head widgets before slow videos', async () => {
+    const headFetcher = vi.fn(async () => ({ items: [{ title: 'head' }] }));
+    const slowFetcher = vi.fn(
+      () =>
+        new Promise<unknown>((resolve) => {
+          setTimeout(() => resolve({ videos: [{ title: 'slow' }] }), 40);
+        }),
+    );
+    registerWidget('rss', headFetcher);
+    registerWidget('videos', slowFetcher);
+    const ctx = makeCtx();
+    const testPage = {
+      name: 'Home',
+      slug: 'home',
+      columns: [{ size: 'full', widgets: [{ type: 'videos' }] }],
+      'head-widgets': [{ type: 'rss', cache: '1h' }],
+    } as unknown as Parameters<typeof streamPagePayload>[0];
+    const chunks: Array<{ path: string; payload: unknown }> = [];
+    for await (const c of streamPagePayload(testPage, ctx)) chunks.push(c as unknown as { path: string; payload: unknown });
+    expect(chunks).toHaveLength(2);
+    expect(chunks[0].path).toMatch(/headWidgets/);
+    expect(chunks[1].path).toMatch(/columns/);
   });
 });

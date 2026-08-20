@@ -7,6 +7,20 @@ import {
   type ResolvedConfig,
 } from '../shared/config';
 import { isRecord } from './api';
+import type { WidgetFetchContext } from './widgets/registry';
+
+function warmPages(
+  ctx: WidgetFetchContext,
+  pages: ResolvedConfig['pages'],
+): void {
+  void import('./api').then(({ buildPagePayload }) => {
+    for (const p of pages) void buildPagePayload(p as unknown as Parameters<typeof buildPagePayload>[0], ctx).catch(() => {});
+  });
+}
+
+function pagesBySlug(pages: ResolvedConfig['pages']): Map<string, unknown> {
+  return new Map(pages.map((p) => [p.slug, p]));
+}
 
 export interface LoadResult {
   ok: boolean;
@@ -245,13 +259,34 @@ export function reloadConfig(configPath: string): LoadResult {
 let triggerReload: () => void = () => {};
 
 /** Start watching configPath; returns the initial load result. */
-export function initConfig(configPath: string, onChange?: (r: LoadResult) => void): LoadResult {
+export function initConfig(
+  configPath: string,
+  onChange?: (r: LoadResult) => void,
+  warmCtx?: WidgetFetchContext,
+): LoadResult {
   const debounced = debounce(() => {
+    const prev = current;
     const r = reloadConfig(configPath);
+    if (warmCtx && r.ok && r.config) {
+      if (prev.ok && prev.config) {
+        const prevMap = pagesBySlug(prev.config.pages);
+        const nextSlugs = new Set(r.config.pages.map((p) => p.slug));
+        for (const p of r.config.pages) {
+          const prevPage = prevMap.get(p.slug);
+          if (!prevPage || JSON.stringify(prevPage) !== JSON.stringify(p)) {
+            warmCtx.cache.deleteByPrefix(`${p.slug}:`);
+          }
+        }
+        for (const slug of prevMap.keys()) if (!nextSlugs.has(slug as string)) warmCtx.cache.deleteByPrefix(`${slug as string}:`);
+      }
+      warmPages(warmCtx, r.config.pages);
+    }
     onChange?.(r);
   }, 150);
   triggerReload = debounced;
-  return reloadConfig(configPath);
+  const initial = reloadConfig(configPath);
+  if (warmCtx && initial.ok && initial.config) warmPages(warmCtx, initial.config.pages);
+  return initial;
 }
 
 function stopWatchers(): void {

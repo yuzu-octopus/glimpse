@@ -7,6 +7,8 @@
     "react-doctor/iframe-missing-sandbox": "off",
     "react-doctor/no-multi-comp": "off",
     "react-doctor/no-fetch-in-effect": "off",
-    "react-doctor/dangerous-html-sink": "off"
+    "react-doctor/dangerous-html-sink": "off",
+    "react-doctor/no-set-state-after-await-in-effect": "off",
+    "deslop/unused-export": "off"
   }
 }

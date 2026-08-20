@@ -3,10 +3,13 @@ import { LIVE_TTL_MS, LIVE_TYPES, STATIC_TTL_MS } from '../shared/live';
 /**
  * In-memory TTL cache + singleflight dedupe, mirroring glance's per-widget
  * cache prop and internal/singleflight.go. Widgets share one instance.
+ * Supports stale-while-revalidate retain + negative cache (30s).
  */
 
 export class TtlCache {
   private store = new Map<string, { value: unknown; expiresAt: number }>();
+  private staleStore = new Map<string, { value: unknown; staleUntil: number }>();
+  private negative = new Map<string, { error: unknown; expiresAt: number }>();
 
   get<T>(key: string): T | undefined {
     const hit = this.store.get(key);
@@ -18,13 +21,59 @@ export class TtlCache {
     return hit.value as T;
   }
 
+  /** Stale fallback: returns last successful value even after fresh TTL expiry (24h retain). */
+  getStale<T>(key: string): T | undefined {
+    // fresh hit also counts as stale hit
+    const fresh = this.store.get(key);
+    if (fresh && fresh.expiresAt > Date.now()) return fresh.value as T;
+    const hit = this.staleStore.get(key);
+    if (!hit) return undefined;
+    if (hit.staleUntil <= Date.now()) {
+      this.staleStore.delete(key);
+      return undefined;
+    }
+    return hit.value as T;
+  }
+
   set(key: string, value: unknown, ttlMs: number): void {
     this.store.set(key, { value, expiresAt: Date.now() + ttlMs });
+    // retain stale for 24h beyond fresh TTL (for stale-while-revalidate fallback)
+    this.staleStore.set(key, { value, staleUntil: Date.now() + ttlMs + 24 * 60 * 60 * 1000 });
+  }
+
+  /** Negative cache: remember failures for 30s to avoid hammering. */
+  setError(key: string, error: unknown, ttlMs = 30_000): void {
+    this.negative.set(key, { error, expiresAt: Date.now() + ttlMs });
+  }
+
+  getError(key: string): unknown | undefined {
+    const hit = this.negative.get(key);
+    if (!hit) return undefined;
+    if (hit.expiresAt <= Date.now()) {
+      this.negative.delete(key);
+      return undefined;
+    }
+    return hit.error;
   }
 
   /** Drop every entry (config reload: keys are slug:path, no longer trustworthy). */
   clear(): void {
     this.store.clear();
+    this.staleStore.clear();
+    this.negative.clear();
+  }
+
+  /** Delete entries whose key starts with prefix (granular slug clear). */
+  deleteByPrefix(prefix: string): void {
+    for (const key of this.store.keys()) {
+      if (key.startsWith(prefix)) this.store.delete(key);
+    }
+    for (const key of this.staleStore.keys()) {
+      if (key.startsWith(prefix)) this.staleStore.delete(key);
+    }
+    for (const key of this.negative.keys()) {
+      if (key.startsWith(prefix)) this.negative.delete(key);
+    }
   }
 }
 

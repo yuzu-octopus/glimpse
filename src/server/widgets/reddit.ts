@@ -37,25 +37,28 @@ async function getAccessToken(
   ctx: WidgetFetchContext,
   appAuth: { id: string; secret: string },
 ): Promise<string> {
-  const cached = ctx.cache.get<string>('reddit:token');
+  const cached = ctx.cache.get<string>('reddit:token') ?? ctx.cache.getStale<string>('reddit:token');
   if (cached) return cached;
+  return ctx.singleflight.run('reddit:token', async () => {
+    const again = ctx.cache.get<string>('reddit:token') ?? ctx.cache.getStale<string>('reddit:token');
+    if (again) return again;
+    const res = await ctx.fetch('https://www.reddit.com/api/v1/access_token', {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${btoa(`${appAuth.id}:${appAuth.secret}`)}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': USER_AGENT,
+      },
+      body: 'grant_type=client_credentials',
+    });
+    if (!res.ok) throw new Error(`reddit token: HTTP ${res.status}`);
+    const body = (await res.json()) as { access_token?: string; expires_in?: number };
+    if (!body.access_token) throw new Error('reddit token: no access_token in response');
 
-  const res = await ctx.fetch('https://www.reddit.com/api/v1/access_token', {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${btoa(`${appAuth.id}:${appAuth.secret}`)}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent': USER_AGENT,
-    },
-    body: 'grant_type=client_credentials',
+    const ttl = Math.min((body.expires_in ?? 3600) * 1000, 3600_000);
+    ctx.cache.set('reddit:token', body.access_token, ttl);
+    return body.access_token;
   });
-  if (!res.ok) throw new Error(`reddit token: HTTP ${res.status}`);
-  const body = (await res.json()) as { access_token?: string; expires_in?: number };
-  if (!body.access_token) throw new Error('reddit token: no access_token in response');
-
-  const ttl = Math.min((body.expires_in ?? 3600) * 1000, 3600_000);
-  ctx.cache.set('reddit:token', body.access_token, ttl);
-  return body.access_token;
 }
 
 registerWidget('reddit', async (ctx, config) => {

@@ -1,5 +1,5 @@
 import { useContext, useRef, useState, type ReactNode } from 'react';
-import { Banner, Card, Skeleton, Tab, TabList, Text } from '@astryxdesign/core';
+import { Banner, Card, Tab, TabList, Text } from '@astryxdesign/core';
 import { ChevronDown } from 'lucide-react';
 import type { WidgetPayload } from '../../shared/api';
 import type { Page } from '../../shared/config';
@@ -115,7 +115,7 @@ function WidgetSkeleton({ widget }: { widget: SkeletonWidget }) {
 
 /** Per-widget skeleton page mirroring the ready layout from the page config,
  * so first paint shows the real structure with no layout shift on fill. */
-function PageSkeleton({ page }: { page: Page & { slug: string } }) {
+export function PageSkeleton({ page }: { page: Page & { slug: string } }) {
   const hideHeaders = page['hide-headers'] === true;
   const tilingProps = getTilingProps(page.tiling, page['min-column-width']);
   return (
@@ -270,6 +270,7 @@ function MobileColumn({
   const [open, setOpen] = useState(true);
   return (
     <div
+      data-testid="column"
       // grid-column: span N is a no-op for 1 — only emit the hint above 1.
       data-span={span && span > 1 ? String(span) : undefined}
       data-row-span={rowSpan && rowSpan > 1 ? String(rowSpan) : undefined}
@@ -311,15 +312,17 @@ export function PageView({
 
   if (!data && !error) {
     if (page) return <PageSkeleton page={page} />;
-    // Fallback when rendered without config (direct mounts): generic block.
+    // Fallback when rendered without config (direct mounts): structure-ready chrome.
     return (
       <div className={styles.page}>
-        <Card padding={0}>
-          <div className={styles.columnWidgets} data-testid="page-loading">
-            <Skeleton width="100%" height={120} />
-            <Skeleton width="100%" height={120} />
+        <div className={styles.columns}>
+          <div className={`${styles.column} ${styles.fullColumn}`} data-testid="column">
+            <div className={styles.columnWidgets} data-testid="page-loading">
+              <WidgetChrome isLoading />
+              <WidgetChrome isLoading />
+            </div>
           </div>
-        </Card>
+        </div>
       </div>
     );
   }

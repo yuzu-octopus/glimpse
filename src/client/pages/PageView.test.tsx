@@ -6,7 +6,7 @@ import type { PagePayload } from '../../shared/api';
 import type { Page, WidgetType } from '../../shared/config';
 import App from '../../App';
 import { GlimpseThemeProvider } from '../theme/GlimpseThemeProvider';
-import { PageView } from './PageView';
+import { PageSkeleton, PageView } from './PageView';
 import { clientWidgets, registerWidgetComponent } from '../widgets/registry';
 function payload(overrides: Partial<PagePayload> = {}): PagePayload {
   return {
@@ -499,7 +499,24 @@ describe('PageView', () => {
     expect(css).toMatch(/\.page\s*\{[^}]*padding-bottom:\s*(var\(--space-gap\)|calc\(var\(--space-gap\))/);
     expect(css).toMatch(/\.autoTiling\s*\{[^}]*align-content:\s*start/);
   });
-
+  it('skeleton mirrors columns (no CLS)', () => {
+    const page = {
+      slug: 'home',
+      name: 'Home',
+      columns: [
+        { size: 'full' as const, widgets: [{ type: 'clock' as const, title: 'A' }] },
+        { size: 'full' as const, widgets: [{ type: 'clock' as const, title: 'B' }] },
+      ],
+      tiling: 'columns' as const,
+      'min-column-width': 320,
+    } as unknown as Page & { slug: string };
+    const { container } = render(
+      <MemoryRouter>
+        <PageSkeleton page={page} />
+      </MemoryRouter>,
+    );
+    expect(container.querySelectorAll('[data-testid="column"]')).toHaveLength(2);
+  });
 
   it('global spacing vars exist', () => {
     const css = readFileSync('src/index.css', 'utf8');

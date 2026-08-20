@@ -54,8 +54,7 @@ export function Search({ config }: WidgetComponentProps) {
     if (newTab) {
       window.open(url, target, 'noopener,noreferrer');
     } else {
-      if (target === '_blank') window.open(url, '_blank', 'noopener,noreferrer');
-      else window.location.href = url;
+      window.open(url, target, 'noopener,noreferrer');
     }
     lastQueryRef.current = rest;
     setQuery('');

@@ -27,30 +27,32 @@ interface TwitchStream {
 
 /** App-access token, cached in ctx.cache until expiry. */
 export async function getTwitchToken(ctx: WidgetFetchContext): Promise<string> {
-  const cached = ctx.cache.get<string>('twitch:token');
+  const cached = ctx.cache.get<string>('twitch:token') ?? ctx.cache.getStale<string>('twitch:token');
   if (cached) return cached;
+  return ctx.singleflight.run('twitch:token', async () => {
+    const again = ctx.cache.get<string>('twitch:token') ?? ctx.cache.getStale<string>('twitch:token');
+    if (again) return again;
+    const clientId = ctx.env.TWITCH_CLIENT_ID;
+    const clientSecret = ctx.env.TWITCH_CLIENT_SECRET;
+    if (!clientId) throw new Error('TWITCH_CLIENT_ID env var is missing');
+    if (!clientSecret) throw new Error('TWITCH_CLIENT_SECRET env var is missing');
 
-  const clientId = ctx.env.TWITCH_CLIENT_ID;
-  const clientSecret = ctx.env.TWITCH_CLIENT_SECRET;
-  if (!clientId) throw new Error('TWITCH_CLIENT_ID env var is missing');
-  if (!clientSecret) throw new Error('TWITCH_CLIENT_SECRET env var is missing');
-
-  const res = await ctx.fetch('https://id.twitch.tv/oauth2/token', {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      grant_type: 'client_credentials',
-    }).toString(),
+    const res = await ctx.fetch('https://id.twitch.tv/oauth2/token', {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        grant_type: 'client_credentials',
+      }).toString(),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status} for Twitch token`);
+    const payload = (await res.json()) as TwitchTokenResponse;
+    if (!payload.access_token) throw new Error('Twitch token response missing access_token');
+    const ttl = (payload.expires_in ?? 3600) * 1000;
+    ctx.cache.set('twitch:token', payload.access_token, ttl);
+    return payload.access_token;
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status} for Twitch token`);
-  const payload = (await res.json()) as TwitchTokenResponse;
-  if (!payload.access_token) throw new Error('Twitch token response missing access_token');
-  if (payload.expires_in) {
-    ctx.cache.set('twitch:token', payload.access_token, payload.expires_in * 1000);
-  }
-  return payload.access_token;
 }
 
 function helixHeaders(ctx: WidgetFetchContext, token: string): Record<string, string> {
