@@ -42,8 +42,8 @@ function makeCtx(routes: Record<string, unknown>, env: Record<string, string | u
   };
 }
 
-const PULLS_URL = 'https://api.github.com/repos/acme/widget/pulls?state=open&per_page=3';
-const ISSUES_URL = 'https://api.github.com/repos/acme/widget/issues?state=open&per_page=3';
+const PULLS_URL = 'https://api.github.com/repos/acme/widget/pulls?state=open&per_page=5';
+const ISSUES_URL = 'https://api.github.com/repos/acme/widget/issues?state=open&per_page=5';
 const REPO_URL = 'https://api.github.com/repos/acme/widget';
 
 const repositoryFetcher = () => serverWidgets.get('repository')!;

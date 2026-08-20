@@ -32,7 +32,11 @@
 }
 
 :root {
-  /* dimensions */
+  /* dimensions — canonical (StyleX defineTheme) + aliases */
+  --space-gap: 23px;
+  --space-viewport: 15px;
+  --widget-content-vertical: 15px;
+  --widget-content-horizontal: 17px;
   --widget-gap: 23px;
   --widget-content-vertical-padding: 15px;
   --widget-content-horizontal-padding: 17px;

@@ -15,7 +15,7 @@ interface HnItem {
 registerWidget('hacker-news', async (ctx, config) => {
   const cfg = hackerNewsSchema.parse(config);
   const sort = cfg['sort-by'] ?? 'top';
-  const limit = cfg.limit ?? 15;
+  const limit = cfg.limit ?? 5;
 
   const ids = await fetchJson<number[]>(
     ctx,

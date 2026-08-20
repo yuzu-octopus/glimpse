@@ -110,7 +110,7 @@ registerWidget('twitch-top-games', async (ctx, config) => {
   const token = await getTwitchToken(ctx);
   const headers = helixHeaders(ctx, token);
 
-  const limit = cfg.limit ?? 10;
+  const limit = cfg.limit ?? 5;
   const res = await fetchJson<{
     data: Array<{ id?: string; name?: string; box_art_url?: string }>;
   }>(ctx, `https://api.twitch.tv/helix/games/top?first=${limit}`, { headers });

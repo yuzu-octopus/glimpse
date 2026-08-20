@@ -8,7 +8,7 @@ export const lobstersSchema = z.object({
   'custom-url': z.string().optional(),
   'sort-by': z.enum(['hot', 'new']).optional(),
   tags: z.array(z.string()).optional(),
-  limit: z.number().int().min(0).optional(),
+  limit: z.number().int().min(0).default(5),
   'collapse-after': z.number().int().min(-1).optional(),
   'source-header': z.boolean().optional(),
 });
@@ -19,7 +19,7 @@ export const videosSchema = z.object({
   ...sharedWidgetFields,
   channels: z.array(z.string()).default([]),
   playlists: z.array(z.string()).default([]),
-  limit: z.number().int().min(0).optional(),
+  limit: z.number().int().min(0).default(5),
   'collapse-after': z.number().int().min(-1).optional(),
   'collapse-after-rows': z.number().int().min(-1).optional(),
   style: z.enum(['horizontal-cards', 'vertical-list', 'grid-cards']).optional(),
@@ -87,7 +87,7 @@ export const customApiSchema = z.object({
   frameless: z.boolean().optional(),
   'allow-insecure': z.boolean().optional(),
   'skip-json-validation': z.boolean().optional(),
-  limit: z.number().int().min(0).optional(),
+  limit: z.number().int().min(0).default(5),
   'collapse-after': z.number().int().min(-1).optional(),
   options: z
     .object({
@@ -110,8 +110,8 @@ export const repositorySchema = z.object({
   ...sharedWidgetFields,
   repository: z.string(),
   token: z.string().optional(),
-  'pull-requests-limit': z.number().int().positive().optional(),
-  'issues-limit': z.number().int().positive().optional(),
+  'pull-requests-limit': z.number().int().positive().default(5),
+  'issues-limit': z.number().int().positive().default(5),
 });
 export type RepositoryConfig = z.infer<typeof repositorySchema>;
 
@@ -128,7 +128,7 @@ export const twitchTopGamesSchema = z.object({
   type: z.literal('twitch-top-games'),
   ...sharedWidgetFields,
   exclude: z.array(z.string()).default([]),
-  limit: z.number().int().min(0).optional(),
+  limit: z.number().int().min(0).default(5),
   'collapse-after': z.number().int().min(-1).optional(),
 });
 export type TwitchTopGamesConfig = z.infer<typeof twitchTopGamesSchema>;

@@ -2,8 +2,8 @@
    breathing room above the 45px header; inline padding mirrors
    glance content-bounds (15px) so header and .page align. Flat: no shadow. */
 .headerContainer {
-  margin-top: calc(var(--widget-gap) / 2);
-  padding-inline: var(--content-bounds-padding);
+  margin-top: calc(var(--space-gap) / 2);
+  padding-inline: var(--space-viewport);
   width: 100%;
   box-sizing: border-box;
 }

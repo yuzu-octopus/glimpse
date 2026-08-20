@@ -6,6 +6,7 @@ import {
   type KeyboardEvent,
 } from 'react';
 import type { SearchConfig } from '../../../shared/widgets/search';
+import { bangs as heliumBangs } from '../../../shared/widgets/bangs';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import styles from './search.module.css';
@@ -51,7 +52,8 @@ function matchBang(
 
 export function Search({ config }: WidgetComponentProps) {
   const cfg = config as unknown as SearchConfig;
-  const bangs = cfg.bangs ?? [];
+  // Helium curated list is the default; cfg.bangs overrides when non-empty
+  const bangs = cfg.bangs?.length ? (cfg.bangs as Bang[]) : (heliumBangs as unknown as Bang[]);
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const lastQueryRef = useRef('');

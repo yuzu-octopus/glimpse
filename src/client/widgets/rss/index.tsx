@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { Link } from '@astryxdesign/core';
+import { ChevronRight } from 'lucide-react';
 import type { RssConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
@@ -6,6 +8,7 @@ import { formatAge } from '../useRelativeTime';
 import type { RssItem } from '../../../shared/widgets/payloads';
 import styles from './rss.module.css';
 import Feed, { type FeedItem } from '../feed/Feed';
+import chromeStyles from '../../components/widget-chrome.module.css';
 
 // glance image-placeholder icon (heroicons photo, stroke inherits)
 const IMAGE_ICON_PATH =
@@ -34,7 +37,6 @@ function toFeedItems(items: RssItem[], detailed: boolean): FeedItem[] {
       title: item.title,
       url: item.url,
       meta,
-      // vertical-list hides extra fields (matches original Row non-detailed branch)
       description: detailed ? item.description : null,
       tags: detailed ? item.categories ?? [] : [],
       image: detailed ? item.thumbnail : null,
@@ -110,6 +112,13 @@ function Rss({ config, data, error, isLoading }: WidgetComponentProps) {
   const collapseAfter = cfg['collapse-after'];
   const title =
     cfg.title ?? (cfg['source-header'] ? cfg.feeds[0]?.title ?? 'RSS' : undefined);
+  const detailed = style === 'detailed-list';
+  const singleLine = cfg['single-line-titles'] === true;
+  const feedItems = toFeedItems(items, detailed);
+  const [expanded, setExpanded] = useState(false);
+  const hasCollapse =
+    typeof collapseAfter === 'number' && collapseAfter >= 0 && feedItems.length > collapseAfter;
+  const visible = hasCollapse && !expanded ? feedItems.slice(0, collapseAfter) : feedItems;
 
   if (loading) {
     return (
@@ -123,6 +132,7 @@ function Rss({ config, data, error, isLoading }: WidgetComponentProps) {
       />
     );
   }
+
   if (style === 'horizontal-cards' || style === 'horizontal-cards-2') {
     return (
       <Cards
@@ -133,31 +143,39 @@ function Rss({ config, data, error, isLoading }: WidgetComponentProps) {
         cssClass={cfg['css-class']}
         cardHeight={cfg['card-height']}
         thumbnailHeight={cfg['thumbnail-height']}
-        overlay={style === 'horizontal-cards-2'}
+        overlay={cfg['overlay'] === true}
       />
     );
   }
-  const detailed = style === 'detailed-list';
-  const singleLine = cfg['single-line-titles'] === true;
-  const feedItems = toFeedItems(items, detailed);
+
   return (
     <WidgetChrome
       title={title}
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
-      collapseAfter={collapseAfter}
       isLoading={loading}
       error={error}
-      items={feedItems.map((fi) => (
-        // Wrap Feed single-row? Instead pass whole list to Feed and let WidgetChrome handle collapse via items slicing.
-        // To keep WidgetChrome collapse semantics (slice items), we render Feed with all items and let WidgetChrome slice via its own collapse.
-        // Simpler: let WidgetChrome manage collapse; we render Feed's rows as individual items sliced by WidgetChrome.
-        // But Feed already batches; we need per-item rendering to let collapse slice.
-        // So we expand Feed inline: render each FeedItem as a Feed with single item, so collapse slices rows.
-        <Feed key={fi.url || fi.title} items={[fi]} singleLine={singleLine} />
-      ))}
-    />
+    >
+      <Feed items={visible} layout="list" singleLine={singleLine} />
+      {hasCollapse ? (
+        expanded ? (
+          <button
+            type="button"
+            className={`${chromeStyles.more} ${chromeStyles.moreExpanded}`}
+            onClick={() => setExpanded(false)}
+          >
+            Show less
+            <ChevronRight size={12} className={chromeStyles.chevron} />
+          </button>
+        ) : (
+          <button type="button" className={chromeStyles.more} onClick={() => setExpanded(true)}>
+            {`Show more (${feedItems.length - (collapseAfter as number)})`}
+            <ChevronRight size={12} className={chromeStyles.chevron} />
+          </button>
+        )
+      ) : null}
+    </WidgetChrome>
   );
 }
 

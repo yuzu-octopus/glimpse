@@ -142,6 +142,12 @@ export function sourcePairFromPreset(preset: Preset): ThemeSourcePair {
 
 /** Glance dimension vars — same in both modes, emitted as plain strings. */
 const DIMS: Record<string, string> = {
+  // canonical spacing — flat uniform, consumed via CSS vars (StyleX: defineTheme tokens → light-dark compile, runtime via :root fallbacks)
+  '--space-gap': '23px',
+  '--space-viewport': '15px',
+  '--widget-content-vertical': '15px',
+  '--widget-content-horizontal': '17px',
+  // aliases for backward compat (existing CSS uses --widget-gap etc)
   '--widget-gap': '23px',
   '--widget-content-vertical-padding': '15px',
   '--widget-content-horizontal-padding': '17px',

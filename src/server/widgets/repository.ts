@@ -35,12 +35,12 @@ registerWidget('repository', async (ctx, config) => {
     fetchJson<GitHubRepo>(ctx, base, { headers }),
     fetchJson<GitHubIssueLike[]>(
       ctx,
-      `${base}/pulls?state=open&per_page=${cfg['pull-requests-limit'] ?? 3}`,
+      `${base}/pulls?state=open&per_page=${cfg['pull-requests-limit'] ?? 5}`,
       { headers },
     ),
     fetchJson<GitHubIssueLike[]>(
       ctx,
-      `${base}/issues?state=open&per_page=${cfg['issues-limit'] ?? 3}`,
+      `${base}/issues?state=open&per_page=${cfg['issues-limit'] ?? 5}`,
       { headers },
     ),
   ]);

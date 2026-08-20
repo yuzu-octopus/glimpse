@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SearchConfig } from '../../../shared/widgets/search';
@@ -183,11 +184,23 @@ describe('search widget', () => {
     submitQuery('hello');
     expect(open).toHaveBeenCalledWith('https://duckduckgo.com/?q=hello', '_self');
   });
-
   it('does nothing for an empty query', () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null);
     renderSearch();
     fireEvent.keyDown(screen.getByLabelText('Search'), { key: 'Enter' });
     expect(open).not.toHaveBeenCalled();
+  });
+
+  it('search compact height 36-40px', () => {
+    const css = readFileSync('src/client/widgets/search/search.module.css', 'utf8');
+    expect(css).toMatch(/height:\s*(36|37|38|39|40)px/);
+    // container or input must be 38px (task spec)
+    expect(css).toContain('38px');
+  });
+
+  it('search icon is 16px', () => {
+    const css = readFileSync('src/client/widgets/search/search.module.css', 'utf8');
+    expect(css).toMatch(/\.icon\s*\{[^}]*width:\s*16px/);
+    expect(css).toMatch(/\.icon\s*\{[^}]*height:\s*16px/);
   });
 });

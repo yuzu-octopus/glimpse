@@ -216,6 +216,50 @@
   color: var(--color-text-highlight);
 }
 
+.docsHeading {
+  margin: 16px 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-highlight);
+}
+
+.docsLink {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.docsLink:hover {
+  color: var(--color-text-highlight);
+}
+
+.bangTable {
+  width: 100%;
+  margin-top: 12px;
+  border-collapse: collapse;
+  font-size: 12px;
+  border: 1px solid var(--color-widget-content-border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.bangTable th,
+.bangTable td {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-separator);
+}
+
+.bangTable th {
+  background: var(--color-widget-background-highlight);
+  color: var(--color-text-subdue);
+  font-weight: 600;
+}
+
+.bangTable td:last-child code {
+  word-break: break-all;
+}
+
 /* Responsive grid: 3 -> 2 columns before dialog gets tight; 1 col on small phones. */
 @media (max-width: 960px) {
   .grid {

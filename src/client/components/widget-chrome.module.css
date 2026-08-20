@@ -76,7 +76,7 @@
 }
 
 .body {
-  padding: var(--widget-content-padding);
+  padding: var(--widget-content-vertical) var(--widget-content-horizontal);
   min-width: 0;
 }
 
@@ -94,7 +94,7 @@
    the last item renders fully with its rounded corners visible above the
    toggle. Overrides the collapsed rule above when both match (source order). */
 .body:has(.moreExpanded:last-child) {
-  padding-bottom: var(--widget-content-vertical-padding);
+  padding-bottom: var(--widget-content-vertical);
 }
 .skeleton {
   display: grid;

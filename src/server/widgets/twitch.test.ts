@@ -128,7 +128,7 @@ describe('twitch-top-games fetcher', () => {
   it('maps games, filters excludes case-insensitively and replaces thumbnail size', async () => {
     const { ctx } = makeCtx({
       [`POST ${TOKEN_URL}`]: TOKEN,
-      'https://api.twitch.tv/helix/games/top?first=10': {
+      'https://api.twitch.tv/helix/games/top?first=5': {
         data: [
           { id: '1', name: 'Chess', box_art_url: 'https://static-cdn.jtvnw.net/chess-{width}x{height}.jpg' },
           { id: '2', name: 'Dota 2', box_art_url: 'https://static-cdn.jtvnw.net/dota-{width}x{height}.jpg' },

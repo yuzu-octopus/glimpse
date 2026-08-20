@@ -2,11 +2,11 @@
    content-bounds wrapper (maxWidth inline from the page width prop). */
 .page {
   margin: 0 auto;
-  padding-block: var(--widget-gap);
+  padding-block: var(--space-gap);
   /* uniform bottom gap like glance .page — explicit !important to survive grid stretch / flex collapse
      and ensure SHOW LESS lobsters never touches viewport bottom */
-  padding-bottom: var(--widget-gap) !important;
-  padding-inline: var(--content-bounds-padding);
+  padding-bottom: var(--space-gap) !important;
+  padding-inline: var(--space-viewport);
   width: 100%;
   box-sizing: border-box;
   animation: pageContentEntrance 0.3s cubic-bezier(0.25, 1, 0.5, 1) backwards;

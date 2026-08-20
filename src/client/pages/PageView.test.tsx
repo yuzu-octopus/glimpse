@@ -488,15 +488,37 @@ describe('PageView', () => {
 
   it('social collage page has bottom padding and align-content start', () => {
     const css = readFileSync('src/client/pages/page.module.css', 'utf8');
-    expect(css).toMatch(/\.page\s*\{[^}]*padding-block:\s*var\(--widget-gap\)/);
+    expect(css).toMatch(/\.page\s*\{[^}]*padding-block:\s*var\(--space-gap\)/);
     expect(css).toMatch(/\.collageTiling\s*\{[^}]*align-content:\s*start/);
-    expect(css).toMatch(/\.splitColumn\s*\{[^}]*gap:\s*var\(--widget-gap\)/);
+    expect(css).toMatch(/\.splitColumn\s*\{[^}]*gap:\s*var\(--(widget-gap|space-gap)\)/);
   });
 
   it('page content has uniform bottom gap regardless of tiling', () => {
     const css = readFileSync('src/client/pages/page.module.css', 'utf8');
     // .page must keep both padding-block and explicit padding-bottom (calc allowed) so collage stretch can't collapse the footer gap
-    expect(css).toMatch(/\.page\s*\{[^}]*padding-bottom:\s*(var\(--widget-gap\)|calc\(var\(--widget-gap\))/);
+    expect(css).toMatch(/\.page\s*\{[^}]*padding-bottom:\s*(var\(--space-gap\)|calc\(var\(--space-gap\))/);
     expect(css).toMatch(/\.autoTiling\s*\{[^}]*align-content:\s*start/);
+  });
+
+
+  it('global spacing vars exist', () => {
+    const css = readFileSync('src/index.css', 'utf8');
+    expect(css).toContain('--space-gap');
+    expect(css).toContain('--space-viewport');
+    expect(css).toContain('--widget-content-vertical');
+    expect(css).toContain('--widget-content-horizontal');
+    // DIMS also exposes them via theme tokens (read glimpseTheme file)
+    const themeSrc = readFileSync('src/shared/theme/glimpseTheme.ts', 'utf8');
+    expect(themeSrc).toContain("'--space-gap'");
+    expect(themeSrc).toContain("'--space-viewport'");
+    expect(themeSrc).toContain("'--widget-content-vertical'");
+    expect(themeSrc).toContain("'--widget-content-horizontal'");
+    // page and widget-chrome consume new vars (not hardcoded px)
+    const pageCss = readFileSync('src/client/pages/page.module.css', 'utf8');
+    expect(pageCss).toContain('var(--space-gap)');
+    expect(pageCss).toContain('var(--space-viewport)');
+    const chromeCss = readFileSync('src/client/components/widget-chrome.module.css', 'utf8');
+    expect(chromeCss).toContain('var(--widget-content-vertical)');
+    expect(chromeCss).toContain('var(--widget-content-horizontal)');
   });
 });

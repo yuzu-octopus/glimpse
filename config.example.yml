@@ -2,7 +2,7 @@
 # Copy to config.yml and edit. See README for full widget reference.
 # Pages: Home (daily feeds) · Dev (releases / repos / videos) · Social (collage / reddit / twitch) · Lab (homelab).
 # Flat style: 1px border / 5px radius / JetBrains Mono / no shadows — applied by the theme, not the config.
-# videos: channels accept UC IDs (UC...) or @handles (e.g. @spokeishere, @Bug-I, @CalebWritesCode, @AZisk) — both work via resolveHandleToChannelId.
+# videos: @handle primary, UC fallback — channels accept "@handle" (easy, e.g. @Fireship, @spokeishere, @Bug-I, @CalebWritesCode, @AZisk) or UC IDs (UC...) — both resolve via handle→UC cache (youtube.com/@handle + Mozilla UA) to the same YouTube RSS feed.
 # Singapore weather repeated on Home/Dev/Lab for parity.
 pages:
   - name: Home
@@ -114,19 +114,19 @@ pages:
             title: Tech — recent
             limit: 9
             # style: horizontal-cards (1 row + overflow) | grid-cards (wrap) | vertical-list (rows) (default: horizontal-cards)
-            # channels accepts either form — pick what you know:
-            #   UC ID: "UCsBjURrPoezykLs9EqgamOA"  (stable, copy from channel URL)
-            #   @handle: "@spokeishere" / "@Bug-I" / "@CalebWritesCode" / "@AZisk"  (easy, auto-resolved via youtube.com/@handle → UC)
-            # Both resolve to the same YouTube RSS feed; mix freely. Bare handles ("spokeishere") also work (normalized to @handle).
+            # channels: @handle primary (easy) — UC fallback also works
+            #   @handle: "@Fireship" / "@spokeishere" / "@Bug-I" / "@CalebWritesCode" / "@AZisk" → resolved via youtube.com/@handle (Mozilla UA + handleChannelCache) to UC
+            #   UC ID: "UCsBjURrPoezykLs9EqgamOA" also works — use what you know, mix freely. Bare handles ("spokeishere") normalized to @handle.
             style: grid-cards
             channels:
-              - UCsBjURrPoezykLs9EqgamOA  # Fireship — UC ID example
-              - "@ByCloud"                # @handle example (same as UC6r0JH23PKZfogSwn2Q-oMw)
-              - "@BetterStack"            # @handle example (same as UCkVfrGwV-iG9bSsgCbrNPxQ)
-              - "@Bug-I"                  # https://www.youtube.com/@Bug-I → UCeUHo1UGx4p97AQllOYuneA
+              - "@Fireship"               # → UCsBjURrPoezykLs9EqgamOA (UC fallback: same feed via channel_id)
+              - "@ByCloud"                # → UC6r0JH23PKZfogSwn2Q-oMw
+              - "@BetterStack"            # → UCkVfrGwV-iG9bSsgCbrNPxQ
+              - "@Bug-I"                  # https://www.youtube.com/@Bug-I → UCeUHo1UGx4p97AQllOYuneA — hyphen test
               - "@CalebWritesCode"        # https://www.youtube.com/@CalebWritesCode → UCuU9jE4MHHEIyYMbDfUPSew
               - "@AZisk"                  # https://www.youtube.com/@AZisk → UCajiMK_CY9icRhLepS8_3ug
-              - UCkQS_dP6GJTmYnMlox-YiKQ  # @JiaBinHuang — UC ID also works
+              - "@JiaBinHuang"            # → UCkQS_dP6GJTmYnMlox-YiKQ — also works as UC ID fallback
+              # UC fallback example (uncomment to use): UCsBjURrPoezykLs9EqgamOA  # same as @Fireship
           - type: repository
             repository: glanceapp/glance
             pull-requests-limit: 5
@@ -175,24 +175,25 @@ pages:
                 title: Tech creators
                 limit: 6
                 # style: horizontal-cards (1 row + overflow) | grid-cards (wrap) | vertical-list (rows) (default: horizontal-cards)
-                # channels: UC ID or @handle — e.g. "@spokeishere" also works
+                # channels: @handle primary — e.g. "@Fireship" / "@spokeishere" / "@Bug-I" all resolve via youtube.com/@handle + cache
                 style: vertical-list
                 channels:
-                  - UCsBjURrPoezykLs9EqgamOA  # Fireship (UC)
-                  - "@ByCloud"                # @handle (same as UC6r0JH23PKZfogSwn2Q-oMw)
-                  - "@BetterStack"            # @handle
+                  - "@Fireship"               # → UCsBjURrPoezykLs9EqgamOA (UC fallback: UCsBjURrPoezykLs9EqgamOA also works)
+                  - "@ByCloud"                # → UC6r0JH23PKZfogSwn2Q-oMw
+                  - "@BetterStack"            # → UCkVfrGwV-iG9bSsgCbrNPxQ
               - type: videos
                 title: Minecraft — Unstable Universe & friends
                 limit: 9
                 # style: horizontal-cards (1 row + overflow) | grid-cards (wrap) | vertical-list (rows) (default: horizontal-cards)
-                # Mix UC and @handle freely — e.g. "@SpokeIsHere" ↔ UCK... ; handles with hyphens like @Bug-I also work
+                # @handle primary — mix UC and @handle freely; handles with hyphens like @Bug-I also work
+                # All @handles resolve via handle→UC cache (youtube.com/@handle, Mozilla UA). Try lower-case "@spokeishere" or bare "spokeishere" too.
                 style: grid-cards
                 channels:
-                  - UCGwHHBGD-1ysDvq1Z4xXw7g  # @UnstableUniverse (UC)
-                  - UCPLMPHT-d8GZOqL_AHJFdQQ  # @ParrotX2
-                  - UCkzzNLnuM-VsATWC53ehwOQ  # @Wemmbu (@wemmbumc)
-                  - UCkvg04omHN08nuKdvKZoNuA  # @FlameFrags
-                  - "@SpokeIsHere"            # @handle example — also works as UCk2uxbWi5py_iJXaEsh2YRA, try "@spokeishere" lower-case too
+                  - "@UnstableUniverse"       # → UCGwHHBGD-1ysDvq1Z4xXw7g (also as UC fallback)
+                  - "@ParrotX2"               # → UCPLMPHT-d8GZOqL_AHJFdQQ
+                  - "@Wemmbu"                 # → UCkzzNLnuM-VsATWC53ehwOQ (@wemmbumc)
+                  - "@FlameFrags"             # → UCkvg04omHN08nuKdvKZoNuA
+                  - "@SpokeIsHere"            # → UCk2uxbWi5py_iJXaEsh2YRA — also "@spokeishere" lower-case / bare "spokeishere"
           - type: reddit
             subreddit: selfhosted
             limit: 10
@@ -354,11 +355,12 @@ pages:
             title: Homelab — recent
             limit: 8
             style: grid-cards
+            # @handle primary — UC fallback also works; all resolve via handle→UC cache
             channels:
-              - UCXuqSBlHAE6Xw-yeJA0Tunw  # Linus Tech Tips
-              - UCR-DXc1voovS8nhAvccRZhg  # Jeff Geerling
-              - UCsBjURrPoezykLs9EqgamOA  # Fireship — UC ID, data-driven
-              - UCBJycsmduvYEL83R_U4JriQ  # Marques Brownlee (placeholder homelab-adjacent)
+              - "@LinusTechTips"          # Linus Tech Tips → UCXuqSBlHAE6Xw-yeJA0Tunw (UC fallback: UCXuqSBlHAE6Xw-yeJA0Tunw)
+              - "@jeffgeerling"           # Jeff Geerling → UCR-DXc1voovS8nhAvccRZhg
+              - "@Fireship"               # → UCsBjURrPoezykLs9EqgamOA
+              - "@MKBHD"                  # Marques Brownlee → UCBJycsmduvYEL83R_U4JriQ
           - type: releases
             title: Homelab releases
             repositories:

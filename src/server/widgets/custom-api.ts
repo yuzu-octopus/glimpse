@@ -79,7 +79,7 @@ registerWidget('custom-api', async (ctx, config) => {
   const rootResult = JSONPath({ path: cfg.options.path, json: payload as object }) as unknown;
   const list: unknown[] = Array.isArray(rootResult) ? rootResult : [rootResult];
 
-  const limit = cfg.limit ?? 10;
+  const limit = cfg.limit ?? 5;
   const sliced = list.slice(0, limit);
   const items: CustomApiItem[] = sliced.map((item) => {
     const mapped: CustomApiItem = {

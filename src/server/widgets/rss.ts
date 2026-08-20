@@ -29,7 +29,7 @@ registerWidget('rss', async (ctx, config) => {
     cfg.feeds.map(async (feed) => {
       const raw = await fetchText(ctx, feed.url, { headers: feed.headers });
       const parsed = (await parser.parseString(raw)) as ParsedFeed;
-      const perFeedLimit = feed.limit ?? cfg.limit ?? 10;
+      const perFeedLimit = feed.limit ?? cfg.limit ?? 5;
       return parsed.items.slice(0, perFeedLimit).map((item) => ({
         title: item.title ?? '',
         url: item.link ?? '',
@@ -61,6 +61,6 @@ registerWidget('rss', async (ctx, config) => {
       return tb - ta;
     });
   }
-  const limit = cfg.limit ?? 10;
+  const limit = cfg.limit ?? 5;
   return { items: items.slice(0, limit) };
 });

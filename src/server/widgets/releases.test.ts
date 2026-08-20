@@ -27,10 +27,10 @@ const releasesFetcher = () => serverWidgets.get('releases')!;
 describe('releases fetcher', () => {
   it('maps GitHub releases and merges sources', async () => {
     const routes = {
-      'https://api.github.com/repos/glanceapp/glance/releases?per_page=10': [
+      'https://api.github.com/repos/glanceapp/glance/releases?per_page=5': [
         { name: 'v0.7.0', tag_name: 'v0.7.0', html_url: 'https://github.com/glanceapp/glance/releases/tag/v0.7.0', published_at: '2024-06-01T00:00:00Z' },
       ],
-      'https://hub.docker.com/v2/repositories/glanceapp/glance/tags?page_size=10': {
+      'https://hub.docker.com/v2/repositories/glanceapp/glance/tags?page_size=5': {
         results: [{ name: 'latest', last_updated: '2024-06-02T00:00:00Z' }],
       },
     };
@@ -50,7 +50,7 @@ describe('releases fetcher', () => {
 
   it('sends the token to GitHub when configured', async () => {
     const routes = {
-      'https://api.github.com/repos/o/r/releases?per_page=10': [],
+      'https://api.github.com/repos/o/r/releases?per_page=5': [],
     };
     const { ctx, fetchMock } = makeCtx(routes);
     await releasesFetcher()(ctx, { type: 'releases', repositories: [{ url: 'o/r' }], token: 'sekrit' });
@@ -60,13 +60,13 @@ describe('releases fetcher', () => {
 
   it('parses all string repo forms into the right endpoints', async () => {
     const routes = {
-      'https://api.github.com/repos/glanceapp/glance/releases?per_page=10': [
+      'https://api.github.com/repos/glanceapp/glance/releases?per_page=5': [
         { name: 'v1', tag_name: 'v1', html_url: 'https://github.com/glanceapp/glance/releases/tag/v1', published_at: '2024-06-01T00:00:00Z' },
       ],
-      'https://gitlab.com/api/v4/projects/inkscape%2Finkscape/releases?per_page=10': [
+      'https://gitlab.com/api/v4/projects/inkscape%2Finkscape/releases?per_page=5': [
         { name: 'r1', tag_name: 'r1', _links: { self: 'https://gitlab.com/inkscape/inkscape/-/releases/r1' }, released_at: '2024-06-02T00:00:00Z' },
       ],
-      'https://codeberg.org/api/v4/projects/redict%2Fredict/releases?per_page=10': [
+      'https://codeberg.org/api/v4/projects/redict%2Fredict/releases?per_page=5': [
         { name: 'c1', tag_name: 'c1', released_at: '2024-06-03T00:00:00Z' },
       ],
     };
@@ -84,16 +84,16 @@ describe('releases fetcher', () => {
     // three distinct endpoints hit, no URL munging
     expect(fetchMock.mock.calls.map((c) => c[0])).toEqual(
       expect.arrayContaining([
-        'https://api.github.com/repos/glanceapp/glance/releases?per_page=10',
-        'https://gitlab.com/api/v4/projects/inkscape%2Finkscape/releases?per_page=10',
-        'https://codeberg.org/api/v4/projects/redict%2Fredict/releases?per_page=10',
+        'https://api.github.com/repos/glanceapp/glance/releases?per_page=5',
+        'https://gitlab.com/api/v4/projects/inkscape%2Finkscape/releases?per_page=5',
+        'https://codeberg.org/api/v4/projects/redict%2Fredict/releases?per_page=5',
       ]),
     );
   });
 
   it('filters GitHub prereleases and drafts unless include-prereleases', async () => {
     const routes = {
-      'https://api.github.com/repos/o/r/releases?per_page=10': [
+      'https://api.github.com/repos/o/r/releases?per_page=5': [
         { name: 'Stable', tag_name: 'v1.0.0', html_url: 'https://github.com/o/r/releases/tag/v1.0.0', published_at: '2024-06-01T00:00:00Z', prerelease: false },
         { name: 'Beta', tag_name: 'v2.0.0-beta', html_url: 'https://github.com/o/r/releases/tag/v2.0.0-beta', published_at: '2024-06-02T00:00:00Z', prerelease: true },
         { name: 'Draft', tag_name: 'v9.9.9', html_url: 'https://github.com/o/r/releases/tag/v9.9.9', published_at: '2024-06-03T00:00:00Z', draft: true },
@@ -149,7 +149,7 @@ describe('releases fetcher', () => {
     }));
     const routes = {
       'https://api.github.com/repos/o/r/releases?per_page=3': ghReleases.slice(0, 3),
-      'https://api.github.com/repos/o/r/releases?per_page=10': ghReleases,
+      'https://api.github.com/repos/o/r/releases?per_page=5': ghReleases,
     };
     const { ctx } = makeCtx(routes);
     const data = (await releasesFetcher()(ctx, {

@@ -22,6 +22,7 @@ const clockWidget: WidgetConfig = { type: 'clock', timezones: [] };
 const rssWidget: WidgetConfig = {
   type: 'rss',
   cache: '1h',
+  limit: 5,
   feeds: [{ url: 'https://example.com/feed.xml' }],
 };
 

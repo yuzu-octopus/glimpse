@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { Link } from '@astryxdesign/core';
+import { ChevronRight } from 'lucide-react';
 import type { VideosConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
@@ -6,6 +8,7 @@ import { formatAge } from '../useRelativeTime';
 import type { Video } from '../../../shared/widgets/payloads';
 import styles from './videos.module.css';
 import Feed, { type FeedItem } from '../feed/Feed';
+import chromeStyles from '../../components/widget-chrome.module.css';
 
 function Card({ video }: { video: Video }) {
   const age = video.published ? formatAge((Date.now() - Date.parse(video.published)) / 1000) : null;
@@ -31,6 +34,7 @@ function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
   const videos = ((data as { videos?: Video[] } | null)?.videos ?? []) as Video[];
   const style = cfg.style ?? 'horizontal-cards';
   const collapseAfter = style === 'grid-cards' ? cfg['collapse-after-rows'] : cfg['collapse-after'];
+  const [expanded, setExpanded] = useState(false);
 
   if (loading) {
     return (
@@ -68,6 +72,9 @@ function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
         image: v.thumbnail,
       };
     });
+    const hasCollapse =
+      typeof collapseAfter === 'number' && collapseAfter >= 0 && feedItems.length > collapseAfter;
+    const visible = hasCollapse && !expanded ? feedItems.slice(0, collapseAfter) : feedItems;
     return (
       <WidgetChrome
         title={cfg.title}
@@ -75,11 +82,26 @@ function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
         hideHeader={cfg['hide-header']}
         cssClass={cfg['css-class']}
         error={error}
-        collapseAfter={collapseAfter}
-        items={feedItems.map((fi) => (
-          <Feed key={fi.url} items={[fi]} />
-        ))}
-      />
+      >
+        <Feed items={visible} layout="list" />
+        {hasCollapse ? (
+          expanded ? (
+            <button
+              type="button"
+              className={`${chromeStyles.more} ${chromeStyles.moreExpanded}`}
+              onClick={() => setExpanded(false)}
+            >
+              Show less
+              <ChevronRight size={12} className={chromeStyles.chevron} />
+            </button>
+          ) : (
+            <button type="button" className={chromeStyles.more} onClick={() => setExpanded(true)}>
+              {`Show more (${feedItems.length - (collapseAfter as number)})`}
+              <ChevronRight size={12} className={chromeStyles.chevron} />
+            </button>
+          )
+        ) : null}
+      </WidgetChrome>
     );
   }
 

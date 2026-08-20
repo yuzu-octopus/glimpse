@@ -83,7 +83,7 @@ describe('reddit fetcher', () => {
       'request-url-template': 'https://proxy.local/{REQUEST-URL}',
     });
     const url = fetchMock.mock.calls[0][0] as string;
-    expect(url).toBe('https://proxy.local/https://www.reddit.com/r/selfhosted/hot.json?limit=10&t=day');
+    expect(url).toBe('https://proxy.local/https://www.reddit.com/r/selfhosted/hot.json?limit=5&t=day');
   });
 
   it('passes the proxy option to fetch', async () => {
@@ -113,7 +113,7 @@ describe('reddit fetcher', () => {
   it('fetches an app-auth token and sends it as a Bearer header', async () => {
     const { ctx, fetchMock } = makeCtx({
       'https://www.reddit.com/api/v1/access_token': { access_token: 'tok123', expires_in: 3600 },
-      'https://oauth.reddit.com/r/selfhosted/hot.json?limit=10&t=day': { data: { children: [] } },
+      'https://oauth.reddit.com/r/selfhosted/hot.json?limit=5&t=day': { data: { children: [] } },
     });
     await redditFetcher()(ctx, {
       type: 'reddit',
@@ -128,7 +128,7 @@ describe('reddit fetcher', () => {
     expect(tokenOpts.body).toBe('grant_type=client_credentials');
 
     const [listingUrl, listingOpts] = fetchMock.mock.calls[1];
-    expect(listingUrl).toBe('https://oauth.reddit.com/r/selfhosted/hot.json?limit=10&t=day');
+    expect(listingUrl).toBe('https://oauth.reddit.com/r/selfhosted/hot.json?limit=5&t=day');
     expect(listingOpts.headers.Authorization).toBe('Bearer tok123');
     expect(listingOpts.headers['User-Agent']).toMatch(/Mozilla/);
   });
@@ -136,7 +136,7 @@ describe('reddit fetcher', () => {
   it('reuses the cached token across calls', async () => {
     const { ctx, fetchMock } = makeCtx({
       'https://www.reddit.com/api/v1/access_token': { access_token: 'tok123' },
-      'https://oauth.reddit.com/r/selfhosted/hot.json?limit=10&t=day': { data: { children: [] } },
+      'https://oauth.reddit.com/r/selfhosted/hot.json?limit=5&t=day': { data: { children: [] } },
     });
     const cfg = { type: 'reddit', subreddit: 'selfhosted', 'app-auth': { id: 'a', secret: 'b' } };
     await redditFetcher()(ctx, cfg);
@@ -148,7 +148,7 @@ describe('reddit fetcher', () => {
   it('uses oauth host for search when app-auth present', async () => {
     const { ctx, fetchMock } = makeCtx({
       'https://www.reddit.com/api/v1/access_token': { access_token: 'tok' },
-      'https://oauth.reddit.com/search.json?q=docker&sort=hot&t=day&limit=10': { data: { children: [] } },
+      'https://oauth.reddit.com/search.json?q=docker&sort=hot&t=day&limit=5': { data: { children: [] } },
     });
     await redditFetcher()(ctx, { type: 'reddit', subreddit: 'selfhosted', search: 'docker', 'app-auth': { id: 'id', secret: 'sec' } });
     const [secondUrl] = fetchMock.mock.calls[1];

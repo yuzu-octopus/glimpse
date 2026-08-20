@@ -60,7 +60,7 @@ async function getAccessToken(
 
 registerWidget('reddit', async (ctx, config) => {
   const cfg = redditSchema.parse(config);
-  const limit = cfg.limit ?? 10;
+  const limit = cfg.limit ?? 5;
   const sort = cfg['sort-by'] ?? 'hot';
   const period = cfg['top-period'] ?? 'day';
 

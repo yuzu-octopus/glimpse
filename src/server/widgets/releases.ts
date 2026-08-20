@@ -154,7 +154,7 @@ async function fetchReleases(
 
 registerWidget('releases', async (ctx, config) => {
   const cfg = releasesSchema.parse(config);
-  const limit = cfg.limit ?? 10;
+  const limit = cfg.limit ?? 5;
   const githubToken = cfg.token ?? ctx.env.GITHUB_TOKEN;
 
   const settled = await Promise.allSettled(

@@ -28,7 +28,7 @@ registerWidget('lobsters', async (ctx, config) => {
       ? stories.filter((s) => (s.tags ?? []).some((t) => tagSet.has(t)))
       : stories;
 
-  const limit = cfg.limit ?? 10;
+  const limit = cfg.limit ?? 5;
   const posts: LobsterPost[] = filtered.slice(0, limit).map((s) => {
     const created = Date.parse(s.created_at ?? '');
     return {

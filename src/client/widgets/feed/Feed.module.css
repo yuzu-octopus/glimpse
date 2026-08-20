@@ -7,10 +7,10 @@
   position: relative;
   isolation: isolate;
   display: flex;
-  gap: 12px;
+  gap: calc(var(--widget-content-horizontal) - 5px);
   align-items: flex-start;
   min-width: 0;
-  padding-block: 7px;
+  padding-block: calc(var(--widget-content-vertical) / 2 - 0.5px);
   animation: collapsibleItemReveal 0.25s backwards;
 }
 
@@ -27,12 +27,8 @@
   pointer-events: none;
 }
 
-.row:hover::before {
-  opacity: 1;
-}
-
 .row + .row {
-  margin-top: 5px;
+  margin-top: calc(var(--widget-content-vertical) / 3);
   border-top: 1px solid var(--color-separator);
 }
 

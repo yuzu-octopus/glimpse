@@ -14,7 +14,7 @@ export const rssSchema = z.object({
   type: z.literal('rss'),
   ...sharedWidgetFields,
   feeds: z.array(feedSchema).min(1),
-  limit: z.number().int().min(0).optional(),
+  limit: z.number().int().min(0).default(5),
   'collapse-after': z.number().int().min(-1).optional(),
   'source-header': z.boolean().optional(),
   style: z
@@ -30,7 +30,7 @@ export type RssConfig = z.infer<typeof rssSchema>;
 export const hackerNewsSchema = z.object({
   type: z.literal('hacker-news'),
   ...sharedWidgetFields,
-  limit: z.number().int().min(0).optional(),
+  limit: z.number().int().min(0).default(5),
   'sort-by': z.enum(['top', 'new', 'best']).optional(),
   'extra-sort-by': z.enum(['engagement']).optional(),
   'comments-url-template': z.string().optional(),
@@ -46,7 +46,7 @@ export const redditSchema = z.object({
   'sort-by': z.enum(['hot', 'new', 'top', 'rising']).optional(),
   'top-period': z.string().optional(),
   search: z.string().optional(),
-  limit: z.number().int().min(0).optional(),
+  limit: z.number().int().min(0).default(5),
   'collapse-after': z.number().int().min(-1).optional(),
   'source-header': z.boolean().optional(),
   'show-thumbnails': z.boolean().optional(),
@@ -93,7 +93,7 @@ export const releasesSchema = z.object({
   'show-source-icon': z.boolean().optional(),
   token: z.string().optional(),
   'gitlab-token': z.string().optional(),
-  limit: z.number().int().min(0).optional(),
+  limit: z.number().int().min(0).default(5),
   'collapse-after': z.number().int().min(-1).optional(),
 });
 export type ReleasesConfig = z.infer<typeof releasesSchema>;

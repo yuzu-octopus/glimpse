@@ -188,6 +188,6 @@ registerWidget('videos', async (ctx, config) => {
     return tb - ta;
   });
 
-  const limit = cfg.limit ?? 25;
+  const limit = cfg.limit ?? 5;
   return { videos: videos.slice(0, limit) };
 });
