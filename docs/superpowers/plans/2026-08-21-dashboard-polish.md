@@ -431,26 +431,41 @@ git commit -m "feat: system-stats widget via systeminformation (cpu/mem/fs/temp/
 - Test: `src/client/pages/tiling.test.ts` + `src/client/pages/useCollageTiling.test.tsx`
 
 **Interfaces:**
-- Consumes: `WidgetType` union, containerWidth, gap, minColumnWidth, maxCols, `PREFERRED_SIZES`
-- Produces: `chooseColumnCount(W,gap,minW,maxCols,tiles:{prefW,span}[]): n` + `actualWidth(n)`; `PageView` sets `--min-column-width`/`gridTemplateColumns`; `useCollageTiling` uses `prefH` for span when not resizable.
+- Consumes: `WidgetType` union, containerWidth, gap, minColumnWidth, maxCols, `PREFERRED_SIZES`, rowUnit
+- Produces: `chooseColumnCount(W,gap,minW,maxCols,tiles:{prefW:number|null,prefH:number|null,span:number,resizable:boolean}[]): n` + `actualWidth(n)`; PageView sets `--min-column-width`/`gridTemplateColumns`; `useCollageTiling` uses `prefH` for span when not resizable.
 
-- [ ] **Step 1: Write failing tiling tests**
+- [ ] **Step 1: Write failing tiling tests (2D squared error, null left out)**
 
 ```ts
 // src/client/pages/tiling.test.ts
 import { chooseColumnCount } from './tiling';
-it('picks n minimizing squared error', () => {
-  // W=1920 gap=23 min=300 max=6 tiles: 300,380,340
-  const n = chooseColumnCount(1920, 23, 300, 6, [{prefW:300,span:1},{prefW:380,span:1},{prefW:340,span:1}]);
-  expect(n).toBe(4); // 462px actual closest to prefs
+it('picks n minimizing squared error (width primary, height λ)', () => {
+  // W=1920 gap=23 min=300 max=6 tiles: w 300/h200, w380/h220, w340/h200
+  const n = chooseColumnCount(1920, 23, 300, 6, [
+    {prefW:300,prefH:200,span:1,resizable:false},
+    {prefW:380,prefH:220,span:1,resizable:false},
+    {prefW:340,prefH:200,span:1,resizable:false},
+  ]);
+  expect(n).toBe(4); // 462px actual closest to prefs; height term λ=0.1 tie-breaks
 });
-it('fluid-only fallback to floor(W/min)', () => {
-  const n = chooseColumnCount(1920,23,300,6, [{prefW:null,span:1},{prefW:null,span:1}]);
+it('fluid-only (null) left out — fallback to floor(W/min)', () => {
+  const n = chooseColumnCount(1920,23,300,6, [
+    {prefW:null,prefH:null,span:1,resizable:true},
+    {prefW:null,prefH:null,span:1,resizable:true},
+  ]);
   expect(n).toBe(6);
 });
-it('span-2 hero effective width', () => {
-  const n = chooseColumnCount(1200,23,300,4, [{prefW:700,span:2},{prefW:340,span:1}]);
+it('span-2 hero effective width included', () => {
+  const n = chooseColumnCount(1200,23,300,4, [
+    {prefW:700,prefH:400,span:2,resizable:false},
+    {prefW:340,prefH:200,span:1,resizable:false},
+  ]);
   expect(n).toBeGreaterThanOrEqual(2);
+});
+it('blank h left out of height term', () => {
+  const n1 = chooseColumnCount(1200,23,300,4, [{prefW:340,prefH:null,span:1,resizable:true}]);
+  const n2 = chooseColumnCount(1200,23,300,4, [{prefW:340,prefH:220,span:1,resizable:false}]);
+  expect(n1).toBe(n2); // null h contributes 0, width drives
 });
 ```
 
@@ -459,7 +474,7 @@ it('span-2 hero effective width', () => {
 Run: `bunx vitest run src/client/pages/tiling.test.ts -v`
 Expected: FAIL — `chooseColumnCount not defined`
 
-- [ ] **Step 3: Create registry + chooser**
+- [ ] **Step 3: Create registry + 2D chooser**
 
 ```ts
 // src/shared/widgets/preferredSizes.ts
@@ -467,7 +482,7 @@ export type Pref = { preferredWidth: number|null, preferredHeight: number|null, 
 export const PREFERRED_SIZES: Record<WidgetType, Pref> = {
   clock: { preferredWidth: 300, preferredHeight: 200, resizable: false },
   weather: { preferredWidth: 300, preferredHeight: 280, resizable: false },
-  // ... table from design §2.2
+  // ... table from design §2.2 (every WidgetType, null=explicit none)
   rss: { preferredWidth: null, preferredHeight: null, resizable: true },
   // ensure every WidgetType key exists — assert
 };
@@ -479,18 +494,32 @@ export function assertAllWidgetsCovered() {
 
 ```ts
 // src/client/pages/tiling.ts
-export function chooseColumnCount(W:number,gap:number,minW:number,maxCols:number,tiles:{prefW:number|null,span:number}[]): number {
-  const nonNull = tiles.filter(t=>t.prefW!=null) as {prefW:number,span:number}[];
-  if (nonNull.length===0) return Math.min(Math.max(1, Math.floor(W/minW)), maxCols);
+export function chooseColumnCount(
+  W:number,gap:number,minW:number,maxCols:number,
+  tiles:{prefW:number|null,prefH:number|null,span:number,resizable:boolean}[],
+  opts?:{rowUnit?:number, lambda?:number}
+): number {
+  const rowUnit = opts?.rowUnit ?? 80;
+  const lambda = opts?.lambda ?? 0.1;
+  const hasWidth = tiles.some(t=>t.prefW!=null);
+  const hasHeight = tiles.some(t=>t.prefH!=null && !t.resizable);
+  if (!hasWidth && !hasHeight) return Math.min(Math.max(1, Math.floor(W/minW)), maxCols);
   let bestN=1, bestScore=Infinity;
   for (let n=1; n<=maxCols; n++) {
     if (tiles.some(t=>t.span>n)) continue;
-    const actual = (W - (n-1)*gap)/n;
+    const actualW = (W - (n-1)*gap)/n;
     let score=0;
-    for (const t of nonNull) {
-      const effW = t.span>1 ? actual*t.span + (t.span-1)*gap : actual;
-      const d = effW - t.prefW;
-      score += d*d;
+    for (const t of tiles) {
+      if (t.prefW!=null) {
+        const effW = t.span>1 ? actualW*t.span + (t.span-1)*gap : actualW;
+        const dw = effW - t.prefW;
+        score += dw*dw;
+      }
+      if (t.prefH!=null && !t.resizable) {
+        const estimatedH = Math.ceil(t.prefH/rowUnit)*rowUnit;
+        const dh = estimatedH - t.prefH;
+        score += lambda * dh*dh; // height term, null left out
+      }
     }
     if (score < bestScore || (score===bestScore && n>bestN)) { bestScore=score; bestN=n; }
   }
@@ -498,9 +527,10 @@ export function chooseColumnCount(W:number,gap:number,minW:number,maxCols:number
 }
 ```
 
-Wire in `PageView.tsx`: inside `useEffect` with `ResizeObserver` on `.columns`, compute `n*` via `chooseColumnCount`, set `columnsEl.style.setProperty('--min-column-width', `${actualWidth(n*)}px`)` or `gridTemplateColumns = repeat(n*,1fr)` when `tiling==='collage'||'auto'`. Keep existing `span` handling.
+Wire in `PageView.tsx`: inside `useEffect` with `ResizeObserver` on `.columns`, compute `n*` via `chooseColumnCount` with `prefW/prefH/resizable` from `PREFERRED_SIZES[type]` + `span`, plus `rowUnit` from `useCollageTiling` min height, set `columnsEl.style.setProperty('--min-column-width', `${actualWidth(n*)}px`)` or `gridTemplateColumns = repeat(n*,1fr)` when `tiling==='collage'||'auto'`. Keep existing `span` handling.
 
 `useCollageTiling.ts`: `const pref = PREFERRED_SIZES[type]; const h = !pref.resizable && pref.preferredHeight!=null ? pref.preferredHeight : measuredH; spans = clamp(ceil(h/rowUnit),1,8)`
+```
 
 - [ ] **Step 4: Run tests — PASS**
 

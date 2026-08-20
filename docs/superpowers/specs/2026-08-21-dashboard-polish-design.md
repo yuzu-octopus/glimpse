@@ -51,33 +51,16 @@ Current: 3 modes via `getTilingProps` seam → `tiling.ts` + `page.module.css` +
 
 Proposed: `shared/widgets/preferredSizes.ts` registry `PREFERRED_SIZES: Record<WidgetType, {preferredWidth: number|null, preferredHeight: number|null, resizable: boolean}>`:
 
-| widget | w | h | note |
-|---|---|---|---|
-| clock | 300 | 200 | +60 per extra timezone |
-| weather | 300 | 280 | 7-day strip |
-| calendar | 340 | 320 | month grid min 320 |
-| bookmarks | 300 | 240 | icon grid |
-| search | 300 | 90 | single input |
-| todo | 320 | 220 | 5 items base |
-| rss/hn/reddit/lobsters | null | null | fluid, `resizable: true` |
-| releases | 360 | 260 | repo cards |
-| videos | 380 | 220 | thumbnail cards |
-| twitch* | 380 | 260 | (to be removed, size kept for replacement) |
-| markets | 340 | 220 | sparkline table |
-| monitor | 340 | 200 | status grid |
-| repository/custom-api | 360/340 | 200 | single card |
-| iframe | 500 | 400 | `span:2` |
-| html | null | 200 | fluid w |
-| group | 340 | 320 | sum children |
-| split-column | null | 320 | inner masonry |
-
-Algorithm (squared deviation, width only per your ask):
-1. `preferredSizes` must cover every `WidgetType` (lint fails if missing).
-2. For candidate `n ∈ [1..maxCols]` with span minima (`n_eff = n - Σ(max(0,span-1))`), `actualWidth(n) = (W - (n-1)*gap)/n`.
-3. `score(n) = Σ_{prefW!=null} (actualWidth(n)*effectiveSpan - prefW)²`, `effectiveSpan = span>1 ? span :1` (add `(span-1)*gap` when span). Fluid `null` tiles excluded; if all null → `n = clamp(floor(W/minColumnWidth),1,maxCols)`.
+Algorithm (squared deviation, **both axes** per your clarification — blank/null left out):
+1. `preferredSizes` must cover every `WidgetType` (lint fails if missing). Each entry `Pref = { preferredWidth: number|null, preferredHeight: number|null, resizable: boolean }` — `null` = fluid/blank (explicit “none”), excluded from cost for that axis.
+2. For candidate `n ∈ [1..maxCols]` with span minima (`n_eff = n - Σ(max(0,span-1))`), `actualWidth(n) = (W - (n-1)*gap)/n`. `actualHeight` for tiling comes from row sizing: `rowUnit` (≈ min tile height or 80px fallback) and `tileH(n) = spanHeight?` For squaring we compare **both** axes: for each tile with `prefW!=null` contribute `dw = actualWidth(n)*effectiveSpan - prefW`; for each tile with `prefH!=null` and `!resizable` contribute `dh = estimatedTileHeight - prefH` where `estimatedTileHeight = (prefH!=null ? prefH : measuredH)` mapped to `ceil(h/rowUnit)*rowUnit`. Simpler score used for `n` selection is width-driven (`scoreW(n)=Σdw²`, fluid/null skipped); height contributes via `scoreH = Σ_{prefH!=null && !resizable} (ceil(prefH/rowUnit)*rowUnit - prefH)²` which is independent of `n` — so for column-choice we minimise `score(n)=scoreW(n)+λ*scoreH` (λ=0.1 default to keep width primary but penalise tall mismatches; height term is constant per `n` if rowUnit depends on `n`, otherwise it’s a small tie-breaker). If a tile is `null` on an axis, that axis contributes 0 (left out) — e.g. `rss` `w:null,h:null` contributes nothing to either sum, as you said.
+3. `score(n) = Σ_{prefW!=null} dw² + λ* Σ_{prefH!=null} dh²` (null left out). Fluid `null` tiles excluded; if all tiles null on both axes → `n = clamp(floor(W/minColumnWidth),1,maxCols)` (current behaviour).
 4. `n* = argmin score(n)`, tie → larger `n` (denser); also clamp `n* ≤ floor(W/minColumnWidth)` and `span ≤ n*`.
-5. Apply `repeat(n*,1fr)` or `--min-column-width = actualWidth(n*)` so CSS keeps auto-fit fallback when JS off. Height: `data-row-span = resizable||prefH==null ? ceil(measuredH/rowUnit) : ceil(prefH/rowUnit)`, `rowUnit = --tile-row = min(measuredHeights) || 80px`.
-6. `dense` packs holes; ResizeObserver reruns on `W` change.
+5. Apply `repeat(n*,1fr)` or `--min-column-width = actualWidth(n*)` so CSS keeps auto-fit fallback when JS off. Height: `data-row-span = resizable||prefH==null ? ceil(measuredH/rowUnit) : ceil(prefH/rowUnit)`, `rowUnit = --tile-row = min(measuredHeights) || 80px` — but now `measuredH` baseline is seeded from `prefH` when available, so first-paint uses `prefH` not just `estimateRowSpan` heuristic.
+6. `dense` packs holes; ResizeObserver reruns on `W` change. Future: `display:grid-lanes` replaces JS height pass.
+
+Research done: scout `CollageResearch` read `PageView.tsx` (378 lines), `useCollageTiling.ts` (68 lines, ResizeObserver+rAF), `tiling.ts` seam, `page.module.css` (auto `repeat(auto-fit, minmax)` + collage `dense + grid-auto-rows:var(--tile-row)`), `docs/tiling-design.md` v1+v2, `shared/api.ts` payloads, `shared/config.ts` tiling enum, plus `glance/masonry.js` (clamp floor(W/minWidth), round-robin `i%cols`). Gaps found: no per-widget pref sizes → no cost function; smallColumn 360px hard-cap not derived from widget naturals; height post-hoc only; column count greedy not optimal; no `resizable`/`none` model; max 3 cols limits wide bento. Sources: bin-packing squared-error, MDN masonry, Chrome grid-lanes, WebKit grid-lanes TP, Treemap docs.
+Improvements beyond current: (a) registry gives `actualWidth` target so bento on 1920px picks 4-6 tracks of 300-380px instead of greedily 6×300, (b) squared penalty balances outliers (large pref like iframe 500w not stretched to 620w), (c) height squared term keeps tall widgets (calendar 320h, iframe 400h) from being squashed into 1 row, (d) height term λ keeps width primary but improves vertical packing, (e) explicit `null` handles fluid rss/hn/reddit correctly (left out).
 
 Sources: bin-packing squared-error balancing, MDN masonry, Chrome grid-lanes flag, WebKit grid-lanes TP, Treemap docs. Future swap to native `display:grid-lanes` is CSS-class change.
 
@@ -139,40 +122,23 @@ No server/client code change — `videos.ts` already honors `limit`.
 
 Already completed — 12 proposals listed in §2.1. Design decision: **do not implement them now**; keep as `docs/superpowers/specs/component-ideas-appendix.md` appendix and pick 1 replacement for twitch slot in next plan (recommended DNS Stats or Server Stats, lowest effort, glance parity). This spec just records the ideas so writing-plans can reference them.
 
-### 3.7 Collage Compositor — preferred sizes + squared error
+### 3.7 Collage Compositor — preferred sizes + squared error (2D)
 
-See §2.2 table + algorithm. Implementation sketch for plan:
+See §2.2 table + algorithm. Goal **minimise sum squared errors on both axes** (your ask); blank/`null` left out. Implementation sketch for plan:
 
-- `src/shared/widgets/preferredSizes.ts` — `export const PREFERRED_SIZES: Record<WidgetType, Pref>` + `export type Pref = { preferredWidth: number|null, preferredHeight: number|null, resizable: boolean }` + `assertAllWidgetsCovered()` called in `src/shared/widgets/index.test.ts` or at import time (throw if `Object.keys(PREFERRED_SIZES).length !== WidgetTypes.length`).
+- `src/shared/widgets/preferredSizes.ts` — `export const PREFERRED_SIZES: Record<WidgetType, Pref>` + `export type Pref = { preferredWidth: number|null, preferredHeight: number|null, resizable: boolean }` + `assertAllWidgetsCovered()` called in `src/shared/widgets/index.test.ts` or at import time (throw if `Object.keys(PREFERRED_SIZES).length !== WidgetTypes.length`). `null` = explicit none, excluded from that axis’ score.
 
-- `src/client/pages/tiling.ts` — add `chooseColumnCount(containerWidth: number, gap: number, minColumnWidth: number, maxCols: number, tiles: {prefW:number|null, span:number}[])` pure helper implementing §2.2 steps 2-4. Unit-tested.
+- `src/client/pages/tiling.ts` — add `chooseColumnCount(containerWidth: number, gap: number, minColumnWidth: number, maxCols: number, tiles: {prefW:number|null, prefH:number|null, span:number, resizable:boolean}[])` pure helper implementing §2.2 steps 2-4. But to minimise **both** axes, score is `score(n)= Σ_{prefW!=null} dw² + λ* Σ_{prefH!=null && !resizable} dh²` where `dw = actualWidth(n)*effectiveSpan - prefW`, `dh = ceil(prefH/rowUnit)*rowUnit - prefH` (rowUnit 80px or measured min height). `λ=0.1` keeps width primary. If a widget is blank (`w:null,h:null` e.g. rss) it contributes 0. Unit-tested.
 
 - `src/client/pages/PageView.tsx` — when `tiling === 'collage'|'auto'`, read container width via `ResizeObserver` already in `useCollageTiling` (or new `useColumnCount` hook), compute `n*` via helper, set `style={{ '--min-column-width': `${actualWidth(n*)}px` }}` and/or `gridTemplateColumns: repeat(n*,1fr)` on `.columns`. Keep `getTilingProps` seam.
 
-- `src/client/pages/useCollageTiling.ts` — height path uses `prefH` when `!resizable && prefH != null` → `spans = ceil(prefH/rowUnit)` without measure; else measure as before.
+- `src/client/pages/useCollageTiling.ts` — height path uses `prefH` when `!resizable && prefH!=null` → `spans = ceil(prefH/rowUnit)` without measure; else measure as before. Now `rowUnit` seed comes from `prefH` minima when available, so height squared error is reduced already.
 
 - Config: `PageSchema` already `max 3 columns` — consider raising to 4-6 for bento on 1920px, but keep default 3 to avoid breaking existing `span` assumptions; add comment that `n*` respects `maxCols`.
 
 ## 4. Interfaces & Data Flow
 
 - `PREFERRED_SIZES` is a pure map, no runtime deps. `chooseColumnCount` is pure `(W,gap,minW,maxCols,prefs,spans)→n` — testable without DOM.
-- `system-stats` reuses existing `TtlCache`/`Singleflight`/`parseCacheDuration` pattern like `hacker-news`/`videos`; payload shape is `SystemStatsData` in `src/shared/widgets/payloads.ts`.
-- `search` default flows: `config.yml` omitted `new-tab` → `searchSchema` defaults `true` → `cfg['new-tab'] === true` → `resolveSearch` → `window.open(url, target ?? '_blank')`.
-
-## 5. Error Handling
-
-- `systeminformation` calls wrapped in `.catch(() => null)` per metric — partial data OK (e.g. temp null on M5 without sensor). Widget never throws; shows placeholder rows for nulls.
-- `chooseColumnCount` handles all-null (fluid) case → fallback to floor(W/minW).
-- Twitch removal: `registry` no longer has `twitch-*`; `PagePayload` build skips absent types — no 500.
-
-## 6. Testing Strategy
-
-- `WidgetChrome.test.tsx` — assert no sticky on `.moreExpanded`.
-- `videos` — no test (config only), but `config.test.ts` validates `limit: 3` accepted.
-- `search.test.tsx` — default new-tab `_blank`, explicit false → `_self`.
-- `system-stats.test.ts` — mocked `systeminformation`, TTL 5s, null fallback, field filter.
-- `tiling.test.ts` + `useCollageTiling.test.ts` — `chooseColumnCount` squared error cases: `W=1920,gap=23,min=300` with mix of 300/380/prefs → n*=4; fluid-only → n=6; span-2 hero → effective width; height ceil tests.
-
 ## 7. Rollout & Commits
 
 Atomic commits per sub-project, 7 planned:
