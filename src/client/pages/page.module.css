@@ -367,7 +367,6 @@
   gap: var(--widget-gap);
   align-content: start;
 }
-
 .bentoItem {
   min-width: 0;
   grid-column: var(--bento-x, auto) / span var(--bento-w, 1);
@@ -375,6 +374,8 @@
 }
 
 .bentoItem[data-resizable='true'] {
-  grid-row: auto;
+  /* resizable keeps compositor Y but lets content dictate height via minmax rows */
+  grid-row-start: var(--bento-y, auto);
+  grid-row-end: auto;
 }
 

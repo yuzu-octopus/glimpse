@@ -1,13 +1,10 @@
-# Glimpse — pure bento (flat widgets, compositor arranges, no manual columns).
-# Each widget has `priority` (0-10, higher = top-left) and `zone` (main|sidebar) for rough control.
-# Spans are cols on 12-col grid; rows derive from preferred sizes (e.g. rss rows 2 = 2*grid-row-height).
+# Glimpse — curated demo (4 pages, hide-headers, Singapore).
+# Tiling: Home/Dev/Lab = columns (small stays 300px), Social = collage bento (340px).
+# New widgets: server-stats / dns-stats / docker-containers (all homelab, on Lab).
 pages:
   - name: Home
     slug: home
     hide-headers: true
-    tiling: collage
-    grid-columns: 12
-    grid-row-height: 96
     head-widgets:
       - type: search
         placeholder: Search the web or jump with a bang…
@@ -21,414 +18,334 @@ pages:
           - title: Wikipedia
             shortcut: wiki
             url: https://en.wikipedia.org/wiki/Special:Search?search={QUERY}
-    widgets:
-      - type: clock
-        priority: 9
-        zone: sidebar
-        span: 3
-        hour-format: 24h
-        timezones:
-          - timezone: Asia/Singapore
-            label: Singapore
-          - timezone: America/New_York
-            label: New York
-          - timezone: America/Los_Angeles
-            label: California
-      - type: weather
-        priority: 8
-        zone: sidebar
-        span: 3
-        location: Singapore
-        units: metric
-      - type: calendar
-        priority: 7
-        zone: sidebar
-        span: 3
-        first-day-of-week: monday
-      - type: todo
-        priority: 5
-        zone: sidebar
-        span: 3
-        id: home-todo
-      - type: rss
-        priority: 10
-        span: 4
-        limit: 10
-        collapse-after: 5
-        source-header: true
-        feeds:
-          - url: https://selfh.st/rss/
-            title: selfh.st
-          - url: https://www.theverge.com/rss/index.xml
-            title: The Verge
-          - url: https://lobste.rs/rss
-            title: Lobsters
-      - type: monitor
-        priority: 6
-        span: 4
-        sites:
-          - url: https://github.com
-            title: GitHub
-          - url: https://duckduckgo.com
-            title: DuckDuckGo
-          - url: https://example.com
-            title: example.com
-      - type: hacker-news
-        priority: 9
-        span: 4
-        limit: 8
-        sort-by: top
-        collapse-after: 5
-        source-header: true
-      - type: markets
-        priority: 4
-        zone: sidebar
-        span: 2
-        markets:
-          - symbol: SPY
-            name: S&P 500
-          - symbol: BTC-USD
-            name: Bitcoin
-          - symbol: EURUSD=X
-            name: EUR/USD
-      - type: bookmarks
-        priority: 3
-        zone: sidebar
-        span: 3
-        groups:
-          - title: Quick links
-            links:
-              - title: GitHub
-                url: https://github.com
-              - title: selfh.st
-                url: https://selfh.st
-              - title: Hacker News
-                url: https://news.ycombinator.com
-              - title: Glance
-                url: https://github.com/glanceapp/glance
-          - title: Tools
-            links:
-              - title: DuckDuckGo
-                url: https://duckduckgo.com
-              - title: Notion
-                url: https://notion.so
+    columns:
+      - size: small
+        widgets:
+          - type: clock
+            hour-format: 24h
+            timezones:
+              - timezone: Asia/Singapore
+                label: Singapore
+              - timezone: America/New_York
+                label: New York
+              - timezone: America/Los_Angeles
+                label: California
+          - type: weather
+            location: Singapore
+            units: metric
+          - type: calendar
+            first-day-of-week: monday
+          - type: todo
+            id: home-todo
+      - size: full
+        widgets:
+          - type: rss
+            limit: 10
+            collapse-after: 5
+            source-header: true
+            feeds:
+              - url: https://selfh.st/rss/
+                title: selfh.st
+              - url: https://www.theverge.com/rss/index.xml
+                title: The Verge
+              - url: https://lobste.rs/rss
+                title: Lobsters
+          - type: monitor
+            sites:
+              - url: https://github.com
+                title: GitHub
+              - url: https://duckduckgo.com
+                title: DuckDuckGo
+              - url: https://example.com
+                title: example.com
+          - type: hacker-news
+            limit: 8
+            sort-by: top
+            collapse-after: 5
+            source-header: true
+      - size: small
+        widgets:
+          - type: markets
+            markets:
+              - symbol: SPY
+                name: S&P 500
+              - symbol: BTC-USD
+                name: Bitcoin
+              - symbol: EURUSD=X
+                name: EUR/USD
+          - type: bookmarks
+            groups:
+              - title: Quick links
+                links:
+                  - title: GitHub
+                    url: https://github.com
+                  - title: selfh.st
+                    url: https://selfh.st
+                  - title: Hacker News
+                    url: https://news.ycombinator.com
+                  - title: Glance
+                    url: https://github.com/glanceapp/glance
+              - title: Tools
+                links:
+                  - title: DuckDuckGo
+                    url: https://duckduckgo.com
+                  - title: Notion
+                    url: https://notion.so
 
   - name: Dev
     slug: dev
     hide-headers: true
-    tiling: collage
-    grid-columns: 12
-    grid-row-height: 96
-    widgets:
-      - type: releases
-        priority: 9
-        span: 6
-        repositories:
-          - glanceapp/glance
-          - sharkdp/bat
-          - BurntSushi/ripgrep
-        show-source-icon: true
-        limit: 10
-      - type: videos
-        priority: 8
-        span: 6
-        title: Tech — recent
-        limit: 9
-        style: grid-cards
-        channels:
-          - UCsBjURrPoezykLs9EqgamOA
-          - "@ByCloud"
-          - "@BetterStack"
-          - "@Bug-I"
-          - "@CalebWritesCode"
-          - "@AZisk"
-          - UCkQS_dP6GJTmYnMlox-YiKQ
-          - "@Fireship"
-          - "@SpokeIsHere"
-      - type: repository
-        priority: 7
-        span: 4
-        repository: glanceapp/glance
-        pull-requests-limit: 5
-        issues-limit: 5
-      - type: custom-api
-        priority: 5
-        zone: sidebar
-        span: 3
-        url: https://api.github.com/repos/glanceapp/glance
-        options:
-          path: $.stargazers_count
-          title: Stargazers
-          description: github.com/glanceapp/glance
-      - type: markets
-        priority: 4
-        zone: sidebar
-        span: 3
-        markets:
-          - symbol: AAPL
-            name: Apple
-          - symbol: NVDA
-            name: NVIDIA
-          - symbol: TSLA
-            name: Tesla
-          - symbol: MSFT
-            name: Microsoft
-      - type: weather
-        priority: 3
-        zone: sidebar
-        span: 3
-        location: Singapore
-        units: metric
-      - type: todo
-        priority: 2
-        zone: sidebar
-        span: 3
-        id: dev-todo
-      - type: iframe
-        priority: 2
-        zone: sidebar
-        span: 3
-        source: https://example.com
-        height: 360
+    columns:
+      - size: full
+        widgets:
+          - type: releases
+            repositories:
+              - glanceapp/glance
+              - sharkdp/bat
+              - BurntSushi/ripgrep
+            show-source-icon: true
+            limit: 10
+          - type: videos
+            title: Tech — recent
+            limit: 9
+            style: grid-cards
+            channels:
+              - UCsBjURrPoezykLs9EqgamOA
+              - "@ByCloud"
+              - "@BetterStack"
+              - "@Bug-I"
+              - "@CalebWritesCode"
+              - "@AZisk"
+              - UCkQS_dP6GJTmYnMlox-YiKQ
+              - "@Fireship"
+          - type: repository
+            repository: glanceapp/glance
+            pull-requests-limit: 5
+            issues-limit: 5
+      - size: small
+        widgets:
+          - type: custom-api
+            url: https://api.github.com/repos/glanceapp/glance
+            options:
+              path: $.stargazers_count
+              title: Stargazers
+              description: github.com/glanceapp/glance
+          - type: markets
+            markets:
+              - symbol: AAPL
+                name: Apple
+              - symbol: NVDA
+                name: NVIDIA
+              - symbol: TSLA
+                name: Tesla
+              - symbol: MSFT
+                name: Microsoft
+          - type: weather
+            location: Singapore
+            units: metric
+          - type: group
+            widgets:
+              - type: todo
+                id: dev-todo
+              - type: iframe
+                source: https://example.com
+                height: 360
 
   - name: Social
     slug: social
     hide-headers: true
     tiling: collage
-    grid-columns: 12
-    grid-row-height: 96
     min-column-width: 340
-    widgets:
-      - type: videos
-        priority: 8
-        span: 6
-        title: Tech creators
-        limit: 6
-        style: vertical-list
-        channels:
-          - UCsBjURrPoezykLs9EqgamOA
-          - "@ByCloud"
-          - "@BetterStack"
-      - type: videos
-        priority: 8
-        span: 6
-        title: Minecraft — Unstable Universe & friends
-        limit: 3
-        style: grid-cards
-        channels:
-          - UCGwHHBGD-1ysDvq1Z4xXw7g
-          - UCPLMPHT-d8GZOqL_AHJFdQQ
-          - UCkzzNLnuM-VsATWC53ehwOQ
-          - "@SpokeIsHere"
-      - type: reddit
-        priority: 7
-        zone: sidebar
-        span: 3
-        subreddit: selfhosted
-        limit: 8
-        collapse-after: 5
-        show-thumbnails: true
-        show-flairs: true
-        source-header: true
-      - type: bookmarks
-        priority: 5
-        zone: sidebar
-        span: 3
-        groups:
-          - title: Social
-            links:
-              - title: Reddit
-                url: https://reddit.com
-              - title: Lobsters
-                url: https://lobste.rs
-              - title: Twitch
-                url: https://twitch.tv
-      - type: todo
-        priority: 4
-        zone: sidebar
-        span: 3
-        id: social-todo
+    columns:
+      - size: full
+        widgets:
+          - type: videos
+            title: Tech creators
+            limit: 6
+            style: vertical-list
+            channels:
+              - UCsBjURrPoezykLs9EqgamOA
+              - "@ByCloud"
+              - "@BetterStack"
+      - size: full
+        widgets:
+          - type: videos
+            title: Minecraft
+            limit: 3
+            style: grid-cards
+            channels:
+              - "@SpokeIsHere"
+              - "@Fireship"
+              - "@ByCloud"
+      - size: small
+        widgets:
+          - type: reddit
+            subreddit: selfhosted
+            limit: 8
+            collapse-after: 5
+            show-thumbnails: true
+            show-flairs: true
+            source-header: true
+          - type: bookmarks
+            groups:
+              - title: Social
+                links:
+                  - title: Reddit
+                    url: https://reddit.com
+                  - title: Lobsters
+                    url: https://lobste.rs
+                  - title: Twitch
+                    url: https://twitch.tv
+          - type: todo
+            id: social-todo
 
   - name: Lab
     slug: lab
     hide-headers: true
-    tiling: collage
-    grid-columns: 12
-    grid-row-height: 96
-    widgets:
-      - type: calendar
-        priority: 6
-        zone: sidebar
-        span: 3
-        first-day-of-week: monday
-      - type: server-stats
-        priority: 10
-        span: 6
-        title: Servers
-        servers:
-          - type: local
-            name: Glimpse
-      - type: dns-stats
-        priority: 8
-        span: 4
-        title: Pi-hole
-        service: pihole
-        url: http://pihole.lab
-        hide-graph: false
-        hide-top-domains: false
-      - type: docker-containers
-        priority: 7
-        span: 4
-        title: Containers
-        sock-path: /var/run/docker.sock
-        running-only: true
-        hide-by-default: false
-      - type: todo
-        priority: 5
-        zone: sidebar
-        span: 3
-        id: lab-todo
-      - type: weather
-        priority: 4
-        zone: sidebar
-        span: 3
-        location: Singapore
-        units: metric
-      - type: bookmarks
-        priority: 3
-        zone: sidebar
-        span: 3
-        groups:
-          - title: Homelab
-            links:
-              - title: Grafana
-                url: https://grafana.lab
-                icon: si:grafana
-              - title: Immich
-                url: https://immich.lab
-                icon: si:immich
-              - title: Home Assistant
-                url: https://home.lab
-                icon: si:homeassistant
-              - title: Jellyfin
-                url: https://jellyfin.lab
-                icon: si:jellyfin
-              - title: Pi-hole
-                url: https://pihole.lab
-                icon: si:pihole
-          - title: Infra
-            links:
-              - title: Proxmox
-                url: https://proxmox.lab
-              - title: Portainer
-                url: https://portainer.lab
-              - title: TrueNAS
-                url: https://truenas.lab
-              - title: Authentik
-                url: https://auth.lab
-      - type: markets
-        priority: 4
-        zone: sidebar
-        span: 3
-        markets:
-          - symbol: SPY
-            name: S&P 500
-          - symbol: BTC-USD
-            name: Bitcoin
-          - symbol: ETH-USD
-            name: Ethereum
-          - symbol: NVDA
-            name: NVIDIA
-      - type: monitor
-        priority: 6
-        span: 4
-        title: Homelab — health
-        sites:
-          - url: https://grafana.lab
-            title: Grafana
-          - url: https://immich.lab
-            title: Immich
-          - url: https://jellyfin.lab
-            title: Jellyfin
-          - url: https://home.lab
-            title: Home Assistant
-          - url: https://pihole.lab
+    # Homelab showcase — columns so small stays 300px, full is the main stage.
+    # New homelab widgets (server-stats / dns-stats / docker-containers) live here.
+    columns:
+      - size: small
+        widgets:
+          - type: calendar
+            first-day-of-week: monday
+          - type: server-stats
+            title: Servers
+            servers:
+              - type: local
+                name: Glimpse
+          - type: dns-stats
             title: Pi-hole
-          - url: https://portainer.lab
-            title: Portainer
-          - url: https://proxmox.lab
-            title: Proxmox
-          - url: https://truenas.lab
-            title: TrueNAS
-          - url: https://auth.lab
-            title: Authentik
-          - url: https://code.lab
-            title: Gitea
-      - type: rss
-        priority: 5
-        span: 4
-        title: Self-hosted blogs
-        limit: 10
-        collapse-after: 5
-        source-header: true
-        feeds:
-          - url: https://selfh.st/rss/
-            title: selfh.st
-          - url: https://blog.immich.app/rss.xml
-            title: Immich
-          - url: https://jellyfin.org/posts/rss.xml
-            title: Jellyfin
-          - url: https://www.home-assistant.io/atom.xml
-            title: Home Assistant
-          - url: https://blog.cloudflare.com/rss/
-            title: Cloudflare Blog
-      - type: hacker-news
-        priority: 7
-        span: 4
-        limit: 8
-        sort-by: top
-        collapse-after: 5
-        source-header: true
-      - type: reddit
-        priority: 6
-        span: 4
-        subreddit: homelab
-        limit: 8
-        collapse-after: 5
-        show-thumbnails: true
-        source-header: true
-      - type: videos
-        priority: 5
-        span: 4
-        title: Homelab — recent
-        limit: 8
-        style: grid-cards
-        channels:
-          - UCXuqSBlHAE6Xw-yeJA0Tunw
-          - UCR-DXc1voovS8nhAvccRZhg
-          - UCsBjURrPoezykLs9EqgamOA
-      - type: releases
-        priority: 6
-        span: 4
-        title: Homelab releases
-        repositories:
-          - immich-app/immich
-          - home-assistant/core
-          - jellyfin/jellyfin
-          - grafana/grafana
-        show-source-icon: true
-        limit: 8
-        collapse-after: 5
-      - type: repository
-        priority: 5
-        span: 4
-        repository: home-assistant/core
-        pull-requests-limit: 5
-        issues-limit: 5
-      - type: iframe
-        priority: 3
-        zone: sidebar
-        span: 3
-        title: Grafana
-        source: https://grafana.lab/d/000000001/homelab?orgId=1&kiosk
-        height: 420
+            service: pihole
+            url: http://pihole.lab
+            hide-graph: false
+            hide-top-domains: false
+          - type: docker-containers
+            title: Containers
+            sock-path: /var/run/docker.sock
+            running-only: true
+            hide-by-default: false
+          - type: todo
+            id: lab-todo
+          - type: weather
+            location: Singapore
+            units: metric
+          - type: bookmarks
+            groups:
+              - title: Homelab
+                links:
+                  - title: Grafana
+                    url: https://grafana.lab
+                    icon: si:grafana
+                  - title: Immich
+                    url: https://immich.lab
+                    icon: si:immich
+                  - title: Home Assistant
+                    url: https://home.lab
+                    icon: si:homeassistant
+                  - title: Jellyfin
+                    url: https://jellyfin.lab
+                    icon: si:jellyfin
+                  - title: Pi-hole
+                    url: https://pihole.lab
+                    icon: si:pihole
+              - title: Infra
+                links:
+                  - title: Proxmox
+                    url: https://proxmox.lab
+                  - title: Portainer
+                    url: https://portainer.lab
+                  - title: TrueNAS
+                    url: https://truenas.lab
+                  - title: Authentik
+                    url: https://auth.lab
+          - type: markets
+            markets:
+              - symbol: SPY
+                name: S&P 500
+              - symbol: BTC-USD
+                name: Bitcoin
+              - symbol: ETH-USD
+                name: Ethereum
+              - symbol: NVDA
+                name: NVIDIA
+      - size: full
+        widgets:
+          - type: monitor
+            title: Homelab — health
+            sites:
+              - url: https://grafana.lab
+                title: Grafana
+              - url: https://immich.lab
+                title: Immich
+              - url: https://jellyfin.lab
+                title: Jellyfin
+              - url: https://home.lab
+                title: Home Assistant
+              - url: https://pihole.lab
+                title: Pi-hole
+              - url: https://portainer.lab
+                title: Portainer
+              - url: https://proxmox.lab
+                title: Proxmox
+              - url: https://truenas.lab
+                title: TrueNAS
+              - url: https://auth.lab
+                title: Authentik
+              - url: https://code.lab
+                title: Gitea
+          - type: rss
+            title: Self-hosted blogs
+            limit: 10
+            collapse-after: 5
+            source-header: true
+            feeds:
+              - url: https://selfh.st/rss/
+                title: selfh.st
+              - url: https://blog.immich.app/rss.xml
+                title: Immich
+              - url: https://jellyfin.org/posts/rss.xml
+                title: Jellyfin
+              - url: https://www.home-assistant.io/atom.xml
+                title: Home Assistant
+              - url: https://blog.cloudflare.com/rss/
+                title: Cloudflare Blog
+          - type: hacker-news
+            limit: 8
+            sort-by: top
+            collapse-after: 5
+            source-header: true
+          - type: reddit
+            subreddit: homelab
+            limit: 8
+            collapse-after: 5
+            show-thumbnails: true
+            source-header: true
+      - size: small
+        widgets:
+          - type: videos
+            title: Homelab — recent
+            limit: 8
+            style: grid-cards
+            channels:
+              - UCXuqSBlHAE6Xw-yeJA0Tunw
+              - UCR-DXc1voovS8nhAvccRZhg
+              - UCsBjURrPoezykLs9EqgamOA
+          - type: releases
+            title: Homelab releases
+            repositories:
+              - immich-app/immich
+              - home-assistant/core
+              - jellyfin/jellyfin
+              - grafana/grafana
+            show-source-icon: true
+            limit: 8
+            collapse-after: 5
+          - type: repository
+            repository: home-assistant/core
+            pull-requests-limit: 5
+            issues-limit: 5
+          - type: iframe
+            title: Grafana
+            source: https://grafana.lab/d/000000001/homelab?orgId=1&kiosk
+            height: 420

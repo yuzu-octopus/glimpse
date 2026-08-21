@@ -325,14 +325,21 @@ function BentoGrid({ widgets, gridCols, rowHeight }: { widgets: WidgetPayload[];
   );
   const placements = useMemo(() => composeBento(tiles, gridCols, { rowUnit: rowHeight }), [tiles, gridCols, rowHeight]);
   const byId = useMemo(() => new Map(placements.map((p) => [p.id, p])), [placements]);
+  // mobile 1-col stack via priority: render in priority order so the CSS
+  // single-track override (grid-column 1/-1 !important) shows top priority first
+  const ordered = useMemo(() => {
+    const idxMap = new Map(tiles.map((t) => [t.id, t]));
+    return widgets
+      .map((w, i) => ({ w, id: widgetKey(w, i) }))
+      .toSorted((a, b) => (idxMap.get(b.id)?.priority ?? 0) - (idxMap.get(a.id)?.priority ?? 0));
+  }, [widgets, tiles]);
   return (
     <div
       className={styles.bentoGrid}
       style={{ '--bento-cols': String(gridCols), '--bento-row': `${rowHeight}px` } as React.CSSProperties}
       data-testid="bento-grid"
     >
-      {widgets.map((w, i) => {
-        const id = widgetKey(w, i);
+      {ordered.map(({ w, id }) => {
         const pl = byId.get(id);
         const tile = tiles.find((t) => t.id === id);
         const resizable = tile?.resizable ?? true;

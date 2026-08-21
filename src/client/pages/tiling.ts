@@ -133,8 +133,15 @@ class BentoGrid {
  * width = cols (null → fluid widest fit, absent → span), height = rows (absent → prefH-derived).
  */
 function candidateShapes(tile: BentoTile, cols: number, rowUnit: number): Array<{ w: number; h: number }> {
-  const span = Math.min(Math.max(tile.span || 1, 1), cols);
-  const widths = tile.cols === undefined ? [span] : tile.cols == null ? [cols] : [Math.min(tile.cols, cols)];
+  // span 1–4 is legacy columns mode (4 tracks); on the underlying 12-col bento grid it maps to 3/6/9/12.
+  // Larger spans are already in 12-col units. Fluid (cols null) respects the mapped span for readable line length.
+  const raw = Math.min(Math.max(tile.span || 1, 1), 12);
+  const span = raw <= 4 ? raw * 3 : raw;
+  const mappedSpan = Math.min(span, cols);
+  let widths: number[];
+  if (tile.cols === undefined) widths = [mappedSpan];
+  else if (tile.cols == null) widths = [mappedSpan];
+  else widths = [Math.min(tile.cols, cols)];
   const rows = tile.rows !== undefined ? tile.rows : tile.prefH != null ? Math.ceil(tile.prefH / rowUnit) : 1;
   const heights = [Math.max(1, rows ?? 1)];
   const shapes: Array<{ w: number; h: number }> = [];
