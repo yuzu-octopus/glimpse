@@ -164,21 +164,9 @@ pages:
             limit: 6
             style: vertical-list
             channels:
-              - UCsBjURrPoezykLs9EqgamOA
-              - "@ByCloud"
-              - "@BetterStack"
-      - size: full
-        widgets:
-          - type: videos
-            title: Minecraft
-            limit: 3
-            style: grid-cards
-            channels:
-              - "@SpokeIsHere"
               - "@Fireship"
               - "@ByCloud"
-      - size: small
-        widgets:
+              - "@BetterStack"
           - type: reddit
             subreddit: selfhosted
             limit: 8
@@ -186,6 +174,17 @@ pages:
             show-thumbnails: true
             show-flairs: true
             source-header: true
+      - size: full
+        widgets:
+          - type: videos
+            title: Minecraft
+            limit: 3
+            style: grid-cards
+            channels:
+              - UCGwHHBGD-1ysDvq1Z4xXw7g
+              - UCPLMPHT-d8GZOqL_AHJFdQQ
+              - UCkzzNLnuM-VsATWC53ehwOQ
+              - "@SpokeIsHere"
           - type: bookmarks
             groups:
               - title: Social
@@ -198,7 +197,6 @@ pages:
                     url: https://twitch.tv
           - type: todo
             id: social-todo
-
   - name: Lab
     slug: lab
     hide-headers: true

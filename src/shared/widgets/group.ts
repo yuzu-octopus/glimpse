@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { sharedWidgetFields, type Pref } from './shared';
 
+// Defaults — change here (cols/rows on 12-col, priority 0-10, zone main|sidebar, resizable)
+export const GROUP_PREF: Pref = { cols: 4, rows: 3, resizable: false, priority: 5, zone: 'main', preferredWidth: 340, preferredHeight: 320 };
+
 /**
  * Container widgets. The child union (WidgetSchema in index.ts) is wired in
  * after that module finishes building, avoiding a module-init import cycle
@@ -32,5 +35,4 @@ export const splitColumnSchema = z.object({
 });
 export type SplitColumnConfig = z.infer<typeof splitColumnSchema>;
 
-export const GROUP_PREF: Pref = { cols: 4, rows: 3, resizable: false, priority: 5, zone: 'main', preferredWidth: 340, preferredHeight: 320 };
 export const SPLIT_COLUMN_PREF: Pref = { cols: null, rows: 3, resizable: true, priority: 5, zone: 'main', preferredWidth: null, preferredHeight: 320 };

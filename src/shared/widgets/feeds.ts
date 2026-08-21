@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import { sharedWidgetFields, type Pref } from './shared';
 
+// Defaults — change here (cols/rows on 12-col, priority 0-10, zone main|sidebar, resizable)
 export const RSS_PREF: Pref = { cols: null, rows: 3, resizable: true, priority: 10, zone: 'main', preferredWidth: null, preferredHeight: null };
+
 export const HACKER_NEWS_PREF: Pref = { cols: 4, rows: 3, resizable: false, priority: 8, zone: 'main', preferredWidth: null, preferredHeight: null };
 export const REDDIT_PREF: Pref = { cols: 4, rows: 3, resizable: false, priority: 7, zone: 'main', preferredWidth: null, preferredHeight: null };
 export const RELEASES_PREF: Pref = { cols: 4, rows: 2, resizable: false, priority: 6, zone: 'main', preferredWidth: 360, preferredHeight: 260 };
