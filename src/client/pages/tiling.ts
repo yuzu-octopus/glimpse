@@ -62,6 +62,8 @@ export interface BentoTile extends TilePref {
   id: string;
   priority: number;
   zone?: 'main' | 'sidebar';
+  cols: number | null;
+  rows: number;
 }
 
 export interface BentoPlacement {

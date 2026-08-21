@@ -307,13 +307,15 @@ function BentoGrid({ widgets, gridCols, rowHeight }: { widgets: WidgetPayload[];
       widgets.map((w, i) => {
         const cfg = w.config as Record<string, unknown>;
         const pref =
-          (PREFERRED_SIZES as Record<string, { preferredWidth: number | null; preferredHeight: number | null; resizable: boolean }>)[w.type] ??
-          { preferredWidth: null, preferredHeight: null, resizable: true };
+          (PREFERRED_SIZES as Record<string, { cols: number | null; rows: number; resizable: boolean; priority: number; zone: 'main' | 'sidebar'; preferredWidth: number | null; preferredHeight: number | null }>)[w.type] ??
+          { cols: null, rows: 1, resizable: true, priority: 5, zone: 'main' as const, preferredWidth: null, preferredHeight: null };
         return {
           id: widgetKey(w, i),
-          priority: typeof cfg.priority === 'number' ? cfg.priority : 5,
-          span: typeof cfg.span === 'number' ? cfg.span : 1,
-          zone: cfg.zone as 'main' | 'sidebar' | undefined,
+          priority: typeof cfg.priority === 'number' ? cfg.priority : pref.priority,
+          span: typeof cfg.span === 'number' ? cfg.span : (pref.cols ?? 1),
+          zone: (cfg.zone as 'main' | 'sidebar' | undefined) ?? pref.zone,
+          cols: pref.cols,
+          rows: pref.rows,
           prefW: pref.preferredWidth,
           prefH: pref.preferredHeight,
           resizable: pref.resizable,
@@ -332,13 +334,16 @@ function BentoGrid({ widgets, gridCols, rowHeight }: { widgets: WidgetPayload[];
       {widgets.map((w, i) => {
         const id = widgetKey(w, i);
         const pl = byId.get(id);
+        const tile = tiles.find((t) => t.id === id);
+        const resizable = tile?.resizable ?? true;
         return (
           <div
             key={id}
             className={styles.bentoItem}
-            style={pl ? ({ '--bento-x': String(pl.x + 1), '--bento-y': String(pl.y + 1), '--bento-w': String(pl.w), '--bento-h': String(pl.h) } as React.CSSProperties) : undefined}
+            style={pl ? ({ '--bento-x': String(pl.x + 1), '--bento-y': String(pl.y + 1), '--bento-w': String(pl.w), '--bento-h': resizable ? undefined : String(pl.h) } as React.CSSProperties) : undefined}
             data-bento-x={pl?.x}
             data-bento-y={pl?.y}
+            data-resizable={String(resizable)}
           >
             <WidgetSlot widget={w} />
           </div>
@@ -461,15 +466,15 @@ export function PageView({
             ))}
           </div>
         ) : null}
-        <div ref={tilingProps.measure || resolved.tiling === 'auto' ? columnsRef : null} className={tilingProps.className} style={tilingProps.style}>
-          {(resolved as unknown as { widgets?: WidgetPayload[] }).widgets ? (
-            <BentoGrid
-              widgets={(resolved as unknown as { widgets: WidgetPayload[] }).widgets}
-              gridCols={(resolved as unknown as { gridColumns?: number }).gridColumns ?? 12}
-              rowHeight={(resolved as unknown as { gridRowHeight?: number }).gridRowHeight ?? 96}
-            />
-          ) : (
-            resolved.columns.map((col, i) => (
+        {(resolved as unknown as { widgets?: WidgetPayload[] }).widgets ? (
+          <BentoGrid
+            widgets={(resolved as unknown as { widgets: WidgetPayload[] }).widgets}
+            gridCols={(resolved as unknown as { gridColumns?: number }).gridColumns ?? 12}
+            rowHeight={(resolved as unknown as { gridRowHeight?: number }).gridRowHeight ?? 96}
+          />
+        ) : (
+          <div ref={tilingProps.measure || resolved.tiling === 'auto' ? columnsRef : null} className={tilingProps.className} style={tilingProps.style}>
+            {resolved.columns.map((col, i) => (
               <MobileColumn
                 key={columnKey(col, i)}
                 label={columnLabel(col, i)}
@@ -482,9 +487,9 @@ export function PageView({
                   ))}
                 </div>
               </MobileColumn>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </HideHeadersContext.Provider>
   );
