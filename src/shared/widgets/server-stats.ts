@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { sharedWidgetFields } from './shared';
+import { sharedWidgetFields, type Pref } from './shared';
 
 /** One monitored server: the local machine, or a remote Glimpse instance
  * exposing `/api/server-stats`. */
@@ -21,3 +21,5 @@ export const serverStatsSchema = z
   .loose();
 
 export type ServerStatsConfig = z.infer<typeof serverStatsSchema>;
+
+export const SERVER_STATS_PREF: Pref = { cols: 6, rows: 2, resizable: false, priority: 7, zone: 'main', preferredWidth: 340, preferredHeight: 240 };

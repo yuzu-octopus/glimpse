@@ -343,14 +343,27 @@
   .splitColumn {
     grid-template-columns: minmax(0, 1fr);
   }
+  /* pure bento: one track per row on mobile; !important beats the base
+     rule and the inline --bento-* placement vars so a compositor-placed
+     tile can't open implicit tracks or overflow the single column */
+  .bentoGrid {
+    grid-template-columns: 1fr !important;
+  }
+  .bentoItem {
+    grid-column: 1 / -1 !important;
+    grid-row: auto !important;
+  }
 }
 
 /* Pure bento — flat widgets, compositor places via x/y/w/h. No manual columns.
-   grid-cols comes from config `grid-columns` (6 default), row from `grid-row-height`.
+   grid-cols comes from config `grid-columns` (12 default), row from `grid-row-height`.
    Each item is placed with grid-column/grid-row via inline --bento-* vars. */
 .bentoGrid {
   display: grid;
-  grid-template-columns: repeat(var(--bento-cols, 6), minmax(0, 1fr));
+  /* the tiling wrapper (auto/collage) is itself a grid — span its whole
+     row so the bento grid fills the page instead of one 300px track */
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(var(--bento-cols, 12), minmax(0, 1fr));
   grid-auto-rows: var(--bento-row, 96px);
   grid-auto-flow: dense;
   gap: var(--widget-gap);

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { sharedWidgetFields } from './shared';
+import { sharedWidgetFields, type Pref } from './shared';
 
 export const bookmarksSchema = z.object({
   type: z.literal('bookmarks'),
@@ -27,3 +27,5 @@ export const bookmarksSchema = z.object({
   'same-tab': z.boolean().optional(),
 });
 export type BookmarksConfig = z.infer<typeof bookmarksSchema>;
+
+export const BOOKMARKS_PREF: Pref = { cols: 3, rows: 2, resizable: false, priority: 5, zone: 'sidebar', preferredWidth: 300, preferredHeight: 240 };

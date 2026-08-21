@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Column, WidgetConfig } from '../shared/config';
-import { buildPagePayload, streamPagePayload } from './api';
+import { buildPagePayload, streamPagePayload, type StreamChunk } from './api';
 import { registerWidget, serverWidgets, type WidgetFetchContext } from './widgets/registry';
 import { Singleflight, TtlCache } from './cache';
 
@@ -201,7 +201,39 @@ describe('buildPagePayload', () => {
     expect(payload.columns[0].span).toBe(2);
     expect(payload.columns[1].span).toBeUndefined();
   });
+  it('builds flat widgets payload', async () => {
+    const fetcher = vi.fn(async () => ({ time: '12:00' }));
+    registerWidget('clock', fetcher);
+    const flatPage = {
+      name: 'X',
+      slug: 'x',
+      widgets: [{ type: 'clock', timezones: [] }],
+      tiling: 'collage',
+    } as unknown as Parameters<typeof buildPagePayload>[0];
+    const payload = await buildPagePayload(flatPage, makeCtx());
+    expect(payload.widgets).toHaveLength(1);
+    expect(payload.widgets![0].data).toEqual({ time: '12:00' });
+    expect(payload.columns).toEqual([]);
+    expect(payload.gridColumns).toBe(12);
+    expect(payload.gridRowHeight).toBe(96);
+  });
+
+  it('streams flat widgets with w:i cache paths', async () => {
+    registerWidget('clock', vi.fn(async () => ({ time: 'now' })));
+    const ctx = makeCtx();
+    const flatPage = {
+      name: 'X',
+      slug: 'x',
+      widgets: [{ type: 'clock', timezones: [] }],
+    } as unknown as Parameters<typeof streamPagePayload>[0];
+    const chunks: StreamChunk[] = [];
+    for await (const c of streamPagePayload(flatPage, ctx)) chunks.push(c);
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0].path).toBe('widgets[0]');
+    expect(chunks[0].payload.data).toEqual({ time: 'now' });
+  });
 });
+
 
 describe('streamPagePayload', () => {
   it('stream page flushes head widgets before slow videos', async () => {

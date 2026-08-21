@@ -1,12 +1,12 @@
 # Glimpse — pure bento (flat widgets, compositor arranges, no manual columns).
 # Each widget has `priority` (0-10, higher = top-left) and `zone` (main|sidebar) for rough control.
-# Spans are from preferred sizes or explicit `span: 2` for wide heroes.
+# Spans are cols on 12-col grid; rows derive from preferred sizes (e.g. rss rows 2 = 2*grid-row-height).
 pages:
   - name: Home
     slug: home
     hide-headers: true
     tiling: collage
-    grid-columns: 6
+    grid-columns: 12
     grid-row-height: 96
     head-widgets:
       - type: search
@@ -25,6 +25,7 @@ pages:
       - type: clock
         priority: 9
         zone: sidebar
+        span: 3
         hour-format: 24h
         timezones:
           - timezone: Asia/Singapore
@@ -36,19 +37,22 @@ pages:
       - type: weather
         priority: 8
         zone: sidebar
+        span: 3
         location: Singapore
         units: metric
       - type: calendar
         priority: 7
         zone: sidebar
+        span: 3
         first-day-of-week: monday
       - type: todo
         priority: 5
         zone: sidebar
+        span: 3
         id: home-todo
       - type: rss
         priority: 10
-        span: 2
+        span: 4
         limit: 10
         collapse-after: 5
         source-header: true
@@ -61,6 +65,7 @@ pages:
             title: Lobsters
       - type: monitor
         priority: 6
+        span: 4
         sites:
           - url: https://github.com
             title: GitHub
@@ -70,7 +75,7 @@ pages:
             title: example.com
       - type: hacker-news
         priority: 9
-        span: 2
+        span: 4
         limit: 8
         sort-by: top
         collapse-after: 5
@@ -78,6 +83,7 @@ pages:
       - type: markets
         priority: 4
         zone: sidebar
+        span: 2
         markets:
           - symbol: SPY
             name: S&P 500
@@ -88,6 +94,7 @@ pages:
       - type: bookmarks
         priority: 3
         zone: sidebar
+        span: 3
         groups:
           - title: Quick links
             links:
@@ -110,12 +117,12 @@ pages:
     slug: dev
     hide-headers: true
     tiling: collage
-    grid-columns: 6
+    grid-columns: 12
     grid-row-height: 96
     widgets:
       - type: releases
         priority: 9
-        span: 2
+        span: 6
         repositories:
           - glanceapp/glance
           - sharkdp/bat
@@ -124,7 +131,7 @@ pages:
         limit: 10
       - type: videos
         priority: 8
-        span: 2
+        span: 6
         title: Tech — recent
         limit: 9
         style: grid-cards
@@ -140,12 +147,14 @@ pages:
           - "@SpokeIsHere"
       - type: repository
         priority: 7
+        span: 4
         repository: glanceapp/glance
         pull-requests-limit: 5
         issues-limit: 5
       - type: custom-api
         priority: 5
         zone: sidebar
+        span: 3
         url: https://api.github.com/repos/glanceapp/glance
         options:
           path: $.stargazers_count
@@ -154,6 +163,7 @@ pages:
       - type: markets
         priority: 4
         zone: sidebar
+        span: 3
         markets:
           - symbol: AAPL
             name: Apple
@@ -166,15 +176,18 @@ pages:
       - type: weather
         priority: 3
         zone: sidebar
+        span: 3
         location: Singapore
         units: metric
       - type: todo
         priority: 2
         zone: sidebar
+        span: 3
         id: dev-todo
       - type: iframe
         priority: 2
         zone: sidebar
+        span: 3
         source: https://example.com
         height: 360
 
@@ -182,12 +195,13 @@ pages:
     slug: social
     hide-headers: true
     tiling: collage
-    grid-columns: 6
+    grid-columns: 12
     grid-row-height: 96
     min-column-width: 340
     widgets:
       - type: videos
         priority: 8
+        span: 6
         title: Tech creators
         limit: 6
         style: vertical-list
@@ -197,7 +211,8 @@ pages:
           - "@BetterStack"
       - type: videos
         priority: 8
-        title: Minecraft
+        span: 6
+        title: Minecraft — Unstable Universe & friends
         limit: 3
         style: grid-cards
         channels:
@@ -208,6 +223,7 @@ pages:
       - type: reddit
         priority: 7
         zone: sidebar
+        span: 3
         subreddit: selfhosted
         limit: 8
         collapse-after: 5
@@ -217,6 +233,7 @@ pages:
       - type: bookmarks
         priority: 5
         zone: sidebar
+        span: 3
         groups:
           - title: Social
             links:
@@ -229,28 +246,31 @@ pages:
       - type: todo
         priority: 4
         zone: sidebar
+        span: 3
         id: social-todo
 
   - name: Lab
     slug: lab
     hide-headers: true
     tiling: collage
-    grid-columns: 6
+    grid-columns: 12
     grid-row-height: 96
     widgets:
       - type: calendar
         priority: 6
         zone: sidebar
+        span: 3
         first-day-of-week: monday
       - type: server-stats
         priority: 10
-        span: 2
+        span: 6
         title: Servers
         servers:
           - type: local
             name: Glimpse
       - type: dns-stats
         priority: 8
+        span: 4
         title: Pi-hole
         service: pihole
         url: http://pihole.lab
@@ -258,6 +278,7 @@ pages:
         hide-top-domains: false
       - type: docker-containers
         priority: 7
+        span: 4
         title: Containers
         sock-path: /var/run/docker.sock
         running-only: true
@@ -265,15 +286,18 @@ pages:
       - type: todo
         priority: 5
         zone: sidebar
+        span: 3
         id: lab-todo
       - type: weather
         priority: 4
         zone: sidebar
+        span: 3
         location: Singapore
         units: metric
       - type: bookmarks
         priority: 3
         zone: sidebar
+        span: 3
         groups:
           - title: Homelab
             links:
@@ -305,6 +329,7 @@ pages:
       - type: markets
         priority: 4
         zone: sidebar
+        span: 3
         markets:
           - symbol: SPY
             name: S&P 500
@@ -316,6 +341,7 @@ pages:
             name: NVIDIA
       - type: monitor
         priority: 6
+        span: 4
         title: Homelab — health
         sites:
           - url: https://grafana.lab
@@ -340,7 +366,7 @@ pages:
             title: Gitea
       - type: rss
         priority: 5
-        span: 2
+        span: 4
         title: Self-hosted blogs
         limit: 10
         collapse-after: 5
@@ -358,12 +384,14 @@ pages:
             title: Cloudflare Blog
       - type: hacker-news
         priority: 7
+        span: 4
         limit: 8
         sort-by: top
         collapse-after: 5
         source-header: true
       - type: reddit
         priority: 6
+        span: 4
         subreddit: homelab
         limit: 8
         collapse-after: 5
@@ -371,6 +399,7 @@ pages:
         source-header: true
       - type: videos
         priority: 5
+        span: 4
         title: Homelab — recent
         limit: 8
         style: grid-cards
@@ -380,6 +409,7 @@ pages:
           - UCsBjURrPoezykLs9EqgamOA
       - type: releases
         priority: 6
+        span: 4
         title: Homelab releases
         repositories:
           - immich-app/immich
@@ -391,12 +421,14 @@ pages:
         collapse-after: 5
       - type: repository
         priority: 5
+        span: 4
         repository: home-assistant/core
         pull-requests-limit: 5
         issues-limit: 5
       - type: iframe
         priority: 3
         zone: sidebar
+        span: 3
         title: Grafana
         source: https://grafana.lab/d/000000001/homelab?orgId=1&kiosk
         height: 420

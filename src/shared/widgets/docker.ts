@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { sharedWidgetFields } from './shared';
+import { sharedWidgetFields, type Pref } from './shared';
 
 export const dockerContainersSchema = z
   .object({
@@ -17,3 +17,5 @@ export const dockerContainersSchema = z
   .loose();
 
 export type DockerContainersConfig = z.infer<typeof dockerContainersSchema>;
+
+export const DOCKER_CONTAINERS_PREF: Pref = { cols: 4, rows: 2, resizable: false, priority: 6, zone: 'main', preferredWidth: 340, preferredHeight: 220 };

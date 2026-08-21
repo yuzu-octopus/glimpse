@@ -136,7 +136,7 @@ export function PageSkeleton({ page }: { page: Page & { slug: string } }) {
         ) : null}
         <div className={tilingProps.className} style={tilingProps.style}>
           {(page as { widgets?: unknown[] }).widgets ? (
-            <div className={styles.bentoGrid} data-testid="bento-skeleton" style={{ '--bento-cols': String((page as Record<string, unknown>)['grid-columns'] ?? 6) } as React.CSSProperties}>
+            <div className={styles.bentoGrid} data-testid="bento-skeleton" style={{ '--bento-cols': String((page as Record<string, unknown>)['grid-columns'] ?? 12) } as React.CSSProperties}>
               {((page as { widgets?: unknown[] }).widgets ?? []).map((w, i) => (
                 <div key={widgetKey(w as WidgetLike, i)} className={styles.bentoItem}>
                   <WidgetSkeleton widget={w as SkeletonWidget} />
@@ -465,7 +465,7 @@ export function PageView({
           {(resolved as unknown as { widgets?: WidgetPayload[] }).widgets ? (
             <BentoGrid
               widgets={(resolved as unknown as { widgets: WidgetPayload[] }).widgets}
-              gridCols={(resolved as unknown as { gridColumns?: number }).gridColumns ?? 6}
+              gridCols={(resolved as unknown as { gridColumns?: number }).gridColumns ?? 12}
               rowHeight={(resolved as unknown as { gridRowHeight?: number }).gridRowHeight ?? 96}
             />
           ) : (

@@ -40,6 +40,47 @@ describe('ConfigSchema', () => {
     expect(r.success).toBe(false);
   });
 
+  it('accepts flat widgets without columns', () => {
+    const r = ConfigSchema.safeParse({ pages: [{ name: 'Home', widgets: [{ type: 'clock' }] }] });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.pages[0].widgets![0].type).toBe('clock');
+      expect(r.data.pages[0].columns).toBeUndefined();
+    }
+  });
+
+  it('parses flat widget hints', () => {
+    const r = ConfigSchema.safeParse({
+      pages: [{ name: 'X', widgets: [{ type: 'clock', priority: 9, zone: 'sidebar', span: 2 }] }],
+    });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      const w = r.data.pages[0].widgets![0];
+      expect(w.priority).toBe(9);
+      expect(w.zone).toBe('sidebar');
+      expect(w.span).toBe(2);
+    }
+  });
+
+  it('parses grid-columns and grid-row-height', () => {
+    const r = ConfigSchema.safeParse({
+      pages: [{ name: 'Home', 'grid-columns': 12, 'grid-row-height': 96, widgets: [{ type: 'clock' }] }],
+    });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.pages[0]['grid-columns']).toBe(12);
+      expect(r.data.pages[0]['grid-row-height']).toBe(96);
+    }
+  });
+
+  it('rejects out-of-range grid-columns and grid-row-height', () => {
+    const base = { name: 'Home', widgets: [{ type: 'clock' }] };
+    expect(ConfigSchema.safeParse({ pages: [{ ...base, 'grid-columns': 1 }] }).success).toBe(false);
+    expect(ConfigSchema.safeParse({ pages: [{ ...base, 'grid-columns': 13 }] }).success).toBe(false);
+    expect(ConfigSchema.safeParse({ pages: [{ ...base, 'grid-row-height': 31 }] }).success).toBe(false);
+    expect(ConfigSchema.safeParse({ pages: [{ ...base, 'grid-row-height': 201 }] }).success).toBe(false);
+  });
+
   it('rejects a missing pages array', () => {
     expect(ConfigSchema.safeParse({}).success).toBe(false);
   });

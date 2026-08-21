@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { sharedWidgetFields } from './shared';
+import { sharedWidgetFields, type Pref } from './shared';
 
 export const searchSchema = z.object({
   type: z.literal('search'),
@@ -26,3 +26,5 @@ export const searchSchema = z.object({
   key: z.string().optional(),
 });
 export type SearchConfig = z.infer<typeof searchSchema>;
+
+export const SEARCH_PREF: Pref = { cols: 4, rows: 1, resizable: false, priority: 9, zone: 'main', preferredWidth: 300, preferredHeight: 90 };

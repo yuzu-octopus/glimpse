@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { sharedWidgetFields } from './shared';
+import { sharedWidgetFields, type Pref } from './shared';
 
 /**
  * Container widgets. The child union (WidgetSchema in index.ts) is wired in
@@ -31,3 +31,6 @@ export const splitColumnSchema = z.object({
   widgets: z.array(z.lazy(recursiveWidgets)).min(2).max(2),
 });
 export type SplitColumnConfig = z.infer<typeof splitColumnSchema>;
+
+export const GROUP_PREF: Pref = { cols: 4, rows: 3, resizable: false, priority: 5, zone: 'main', preferredWidth: 340, preferredHeight: 320 };
+export const SPLIT_COLUMN_PREF: Pref = { cols: null, rows: 3, resizable: true, priority: 5, zone: 'main', preferredWidth: null, preferredHeight: 320 };

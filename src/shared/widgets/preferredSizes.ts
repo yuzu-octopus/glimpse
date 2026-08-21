@@ -1,36 +1,57 @@
 import type { WidgetType } from './index';
-
-export type Pref = {
-  preferredWidth: number | null;
-  preferredHeight: number | null;
-  resizable: boolean;
-};
+import { BOOKMARKS_PREF } from './bookmarks';
+import { CALENDAR_PREF } from './calendar';
+import { CLOCK_PREF } from './clock';
+import { DOCKER_CONTAINERS_PREF } from './docker';
+import { DNS_STATS_PREF } from './dns';
+import {
+  HACKER_NEWS_PREF,
+  REDDIT_PREF,
+  RELEASES_PREF,
+  RSS_PREF,
+  WEATHER_PREF,
+} from './feeds';
+import { GROUP_PREF, SPLIT_COLUMN_PREF } from './group';
+import { HTML_PREF, IFRAME_PREF } from './iframe';
+import {
+  CUSTOM_API_PREF,
+  LOBSTERS_PREF,
+  MARKETS_PREF,
+  MONITOR_PREF,
+  REPOSITORY_PREF,
+  VIDEOS_PREF,
+} from './keyed';
+import { SEARCH_PREF } from './search';
+import { SERVER_STATS_PREF } from './server-stats';
+import { SYSTEM_STATS_PREF } from './system-stats';
+import { TODO_PREF } from './todo';
+import type { Pref } from './shared';
 
 export const PREFERRED_SIZES: Record<WidgetType, Pref> = {
-  clock: { preferredWidth: 300, preferredHeight: 200, resizable: false },
-  weather: { preferredWidth: 300, preferredHeight: 280, resizable: false },
-  calendar: { preferredWidth: 340, preferredHeight: 320, resizable: false },
-  bookmarks: { preferredWidth: 300, preferredHeight: 240, resizable: false },
-  search: { preferredWidth: 300, preferredHeight: 90, resizable: false },
-  todo: { preferredWidth: 320, preferredHeight: 220, resizable: false },
-  rss: { preferredWidth: null, preferredHeight: null, resizable: true },
-  'hacker-news': { preferredWidth: null, preferredHeight: null, resizable: true },
-  reddit: { preferredWidth: null, preferredHeight: null, resizable: true },
-  lobsters: { preferredWidth: null, preferredHeight: null, resizable: true },
-  releases: { preferredWidth: 360, preferredHeight: 260, resizable: false },
-  videos: { preferredWidth: 380, preferredHeight: 220, resizable: false },
-  markets: { preferredWidth: 340, preferredHeight: 220, resizable: false },
-  monitor: { preferredWidth: 340, preferredHeight: 200, resizable: false },
-  repository: { preferredWidth: 360, preferredHeight: 200, resizable: false },
-  'custom-api': { preferredWidth: 340, preferredHeight: 200, resizable: false },
-  iframe: { preferredWidth: 500, preferredHeight: 400, resizable: false },
-  html: { preferredWidth: null, preferredHeight: 200, resizable: true },
-  group: { preferredWidth: 340, preferredHeight: 320, resizable: false },
-  'split-column': { preferredWidth: null, preferredHeight: 320, resizable: true },
-  'system-stats': { preferredWidth: 340, preferredHeight: 220, resizable: false },
-  'docker-containers': { preferredWidth: 340, preferredHeight: 220, resizable: false },
-  'dns-stats': { preferredWidth: 340, preferredHeight: 220, resizable: false },
-  'server-stats': { preferredWidth: 340, preferredHeight: 240, resizable: false },
+  clock: CLOCK_PREF,
+  weather: WEATHER_PREF,
+  calendar: CALENDAR_PREF,
+  bookmarks: BOOKMARKS_PREF,
+  search: SEARCH_PREF,
+  todo: TODO_PREF,
+  rss: RSS_PREF,
+  'hacker-news': HACKER_NEWS_PREF,
+  reddit: REDDIT_PREF,
+  lobsters: LOBSTERS_PREF,
+  releases: RELEASES_PREF,
+  videos: VIDEOS_PREF,
+  markets: MARKETS_PREF,
+  monitor: MONITOR_PREF,
+  repository: REPOSITORY_PREF,
+  'custom-api': CUSTOM_API_PREF,
+  iframe: IFRAME_PREF,
+  html: HTML_PREF,
+  group: GROUP_PREF,
+  'split-column': SPLIT_COLUMN_PREF,
+  'system-stats': SYSTEM_STATS_PREF,
+  'docker-containers': DOCKER_CONTAINERS_PREF,
+  'dns-stats': DNS_STATS_PREF,
+  'server-stats': SERVER_STATS_PREF,
 };
 
 export function assertAllWidgetsCovered(widgetTypes: string[]): void {

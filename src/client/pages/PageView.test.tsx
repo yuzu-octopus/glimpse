@@ -574,4 +574,64 @@ describe('PageView', () => {
     expect(chromeCss).toContain('var(--widget-content-vertical)');
     expect(chromeCss).toContain('var(--widget-content-horizontal)');
   });
+
+  it('flat widgets render the bento grid with compositor placements', async () => {
+    renderPage(
+      payload({
+        columns: [],
+        widgets: [
+          { type: 'clock', config: { type: 'clock', title: 'Clock', priority: 9, zone: 'sidebar' }, data: null },
+          { type: 'clock', config: { type: 'clock', title: 'Second', span: 2 }, data: null },
+        ],
+        gridColumns: 12,
+        gridRowHeight: 96,
+      }),
+    );
+    const grid = await screen.findByTestId('bento-grid');
+    expect(grid.className).toContain('bentoGrid');
+    expect(grid.style.getPropertyValue('--bento-cols')).toBe('12');
+    expect(grid.style.getPropertyValue('--bento-row')).toBe('96px');
+    expect(within(grid).getAllByTestId('clock-widget')).toHaveLength(2);
+    // every tile got a placement from composeBento
+    expect(grid.querySelectorAll('[data-bento-x]').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('legacy columns pages still render MobileColumn (no bento grid)', async () => {
+    // renders alongside the bento page above — scope to the newest column
+    // wrapper (RTL auto-cleanup unmounts previous trees only via its own
+    // afterEach, and this file relies on manual scoping elsewhere too).
+    const { container } = renderPage(payload());
+    await waitFor(() => {
+      expect(within(container).getAllByTestId('clock-widget').length).toBeGreaterThan(0);
+    });
+    expect(within(container).queryByTestId('bento-grid')).toBeNull();
+    expect(within(container).getByTestId('column')).toBeInTheDocument();
+  });
+
+  it('flat page skeleton mirrors the bento grid at 12 columns', () => {
+    const page = {
+      slug: 'home',
+      name: 'Home',
+      widgets: [{ type: 'clock', title: 'A' }, { type: 'rss', title: 'B' }],
+    } as unknown as Page & { slug: string };
+    render(
+      <MemoryRouter>
+        <PageSkeleton page={page} />
+      </MemoryRouter>,
+    );
+    const sk = screen.getByTestId('bento-skeleton');
+    expect(sk.style.getPropertyValue('--bento-cols')).toBe('12');
+    expect(sk.querySelectorAll('[class*="bentoItem"]')).toHaveLength(2);
+  });
+
+  it('bento css: 12-col dense grid collapsing to one track on mobile', () => {
+    const css = readFileSync('src/client/pages/page.module.css', 'utf8');
+    expect(css).toMatch(/\.bentoGrid\s*\{[^}]*repeat\(var\(--bento-cols,\s*12\)/);
+    expect(css).toMatch(/\.bentoGrid\s*\{[^}]*grid-auto-flow:\s*dense/);
+    // mobile collapse lives in the ≤768px media query (!important beats the
+    // earlier-in-file base rule and the inline --bento-* placement vars)
+    expect(css).toMatch(/\.bentoGrid\s*\{[^}]*grid-template-columns:\s*1fr\s*!important/);
+    expect(css).toMatch(/\.bentoItem\s*\{[^}]*grid-column:\s*1\s*\/\s*-1\s*!important/);
+    expect(css).toMatch(/\.bentoItem\s*\{[^}]*grid-row:\s*auto\s*!important/);
+  });
 });

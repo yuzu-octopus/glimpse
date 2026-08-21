@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { sharedWidgetFields } from './shared';
+import { sharedWidgetFields, type Pref } from './shared';
 
 export const systemStatsSchema = z
   .object({
@@ -9,3 +9,5 @@ export const systemStatsSchema = z
   .loose();
 
 export type SystemStatsConfig = z.infer<typeof systemStatsSchema>;
+
+export const SYSTEM_STATS_PREF: Pref = { cols: 4, rows: 2, resizable: false, priority: 6, zone: 'main', preferredWidth: 340, preferredHeight: 220 };

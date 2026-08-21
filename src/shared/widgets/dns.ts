@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { sharedWidgetFields } from './shared';
+import { sharedWidgetFields, type Pref } from './shared';
 
 export const dnsStatsSchema = z.object({
   type: z.literal('dns-stats'),
@@ -15,3 +15,4 @@ export const dnsStatsSchema = z.object({
 });
 
 export type DnsStatsConfig = z.infer<typeof dnsStatsSchema>;
+export const DNS_STATS_PREF: Pref = { cols: 4, rows: 2, resizable: false, priority: 6, zone: 'main', preferredWidth: 340, preferredHeight: 220 };

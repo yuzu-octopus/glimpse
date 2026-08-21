@@ -47,6 +47,29 @@ describe('loadConfig', () => {
     expect(r.config?.pages[0].slug).toBe('home');
   });
 
+  it('loads a flat bento page without columns', () => {
+    const r = loadConfig(
+      write(
+        'glance.yml',
+        `
+pages:
+  - name: Home
+    grid-columns: 12
+    grid-row-height: 96
+    widgets:
+      - type: clock
+      - type: rss
+        feeds:
+          - url: https://example.com/feed.xml
+`,
+      ),
+    );
+    expect(r.ok).toBe(true);
+    expect(r.config?.pages[0].widgets).toHaveLength(2);
+    expect(r.config?.pages[0]['grid-columns']).toBe(12);
+    expect(r.config?.pages[0]['grid-row-height']).toBe(96);
+  });
+
   it('uses an explicit slug verbatim', () => {
     const r = loadConfig(write('glance.yml', VALID.replace('- name: Home', '- name: Home\n    slug: start')));
     expect(r.ok).toBe(true);

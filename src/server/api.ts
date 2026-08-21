@@ -109,7 +109,7 @@ export async function buildPagePayload(
     minColumnWidth: page['min-column-width'] ?? 300,
     headWidgets,
     columns,
-    ...(isFlat ? { widgets: flatWidgets, gridColumns: (page as Record<string, unknown>)['grid-columns'] as number | undefined ?? 6, gridRowHeight: (page as Record<string, unknown>)['grid-row-height'] as number | undefined ?? 96 } : {}),
+    ...(isFlat ? { widgets: flatWidgets, gridColumns: (page as Record<string, unknown>)['grid-columns'] as number | undefined ?? 12, gridRowHeight: (page as Record<string, unknown>)['grid-row-height'] as number | undefined ?? 96 } : {}),
   };
 }
 

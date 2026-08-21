@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { sharedWidgetFields } from './shared';
+import { sharedWidgetFields, type Pref } from './shared';
 
 export const clockSchema = z.object({
   type: z.literal('clock'),
@@ -10,3 +10,5 @@ export const clockSchema = z.object({
     .default([]),
 });
 export type ClockConfig = z.infer<typeof clockSchema>;
+
+export const CLOCK_PREF: Pref = { cols: 3, rows: 2, resizable: false, priority: 9, zone: 'sidebar', preferredWidth: 300, preferredHeight: 200 };

@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import { sharedWidgetFields } from './shared';
+import { sharedWidgetFields, type Pref } from './shared';
+
+export const LOBSTERS_PREF: Pref = { cols: 4, rows: 3, resizable: false, priority: 7, zone: 'main', preferredWidth: null, preferredHeight: null };
+export const VIDEOS_PREF: Pref = { cols: 6, rows: 2, resizable: false, priority: 8, zone: 'main', preferredWidth: 380, preferredHeight: 220 };
+export const MARKETS_PREF: Pref = { cols: 3, rows: 1, resizable: false, priority: 7, zone: 'sidebar', preferredWidth: 340, preferredHeight: 220 };
+export const MONITOR_PREF: Pref = { cols: 4, rows: 2, resizable: false, priority: 6, zone: 'main', preferredWidth: 340, preferredHeight: 200 };
+export const CUSTOM_API_PREF: Pref = { cols: 3, rows: 1, resizable: false, priority: 5, zone: 'main', preferredWidth: 340, preferredHeight: 200 };
+export const REPOSITORY_PREF: Pref = { cols: 4, rows: 2, resizable: false, priority: 6, zone: 'main', preferredWidth: 360, preferredHeight: 200 };
 
 export const lobstersSchema = z.object({
   type: z.literal('lobsters'),
