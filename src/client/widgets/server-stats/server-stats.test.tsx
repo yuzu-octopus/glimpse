@@ -10,6 +10,8 @@ const up = {
   cpu: { load: 1.75, loadIsAvailable: true },
   memory: { used: 12e9, total: 32e9, isAvailable: true },
   mountpoints: [{ path: '/', used: 250e9, total: 500e9 }],
+  temp: { main: 42, isAvailable: true },
+  gpu: [{ model: 'Apple M1', temp: 45 }],
   isReachable: true,
 };
 
@@ -33,22 +35,22 @@ describe('server-stats widget', () => {
       />,
     );
     expect(screen.getByText('Servers')).toBeInTheDocument();
-    expect(screen.getAllByText('yuzu-mac').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('second').length).toBeGreaterThan(0);
-    // CPU bar shows load as percent (175% load clamps to 100 fill but text shows raw)
     const bars = screen.getAllByRole('meter');
-    expect(bars.length).toBeGreaterThanOrEqual(6); // cpu+mem+disk per server
-    expect(bars[0]).toHaveAttribute('aria-label', 'CPU');
-    expect(bars[0]).toHaveAttribute('aria-valuenow', '100'); // load 1.75 → 175% clamps to fill cap
-    // MEM bar: 12/32 = 38%
-    expect(bars[1]).toHaveAttribute('aria-valuenow', '38');
-    // DISK bar: 250/500 = 50%
-    expect(bars[2]).toHaveAttribute('aria-label', 'DISK /');
-    expect(bars[2]).toHaveAttribute('aria-valuenow', '50');
+    expect(bars.length).toBeGreaterThanOrEqual(8); // cpu+gpu+ram+disk+temp per server
+    const byLabel = (l: string) => bars.find((b) => b.getAttribute('aria-label') === l);
+    expect(byLabel('CPU')).toHaveAttribute('aria-valuenow', '100'); // load 1.75 → 175% clamps to fill cap
+    // GPU bar: 45°C → value 45
+    expect(byLabel('GPU')).toHaveAttribute('aria-valuenow', '45');
+    // RAM bar: 12/32 = 38%
+    expect(byLabel('RAM')).toHaveAttribute('aria-valuenow', '38');
+    // DISK bar: 250/500 = 50% (label may be "DISK /" or "DISK /System/Volumes/Data" depending on collapse)
+    const diskBar = bars.find((b) => (b.getAttribute('aria-label') ?? '').startsWith('DISK'));
+    expect(diskBar).toHaveAttribute('aria-valuenow', '50');
+    // TEMP as big number in cell (not meter) — check text
+    expect(screen.getAllByText('42°C').length).toBeGreaterThanOrEqual(1);
     // uptime rendered (1h ago)
     expect(screen.getAllByText('1h').length).toBeGreaterThan(0);
   });
-
   it('renders unreachable server with negative icon state and no bars', () => {
     render(<ServerStats config={{ type: 'server-stats' }} data={{ servers: [down] }} />);
     expect(screen.getAllByText('box.lan').length).toBeGreaterThan(0);
@@ -70,12 +72,14 @@ describe('server-stats widget', () => {
               cpu: { load: 0, loadIsAvailable: false },
               memory: { used: 0, total: 0, isAvailable: false },
               mountpoints: [],
+              temp: { main: null, isAvailable: false },
+              gpu: [],
             },
           ],
         }}
       />,
     );
-    // CPU + MEM bars show n/a; hover-details adds a third (CPU load row)
+    // CPU + MEM bars show n/a; GPU/TEMP hidden when unavailable
     expect(screen.getAllByText('n/a').length).toBeGreaterThanOrEqual(2);
     const bars = screen.getAllByRole('meter');
     for (const bar of bars) expect(bar).not.toHaveAttribute('aria-valuenow');

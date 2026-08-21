@@ -158,3 +158,56 @@
 .detailLabel {
   color: var(--color-text-subdue);
 }
+
+/* Bento health card — 2×2 + temp row. Coherent grouping: compute vs storage vs thermal.
+   Icons use lucide, colors via --color-positive/warning/negative theme tokens. */
+.bento {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.cell {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 10px 12px;
+  background: var(--color-widget-background-highlight);
+  border: 1px solid var(--color-separator);
+  border-radius: var(--border-radius);
+}
+
+.cellIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-text-subdue);
+}
+
+.cellBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.cellLabel {
+  font-size: var(--font-size-h6);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-subdue);
+  margin-bottom: 6px;
+}
+
+.tempCell {
+  grid-column: 1 / -1;
+  background: color-mix(in srgb, var(--color-warning) 8%, var(--color-widget-background-highlight));
+  border-color: color-mix(in srgb, var(--color-warning) 20%, var(--color-separator));
+}
+
+.tempValue {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-text-highlight);
+}

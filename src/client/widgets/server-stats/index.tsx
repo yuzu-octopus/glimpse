@@ -1,5 +1,5 @@
 import { Text } from '@astryxdesign/core';
-import { Server } from 'lucide-react';
+import { Cpu, HardDrive, MemoryStick, Monitor, Server, Thermometer } from 'lucide-react';
 import type { ServerStatsConfig } from '../../../shared/widgets/server-stats';
 import type { ServerInfo, ServerStatsData } from '../../../shared/widgets/payloads';
 import { WidgetChrome } from '../../components/WidgetChrome';
@@ -20,7 +20,7 @@ function pct(used: number, total: number): number {
 }
 
 /** Stat bar with a --progress fill var; gray when the metric is unavailable. */
-function Bar({ label, value, sub, available = true }: { label: string; value: string; sub?: string; available?: boolean }) {
+function Bar({ label, value, sub, available = true }: { label?: string; value: string; sub?: string; available?: boolean }) {
   const p = available ? Math.min(100, Math.max(0, Number.parseInt(value, 10) || 0)) : 0;
   return (
     <div className={styles.stat} data-testid="server-stat">
@@ -48,6 +48,15 @@ function Bar({ label, value, sub, available = true }: { label: string; value: st
 function ServerCard({ server }: { server: ServerInfo }) {
   const age = useAge(server.bootTime || null);
   const memPct = server.memory.isAvailable ? pct(server.memory.used, server.memory.total) : 0;
+  // collapsed DISK: max of "/" and "/System/Volumes/Data" (they share 494.3 GB, pick the fuller)
+  const disk = (() => {
+    if (!server.mountpoints.length) return null;
+    let best = server.mountpoints[0];
+    for (const m of server.mountpoints) if (pct(m.used, m.total) > pct(best.used, best.total)) best = m;
+    return best;
+  })();
+  const diskPct = disk ? pct(disk.used, disk.total) : 0;
+  const gpu = server.gpu?.[0] ?? null;
   return (
     <section className={`${styles.server} ${server.isReachable ? '' : styles.serverDown}`} data-testid="server-card">
       <header className={styles.serverHeader}>
@@ -60,16 +69,44 @@ function ServerCard({ server }: { server: ServerInfo }) {
       </header>
 
       {server.isReachable ? (
-        <div className={styles.serverStats}>
-          <Bar label="CPU" value={`${Math.round(server.cpu.load * 100)}`} available={server.cpu.loadIsAvailable} />
-          {server.gpu?.map((g) => (
-            <Bar key={g.model} label={`GPU ${g.model}`} value={g.temp != null ? `${Math.round(g.temp)}°C` : '—'} available={g.temp != null} />
-          ))}
-          <Bar label="RAM" value={`${memPct}%`} sub={server.memory.isAvailable ? `${fmtBytes(server.memory.used)} / ${fmtBytes(server.memory.total)}` : undefined} available={server.memory.isAvailable} />
-          {server.mountpoints.map((m) => (
-            <Bar key={m.path} label={`DISK ${m.path}`} value={`${pct(m.used, m.total)}%`} sub={fmtBytes(m.total)} />
-          ))}
-          {server.temp?.isAvailable ? <Bar label="TEMP" value={`${Math.round(server.temp.main!)}°C`} /> : null}
+        <div className={styles.bento}>
+          <div className={styles.cell}>
+            <Cpu size={14} className={styles.cellIcon} aria-hidden />
+            <div className={styles.cellBody}>
+              <div className={styles.cellLabel}>CPU</div>
+              <Bar label="CPU" value={`${Math.round(server.cpu.load * 100)}`} available={server.cpu.loadIsAvailable} />
+            </div>
+          </div>
+          <div className={styles.cell}>
+            <Monitor size={14} className={styles.cellIcon} aria-hidden />
+            <div className={styles.cellBody}>
+              <div className={styles.cellLabel}>GPU</div>
+              <Bar label="GPU" value={gpu?.temp != null ? `${Math.round(gpu.temp)}°C` : '—'} available={gpu?.temp != null} />
+            </div>
+          </div>
+          <div className={styles.cell}>
+            <MemoryStick size={14} className={styles.cellIcon} aria-hidden />
+            <div className={styles.cellBody}>
+              <div className={styles.cellLabel}>RAM</div>
+              <Bar label="RAM" value={`${memPct}%`} sub={server.memory.isAvailable ? `${fmtBytes(server.memory.used)} / ${fmtBytes(server.memory.total)}` : undefined} available={server.memory.isAvailable} />
+            </div>
+          </div>
+          <div className={styles.cell}>
+            <HardDrive size={14} className={styles.cellIcon} aria-hidden />
+            <div className={styles.cellBody}>
+              <div className={styles.cellLabel}>DISK</div>
+              {disk ? <Bar label={`DISK ${disk.path}`} value={`${diskPct}%`} sub={fmtBytes(disk.total)} /> : <Bar label="DISK" value="—" available={false} />}
+            </div>
+          </div>
+          {server.temp?.isAvailable ? (
+            <div className={`${styles.cell} ${styles.tempCell}`}>
+              <Thermometer size={14} className={styles.cellIcon} aria-hidden />
+              <div className={styles.cellBody}>
+                <div className={styles.cellLabel}>TEMP</div>
+                <div className={styles.tempValue}>{Math.round(server.temp.main!)}°C</div>
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : (
         <p className={styles.unreachable}>Unreachable</p>
