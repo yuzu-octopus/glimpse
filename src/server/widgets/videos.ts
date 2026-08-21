@@ -254,8 +254,16 @@ registerWidget('videos', async (ctx, config) => {
   );
 
   const videos: Video[] = [];
+  const seen = new Set<string>();
   for (const r of settled) {
-    if (r.status === 'fulfilled') videos.push(...r.value);
+    if (r.status === 'fulfilled') {
+      for (const v of r.value) {
+        if (!seen.has(v.url)) {
+          seen.add(v.url);
+          videos.push(v);
+        }
+      }
+    }
   }
   videos.sort((a, b) => {
     const ta = a.published ? Date.parse(a.published) : 0;
