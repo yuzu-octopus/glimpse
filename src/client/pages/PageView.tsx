@@ -9,7 +9,7 @@ import { WidgetChrome } from '../components/WidgetChrome';
 import { usePageData } from '../hooks/usePageData';
 import { clientWidgets } from '../widgets/registry';
 import { PAGE_WIDTHS } from '../../shared/layout';
-import { chooseColumnCount, getTilingProps } from './tiling';
+import { MAX_TILING_COLS, chooseColumnCount, getTilingProps } from './tiling';
 import { useCollageTiling } from './useCollageTiling';
 import { PREFERRED_SIZES } from '../../shared/widgets/preferredSizes';
 import styles from './page.module.css';
@@ -308,20 +308,23 @@ export function PageView({
   const tilePrefsForHook = useMemo(() => {
     if (!resolvedForPrefs?.columns) return undefined;
     return resolvedForPrefs.columns.map((col) => {
-      const t = col.widgets[0]?.type ?? '';
-      const pref = (PREFERRED_SIZES as Record<string, { preferredWidth: number | null; preferredHeight: number | null; resizable: boolean }>)[t]
-        ?? { preferredWidth: null, preferredHeight: null, resizable: true };
-      return { prefH: pref.preferredHeight, resizable: pref.resizable };
+      const heights = col.widgets
+        .map((w) => (PREFERRED_SIZES as Record<string, { preferredHeight: number | null; resizable: boolean }>)[w.type])
+        .filter((p): p is { preferredHeight: number; resizable: false } => !!p && !p.resizable && p.preferredHeight != null)
+        .map((p) => p.preferredHeight);
+      if (heights.length === 0) return { prefH: null as number | null, resizable: true };
+      return { prefH: Math.max(...heights), resizable: false };
     });
   }, [resolvedForPrefs?.columns]);
   const tilesForChooser = useMemo(() => {
     if (!resolvedForPrefs?.columns) return [];
-    return resolvedForPrefs.columns.map((col) => {
-      const t = col.widgets[0]?.type ?? '';
-      const pref = (PREFERRED_SIZES as Record<string, { preferredWidth: number | null; preferredHeight: number | null; resizable: boolean }>)[t]
-        ?? { preferredWidth: null, preferredHeight: null, resizable: true };
-      return { prefW: pref.preferredWidth, prefH: pref.preferredHeight, span: col.span ?? 1, resizable: pref.resizable };
-    });
+    // per-widget tiles (flatMap) so a column with 3 widgets contributes 3 width prefs, not just the first
+    return resolvedForPrefs.columns.flatMap((col) =>
+      col.widgets.map((w) => {
+        const pref = (PREFERRED_SIZES as Record<string, { preferredWidth: number | null; preferredHeight: number | null; resizable: boolean }>)[w.type] ?? { preferredWidth: null, preferredHeight: null, resizable: true };
+        return { prefW: pref.preferredWidth, prefH: pref.preferredHeight, span: col.span ?? 1, resizable: pref.resizable };
+      }),
+    );
   }, [resolvedForPrefs?.columns]);
   // Collage measure pass: re-runs when the payload settles/refreshes. The
   // ref is only attached in collage mode (tilingProps.measure), so the hook
@@ -334,7 +337,8 @@ export function PageView({
     if (!container) return;
     const gap = 23;
     const minW = (data as { minColumnWidth?: number }).minColumnWidth ?? 300;
-    const maxCols = 6;
+    const maxCols = MAX_TILING_COLS;
+    // clamp grid tracks to content-derived limit and to actual container width; MAX_TILING_COLS is the grid cap (not PageSchema max 3)
     const compute = () => {
       const W = container.clientWidth || container.getBoundingClientRect().width || 0;
       if (!(W > 0)) return;
@@ -349,7 +353,6 @@ export function PageView({
     ro.observe(container);
     return () => ro.disconnect();
   }, [isCollageLikeForChooser, data, tilesForChooser]);
-
   if (!data && !error) {
     if (page) return <PageSkeleton page={page} />;
     // Fallback when rendered without config (direct mounts): structure-ready chrome.

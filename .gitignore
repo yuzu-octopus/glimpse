@@ -28,6 +28,13 @@ Thumbs.db
 .vscode/
 *.swp
 
-# logs
 *.log
 npm-debug.log*
+
+# research & audits — keep repo minimal (subagent scratch, one-time audits)
+/bun-ideas.md
+/component-ideas.md
+/collage-ideas.md
+/AUDIT_*.md
+/TODO.md
+docs/superpowers/

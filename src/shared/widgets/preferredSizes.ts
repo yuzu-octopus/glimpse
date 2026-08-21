@@ -1,10 +1,12 @@
+import type { WidgetType } from './index';
+
 export type Pref = {
   preferredWidth: number | null;
   preferredHeight: number | null;
   resizable: boolean;
 };
 
-export const PREFERRED_SIZES: Record<string, Pref> = {
+export const PREFERRED_SIZES: Record<WidgetType, Pref> = {
   clock: { preferredWidth: 300, preferredHeight: 200, resizable: false },
   weather: { preferredWidth: 300, preferredHeight: 280, resizable: false },
   calendar: { preferredWidth: 340, preferredHeight: 320, resizable: false },
@@ -26,9 +28,6 @@ export const PREFERRED_SIZES: Record<string, Pref> = {
   group: { preferredWidth: 340, preferredHeight: 320, resizable: false },
   'split-column': { preferredWidth: null, preferredHeight: 320, resizable: true },
   'system-stats': { preferredWidth: 340, preferredHeight: 220, resizable: false },
-  // cover twitch while it exists; Record<string,Pref> keeps it harmless after removal
-  'twitch-channels': { preferredWidth: 340, preferredHeight: 260, resizable: false },
-  'twitch-top-games': { preferredWidth: 340, preferredHeight: 260, resizable: false },
 };
 
 export function assertAllWidgetsCovered(widgetTypes: string[]): void {

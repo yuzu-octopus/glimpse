@@ -83,9 +83,8 @@
 /* glance utils.css — the content box drops its bottom padding when the
    expand toggle is the last child; the toggle's own vertical padding
    supplies the gap. Keep this only for the collapsed toggle — when expanded
-   the sticky Show less button sits at the card edge; restoring bottom
-   padding prevents the last row's hover highlight (row::before inset -4px)
-   from being painted underneath the button's opaque background. */
+   keep the card's bottom padding so the last row's hover highlight
+   (row::before inset -4px) renders fully above the toggle. */
 .body:has(.more:last-child:not(.moreExpanded)) {
   padding-bottom: 0;
 }

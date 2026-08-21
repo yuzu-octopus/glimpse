@@ -1,4 +1,3 @@
-import Parser from 'rss-parser';
 import { videosSchema } from '../../shared/widgets/keyed';
 import { fetchText } from './http';
 import { registerWidget } from './registry';
@@ -6,28 +5,65 @@ import type { Video } from '../../shared/widgets/payloads';
 import type { WidgetFetchContext } from './registry';
 import { STATIC_TTL_MS } from '../../shared/live';
 
-type ParserItem = Parser.Item & {
-  mediaGroup?: {
-    'media:thumbnail'?: Array<{ $?: { url?: string } }>;
-  };
-};
-
-interface VideoFeedSummary {
-  title?: string;
+function getBXML(): { parse(s: string): unknown } {
+  const b = (globalThis as unknown as { Bun?: { XML?: { parse(s: string): unknown } } }).Bun?.XML;
+  if (b) return b;
+  // vitest/jsdom fallback via DOMParser
+  return { parse: fallbackXmlParse };
 }
 
-interface ParsedFeed {
-  title?: string;
-  items: ParserItem[];
+function fallbackXmlParse(xml: string): unknown {
+  const DP = (globalThis as unknown as { DOMParser?: new () => { parseFromString(s: string, t: string): Document } }).DOMParser;
+  if (!DP) throw new Error('Bun.XML not available and DOMParser missing');
+  const doc = new DP().parseFromString(xml, 'text/xml');
+  const root = doc.documentElement;
+  if (!root) return {};
+  const out: Record<string, unknown> = {};
+  out[root.tagName] = domToObj(root);
+  return out;
+}
+
+function domToObj(el: Element): unknown {
+  const obj: Record<string, unknown> = {};
+  for (const attr of Array.from(el.attributes)) obj[`@${attr.name}`] = attr.value;
+  const children = Array.from(el.children);
+  if (children.length === 0) {
+    const text = el.textContent?.trim() ?? '';
+    if (Object.keys(obj).length === 0) return text || '';
+    if (text) obj['#text'] = text;
+    return obj;
+  }
+  for (const child of children) {
+    const val = domToObj(child);
+    const key = child.tagName;
+    if (key in obj) {
+      const existing = obj[key];
+      if (Array.isArray(existing)) (existing as unknown[]).push(val);
+      else obj[key] = [existing, val];
+    } else obj[key] = val;
+  }
+  return obj;
 }
 
 const YT_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const PLAYLIST_PREFIX = 'playlist:';
 
-// handle→UC cached in ctx.cache (TTL 24h) + singleflight — no global Map (stale isolated per-ctx)
-
 function isChannelId(channel: string): boolean {
   return /^UC[A-Za-z0-9_-]{22}$/.test(channel);
+}
+
+export function extractChannelId(html: string): string | null {
+  const patterns = [
+    /"externalId"\s*:\s*"(UC[A-Za-z0-9_-]{22})"/,
+    /"browseId"\s*:\s*"(UC[A-Za-z0-9_-]{22})"/,
+    /"channelId"\s*:\s*"(UC[A-Za-z0-9_-]{22})"/,
+    /channel_id=(UC[A-Za-z0-9_-]{22})/,
+  ];
+  for (const re of patterns) {
+    const m = re.exec(html);
+    if (m) return m[1];
+  }
+  return null;
 }
 
 // Why channel_id and not UULF (glance's UC→UULF playlist trick):
@@ -40,44 +76,36 @@ function isChannelId(channel: string): boolean {
 // flexible — use UC... for stability or @handle for convenience (e.g. @spokeishere, @Bug-I).
 function feedUrlForId(id: string, _includeShorts: boolean): string {
   if (id.startsWith(PLAYLIST_PREFIX)) {
-    return `https://www.youtube.com/feeds/videos.xml?playlist_id=${encodeURIComponent(id.slice(PLAYLIST_PREFIX.length))}`;
+    const pid = id.slice(PLAYLIST_PREFIX.length);
+    return `https://www.youtube.com/feeds/videos.xml?playlist_id=${encodeURIComponent(pid)}`;
   }
-  // Use channel_id feed directly; shorts filtered via link check (more reliable than UULF playlist which 404s for many channels)
-  return `https://www.youtube.com/feeds/videos.xml?channel_id=${id}`;
-}
-
-export function extractChannelId(html: string): string | null {
-  const patterns = [
-    /"externalId":"(UC[^"]+)"/,
-    /channel_id=(UC[A-Za-z0-9_-]{22,})/,
-    /"channelId":"(UC[^"]+)"/,
-    /"browseId":"(UC[^"]+)"/,
-  ];
-  for (const p of patterns) {
-    const m = html.match(p);
-    if (m) return m[1];
-  }
-  return null;
+  return `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(id)}`;
 }
 
 async function resolveHandleToChannelId(
   ctx: WidgetFetchContext,
   rawHandle: string,
 ): Promise<string> {
-  const cacheKey = `yt:handle:${rawHandle.toLowerCase()}`;
-  const cached = ctx.cache.get<string>(cacheKey) ?? ctx.cache.getStale<string>(cacheKey);
+  const handle = rawHandle.startsWith('@') ? rawHandle : `@${rawHandle}`;
+  const cacheKey = `videos:handle:${handle.toLowerCase()}`;
+  const cached = ctx.cache.get<string>(cacheKey);
   if (cached) return cached;
+  const stale = ctx.cache.getStale<string>(cacheKey);
   return ctx.singleflight.run(cacheKey, async () => {
-    const again = ctx.cache.get<string>(cacheKey) ?? ctx.cache.getStale<string>(cacheKey);
-    if (again) return again;
-    const clean = rawHandle.replace(/^@/, '');
-    const html = await fetchText(ctx, `https://www.youtube.com/@${encodeURIComponent(clean)}`, {
-      headers: { 'User-Agent': YT_UA },
-    });
-    const id = extractChannelId(html);
-    if (!id) throw new Error(`Could not resolve handle @${clean} to channel_id`);
-    ctx.cache.set(cacheKey, id, 24 * 60 * 60 * 1000);
-    return id;
+    const cached2 = ctx.cache.get<string>(cacheKey);
+    if (cached2) return cached2;
+    try {
+      const html = await fetchText(ctx, `https://www.youtube.com/${handle}`, {
+        headers: { 'User-Agent': YT_UA },
+      });
+      const id = extractChannelId(html);
+      if (!id) throw new Error(`could not resolve handle ${handle}`);
+      ctx.cache.set(cacheKey, id, 24 * 60 * 60 * 1000);
+      return id;
+    } catch (err) {
+      if (stale) return stale;
+      throw err;
+    }
   });
 }
 
@@ -87,31 +115,19 @@ async function feedUrlsForChannels(
   includeShorts: boolean,
 ): Promise<Array<{ url: string; source: string; cacheKey: string }>> {
   const results = await Promise.all(
-    channels.map(async (c) => {
-      let id = c;
-      const isPlaylist = c.startsWith(PLAYLIST_PREFIX);
-      const isUcLike = c.startsWith('UC');
-      const isUcId = isChannelId(c);
-      if (isUcId || isPlaylist || isUcLike) {
-        // UC ID (or playlist:) — use directly; malformed UC falls through to feed fetch (404) without handle lookup
-        id = c;
-      } else if (c.startsWith('@')) {
+    channels.map(async (ch) => {
+      let id = ch;
+      let source = ch;
+      if (!isChannelId(ch)) {
+        const handle = ch.startsWith('@') ? ch : `@${ch}`;
         try {
-          id = await resolveHandleToChannelId(ctx, c);
+          id = await resolveHandleToChannelId(ctx, handle);
+          source = handle;
         } catch {
-          id = c;
-        }
-      } else {
-        // bare handle without @ (e.g. spokeishere, Bug-I) — try @handle resolution
-        try {
-          id = await resolveHandleToChannelId(ctx, `@${c}`);
-        } catch {
-          id = c;
+          id = ch;
         }
       }
-      const url = feedUrlForId(id, includeShorts);
-      const cacheKey = id;
-      return { url, source: c, cacheKey };
+      return { url: feedUrlForId(id, includeShorts), source, cacheKey: id };
     }),
   );
   return results;
@@ -128,12 +144,33 @@ function videoUrlFor(link: string, template: string | undefined): string {
   }
 }
 
+function parseVideoFeed(raw: string): { title?: string; items: Array<Record<string, unknown>> } {
+  const parsed = getBXML().parse(raw) as Record<string, unknown>;
+  const feed = parsed.feed as Record<string, unknown> | undefined;
+  if (feed) {
+    const rawTitle = feed.title;
+    const title = typeof rawTitle === 'string' ? rawTitle : (rawTitle as Record<string, unknown> | undefined)?.['#text'] as string | undefined;
+    const rawEntries = feed.entry;
+    const entries = rawEntries == null ? [] : Array.isArray(rawEntries) ? rawEntries : [rawEntries];
+    return { title: title as string | undefined, items: entries as Array<Record<string, unknown>> };
+  }
+  const rss = parsed.rss as Record<string, unknown> | undefined;
+  if (rss) {
+    const channel = rss.channel as Record<string, unknown> | undefined;
+    if (channel) {
+      const rawTitle = channel.title;
+      const title = typeof rawTitle === 'string' ? rawTitle : undefined;
+      const rawItems = channel.item;
+      const items = rawItems == null ? [] : Array.isArray(rawItems) ? rawItems : [rawItems];
+      return { title: title as string | undefined, items: items as Array<Record<string, unknown>> };
+    }
+  }
+  return { title: undefined, items: [] };
+}
+
 registerWidget('videos', async (ctx, config) => {
   const cfg = videosSchema.parse(config);
   const includeShorts = cfg['include-shorts'] ?? false;
-  const parser = new Parser<VideoFeedSummary, ParserItem>({
-    customFields: { item: [['media:group', 'mediaGroup']] },
-  });
 
   const channelFeeds = await feedUrlsForChannels(ctx, cfg.channels, includeShorts);
   const playlistFeeds = cfg.playlists.map((p) => {
@@ -158,29 +195,64 @@ registerWidget('videos', async (ctx, config) => {
       const setCached = (videos: Video[]) => {
         ctx.cache.set(fullCacheKey, videos, STATIC_TTL_MS);
         ctx.cache.set(simpleCacheKey, videos, STATIC_TTL_MS);
-        // stale copy retained for fallback after TTL expiry
         ctx.cache.set(`${fullCacheKey}:stale`, videos, 24 * 60 * 60 * 1000);
         ctx.cache.set(`${simpleCacheKey}:stale`, videos, 24 * 60 * 60 * 1000);
       };
       try {
         const raw = await fetchText(ctx, url, { headers: { 'User-Agent': YT_UA } });
-        const parsed = (await parser.parseString(raw)) as ParsedFeed;
-        const videos = parsed.items.flatMap((item) =>
-          !includeShorts && (item.link ?? '').includes('/shorts/')
-            ? []
-            : [
-                {
-                  title: item.title ?? '',
-                  url: videoUrlFor(item.link ?? '', cfg['video-url-template']),
-                  channel: parsed.title ?? source,
-                  published: item.isoDate ?? item.pubDate ?? null,
-                  thumbnail:
-                    item.mediaGroup?.['media:thumbnail']?.[0]?.$?.url ??
-                    item.enclosure?.url ??
-                    null,
-                } as Video,
-              ],
-        );
+        const parsed = parseVideoFeed(raw);
+        const videos = parsed.items.flatMap((item) => {
+          let link = '';
+          const rawLink = (item as Record<string, unknown>).link;
+          if (typeof rawLink === 'string') link = rawLink;
+          else if (rawLink && typeof rawLink === 'object') {
+            const o = rawLink as Record<string, unknown>;
+            if (typeof o['@href'] === 'string') link = o['@href'] as string;
+            else if (Array.isArray(rawLink)) {
+              for (const l of rawLink as unknown[]) {
+                if (l && typeof l === 'object' && typeof (l as Record<string, unknown>)['@href'] === 'string') {
+                  link = (l as Record<string, unknown>)['@href'] as string;
+                  break;
+                }
+              }
+            }
+          }
+          if (!includeShorts && link.includes('/shorts/')) return [];
+          const isoDate =
+            (typeof item.published === 'string' ? item.published : undefined) ??
+            (typeof item.pubDate === 'string' ? item.pubDate : undefined) ??
+            (typeof item.updated === 'string' ? item.updated : undefined) ??
+            (typeof item.isoDate === 'string' ? item.isoDate : undefined) ??
+            null;
+          let thumb: string | null = null;
+          const mg = (item as Record<string, unknown>)['media:group'] as Record<string, unknown> | undefined;
+          if (mg) {
+            const mt = mg['media:thumbnail'] as unknown;
+            if (mt && typeof mt === 'object' && typeof (mt as Record<string, unknown>)['@url'] === 'string')
+              thumb = (mt as Record<string, unknown>)['@url'] as string;
+            else if (Array.isArray(mt) && mt[0] && typeof (mt[0] as Record<string, unknown>)['@url'] === 'string')
+              thumb = (mt[0] as Record<string, unknown>)['@url'] as string;
+          }
+          if (!thumb) {
+            const enc = (item as Record<string, unknown>).enclosure as Record<string, unknown> | undefined;
+            if (enc && typeof enc['@url'] === 'string') thumb = enc['@url'] as string;
+          }
+          let title = '';
+          const t = (item as Record<string, unknown>).title;
+          if (typeof t === 'string') title = t;
+          else if (t && typeof t === 'object' && typeof (t as Record<string, unknown>)['#text'] === 'string')
+            title = (t as Record<string, unknown>)['#text'] as string;
+
+          return [
+            {
+              title,
+              url: videoUrlFor(link, cfg['video-url-template']),
+              channel: parsed.title ?? source,
+              published: isoDate,
+              thumbnail: thumb,
+            } as Video,
+          ];
+        });
         setCached(videos);
         return videos;
       } catch (err) {

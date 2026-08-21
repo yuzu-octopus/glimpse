@@ -39,6 +39,10 @@ initConfig(
   ctx,
 );
 
+// Bun 1.4: drop the widget cache under memory pressure — entries re-fetch on
+// next request, so this is a safe (if briefly slower) way to relieve RSS.
+process.on('memoryPressure', () => ctx.cache.clear());
+
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}): Response =>
   new Response(JSON.stringify(body), {
     status,

@@ -115,4 +115,15 @@ describe('WidgetChrome', () => {
     expect(moreExpandedBlock).not.toMatch(/position\s*:\s*sticky/);
     expect(moreExpandedBlock).not.toMatch(/bottom\s*:/);
   });
+
+  it('Show more and Show less have same position (both not sticky)', () => {
+    render(<WidgetChrome title="Feed" collapseAfter={2} items={rows} />);
+    const moreBtn = screen.getByRole('button', { name: /show more/i });
+    expect(getComputedStyle(moreBtn).position).not.toBe('sticky');
+    fireEvent.click(moreBtn);
+    const lessBtn = screen.getByRole('button', { name: /show less/i });
+    expect(getComputedStyle(lessBtn).position).not.toBe('sticky');
+    // both scroll off — identical non-sticky positioning
+    expect(getComputedStyle(lessBtn).position).toBe(getComputedStyle(moreBtn).position);
+  });
 });

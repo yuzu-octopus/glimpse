@@ -1,6 +1,5 @@
 import { readFileSync, watch, type FSWatcher } from 'node:fs';
 import { dirname, isAbsolute, resolve } from 'node:path';
-import { parse } from 'yaml';
 import {
   ConfigSchema,
   type Config,
@@ -9,6 +8,98 @@ import {
 import { isRecord } from './api';
 import type { WidgetFetchContext } from './widgets/registry';
 
+function parseYaml(text: string): unknown {
+  const bunYaml = (globalThis as unknown as { Bun?: { YAML?: { parse(s: string): unknown } } }).Bun?.YAML;
+  if (bunYaml) return bunYaml.parse(text);
+  // Fallback for vitest/jsdom — minimal YAML parser for test fixtures (no external dep).
+  // Handles mappings, sequences, scalars with 2-space indent. Not full YAML 1.2.
+  return fallbackYamlParse(text);
+}
+
+function fallbackYamlParse(text: string): unknown {
+  // Unclosed flow collections are invalid YAML — reject before line parsing.
+  for (const [open, close] of [['[', ']'], ['{', '}']] as const) {
+    const opens = (text.match(new RegExp(`\\${open}`, 'g')) ?? []).length;
+    const closes = (text.match(new RegExp(`\\${close}`, 'g')) ?? []).length;
+    if (opens !== closes) throw new Error('unclosed flow collection');
+  }
+  const lines = text.split('\n');
+  const root: Record<string, unknown> = {};
+  const stack: Array<{ indent: number; obj: unknown }> = [{ indent: -1, obj: root }];
+  for (const rawLine of lines) {
+    if (!rawLine.trim() || rawLine.trim().startsWith('#')) continue;
+    const indent = rawLine.search(/\S/);
+    const trimmed = rawLine.trim();
+    while (stack.length > 1 && indent <= stack[stack.length - 1].indent) stack.pop();
+    const parent = stack[stack.length - 1].obj;
+    if (trimmed.startsWith('- ')) {
+      const val = trimmed.slice(2).trim();
+      const arr = parent as unknown[];
+      if (!val) {
+        const obj: Record<string, unknown> = {};
+        arr.push(obj);
+        stack.push({ indent, obj });
+      } else if (val.includes(':') && !val.startsWith('[') && !val.startsWith('{')) {
+        const colon = val.indexOf(':');
+        const k = val.slice(0, colon).trim();
+        const v = val.slice(colon + 1).trim();
+        const obj: Record<string, unknown> = { [k]: parseScalar(v) };
+        arr.push(obj);
+        stack.push({ indent, obj });
+      } else {
+        arr.push(parseScalar(val));
+      }
+    } else if (trimmed.includes(':')) {
+      const colon = trimmed.indexOf(':');
+      const k = trimmed.slice(0, colon).trim().replace(/^['"]|['"]$/g, '');
+      const v = trimmed.slice(colon + 1).trim();
+      if (!v) {
+        const idx = lines.indexOf(rawLine);
+        const nextIdx = lines.findIndex((l, i) => i > idx && l.trim() && !l.trim().startsWith('#'));
+        const next = nextIdx >= 0 ? lines[nextIdx].trim() : '';
+        if (next.startsWith('- ')) {
+          const arr: unknown[] = [];
+          (parent as Record<string, unknown>)[k] = arr;
+          stack.push({ indent, obj: arr });
+        } else {
+          const obj: Record<string, unknown> = {};
+          (parent as Record<string, unknown>)[k] = obj;
+          stack.push({ indent, obj });
+        }
+      } else if (v.startsWith('[{') || v.startsWith('{')) {
+        (parent as Record<string, unknown>)[k] = parseFlow(v);
+      } else {
+        (parent as Record<string, unknown>)[k] = parseScalar(v);
+      }
+    }
+  }
+  return root;
+}
+
+/** Minimal flow-style parser for test fixtures like `[{ type: clock }]`. */
+function parseFlow(v: string): unknown {
+  const inner = v.replace(/^\[\s*/, '').replace(/\s*\]$/, '');
+  const parts: Array<Record<string, unknown>> = [];
+  for (const m of inner.matchAll(/\{([^}]*)\}/g)) {
+    const obj: Record<string, unknown> = {};
+    for (const pair of m[1].split(',')) {
+      const colon = pair.indexOf(':');
+      if (colon === -1) continue;
+      obj[pair.slice(0, colon).trim()] = parseScalar(pair.slice(colon + 1).trim());
+    }
+    parts.push(obj);
+  }
+  return parts;
+}
+
+function parseScalar(v: string): unknown {
+  if (v === 'true') return true;
+  if (v === 'false') return false;
+  if (v === 'null' || v === '~') return null;
+  if (/^-?\d+(\.\d+)?$/.test(v)) return Number(v);
+  if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) return v.slice(1, -1);
+  return v;
+}
 function warmPages(
   ctx: WidgetFetchContext,
   pages: ResolvedConfig['pages'],
@@ -97,10 +188,9 @@ function loadYamlTree(
     errors.push(`cannot read config file ${abs}: ${(e as Error).message}`);
     return null;
   }
-
   let doc: unknown;
   try {
-    doc = parse(raw);
+    doc = parseYaml(raw);
   } catch (e) {
     errors.push(`invalid YAML in ${abs}: ${(e as Error).message}`);
     return null;

@@ -1,6 +1,9 @@
 import type { CSSProperties } from 'react';
 import styles from './page.module.css';
 
+/** Grid cap for collage/auto chooser — not PageSchema columns (max 3) but CSS grid tracks; 6 allows a 300px min to fill 1920px wide pages. */
+export const MAX_TILING_COLS = 6;
+
 export type TilePref = {
   prefW: number | null;
   prefH: number | null;
@@ -36,6 +39,8 @@ export function chooseColumnCount(
         score += dw * dw;
       }
       if (t.prefH != null && !t.resizable) {
+        // height term is n-invariant (rowUnit fixed) — intentionally a λ-weighted tie-breaker
+        // so width drives n* and height only nudges ties; keep λ small (0.1) for that reason
         const dh = Math.ceil(t.prefH / rowUnit) * rowUnit - t.prefH;
         score += lambda * dh * dh;
       }
