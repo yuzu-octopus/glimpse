@@ -80,21 +80,6 @@
   min-width: 0;
 }
 
-/* glance utils.css — the content box drops its bottom padding when the
-   expand toggle is the last child; the toggle's own vertical padding
-   supplies the gap. Keep this only for the collapsed toggle — when expanded
-   keep the card's bottom padding so the last row's hover highlight
-   (row::before inset -4px) renders fully above the toggle. */
-.body:has(.more:last-child:not(.moreExpanded)) {
-  padding-bottom: 0;
-}
-
-/* Expanded state: keep the card's bottom padding so the hover backdrop on
-   the last item renders fully with its rounded corners visible above the
-   toggle. Overrides the collapsed rule above when both match (source order). */
-.body:has(.moreExpanded:last-child) {
-  padding-bottom: var(--widget-content-vertical);
-}
 .skeleton {
   display: grid;
   gap: 8px;
@@ -115,9 +100,6 @@
   background: var(--color-widget-background);
 }
 
-.moreExpanded {
-  background: transparent;
-}
 /* glance utils.css .expand-toggle-button-icon — chevron right of the label,
    pointing down when collapsed, up when expanded. */
 .chevron {
