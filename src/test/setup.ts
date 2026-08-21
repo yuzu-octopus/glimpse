@@ -51,3 +51,8 @@ if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.sho
     this.removeAttribute('open');
   };
 }
+
+// Vitest workers run on Node, so `Bun.YAML`/`Bun.XML` are absent there. Reuse
+// the real Bun runtime when available so server code takes its fast path and
+// the minimal fallbacks in config.ts/rss.ts stay dormant.
+if (typeof Bun !== 'undefined') globalThis.Bun = Bun;

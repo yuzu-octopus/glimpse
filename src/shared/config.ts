@@ -6,7 +6,6 @@ export type { WidgetConfig, WidgetType } from './widgets';
 export const ColumnSchema = z.object({
   size: z.enum(['small', 'full']),
   widgets: z.array(WidgetSchema),
-  // NEW — auto tiling only; number of grid tracks this tile spans.
   span: z.number().int().min(1).max(4).optional(),
 });
 export type Column = z.infer<typeof ColumnSchema>;
@@ -24,7 +23,6 @@ export const PageSchema = z.object({
   // 'columns' (default) = current glance flex behavior; 'auto' = balanced
   // grid tiles; 'collage' = dense bento grid + JS-measured row spans.
   tiling: z.enum(['columns', 'auto', 'collage']).optional(),
-  // NEW — auto mode only; minimum tile width for auto-fit in px, default 300.
   'min-column-width': z.number().int().min(1).optional(),
   columns: z.array(ColumnSchema).min(1).max(3),
 });

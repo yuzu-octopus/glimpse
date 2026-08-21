@@ -140,10 +140,9 @@ export function GlimpseThemeProvider({ children }: { children: ReactNode }) {
 
   const theme = useMemo(() => buildGlimpseTheme(pair), [pair]);
 
-  // The Astryx <Theme> emits its tokens on a wrapper INSIDE #root, so the
-  // html/body level (page background, :root consumers) would keep resolving
-  // the index.css fallbacks. Mirror the themed color vars onto
-  // documentElement so the page background follows the active theme/mode.
+  // Astryx <Theme> already emits light-dark() tokens, but on a wrapper inside
+  // #root; this mirror is still needed so the html element itself (page
+  // background) resolves the themed vars.
   useEffect(() => {
     const root = document.documentElement;
     const decls = glanceColorVars(pair);

@@ -305,27 +305,35 @@ export function PageView({
   const columnsRef = useRef<HTMLDivElement>(null);
   const tilingForMeasure = getTilingProps(data?.tiling, data?.minColumnWidth);
   const resolvedForPrefs = data as unknown as { columns?: { size: string; widgets: { type: string }[]; span?: number }[]; tiling?: string } | undefined;
-  const tilePrefsForHook = useMemo(() => {
-    if (!resolvedForPrefs?.columns) return undefined;
-    return resolvedForPrefs.columns.map((col) => {
-      const heights = col.widgets
-        .map((w) => (PREFERRED_SIZES as Record<string, { preferredHeight: number | null; resizable: boolean }>)[w.type])
-        .filter((p): p is { preferredHeight: number; resizable: false } => !!p && !p.resizable && p.preferredHeight != null)
-        .map((p) => p.preferredHeight);
-      if (heights.length === 0) return { prefH: null as number | null, resizable: true };
-      return { prefH: Math.max(...heights), resizable: false };
-    });
-  }, [resolvedForPrefs?.columns]);
-  const tilesForChooser = useMemo(() => {
+  // Single source of truth for collage sizing: per-widget prefs grouped by
+  // column (a column with 3 widgets contributes 3 width prefs to the
+  // chooser). `tiles` flattens for the column-count chooser;
+  // `tilePrefsForHook` reduces each group to one pref, aligned with the
+  // container's direct children (the column wrappers) for the measure hook.
+  const tileGroups = useMemo(() => {
     if (!resolvedForPrefs?.columns) return [];
-    // per-widget tiles (flatMap) so a column with 3 widgets contributes 3 width prefs, not just the first
-    return resolvedForPrefs.columns.flatMap((col) =>
+    return resolvedForPrefs.columns.map((col) =>
       col.widgets.map((w) => {
-        const pref = (PREFERRED_SIZES as Record<string, { preferredWidth: number | null; preferredHeight: number | null; resizable: boolean }>)[w.type] ?? { preferredWidth: null, preferredHeight: null, resizable: true };
+        const pref = (
+          PREFERRED_SIZES as Record<
+            string,
+            { preferredWidth: number | null; preferredHeight: number | null; resizable: boolean }
+          >
+        )[w.type] ?? { preferredWidth: null, preferredHeight: null, resizable: true };
         return { prefW: pref.preferredWidth, prefH: pref.preferredHeight, span: col.span ?? 1, resizable: pref.resizable };
       }),
     );
   }, [resolvedForPrefs?.columns]);
+  const tiles = tileGroups.flat();
+  const tilePrefsForHook = useMemo(() => {
+    if (tileGroups.length === 0) return undefined;
+    return tileGroups.map((group) => {
+      const heights: number[] = [];
+      for (const t of group) if (!t.resizable && t.prefH != null) heights.push(t.prefH);
+      if (heights.length === 0) return { prefH: null as number | null, resizable: true };
+      return { prefH: Math.max(...heights), resizable: false };
+    });
+  }, [tileGroups]);
   // Collage measure pass: re-runs when the payload settles/refreshes. The
   // ref is only attached in collage mode (tilingProps.measure), so the hook
   // no-ops for every other tiling. PrefH path uses pref when !resizable.
@@ -342,7 +350,7 @@ export function PageView({
     const compute = () => {
       const W = container.clientWidth || container.getBoundingClientRect().width || 0;
       if (!(W > 0)) return;
-      const nStar = chooseColumnCount(W, gap, minW, maxCols, tilesForChooser);
+      const nStar = chooseColumnCount(W, gap, minW, maxCols, tiles);
       const actualW = (W - (nStar - 1) * gap) / nStar;
       container.style.setProperty('--min-column-width', `${actualW}px`);
       container.style.gridTemplateColumns = `repeat(${nStar}, 1fr)`;
@@ -352,7 +360,7 @@ export function PageView({
     const ro = new ResizeObserver(compute);
     ro.observe(container);
     return () => ro.disconnect();
-  }, [isCollageLikeForChooser, data, tilesForChooser]);
+  }, [isCollageLikeForChooser, data, tiles]);
   if (!data && !error) {
     if (page) return <PageSkeleton page={page} />;
     // Fallback when rendered without config (direct mounts): structure-ready chrome.

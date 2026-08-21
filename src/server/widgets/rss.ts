@@ -7,7 +7,8 @@ import type { RssItem } from '../../shared/widgets/payloads';
 function getBXML(): { parse(s: string): unknown } {
   const b = (globalThis as unknown as { Bun?: { XML?: { parse(s: string): unknown } } }).Bun?.XML;
   if (b) return b;
-  // vitest/jsdom fallback via DOMParser
+  // src/test/setup.ts polyfills Bun.XML for vitest; this DOMParser fallback
+  // only runs on plain Node without the Bun runtime.
   return { parse: fallbackXmlParse };
 }
 

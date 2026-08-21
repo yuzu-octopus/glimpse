@@ -13,6 +13,8 @@ function parseYaml(text: string): unknown {
   if (bunYaml) return bunYaml.parse(text);
   // Fallback for vitest/jsdom — minimal YAML parser for test fixtures (no external dep).
   // Handles mappings, sequences, scalars with 2-space indent. Not full YAML 1.2.
+  // src/test/setup.ts polyfills globalThis.Bun when the Bun runtime is present,
+  // so this only runs on plain Node without Bun.
   return fallbackYamlParse(text);
 }
 

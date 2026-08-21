@@ -182,21 +182,11 @@ registerWidget('videos', async (ctx, config) => {
   const settled = await Promise.allSettled(
     feeds.map(async ({ url, source, cacheKey }) => {
       const fullCacheKey = `videos:feed:${cacheKey}::${cfg['video-url-template'] ?? ''}::${includeShorts ? 'shorts' : 'noshorts'}`;
-      const simpleCacheKey = `videos:feed:${cacheKey}`;
+      // TtlCache.set retains a stale copy for 24h internally, so one key suffices.
       const getCached = (): Video[] | undefined =>
-        ctx.cache.get<Video[]>(fullCacheKey) ??
-        ctx.cache.get<Video[]>(simpleCacheKey) ??
-        ctx.cache.getStale<Video[]>(fullCacheKey) ??
-        ctx.cache.getStale<Video[]>(simpleCacheKey) ??
-        ctx.cache.get<Video[]>(`${fullCacheKey}:stale`) ??
-        ctx.cache.get<Video[]>(`${simpleCacheKey}:stale`) ??
-        ctx.cache.getStale<Video[]>(`${fullCacheKey}:stale`) ??
-        ctx.cache.getStale<Video[]>(`${simpleCacheKey}:stale`);
+        ctx.cache.get<Video[]>(fullCacheKey) ?? ctx.cache.getStale<Video[]>(fullCacheKey);
       const setCached = (videos: Video[]) => {
         ctx.cache.set(fullCacheKey, videos, STATIC_TTL_MS);
-        ctx.cache.set(simpleCacheKey, videos, STATIC_TTL_MS);
-        ctx.cache.set(`${fullCacheKey}:stale`, videos, 24 * 60 * 60 * 1000);
-        ctx.cache.set(`${simpleCacheKey}:stale`, videos, 24 * 60 * 60 * 1000);
       };
       try {
         const raw = await fetchText(ctx, url, { headers: { 'User-Agent': YT_UA } });

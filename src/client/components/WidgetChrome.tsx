@@ -36,12 +36,9 @@ export function WidgetChrome({
   const [expanded, setExpanded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const list = items ?? (children === undefined ? [] : [children]);
-  const count = collapseAfter ?? 0;
-  const hasCollapse =
-    typeof collapseAfter === 'number' &&
-    collapseAfter >= 0 &&
-    list.length > collapseAfter;
-  const visible = hasCollapse && !expanded ? list.slice(0, count) : list;
+  const n = collapseAfter ?? 0;
+  const has = typeof collapseAfter === 'number' && n >= 0 && list.length > n;
+  const visible = has && !expanded ? list.slice(0, n) : list;
 
   const collapse = () => {
     setExpanded(false);
@@ -87,7 +84,7 @@ export function WidgetChrome({
           ) : (
             <>
               {visible}
-              {hasCollapse ? (
+              {has ? (
                 expanded ? (
                   <button
                     type="button"
@@ -103,7 +100,7 @@ export function WidgetChrome({
                     className={styles.more}
                     onClick={() => setExpanded(true)}
                   >
-                    {`Show more (${list.length - count})`}
+                    {`Show more (${list.length - n})`}
                     <ChevronRight size={12} className={styles.chevron} />
                   </button>
                 )

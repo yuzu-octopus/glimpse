@@ -1,24 +1,5 @@
-import * as stylex from '@stylexjs/stylex';
 import { Link } from '@astryxdesign/core';
 import styles from './Feed.module.css';
-
-// StyleX requires babel plugin for compiled CSS. In vitest (no plugin) the
-// runtime throws. Wrap so tests still run; in production Vite build would
-// have compiled away the calls, but here we gracefully fall back.
-function safeCreate<S extends Record<string, unknown>>(s: S): S {
-  try {
-    return (stylex as unknown as { create: (x: S) => S }).create(s);
-  } catch {
-    return s;
-  }
-}
-function safeProps(...args: unknown[]): Record<string, unknown> {
-  try {
-    return (stylex as unknown as { props: (...a: unknown[]) => Record<string, unknown> }).props(...args);
-  } catch {
-    return {};
-  }
-}
 
 /**
  * Generic flat feed module — deep module, small interface.
@@ -51,30 +32,7 @@ export interface FeedProps {
   layout?: FeedLayout;
   /** when true titles truncate single line; else 2-line clamp (rss single-line-titles) */
   singleLine?: boolean;
-  /** StyleX granular overrides — Astryx habit: xstyle for per-instance tweaks */
-  xstyle?: stylex.StyleXStyles;
 }
-
-const xstyles = safeCreate({
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  list: {
-    flexDirection: 'column',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-    gap: 'var(--space-gap)',
-  },
-  row: {
-    display: 'flex',
-    flexDirection: 'row',
-    gap: 'var(--space-gap)',
-    overflowX: 'auto',
-  },
-});
 
 function chipsFor(item: FeedItem): string[] {
   if (item.tags && item.tags.length > 0) return item.tags;
@@ -82,11 +40,10 @@ function chipsFor(item: FeedItem): string[] {
   return [];
 }
 
-export function Feed({ items, layout = 'list', singleLine, xstyle }: FeedProps) {
+export function Feed({ items, layout = 'list', singleLine }: FeedProps) {
   if (items.length === 0) return null;
-  const layoutStyle = layout === 'grid' ? xstyles.grid : layout === 'row' ? xstyles.row : xstyles.list;
   return (
-    <div {...safeProps(xstyles.container, layoutStyle, xstyle)}>
+    <div className={styles[layout]}>
       {items.map((item) => {
         const chips = chipsFor(item);
         const key = item.url || item.title;
@@ -94,7 +51,7 @@ export function Feed({ items, layout = 'list', singleLine, xstyle }: FeedProps) 
           .filter(Boolean)
           .join(' ');
         return (
-          <div key={key} className={styles.row}>
+          <div key={key} className={styles.item}>
             {item.image ? (
               <div className={styles.thumbWrap}>
                 <img src={item.image} alt="" loading="lazy" className={styles.thumb} />

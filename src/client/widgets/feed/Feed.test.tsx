@@ -51,7 +51,7 @@ describe('Feed (generic)', () => {
     expect(screen.getByText('Pinned')).toBeInTheDocument();
 
     // rows exist and use flat list class with hover backdrop (text-highlight)
-    const rows = container.querySelectorAll(`.${styles.row}`);
+    const rows = container.querySelectorAll(`.${styles.item}`);
     expect(rows).toHaveLength(3);
 
     // hover is text-highlight on title — verify stylesheet rule exists rather than simulating hover
@@ -68,11 +68,11 @@ describe('Feed (generic)', () => {
       />,
     );
     expect(screen.getByText('Only title')).toBeInTheDocument();
-    expect(container.querySelectorAll(`.${styles.row}`)).toHaveLength(1);
+    expect(container.querySelectorAll(`.${styles.item}`)).toHaveLength(1);
   });
 
   it('renders empty without crashing', () => {
     const { container } = render(<Feed items={[]} />);
-    expect(container.querySelectorAll(`.${styles.row}`)).toHaveLength(0);
+    expect(container.querySelectorAll(`.${styles.item}`)).toHaveLength(0);
   });
 });

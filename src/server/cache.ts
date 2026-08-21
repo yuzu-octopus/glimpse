@@ -77,7 +77,6 @@ export class TtlCache {
   }
 }
 
-export { LIVE_POLL_MS, LIVE_TYPES, LIVE_TTL_MS, STATIC_TTL_MS } from '../shared/live';
 
 export function getDefaultTtl(type: string): number {
   return LIVE_TYPES[type] ? LIVE_TTL_MS : STATIC_TTL_MS;

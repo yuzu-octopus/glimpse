@@ -38,11 +38,10 @@ describe('Feed tree — raw flexible → premade (releases custom)', () => {
     expect(src).toMatch(/vertical-list[\s\S]*?<Feed[^>]*layout=/);
   });
 
-  it('Feed is deep module: items + layout + xstyle granular (StyleX)', () => {
+  it('Feed is deep module: items + layout, CSS modules (no StyleX)', () => {
     const src = srcOf('src/client/widgets/feed/Feed.tsx');
     expect(src).toContain('layout');
-    expect(src).toContain('xstyle');
-    expect(src).toContain('stylex');
+    expect(src).not.toContain('stylex');
     expect(src).toMatch(/FeedItem/);
   });
 

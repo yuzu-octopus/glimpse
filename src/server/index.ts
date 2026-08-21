@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
-import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
+import { dirname, join, normalize, resolve, sep } from 'node:path';
 import { initConfig, getConfig } from './config';
 import { Singleflight, TtlCache } from './cache';
 import { buildPagePayload, streamPagePayload } from './api';
@@ -82,22 +82,6 @@ function readThemeCss(cssFile: string): string | null {
   }
 }
 
-const CONTENT_TYPES: Record<string, string> = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.mjs': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json',
-  '.webmanifest': 'application/manifest+json',
-  '.svg': 'image/svg+xml',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.webp': 'image/webp',
-  '.ico': 'image/x-icon',
-  '.txt': 'text/plain; charset=utf-8',
-  '.woff2': 'font/woff2',
-};
 
 /** Serve the built SPA from dist/ (production path; dev uses Vite). */
 function serveDist(pathname: string): Response {
@@ -120,7 +104,7 @@ function serveDist(pathname: string): Response {
     filePath = join(dist, 'index.html'); // SPA fallback
   }
   const headers: Record<string, string> = {
-    'content-type': CONTENT_TYPES[extname(filePath)] ?? 'application/octet-stream',
+    'content-type': Bun.file(filePath).type || 'application/octet-stream',
   };
   const rel = filePath.slice(dist.length + 1);
   if (rel.startsWith('assets/')) {
@@ -135,7 +119,7 @@ function serveDist(pathname: string): Response {
     rel === 'icon.svg'
   ) {
     headers['cache-control'] = 'no-cache'; // unhashed root files: revalidate every load
-  } else if (extname(filePath) === '.woff2') {
+  } else if (rel.endsWith('.woff2')) {
     headers['cache-control'] = 'public, max-age=86400'; // unhashed font, short cache
   }
   // Bun.file enables sendfile(2) zero-copy when served via Bun.serve

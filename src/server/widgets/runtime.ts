@@ -20,12 +20,9 @@ import type { WidgetFetchContext } from './registry';
  * For page widgets the key *is* owned — the caller forwards the same
  * `${pageSlug}:${path}` it would have built inline.
  *
- * Two call shapes are accepted so existing `fetchWidget` and the
- * 4-arg spec `fetchWidgetData(type, config, ctx, fetcher)` both type-check:
- *  - fetchWidgetData(ctx, type, config, cacheKey, fetcher)
- *  - fetchWidgetData(type, config, ctx, fetcher)   // key derived as `${type}:${JSON.stringify(config)}` (tests)
+ * Single call shape: fetchWidgetData(ctx, type, config, cacheKey, fetcher) —
+ * the key is the `${pageSlug}:${path}` string built by fetchWidget.
  */
-
 export const WIDGET_DEFAULT_LIMIT = 5;
 
 export function widgetLimit(
@@ -35,7 +32,6 @@ export function widgetLimit(
   return cfg.limit ?? fallback;
 }
 
-// ponytail: limit TTL centralized — add per-widget overrides when needed, not now
 
 type Fetcher<T = unknown> = (
   ctx: WidgetFetchContext,
@@ -53,52 +49,17 @@ function isWidgetCtx(v: unknown): v is WidgetFetchContext {
 }
 
 export async function fetchWidgetData<T = unknown>(
-  a: WidgetFetchContext | string,
-  b: string | Record<string, unknown>,
-  c: Record<string, unknown> | WidgetFetchContext,
-  d: string | Fetcher<T>,
-  e?: Fetcher<T>,
+  ctx: WidgetFetchContext,
+  type: string,
+  config: Record<string, unknown>,
+  cacheKey: string,
+  fetcher: Fetcher<T>,
 ): Promise<T> {
-  // Normalise the two supported signatures.
-  let ctx: WidgetFetchContext;
-  let type: string;
-  let config: Record<string, unknown>;
-  let cacheKey: string;
-  let fetcher: Fetcher<T>;
-
-  if (typeof a === 'string') {
-    // spec shape: (type, config, ctx, fetcher[, cacheKey?])
-    type = a;
-    config = b as Record<string, unknown>;
-    ctx = c as WidgetFetchContext;
-    if (typeof d === 'string' && e) {
-      cacheKey = d;
-      fetcher = e;
-    } else {
-      fetcher = d as Fetcher<T>;
-      cacheKey = `${type}:${JSON.stringify(config)}`;
-    }
-  } else {
-    // preferred shape: (ctx, type, config, cacheKey, fetcher)
-    ctx = a;
-    type = b as string;
-    config = c as Record<string, unknown>;
-    if (typeof d === 'string') {
-      cacheKey = d;
-      fetcher = e as Fetcher<T>;
-    } else {
-      // (ctx, type, config, fetcher) — no explicit key
-      fetcher = d as Fetcher<T>;
-      cacheKey = `${type}:${JSON.stringify(config)}`;
-    }
-  }
-
-  if (!fetcher) throw new Error('fetchWidgetData: missing fetcher');
   if (!isWidgetCtx(ctx)) throw new Error('fetchWidgetData: invalid ctx');
 
   const ttlMs =
-    typeof (config as Record<string, unknown>).cache === 'string'
-      ? parseCacheDuration((config as Record<string, unknown>).cache as string)
+    typeof config.cache === 'string'
+      ? parseCacheDuration(config.cache)
       : getDefaultTtl(type);
 
   const cached = ctx.cache.get<T>(cacheKey);
@@ -109,24 +70,4 @@ export async function fetchWidgetData<T = unknown>(
   return data;
 }
 
-/** Helper for per-feed sub-fetches: cache-first + singleflight + negative cache (30s). */
-export async function cachedFetch<T>(
-  ctx: WidgetFetchContext,
-  key: string,
-  fetcher: () => Promise<T>,
-  ttlMs?: number,
-): Promise<T> {
-  const cached = ctx.cache.get<T>(key);
-  if (cached !== undefined) return cached;
-  const neg = ctx.cache.getError(key);
-  if (neg !== undefined) throw neg;
-  try {
-    const data = await ctx.singleflight.run(key, fetcher);
-    if (ttlMs !== undefined) ctx.cache.set(key, data, ttlMs);
-    return data;
-  } catch (err) {
-    ctx.cache.setError(key, err, 30_000);
-    throw err;
-  }
-}
 

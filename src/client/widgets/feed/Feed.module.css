@@ -3,7 +3,26 @@
  * Colours: title text-base -> hover primary, meta subdue, tags vibrant nth-child cycle.
  */
 
+/* layout containers — FeedLayout: list (vertical), grid (auto-fill 220), row (horizontal scroll) */
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-gap);
+}
+
 .row {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-gap);
+  overflow-x: auto;
+}
+
+.item {
   position: relative;
   isolation: isolate;
   display: flex;
@@ -15,7 +34,7 @@
 }
 
 /* hover backdrop larger than text — glance utils.css .summary::before */
-.row::before {
+.item::before {
   content: '';
   position: absolute;
   inset: -4px -10px;
@@ -27,18 +46,18 @@
   pointer-events: none;
 }
 
-.row + .row {
+.item + .item {
   margin-top: calc(var(--widget-content-vertical) / 3);
   border-top: 1px solid var(--color-separator);
 }
 
-.row:nth-child(2) { animation-delay: 30ms; }
-.row:nth-child(3) { animation-delay: 60ms; }
-.row:nth-child(4) { animation-delay: 90ms; }
-.row:nth-child(5) { animation-delay: 120ms; }
-.row:nth-child(6) { animation-delay: 150ms; }
-.row:nth-child(7) { animation-delay: 180ms; }
-.row:nth-child(8) { animation-delay: 210ms; }
+.item:nth-child(2) { animation-delay: 30ms; }
+.item:nth-child(3) { animation-delay: 60ms; }
+.item:nth-child(4) { animation-delay: 90ms; }
+.item:nth-child(5) { animation-delay: 120ms; }
+.item:nth-child(6) { animation-delay: 150ms; }
+.item:nth-child(7) { animation-delay: 180ms; }
+.item:nth-child(8) { animation-delay: 210ms; }
 
 /* image — glance .thumbnail-container / rss-detailed-thumbnail, flat, full colour, hover scale — 16:9 like videos cardThumb (16/8.9) */
 .thumbWrap {
@@ -60,7 +79,7 @@
   transition: transform 0.2s;
 }
 
-.row:hover .thumb {
+.item:hover .thumb {
   transform: scale(1.02);
 }
 
