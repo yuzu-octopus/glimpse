@@ -1,0 +1,245 @@
+.totals {
+  display: flex;
+  text-align: center;
+  justify-content: space-between;
+  gap: 8px;
+  transition: opacity 0.3s;
+  transition-delay: 50ms;
+}
+
+.dns:has(.columns .tip:hover),
+.dns:has(.column:hover) .totals {
+  opacity: 0.1;
+  transition-delay: 0s;
+}
+
+.totalsItem {
+  flex: 1;
+}
+
+.totalsValue {
+  color: var(--color-text-highlight);
+  font-size: var(--font-size-h3);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.totalsLabel {
+  font-size: var(--font-size-h6);
+  color: var(--color-text-subdue);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+}
+
+.graph {
+  --graph-height: 70px;
+  height: var(--graph-height);
+  position: relative;
+  margin-bottom: 2.5rem;
+  margin-top: 15px;
+}
+
+.gridlinesContainer {
+  position: absolute;
+  inset: 0;
+}
+
+.gridlines {
+  height: 100%;
+  width: 100%;
+}
+
+.columns {
+  display: flex;
+  height: 100%;
+  position: relative;
+}
+
+.column {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-direction: column;
+  width: calc(100% / 8);
+  position: relative;
+}
+
+.column::before {
+  content: '';
+  position: absolute;
+  inset: 1px 0;
+  opacity: 0;
+  background: var(--color-text-base);
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.column:hover::before {
+  opacity: 0.05;
+}
+
+.bar {
+  width: 14px;
+  height: calc((var(--bar-height) / 100) * var(--graph-height));
+  border: 1px solid var(--color-progress-border);
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  display: flex;
+  background: var(--color-widget-background);
+  padding: 2px 2px 0 2px;
+  flex-direction: column;
+  gap: 2px;
+  transition: border-color 0.2s;
+  min-height: 10px;
+}
+
+.column:hover .bar {
+  border-color: var(--color-text-subdue);
+  border-bottom-color: var(--color-progress-border);
+}
+
+.bar > * {
+  border-radius: 2px;
+  background: var(--color-vertical-progress-value);
+  min-height: 1px;
+}
+
+.queries {
+  flex-grow: 1;
+}
+
+.bar > *:last-child {
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.blocked {
+  background-color: var(--color-negative);
+  flex-basis: calc(var(--percent) - 1px);
+  min-height: 1px;
+}
+
+.time {
+  position: absolute;
+  font-size: var(--font-size-h6);
+  inset-inline: 0;
+  text-align: center;
+  height: 2.5rem;
+  line-height: 2.5rem;
+  top: 100%;
+  user-select: none;
+  opacity: 0;
+  transform: translateY(-0.5rem);
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+  color: var(--color-text-subdue);
+}
+
+.column:nth-child(even) .time {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.column:hover .time {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.columns:hover .column:not(:hover) .time {
+  opacity: 0;
+}
+
+.tip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: var(--color-popover-background);
+  border: 1px solid var(--color-popover-border);
+  border-radius: var(--border-radius);
+  padding: 8px 12px;
+  font-size: var(--font-size-h6);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
+  z-index: 2;
+  display: flex;
+  gap: 16px;
+  text-align: center;
+}
+
+.column:hover .tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.tipValue {
+  color: var(--color-text-highlight);
+  font-size: var(--font-size-h3);
+  line-height: 1.2;
+}
+
+.tipLabel {
+  font-size: var(--font-size-h6);
+  color: var(--color-text-subdue);
+  text-transform: uppercase;
+}
+
+.details {
+  margin-top: 15px;
+}
+
+.detailsWithGraph {
+  margin-top: 40px;
+}
+
+.details summary {
+  cursor: pointer;
+  font-size: var(--font-size-h5);
+  color: var(--color-text-base);
+  user-select: none;
+}
+
+.details summary:hover {
+  color: var(--color-text-highlight);
+}
+
+.list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: var(--font-size-h5);
+  animation: collapsibleItemReveal 0.25s backwards;
+}
+
+.domain {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+  min-width: 0;
+}
+
+.percent {
+  width: 4rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.percentValue {
+  color: var(--color-text-highlight);
+}

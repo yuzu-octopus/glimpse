@@ -1,8 +1,9 @@
 /** Side-effect barrel: each widget module registers its component. */
 import './bookmarks';
 import './calendar';
-import './clock';
 import './custom-api';
+import './dns';
+import './docker';
 import './hacker-news';
 import './iframe';
 import './lobsters';
@@ -14,6 +15,7 @@ import './repository';
 import './rss';
 import './search';
 import './system-stats';
+import './server-stats';
 import './todo';
 import './videos';
 import './weather';

@@ -28,6 +28,9 @@ export const PREFERRED_SIZES: Record<WidgetType, Pref> = {
   group: { preferredWidth: 340, preferredHeight: 320, resizable: false },
   'split-column': { preferredWidth: null, preferredHeight: 320, resizable: true },
   'system-stats': { preferredWidth: 340, preferredHeight: 220, resizable: false },
+  'docker-containers': { preferredWidth: 340, preferredHeight: 220, resizable: false },
+  'dns-stats': { preferredWidth: 340, preferredHeight: 220, resizable: false },
+  'server-stats': { preferredWidth: 340, preferredHeight: 240, resizable: false },
 };
 
 export function assertAllWidgetsCovered(widgetTypes: string[]): void {

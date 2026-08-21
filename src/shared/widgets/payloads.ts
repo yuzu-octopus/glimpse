@@ -137,3 +137,65 @@ export interface SystemStatsData {
   temp: number | null;
   gpu: { model: string; temp: number | null }[];
 }
+
+export interface DockerIcon {
+  url: string;
+  autoInvert: boolean;
+}
+
+export interface DockerContainer {
+  name: string;
+  image: string;
+  state: string;
+  stateIcon: 'ok' | 'warn' | 'paused' | 'unknown';
+  stateText: string;
+  url?: string;
+  sameTab?: boolean;
+  description?: string;
+  icon: DockerIcon;
+  children?: DockerContainer[];
+}
+export type DockerData = DockerContainer[];
+
+export interface DnsStatsSeriesPoint {
+  queries: number;
+  blocked: number;
+  percentBlocked: number;
+  percentTotal: number;
+}
+
+export interface DnsTopBlockedDomain {
+  domain: string;
+  percentBlocked: number;
+}
+
+export interface DnsStats {
+  totalQueries: number;
+  blockedPercent: number;
+  responseTime: number;
+  domainsBlocked: number;
+  series: DnsStatsSeriesPoint[];
+  timeLabels: string[];
+  topBlockedDomains: DnsTopBlockedDomain[];
+}
+
+export interface ServerMount {
+  path: string;
+  used: number;
+  total: number;
+}
+
+export interface ServerInfo {
+  name: string;
+  hostname: string;
+  platform: string;
+  bootTime: string;
+  cpu: { load: number; loadIsAvailable: boolean };
+  memory: { used: number; total: number; isAvailable: boolean };
+  mountpoints: ServerMount[];
+  isReachable: boolean;
+}
+
+export interface ServerStatsData {
+  servers: ServerInfo[];
+}

@@ -23,6 +23,9 @@ const ALL_WIDGET_TYPES = [
   'custom-api',
   'repository',
   'system-stats',
+  'server-stats',
+  'docker-containers',
+  'dns-stats',
 ] as const;
 
 describe('PREFERRED_SIZES', () => {

@@ -1,0 +1,156 @@
+/* Server stats — glance server-stats.html modernized: per-server card with
+ * tinted icon header (size-h3 name) and three flex stat bars. Distinct from
+ * system-stats' compact label/value rows: bigger type, --progress bar fills,
+ * hover details popover. */
+
+.server {
+  padding-block: calc(var(--widget-content-vertical) / 2);
+  animation: collapsibleItemReveal 0.25s backwards;
+}
+
+.server + .server {
+  border-top: 1px solid var(--color-separator);
+}
+
+.serverDown .serverName,
+.serverDown .uptime {
+  color: var(--color-text-subdue);
+}
+
+.serverHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-bottom: 10px;
+}
+
+.serverIconUp {
+  color: var(--color-positive);
+  flex-shrink: 0;
+}
+
+.serverIconDown {
+  color: var(--color-negative);
+  flex-shrink: 0;
+}
+
+.serverName {
+  font-size: var(--font-size-h3);
+  font-weight: 600;
+  color: var(--color-text-base);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.serverHost {
+  font-size: var(--font-size-h6);
+  color: var(--color-text-subdue);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.uptime {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: var(--font-size-h6);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-base-muted);
+}
+
+.stat {
+  flex: 1;
+  min-width: 0;
+}
+
+.statHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.statLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-subdue);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statValue {
+  font-size: var(--font-size-h6);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-base);
+  flex-shrink: 0;
+}
+
+.statSub {
+  color: var(--color-text-subdue);
+  font-weight: 400;
+}
+
+.statUnavailable {
+  color: var(--color-text-subdue);
+}
+
+.bar {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--color-track, var(--color-widget-background-highlight));
+  overflow: hidden;
+}
+
+.bar::before {
+  content: '';
+  display: block;
+  height: 100%;
+  width: var(--progress, 0%);
+  border-radius: inherit;
+  transition: width 0.4s ease;
+  /* green below 85%, blending to warning as capacity fills */
+  background: color-mix(in srgb, var(--color-warning) clamp(0%, calc((var(--progress, 0%) - 85) * 20), 100%), var(--color-positive));
+}
+
+.barUnavailable {
+  opacity: 0.45;
+}
+
+.unreachable {
+  font-size: var(--font-size-h6);
+  color: var(--color-negative);
+}
+
+/* Hover details popover content */
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  min-width: 220px;
+  max-width: 320px;
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: var(--font-size-h6);
+  color: var(--color-text-base);
+}
+
+.detailRow + .detailRow {
+  border-top: 1px solid var(--color-separator);
+  padding-top: 6px;
+}
+
+.detailLabel {
+  color: var(--color-text-subdue);
+}

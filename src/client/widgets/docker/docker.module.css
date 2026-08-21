@@ -1,0 +1,193 @@
+/* Docker containers — glance docker-containers.html layout (icon + name + state),
+ * modernized: rounded state badges, hover backdrop like Feed, indented children. */
+
+.row {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  padding-block: calc(var(--widget-content-vertical) / 2 - 0.5px);
+  animation: collapsibleItemReveal 0.25s backwards;
+}
+
+/* hover backdrop larger than text — same pattern as Feed rows */
+.row::before {
+  content: '';
+  position: absolute;
+  inset: -4px -10px;
+  border-radius: var(--border-radius);
+  background-color: var(--color-widget-background-highlight);
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.row:hover::before {
+  opacity: 1;
+}
+
+.row + .row {
+  margin-top: calc(var(--widget-content-vertical) / 3);
+  border-top: 1px solid var(--color-separator);
+}
+
+.icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.name {
+  font-size: var(--font-size-h3);
+  font-weight: 500;
+  color: var(--color-text-base);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.link {
+  text-decoration: none;
+}
+
+.link:hover .name {
+  color: var(--color-text-highlight);
+}
+
+/* rounded state badge — modern take on glance's plain icon */
+.badge {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: 11px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60%;
+}
+
+.stateOk {
+  color: var(--color-positive);
+  background: color-mix(in srgb, var(--color-positive) 12%, transparent);
+}
+
+.stateWarn {
+  color: var(--color-negative);
+  background: color-mix(in srgb, var(--color-negative) 12%, transparent);
+}
+
+.statePaused {
+  color: var(--color-text-subdue);
+  background: var(--color-widget-background-highlight);
+}
+
+.stateUnknown {
+  color: var(--color-tag-orange);
+  background: color-mix(in srgb, var(--color-tag-orange) 12%, transparent);
+}
+
+.image {
+  font-size: 12px;
+  color: var(--color-text-subdue);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.description {
+  font-size: 12px;
+  color: var(--color-text-base-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.expand {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  padding: 2px 0;
+  font-size: 12px;
+  color: var(--color-text-subdue);
+  cursor: pointer;
+}
+
+.expand:hover {
+  color: var(--color-text-highlight);
+}
+
+.chevron {
+  transition: transform 0.15s;
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
+  transition: transform 0.15s;
+}
+
+.children {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0 0 0 10px;
+  border-left: 1px solid var(--color-separator);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.child .stateOk { background: var(--color-positive); }
+.child .stateWarn { background: var(--color-negative); }
+.child .statePaused { background: var(--color-text-subdue); }
+.child .stateUnknown { background: var(--color-tag-orange); }
+
+.childName {
+  color: var(--color-text-base);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.childState {
+  margin-left: auto;
+  color: var(--color-text-subdue);
+  white-space: nowrap;
+}
