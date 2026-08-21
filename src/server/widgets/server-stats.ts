@@ -64,9 +64,24 @@ async function localServer(name?: string): Promise<ServerInfo> {
     },
     mountpoints: (() => {
       const out: ServerInfo['mountpoints'] = [];
+      const seen = new Set<string>();
       for (const d of Array.isArray(fs) ? (fs as Array<Record<string, unknown>>) : []) {
         if (!d.mount || !d.size) continue;
-        out.push({ path: String(d.mount), used: Number(d.used ?? 0), total: Number(d.size ?? 0) });
+        const p = String(d.mount);
+        if (
+          p.includes('cryptexd') ||
+          p.includes('MobileAsset') ||
+          p === '/System/Volumes/VM' ||
+          p === '/System/Volumes/Preboot' ||
+          p === '/System/Volumes/Update' ||
+          p === '/System/Volumes/xarts' ||
+          p === '/System/Volumes/iSCPreboot' ||
+          p === '/System/Volumes/Hardware'
+        )
+          continue;
+        if (seen.has(p)) continue;
+        seen.add(p);
+        out.push({ path: p, used: Number(d.used ?? 0), total: Number(d.size ?? 0) });
       }
       return out;
     })(),
