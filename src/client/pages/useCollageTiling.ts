@@ -1,5 +1,7 @@
 import { useEffect, type RefObject } from 'react';
 
+export type TileHeightPref = { prefH: number | null; resizable: boolean };
+
 /**
  * tiling: collage — measure pass. Reads each direct tile child's content
  * height, sets `--tile-row` to the shortest tile (the row unit) on the
@@ -12,6 +14,11 @@ import { useEffect, type RefObject } from 'react';
  * glance's masonry.js `columnsCount === previousColumnsCount`) skips
  * identical passes so setting inline spans can't loop the ResizeObserver.
  *
+ * Height pref path: when `tilePrefs[i]` has `!resizable && prefH!=null`,
+ * row span comes from `ceil(prefH/rowUnit)` without measuring; otherwise
+ * measured height is used. `rowUnit` is seeded from prefH minima if
+ * available so first paint uses prefH not just estimate.
+ *
  * Note on the deps array: React compares deps element-wise only over the
  * shared prefix and never treats a LENGTH change as a change, so a deps
  * array that grows from `[]` to `[data]` (the loading→ready transition
@@ -21,6 +28,7 @@ import { useEffect, type RefObject } from 'react';
 export function useCollageTiling(
   containerRef: RefObject<HTMLElement | null>,
   deps: unknown[],
+  tilePrefs?: TileHeightPref[],
 ): void {
   useEffect(() => {
     const container = containerRef.current;
@@ -45,11 +53,29 @@ export function useCollageTiling(
         (t) => Math.max(t.scrollHeight, t.clientHeight, 0) || 0,
       );
       container.style.alignItems = prevAlign;
-      const rowUnit = Math.min(...heights);
+      // rowUnit: seed from prefH minima if available
+      const prefHeights: number[] = [];
+      for (const p of tilePrefs ?? []) {
+        if (p.prefH != null && !p.resizable) prefHeights.push(p.prefH);
+      }
+      let rowUnit: number;
+      if (prefHeights.length > 0) {
+        const minPref = Math.min(...prefHeights);
+        const measuredPos = heights.filter((h) => h > 0);
+        const minMeasured = measuredPos.length ? Math.min(...measuredPos) : Infinity;
+        rowUnit = Math.min(minPref, minMeasured);
+        if (!isFinite(rowUnit)) rowUnit = minPref;
+      } else {
+        rowUnit = Math.min(...heights);
+      }
       if (!(rowUnit > 0)) return; // no measurable layout (jsdom): no-op
-      const spans = heights.map((h) =>
-        Math.min(Math.max(Math.round(h / rowUnit), 1), 8),
-      );
+      const spans = heights.map((h, i) => {
+        const pref = tilePrefs?.[i];
+        if (pref && pref.prefH != null && !pref.resizable) {
+          return Math.min(Math.max(Math.ceil(pref.prefH / rowUnit), 1), 8);
+        }
+        return Math.min(Math.max(Math.round(h / rowUnit), 1), 8);
+      });
       const key = spans.join(',');
       if (key === prevKey) return; // change guard: skip identical passes
       prevKey = key;
@@ -84,5 +110,5 @@ export function useCollageTiling(
       observer?.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [containerRef, deps.length, ...deps]);
+  }, [containerRef, deps.length, ...deps, tilePrefs]);
 }

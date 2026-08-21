@@ -1,6 +1,53 @@
 import type { CSSProperties } from 'react';
 import styles from './page.module.css';
 
+export type TilePref = {
+  prefW: number | null;
+  prefH: number | null;
+  span: number;
+  resizable: boolean;
+};
+
+export function chooseColumnCount(
+  W: number,
+  gap: number,
+  minW: number,
+  maxCols: number,
+  tiles: TilePref[],
+  opts?: { rowUnit?: number; lambda?: number },
+): number {
+  const rowUnit = opts?.rowUnit ?? 80;
+  const lambda = opts?.lambda ?? 0.1;
+  const clampMax = Math.min(Math.max(Math.floor(W / minW) || 1, 1), maxCols);
+  // fluid-only: no prefW and no non-resizable prefH -> fall back to clamp
+  const hasPrefW = tiles.some((t) => t.prefW != null);
+  const hasPrefH = tiles.some((t) => t.prefH != null && !t.resizable);
+  if (!hasPrefW && !hasPrefH) return clampMax;
+  let bestN = 1;
+  let bestScore = Infinity;
+  for (let n = 1; n <= maxCols; n++) {
+    if (tiles.some((t) => t.span > n)) continue;
+    const actualW = (W - (n - 1) * gap) / n;
+    let score = 0;
+    for (const t of tiles) {
+      if (t.prefW != null) {
+        const effW = t.span > 1 ? actualW * t.span + (t.span - 1) * gap : actualW;
+        const dw = effW - t.prefW;
+        score += dw * dw;
+      }
+      if (t.prefH != null && !t.resizable) {
+        const dh = Math.ceil(t.prefH / rowUnit) * rowUnit - t.prefH;
+        score += lambda * dh * dh;
+      }
+    }
+    if (score < bestScore || (score === bestScore && n > bestN)) {
+      bestScore = score;
+      bestN = n;
+    }
+  }
+  return Math.min(bestN, clampMax);
+}
+
 /**
  * Deep module for page tiling.
  *

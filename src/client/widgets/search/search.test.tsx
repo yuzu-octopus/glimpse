@@ -11,6 +11,7 @@ const CONFIG: SearchConfig = {
     { title: 'GitHub', shortcut: 'gh', url: 'https://github.com/search?q={QUERY}' },
     { title: 'YouTube', shortcut: 'yt', url: 'https://www.youtube.com/results?search_query={QUERY}' },
   ],
+  'new-tab': true,
 };
 
 function renderSearch(config = CONFIG) {
@@ -57,7 +58,7 @@ describe('search widget', () => {
     renderSearch();
     fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'hello world' } });
     fireEvent.submit(screen.getByLabelText('Search').closest('form')!);
-    expect(open).toHaveBeenCalledWith('https://duckduckgo.com/?q=hello%20world', '_self', 'noopener,noreferrer');
+    expect(open).toHaveBeenCalledWith('https://duckduckgo.com/?q=hello%20world', '_blank', 'noopener,noreferrer');
   });
 
   it('routes bang queries to the matching bang url', () => {
@@ -65,7 +66,7 @@ describe('search widget', () => {
     renderSearch();
     fireEvent.change(screen.getByLabelText('Search'), { target: { value: '!gh astryx' } });
     fireEvent.submit(screen.getByLabelText('Search').closest('form')!);
-    expect(open).toHaveBeenCalledWith('https://github.com/search?q=astryx', '_self', 'noopener,noreferrer');
+    expect(open).toHaveBeenCalledWith('https://github.com/search?q=astryx', '_blank', 'noopener,noreferrer');
   });
 
   it('opens in a new tab when new-tab is configured', () => {
@@ -78,7 +79,7 @@ describe('search widget', () => {
 
   it('keeps Enter in the same tab and opens Ctrl+Enter in a new tab by default', () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null);
-    renderSearch();
+    renderSearch({ ...CONFIG, 'new-tab': false });
     const input = screen.getByLabelText('Search');
     fireEvent.change(input, { target: { value: 'cats' } });
     fireEvent.keyDown(input, { key: 'Enter' });
@@ -145,7 +146,7 @@ describe('search widget', () => {
     fireEvent.submit(screen.getByLabelText('Search').closest('form')!);
     expect(open).toHaveBeenCalledWith(
       'https://www.youtube.com/results?search_query=cats',
-      '_self',
+      '_blank',
       'noopener,noreferrer',
     );
   });
@@ -155,7 +156,7 @@ describe('search widget', () => {
     renderSearch();
     fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'yt' } });
     fireEvent.submit(screen.getByLabelText('Search').closest('form')!);
-    expect(open).toHaveBeenCalledWith('https://www.youtube.com/results?search_query=', '_self', 'noopener,noreferrer');
+    expect(open).toHaveBeenCalledWith('https://www.youtube.com/results?search_query=', '_blank', 'noopener,noreferrer');
   });
 
   it('does not treat a shortcut prefix as a bang when it is not a full word', () => {
@@ -165,7 +166,7 @@ describe('search widget', () => {
     fireEvent.submit(screen.getByLabelText('Search').closest('form')!);
     expect(open).toHaveBeenCalledWith(
       'https://duckduckgo.com/?q=youtube%20results',
-      '_self',
+      '_blank',
       'noopener,noreferrer',
     );
   });
@@ -177,13 +178,27 @@ describe('search widget', () => {
       'search-engine': 'https://example.com/search?q={QUERY}',
     });
     submitQuery('hello world');
-    expect(open).toHaveBeenCalledWith('https://example.com/search?q=hello%20world', '_self', 'noopener,noreferrer');
+    expect(open).toHaveBeenCalledWith('https://example.com/search?q=hello%20world', '_blank', 'noopener,noreferrer');
   });
 
   it('falls back to duckduckgo for an unknown engine name', () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null);
     renderSearch({ ...CONFIG, 'search-engine': 'yahoo' });
     submitQuery('hello');
+    expect(open).toHaveBeenCalledWith('https://duckduckgo.com/?q=hello', '_blank', 'noopener,noreferrer');
+  });
+  it('defaults to new-tab (no config)', () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    render(<Search config={{ type: 'search', 'search-engine': 'https://duckduckgo.com/?q={QUERY}', bangs: [] } as unknown as SearchConfig} data={null} />);
+    fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'hello' } });
+    fireEvent.submit(screen.getByLabelText('Search').closest('form')!);
+    expect(open).toHaveBeenCalledWith('https://duckduckgo.com/?q=hello', '_blank', 'noopener,noreferrer');
+  });
+  it('explicit new-tab false stays same-tab', () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    render(<Search config={{ type: 'search', 'search-engine': 'https://duckduckgo.com/?q={QUERY}', bangs: [], 'new-tab': false } as unknown as SearchConfig} data={null} />);
+    fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'hello' } });
+    fireEvent.submit(screen.getByLabelText('Search').closest('form')!);
     expect(open).toHaveBeenCalledWith('https://duckduckgo.com/?q=hello', '_self', 'noopener,noreferrer');
   });
   it('does nothing for an empty query', () => {

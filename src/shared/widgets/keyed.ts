@@ -115,20 +115,3 @@ export const repositorySchema = z.object({
 });
 export type RepositoryConfig = z.infer<typeof repositorySchema>;
 
-export const twitchChannelsSchema = z.object({
-  type: z.literal('twitch-channels'),
-  ...sharedWidgetFields,
-  channels: z.array(z.string()).min(1),
-  'collapse-after': z.number().int().min(-1).optional(),
-  'sort-by': z.enum(['viewers', 'live']).optional(),
-});
-export type TwitchChannelsConfig = z.infer<typeof twitchChannelsSchema>;
-
-export const twitchTopGamesSchema = z.object({
-  type: z.literal('twitch-top-games'),
-  ...sharedWidgetFields,
-  exclude: z.array(z.string()).default([]),
-  limit: z.number().int().min(0).default(5),
-  'collapse-after': z.number().int().min(-1).optional(),
-});
-export type TwitchTopGamesConfig = z.infer<typeof twitchTopGamesSchema>;

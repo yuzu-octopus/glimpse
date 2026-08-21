@@ -72,15 +72,15 @@ export function Search({ config }: WidgetComponentProps) {
     }
     if (e.key === 'Enter') {
       e.preventDefault();
-      // new-tab swaps Enter/Ctrl+Enter (glance parity)
-      const newTab = cfg['new-tab'] === true ? !e.ctrlKey : e.ctrlKey;
+      // new-tab swaps Enter/Ctrl+Enter (glance parity) — defaults true
+      const newTab = (cfg['new-tab'] ?? true) ? !e.ctrlKey : e.ctrlKey;
       search(query, newTab);
     }
   };
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    search(query, cfg['new-tab'] === true);
+    search(query, cfg['new-tab'] ?? true);
   };
 
   return (

@@ -130,18 +130,10 @@ export interface RepositoryData {
   issues: RepoPull[];
 }
 
-export interface TwitchChannel {
-  login: string;
-  displayName: string;
-  live: boolean;
-  viewers: number;
-  title: string | null;
-  game: string | null;
-  thumbnail: string | null;
-}
-
-export interface TwitchGame {
-  id: string;
-  name: string;
-  thumbnail: string | null;
+export interface SystemStatsData {
+  cpu: { cores: number; speed: number | null; load: number | null } | null;
+  mem: { total: number; used: number; free: number } | null;
+  fs: { fs: string; size: number; used: number; use: number; mount: string }[];
+  temp: number | null;
+  gpu: { model: string; temp: number | null }[];
 }

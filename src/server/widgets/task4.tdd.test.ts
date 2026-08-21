@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import { getTwitchToken } from './twitch';
 import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './hacker-news';
@@ -90,27 +89,6 @@ describe('T4 TDD failing', () => {
     const second = (await fetcher(ctx, cfg)) as { videos: Video[] };
     expect(second.videos[0].title).toBe('V1');
     vi.useRealTimers();
-  });
-
-  it('twitch token caches even when expires_in missing (default 1h)', async () => {
-    let tokenPosts = 0;
-    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      if (url.includes('oauth2/token') && init?.method === 'POST') {
-        tokenPosts++;
-        // No expires_in
-        return new Response(JSON.stringify({ access_token: 'tok' }), { status: 200 });
-      }
-      return new Response('{}', { status: 200 });
-    });
-    const ctx: WidgetFetchContext = {
-      fetch: fetchMock as unknown as typeof fetch,
-      env: { TWITCH_CLIENT_ID: 'id', TWITCH_CLIENT_SECRET: 'sec' },
-      cache: new TtlCache(),
-      singleflight: new Singleflight(),
-    };
-    await getTwitchToken(ctx);
-    await getTwitchToken(ctx);
-    expect(tokenPosts).toBe(1);
   });
 
   it('cache getStale retains after TTL and negative cache setError', async () => {

@@ -117,12 +117,6 @@
 }
 
 .moreExpanded {
-  position: sticky;
-  /* -1px to hide the 1px gap on chrome */
-  bottom: -1px;
-  /* Transparent so the last row's hover highlight (inset -4px) isn't
-     clipped by an opaque button background overlapping its rounded edge.
-     Keeps flat glance style — border-only card, no shadow. */
   background: transparent;
 }
 /* glance utils.css .expand-toggle-button-icon — chevron right of the label,

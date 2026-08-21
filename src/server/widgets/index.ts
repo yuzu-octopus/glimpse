@@ -10,6 +10,6 @@ import './reddit';
 import './releases';
 import './repository';
 import './rss';
-import './twitch';
+import './system-stats';
 import './videos';
 import './weather';

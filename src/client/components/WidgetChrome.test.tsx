@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { WidgetChrome } from './WidgetChrome';
@@ -102,5 +103,16 @@ describe('WidgetChrome', () => {
       </WidgetChrome>,
     );
     expect(screen.queryByTestId('widget-error-dot')).toBeNull();
+  });
+
+  it('Show less scrolls with content (not sticky)', () => {
+    render(<WidgetChrome title="Feed" collapseAfter={2} items={rows} />);
+    fireEvent.click(screen.getByRole('button', { name: /show more/i }));
+    const btn = screen.getByRole('button', { name: /show less/i });
+    expect(getComputedStyle(btn).position).not.toBe('sticky');
+    const css = readFileSync('src/client/components/widget-chrome.module.css', 'utf8');
+    const moreExpandedBlock = css.match(/\.moreExpanded\s*\{[^}]*\}/s)?.[0] ?? '';
+    expect(moreExpandedBlock).not.toMatch(/position\s*:\s*sticky/);
+    expect(moreExpandedBlock).not.toMatch(/bottom\s*:/);
   });
 });

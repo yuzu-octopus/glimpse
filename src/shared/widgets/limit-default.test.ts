@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { rssSchema, hackerNewsSchema, redditSchema, releasesSchema } from './feeds';
-import { lobstersSchema, videosSchema, customApiSchema, twitchTopGamesSchema, repositorySchema } from './keyed';
-
+import { lobstersSchema, videosSchema, customApiSchema, repositorySchema } from './keyed';
 describe('limit 5 defaults', () => {
   it('rss default limit 5', () => {
     expect(rssSchema.parse({ type: 'rss', feeds: [{ url: 'https://example.com' }] }).limit).toBe(5);
@@ -23,9 +22,6 @@ describe('limit 5 defaults', () => {
   });
   it('custom-api default limit 5', () => {
     expect(customApiSchema.parse({ type: 'custom-api', url: 'https://example.com' }).limit).toBe(5);
-  });
-  it('twitch-top-games default limit 5', () => {
-    expect(twitchTopGamesSchema.parse({ type: 'twitch-top-games' }).limit).toBe(5);
   });
   it('repository defaults 5', () => {
     const cfg = repositorySchema.parse({ type: 'repository', repository: 'owner/repo' });

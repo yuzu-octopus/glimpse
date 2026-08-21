@@ -13,7 +13,7 @@ import './releases';
 import './repository';
 import './rss';
 import './search';
+import './system-stats';
 import './todo';
-import './twitch';
 import './videos';
 import './weather';

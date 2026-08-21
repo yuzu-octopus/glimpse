@@ -1,0 +1,45 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  animation: collapsibleItemReveal 0.25s backwards;
+}
+
+.row + .row {
+  margin-top: 8px;
+  border-top: 1px solid var(--color-separator);
+  padding-top: 8px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-subdue);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  min-width: 48px;
+}
+
+.value {
+  font-size: var(--font-size-h3);
+  font-weight: 500;
+  color: var(--color-text-base);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sub {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--color-text-base-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.placeholder {
+  font-size: 12px;
+  color: var(--color-text-subdue);
+  padding: 8px 0;
+}

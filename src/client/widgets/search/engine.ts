@@ -104,6 +104,6 @@ export function resolveSearch(
   if (!bang && rest.length === 0) return { url: null, target: '_self', rest };
 
   const url = (bang?.url ?? engineUrl).replace('{QUERY}', encodeURIComponent(rest));
-  const resolvedTarget = newTab ? (target ?? '_blank') : '_self';
+  const resolvedTarget = (newTab ?? true) ? (target ?? '_blank') : '_self';
   return { url, target: resolvedTarget, bang, rest };
 }

@@ -65,7 +65,8 @@ describe('search engine', () => {
   });
 
   it('target:_self by default, _blank when newTab', () => {
-    expect(resolveSearch('hello').target).toBe('_self');
+    expect(resolveSearch('hello').target).toBe('_blank');
+    expect(resolveSearch('hello', { newTab: false }).target).toBe('_self');
     expect(resolveSearch('hello', { newTab: true }).target).toBe('_blank');
     expect(resolveSearch('hello', { newTab: true, target: '_top' }).target).toBe('_top');
   });

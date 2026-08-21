@@ -19,7 +19,7 @@ export const searchSchema = z.object({
       }),
     )
     .default([]),
-  'new-tab': z.boolean().optional(),
+  'new-tab': z.boolean().default(true),
   autofocus: z.boolean().optional(),
   placeholder: z.string().optional(),
   target: z.string().optional(),

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ConfigSchema } from './config';
 
@@ -176,7 +177,6 @@ describe('ConfigSchema', () => {
         fields: ['pull-requests-limit', 'issues-limit'],
       },
       { type: 'iframe', base: { source: 'https://example.com' }, fields: ['height'] },
-      { type: 'twitch-top-games', base: {}, fields: ['limit', 'collapse-after'] },
     ];
     const parseWidget = (widget: Record<string, unknown>) =>
       ConfigSchema.safeParse({
@@ -247,9 +247,7 @@ describe('ConfigSchema', () => {
         fields: ['pull-requests-limit', 'issues-limit'],
       },
       { type: 'iframe', base: { source: 'https://example.com' }, fields: ['height'] },
-      { type: 'twitch-top-games', base: {}, fields: ['limit', 'collapse-after'] },
     ];
-
     for (const { type, base, fields } of fixtures) {
       const widget: Record<string, unknown> = { type, ...base };
       for (const field of fields) widget[field] = field === 'height' ? 100 : 2;
@@ -303,5 +301,16 @@ describe('ConfigSchema', () => {
       ],
     });
     expect(monitor.success).toBe(true);
+  });
+
+  it('minecraft example limit is 3', () => {
+    const raw = readFileSync('config.example.yml', 'utf8');
+    expect(raw).toMatch(/Minecraft[\s\S]*?limit:\s*3/);
+  });
+
+  it('WidgetType has no twitch', () => {
+    const src = readFileSync('src/shared/widgets/keyed.ts', 'utf8');
+    expect(src).not.toMatch(/twitch-/);
+    expect(src).not.toMatch(/twitch\.ts/);
   });
 });

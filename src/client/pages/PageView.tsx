@@ -1,4 +1,4 @@
-import { useContext, useRef, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Banner, Card, Tab, TabList, Text } from '@astryxdesign/core';
 import { ChevronDown } from 'lucide-react';
 import type { WidgetPayload } from '../../shared/api';
@@ -9,8 +9,9 @@ import { WidgetChrome } from '../components/WidgetChrome';
 import { usePageData } from '../hooks/usePageData';
 import { clientWidgets } from '../widgets/registry';
 import { PAGE_WIDTHS } from '../../shared/layout';
-import { getTilingProps } from './tiling';
+import { chooseColumnCount, getTilingProps } from './tiling';
 import { useCollageTiling } from './useCollageTiling';
+import { PREFERRED_SIZES } from '../../shared/widgets/preferredSizes';
 import styles from './page.module.css';
 
 /** Config-page shape the loading skeleton needs (subset of WidgetConfig). */
@@ -79,11 +80,9 @@ function estimateRowSpan(w: SkeletonWidget): number {
   ) {
     return 3;
   }
-  // mid-height: markets/twitch/videos/calendar; containers group content
+  // mid-height: markets/videos/calendar; containers group content
   if (
     type === 'markets' ||
-    type === 'twitch-channels' ||
-    type === 'twitch-top-games' ||
     type === 'videos' ||
     type === 'calendar' ||
     type === 'group' ||
@@ -305,10 +304,51 @@ export function PageView({
   const { data, error } = usePageData(slug);
   const columnsRef = useRef<HTMLDivElement>(null);
   const tilingForMeasure = getTilingProps(data?.tiling, data?.minColumnWidth);
+  const resolvedForPrefs = data as unknown as { columns?: { size: string; widgets: { type: string }[]; span?: number }[]; tiling?: string } | undefined;
+  const tilePrefsForHook = useMemo(() => {
+    if (!resolvedForPrefs?.columns) return undefined;
+    return resolvedForPrefs.columns.map((col) => {
+      const t = col.widgets[0]?.type ?? '';
+      const pref = (PREFERRED_SIZES as Record<string, { preferredWidth: number | null; preferredHeight: number | null; resizable: boolean }>)[t]
+        ?? { preferredWidth: null, preferredHeight: null, resizable: true };
+      return { prefH: pref.preferredHeight, resizable: pref.resizable };
+    });
+  }, [resolvedForPrefs?.columns]);
+  const tilesForChooser = useMemo(() => {
+    if (!resolvedForPrefs?.columns) return [];
+    return resolvedForPrefs.columns.map((col) => {
+      const t = col.widgets[0]?.type ?? '';
+      const pref = (PREFERRED_SIZES as Record<string, { preferredWidth: number | null; preferredHeight: number | null; resizable: boolean }>)[t]
+        ?? { preferredWidth: null, preferredHeight: null, resizable: true };
+      return { prefW: pref.preferredWidth, prefH: pref.preferredHeight, span: col.span ?? 1, resizable: pref.resizable };
+    });
+  }, [resolvedForPrefs?.columns]);
   // Collage measure pass: re-runs when the payload settles/refreshes. The
   // ref is only attached in collage mode (tilingProps.measure), so the hook
-  // no-ops for every other tiling.
-  useCollageTiling(columnsRef, tilingForMeasure.measure && data ? [data] : []);
+  // no-ops for every other tiling. PrefH path uses pref when !resizable.
+  useCollageTiling(columnsRef, tilingForMeasure.measure && data ? [data] : [], tilePrefsForHook);
+  const isCollageLikeForChooser = data?.tiling === 'collage' || data?.tiling === 'auto';
+  useEffect(() => {
+    if (!isCollageLikeForChooser || !data) return;
+    const container = columnsRef.current;
+    if (!container) return;
+    const gap = 23;
+    const minW = (data as { minColumnWidth?: number }).minColumnWidth ?? 300;
+    const maxCols = 6;
+    const compute = () => {
+      const W = container.clientWidth || container.getBoundingClientRect().width || 0;
+      if (!(W > 0)) return;
+      const nStar = chooseColumnCount(W, gap, minW, maxCols, tilesForChooser);
+      const actualW = (W - (nStar - 1) * gap) / nStar;
+      container.style.setProperty('--min-column-width', `${actualW}px`);
+      container.style.gridTemplateColumns = `repeat(${nStar}, 1fr)`;
+    };
+    compute();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(compute);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [isCollageLikeForChooser, data, tilesForChooser]);
 
   if (!data && !error) {
     if (page) return <PageSkeleton page={page} />;
@@ -354,7 +394,7 @@ export function PageView({
             ))}
           </div>
         ) : null}
-        <div ref={tilingProps.measure ? columnsRef : null} className={tilingProps.className} style={tilingProps.style}>
+        <div ref={tilingProps.measure || resolved.tiling === 'auto' ? columnsRef : null} className={tilingProps.className} style={tilingProps.style}>
           {resolved.columns.map((col, i) => (
             // Columns are a config-static list (never reordered at runtime),
             // so the positional index is their stable identity.

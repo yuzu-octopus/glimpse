@@ -17,13 +17,11 @@ import {
   marketsSchema,
   monitorSchema,
   repositorySchema,
-  twitchChannelsSchema,
-  twitchTopGamesSchema,
   videosSchema,
 } from './keyed';
 import { searchSchema } from './search';
+import { systemStatsSchema } from './system-stats';
 import { todoSchema } from './todo';
-
 const schemaEntries = [
   bookmarksSchema,
   searchSchema,
@@ -45,8 +43,7 @@ const schemaEntries = [
   monitorSchema,
   customApiSchema,
   repositorySchema,
-  twitchChannelsSchema,
-  twitchTopGamesSchema,
+  systemStatsSchema,
 ] as const;
 
 /** Public widget type union, derived from the schema entries. */

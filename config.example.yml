@@ -1,6 +1,6 @@
 # Glimpse showcase — flat glance-faithful demo (4 pages, hide-headers, Singapore).
 # Copy to config.yml and edit. See README for full widget reference.
-# Pages: Home (daily feeds) · Dev (releases / repos / videos) · Social (collage / reddit / twitch) · Lab (homelab).
+# Pages: Home (daily feeds) · Dev (releases / repos / videos) · Social (collage / reddit) · Lab (homelab).
 # Flat style: 1px border / 5px radius / JetBrains Mono / no shadows — applied by the theme, not the config.
 # videos: @handle primary, UC fallback — channels accept "@handle" (easy, e.g. @Fireship, @spokeishere, @Bug-I, @CalebWritesCode, @AZisk) or UC IDs (UC...) — both resolve via handle→UC cache (youtube.com/@handle + Mozilla UA) to the same YouTube RSS feed.
 # Singapore weather repeated on Home/Dev/Lab for parity.
@@ -183,7 +183,7 @@ pages:
                   - "@BetterStack"            # → UCkVfrGwV-iG9bSsgCbrNPxQ
               - type: videos
                 title: Minecraft — Unstable Universe & friends
-                limit: 9
+                limit: 3
                 # style: horizontal-cards (1 row + overflow) | grid-cards (wrap) | vertical-list (rows) (default: horizontal-cards)
                 # @handle primary — mix UC and @handle freely; handles with hyphens like @Bug-I also work
                 # All @handles resolve via handle→UC cache (youtube.com/@handle, Mozilla UA). Try lower-case "@spokeishere" or bare "spokeishere" too.
@@ -211,13 +211,6 @@ pages:
           #   source-header: true
       - size: full
         widgets:
-          - type: twitch-channels
-            channels:
-              - shroud
-              - xqc
-              - summit1g
-            limit: 6
-            collapse-after: 4
           - type: bookmarks
             groups:
               - title: Social
@@ -375,14 +368,6 @@ pages:
             repository: home-assistant/core
             pull-requests-limit: 5
             issues-limit: 5
-          - type: twitch-channels
-            title: Lab streams
-            channels:
-              - shroud
-              - theprimeagen
-              - j_blow
-            limit: 6
-            collapse-after: 4
           - type: iframe
             title: Grafana
             source: https://grafana.lab/d/000000001/homelab?orgId=1&kiosk
