@@ -71,8 +71,8 @@ describe('ConfigSchema', () => {
       const page = r.data.pages[0];
       expect(page.tiling).toBe('auto');
       expect(page['min-column-width']).toBe(340);
-      expect(page.columns[0].span).toBe(2);
-      expect(page.columns[1].span).toBeUndefined();
+      expect(page.columns![0].span).toBe(2);
+      expect(page.columns![1].span).toBeUndefined();
     }
   });
 
@@ -102,7 +102,7 @@ describe('ConfigSchema', () => {
     if (r.success) {
       expect(r.data.pages[0].tiling).toBeUndefined();
       expect(r.data.pages[0]['min-column-width']).toBeUndefined();
-      expect(r.data.pages[0].columns[0].span).toBeUndefined();
+      expect(r.data.pages[0].columns![0].span).toBeUndefined();
     }
   });
 

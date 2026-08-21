@@ -37,13 +37,17 @@ export interface PagePayload {
   'hide-headers'?: boolean;
   /** CamelCase alias so clients can use `page.hideHeaders` or `page['hide-headers']`. */
   hideHeaders?: boolean;
-  /** 'columns' (default) = glance flex layout; 'auto' = balanced grid tiles;
-   * 'collage' = dense bento grid with measured row spans.
-   * Server always resolves a value (page.tiling ?? 'columns'). */
+/** 'columns' (default) = glance flex layout; 'auto' = balanced grid tiles;
+ * 'collage' = dense bento grid with measured row spans.
+ * Server always resolves a value (page.tiling ?? 'columns'). */
   tiling?: 'columns' | 'auto' | 'collage';
   /** Auto-mode minimum tile width in px. Server always resolves
    * (page['min-column-width'] ?? 300). */
   minColumnWidth?: number;
   headWidgets: WidgetPayload[];
   columns: ColumnPayload[];
+  /** Pure bento — flat widgets when page declares `widgets` instead of `columns`. */
+  widgets?: WidgetPayload[];
+  gridColumns?: number;
+  gridRowHeight?: number;
 }

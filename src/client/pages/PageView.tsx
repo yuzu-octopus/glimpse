@@ -9,7 +9,7 @@ import { WidgetChrome } from '../components/WidgetChrome';
 import { usePageData } from '../hooks/usePageData';
 import { clientWidgets } from '../widgets/registry';
 import { PAGE_WIDTHS } from '../../shared/layout';
-import { MAX_TILING_COLS, chooseColumnCount, getTilingProps } from './tiling';
+import { MAX_TILING_COLS, chooseColumnCount, composeBento, getTilingProps, type BentoTile } from './tiling';
 import { useCollageTiling } from './useCollageTiling';
 import { PREFERRED_SIZES } from '../../shared/widgets/preferredSizes';
 import styles from './page.module.css';
@@ -135,23 +135,31 @@ export function PageSkeleton({ page }: { page: Page & { slug: string } }) {
           </div>
         ) : null}
         <div className={tilingProps.className} style={tilingProps.style}>
-          {page.columns.map((col, i) => (
-            <MobileColumn
-              key={columnKey(col, i)}
-              label={columnLabel(col, i)}
-              small={col.size === 'small'}
-              span={col.span ?? 1}
-              rowSpan={
-                page.tiling === 'collage' ? estimateColumnRowSpan(col) : undefined
-              }
-            >
-              <div className={styles.columnWidgets}>
-                {col.widgets.map((w, j) => (
-                  <WidgetSkeleton key={widgetKey(w, j)} widget={w} />
-                ))}
-              </div>
-            </MobileColumn>
-          ))}
+          {(page as { widgets?: unknown[] }).widgets ? (
+            <div className={styles.bentoGrid} data-testid="bento-skeleton" style={{ '--bento-cols': String((page as Record<string, unknown>)['grid-columns'] ?? 6) } as React.CSSProperties}>
+              {((page as { widgets?: unknown[] }).widgets ?? []).map((w, i) => (
+                <div key={widgetKey(w as WidgetLike, i)} className={styles.bentoItem}>
+                  <WidgetSkeleton widget={w as SkeletonWidget} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            (page.columns ?? []).map((col, i) => (
+              <MobileColumn
+                key={columnKey(col, i)}
+                label={columnLabel(col, i)}
+                small={col.size === 'small'}
+                span={col.span ?? 1}
+                rowSpan={page.tiling === 'collage' ? estimateColumnRowSpan(col) : undefined}
+              >
+                <div className={styles.columnWidgets}>
+                  {col.widgets.map((w, j) => (
+                    <WidgetSkeleton key={widgetKey(w, j)} widget={w} />
+                  ))}
+                </div>
+              </MobileColumn>
+            ))
+          )}
         </div>
       </div>
     </HideHeadersContext.Provider>
@@ -293,6 +301,54 @@ function MobileColumn({
   );
 }
 
+function BentoGrid({ widgets, gridCols, rowHeight }: { widgets: WidgetPayload[]; gridCols: number; rowHeight: number }) {
+  const tiles: BentoTile[] = useMemo(
+    () =>
+      widgets.map((w, i) => {
+        const cfg = w.config as Record<string, unknown>;
+        const pref =
+          (PREFERRED_SIZES as Record<string, { preferredWidth: number | null; preferredHeight: number | null; resizable: boolean }>)[w.type] ??
+          { preferredWidth: null, preferredHeight: null, resizable: true };
+        return {
+          id: widgetKey(w, i),
+          priority: typeof cfg.priority === 'number' ? cfg.priority : 5,
+          span: typeof cfg.span === 'number' ? cfg.span : 1,
+          zone: cfg.zone as 'main' | 'sidebar' | undefined,
+          prefW: pref.preferredWidth,
+          prefH: pref.preferredHeight,
+          resizable: pref.resizable,
+        } satisfies BentoTile;
+      }),
+    [widgets],
+  );
+  const placements = useMemo(() => composeBento(tiles, gridCols, { rowUnit: rowHeight }), [tiles, gridCols, rowHeight]);
+  const byId = useMemo(() => new Map(placements.map((p) => [p.id, p])), [placements]);
+  return (
+    <div
+      className={styles.bentoGrid}
+      style={{ '--bento-cols': String(gridCols), '--bento-row': `${rowHeight}px` } as React.CSSProperties}
+      data-testid="bento-grid"
+    >
+      {widgets.map((w, i) => {
+        const id = widgetKey(w, i);
+        const pl = byId.get(id);
+        return (
+          <div
+            key={id}
+            className={styles.bentoItem}
+            style={pl ? ({ '--bento-x': String(pl.x + 1), '--bento-y': String(pl.y + 1), '--bento-w': String(pl.w), '--bento-h': String(pl.h) } as React.CSSProperties) : undefined}
+            data-bento-x={pl?.x}
+            data-bento-y={pl?.y}
+          >
+            <WidgetSlot widget={w} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+
 export function PageView({
   slug,
   page,
@@ -406,22 +462,28 @@ export function PageView({
           </div>
         ) : null}
         <div ref={tilingProps.measure || resolved.tiling === 'auto' ? columnsRef : null} className={tilingProps.className} style={tilingProps.style}>
-          {resolved.columns.map((col, i) => (
-            // Columns are a config-static list (never reordered at runtime),
-            // so the positional index is their stable identity.
-            <MobileColumn
-              key={columnKey(col, i)}
-              label={columnLabel(col, i)}
-              small={col.size === 'small'}
-              span={col.span ?? 1}
-            >
-              <div className={styles.columnWidgets}>
-                {col.widgets.map((w, j) => (
-                  <WidgetSlot key={widgetKey(w, j)} widget={w} />
-                ))}
-              </div>
-            </MobileColumn>
-          ))}
+          {(resolved as unknown as { widgets?: WidgetPayload[] }).widgets ? (
+            <BentoGrid
+              widgets={(resolved as unknown as { widgets: WidgetPayload[] }).widgets}
+              gridCols={(resolved as unknown as { gridColumns?: number }).gridColumns ?? 6}
+              rowHeight={(resolved as unknown as { gridRowHeight?: number }).gridRowHeight ?? 96}
+            />
+          ) : (
+            resolved.columns.map((col, i) => (
+              <MobileColumn
+                key={columnKey(col, i)}
+                label={columnLabel(col, i)}
+                small={col.size === 'small'}
+                span={col.span ?? 1}
+              >
+                <div className={styles.columnWidgets}>
+                  {col.widgets.map((w, j) => (
+                    <WidgetSlot key={widgetKey(w, j)} widget={w} />
+                  ))}
+                </div>
+              </MobileColumn>
+            ))
+          )}
         </div>
       </div>
     </HideHeadersContext.Provider>

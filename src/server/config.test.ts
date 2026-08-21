@@ -138,7 +138,7 @@ pages:
     process.env.GLIMPSE_TEST_TOKEN = 'sekrit';
     const r = loadConfig(write('glance.yml', VALID.replace('https://example.com/feed.xml', 'https://example.com/${GLIMPSE_TEST_TOKEN}/feed.xml')));
     expect(r.ok).toBe(true);
-    expect(firstFeedUrl(r.config!.pages[0].columns[1].widgets[0])).toBe('https://example.com/sekrit/feed.xml');
+    expect(firstFeedUrl(r.config!.pages[0].columns![1].widgets[0])).toBe('https://example.com/sekrit/feed.xml');
   });
 
   it('errors when an env var is missing', () => {
@@ -150,7 +150,7 @@ pages:
   it('does not touch ${secret:...} Docker syntax', () => {
     const r = loadConfig(write('glance.yml', VALID.replace('https://example.com/feed.xml', 'https://example.com/${secret:github_token}/feed.xml')));
     expect(r.ok).toBe(true);
-    expect(firstFeedUrl(r.config!.pages[0].columns[1].widgets[0])).toBe('https://example.com/${secret:github_token}/feed.xml');
+    expect(firstFeedUrl(r.config!.pages[0].columns![1].widgets[0])).toBe('https://example.com/${secret:github_token}/feed.xml');
   });
 
   it('merges included files (pages appended, theme overridden)', () => {

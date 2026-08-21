@@ -62,8 +62,6 @@ export async function buildPagePayload(
       ...(col.span !== undefined ? { span: col.span } : {}),
     }));
 
-  // Kick off head-widgets and columns together: neither depends on the other,
-  // so awaiting head first would serialize the page's fetches.
   const headPromise = Array.isArray(page['head-widgets'])
     ? Promise.all(
         page['head-widgets'].map((w, i) =>
@@ -72,14 +70,22 @@ export async function buildPagePayload(
       )
     : Promise.resolve([]);
 
-  const columnsPromise = Promise.all(page.columns.map((col) => buildColumn(col)));
+  const isFlat = Array.isArray((page as Record<string, unknown>).widgets);
+  const flatWidgetsPromise: Promise<WidgetPayload[]> = isFlat
+    ? Promise.all(
+        ((page as { widgets?: unknown[] }).widgets ?? []).map((w, i) =>
+          fetchWidget(ctx, page.slug, `w:${i}`, isRecord(w) ? w : { type: 'unknown' }),
+        ),
+      )
+    : Promise.resolve([]);
 
-  const [headWidgets, columns] = await Promise.all([headPromise, columnsPromise]);
+  const columnsPromise = Array.isArray((page as Record<string, unknown>).columns)
+    ? Promise.all(((page as { columns?: Array<{ size: 'small' | 'full'; span?: number; widgets: unknown[] }> }).columns ?? []).map((col) => buildColumn(col)))
+    : Promise.resolve([]);
+
+  const [headWidgets, flatWidgets, columns] = await Promise.all([headPromise, flatWidgetsPromise, columnsPromise]);
 
   const hideHeaders = page['hide-headers'] === true;
-  // When page hide-headers is set, force every widget's config hide-header so
-  // even widgets that read cfg['hide-header'] directly are hidden, including
-  // nested group/split-column children.
   if (hideHeaders) {
     const forceHide = (widgets: WidgetPayload[]) => {
       for (const w of widgets) {
@@ -88,6 +94,7 @@ export async function buildPagePayload(
       }
     };
     forceHide(headWidgets);
+    forceHide(flatWidgets);
     for (const col of columns) forceHide(col.widgets);
   }
 
@@ -95,18 +102,14 @@ export async function buildPagePayload(
     slug: page.slug,
     name: page.name,
     width: page.width ?? 'default',
-    ...(page['center-vertically'] !== undefined
-      ? { 'center-vertically': page['center-vertically'] }
-      : {}),
-    ...(page['show-mobile-header'] !== undefined
-      ? { 'show-mobile-header': page['show-mobile-header'] }
-      : {}),
+    ...(page['center-vertically'] !== undefined ? { 'center-vertically': page['center-vertically'] } : {}),
+    ...(page['show-mobile-header'] !== undefined ? { 'show-mobile-header': page['show-mobile-header'] } : {}),
     ...(hideHeaders ? { 'hide-headers': true as const, hideHeaders: true as const } : {}),
-    // Tiling resolved server-side: defaults preserve glance behavior exactly.
     tiling: page.tiling ?? 'columns',
     minColumnWidth: page['min-column-width'] ?? 300,
     headWidgets,
     columns,
+    ...(isFlat ? { widgets: flatWidgets, gridColumns: (page as Record<string, unknown>)['grid-columns'] as number | undefined ?? 6, gridRowHeight: (page as Record<string, unknown>)['grid-row-height'] as number | undefined ?? 96 } : {}),
   };
 }
 
@@ -138,16 +141,18 @@ export async function* streamPagePayload(
       push(`headWidgets[${i}]`, `h:${i}`, isRecord(w) ? w : { type: 'unknown' });
     });
   }
-  page.columns.forEach((col, ci) => {
-    col.widgets.forEach((w, wi) => {
-      const cachePath = `${col.size === 'small' ? 's' : 'f'}:${wi}`;
-      // NOTE: cachePath is per-column widget index; if the same column size
-      // appears twice, keys collide — keep buildPagePayload's original key
-      // scheme for now. Streaming consumers key by `path` not cacheKey.
-      // A future change could use `${ci}:${wi}` as cacheKey.
-      push(`columns[${ci}].widgets[${wi}]`, cachePath, isRecord(w) ? w : { type: 'unknown' });
+  const flat = (page as { widgets?: unknown[] }).widgets;
+  if (Array.isArray(flat)) {
+    flat.forEach((w, i) => push(`widgets[${i}]`, `w:${i}`, isRecord(w) ? w : { type: 'unknown' }));
+  } else {
+    const cols = (page as { columns?: Array<{ size: 'small' | 'full'; widgets: unknown[] }> }).columns ?? [];
+    cols.forEach((col, ci) => {
+      col.widgets.forEach((w, wi) => {
+        const cachePath = `${col.size === 'small' ? 's' : 'f'}:${wi}`;
+        push(`columns[${ci}].widgets[${wi}]`, cachePath, isRecord(w) ? w : { type: 'unknown' });
+      });
     });
-  });
+  }
 
   // Flush in settlement order (head widgets typically win). Use indexed race
   // so the winner's position can be removed without re-creating promises.

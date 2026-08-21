@@ -10,22 +10,30 @@ export const ColumnSchema = z.object({
 });
 export type Column = z.infer<typeof ColumnSchema>;
 
-export const PageSchema = z.object({
-  name: z.string().min(1),
-  slug: z.string().optional(),
-  width: z.enum(['default', 'slim', 'wide']).optional(),
-  'desktop-navigation-width': z.enum(['default', 'slim', 'wide']).optional(),
-  'center-vertically': z.boolean().optional(),
-  'hide-desktop-navigation': z.boolean().optional(),
-  'show-mobile-header': z.boolean().optional(),
-  'hide-headers': z.boolean().optional(),
-  'head-widgets': z.array(WidgetSchema).optional(),
-  // 'columns' (default) = current glance flex behavior; 'auto' = balanced
-  // grid tiles; 'collage' = dense bento grid + JS-measured row spans.
-  tiling: z.enum(['columns', 'auto', 'collage']).optional(),
-  'min-column-width': z.number().int().min(1).optional(),
-  columns: z.array(ColumnSchema).min(1).max(3),
-});
+export const PageSchema = z
+  .object({
+    name: z.string().min(1),
+    slug: z.string().optional(),
+    width: z.enum(['default', 'slim', 'wide']).optional(),
+    'desktop-navigation-width': z.enum(['default', 'slim', 'wide']).optional(),
+    'center-vertically': z.boolean().optional(),
+    'hide-desktop-navigation': z.boolean().optional(),
+    'show-mobile-header': z.boolean().optional(),
+    'hide-headers': z.boolean().optional(),
+    'head-widgets': z.array(WidgetSchema).optional(),
+    tiling: z.enum(['columns', 'auto', 'collage']).optional(),
+    'min-column-width': z.number().int().min(1).optional(),
+    // pure bento
+    'grid-columns': z.number().int().min(2).max(12).optional(),
+    'grid-row-height': z.number().int().min(32).max(200).optional(),
+    columns: z.array(ColumnSchema).min(1).max(3).optional(),
+    widgets: z.array(WidgetSchema).optional(),
+  })
+  .superRefine((p, ctx) => {
+    if (!p.columns && !p.widgets) {
+      ctx.addIssue({ code: 'custom', message: 'Page needs `columns` or `widgets`', path: ['columns'] });
+    }
+  });
 export type Page = z.infer<typeof PageSchema>;
 
 /** Glance HSL theme block (docs/configuration.md §Theme). */

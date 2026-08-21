@@ -8,4 +8,8 @@ export const sharedWidgetFields = {
   'hide-header': z.boolean().optional(),
   cache: z.string().optional(),
   'css-class': z.string().optional(),
+  // pure-compositor hints — ignored in columns mode, used when `widgets` is flat
+  priority: z.number().int().min(0).max(10).optional(),
+  span: z.number().int().min(1).max(4).optional(),
+  zone: z.enum(['main', 'sidebar']).optional(),
 };

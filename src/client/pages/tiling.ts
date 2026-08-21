@@ -53,6 +53,106 @@ export function chooseColumnCount(
   return Math.min(bestN, clampMax);
 }
 
+export interface BentoTile extends TilePref {
+  id: string;
+  priority: number;
+  zone?: 'main' | 'sidebar';
+}
+
+export interface BentoPlacement {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+function aspectMatch(tile: BentoTile, w: number, h: number, colW: number, rowUnit: number): number {
+  if (tile.prefW == null && tile.prefH == null) return 1;
+  const prefRatio = (tile.prefW ?? colW) / (tile.prefH ?? rowUnit);
+  const rendered = (w * colW) / (h * rowUnit);
+  const err = Math.abs(Math.log(rendered / prefRatio));
+  return Math.exp(-err * 2);
+}
+
+function posWeight(x: number, y: number, zone?: string): number {
+  // main favors top-left, sidebar favors top-right
+  if (zone === 'sidebar') return 1 / (1 + 0.15 * (5 - x) + 0.25 * y);
+  return 1 / (1 + 0.15 * x + 0.25 * y);
+}
+
+class BentoGrid {
+  cols: number;
+  occ: boolean[][] = [[]];
+  constructor(cols: number) {
+    this.cols = cols;
+  }
+  ensureRows(n: number): void {
+    while (this.occ.length < n) this.occ.push(Array(this.cols).fill(false));
+  }
+  canPlace(x: number, y: number, w: number, h: number): boolean {
+    if (x + w > this.cols) return false;
+    this.ensureRows(y + h);
+    for (let dy = 0; dy < h; dy++) for (let dx = 0; dx < w; dx++) if (this.occ[y + dy][x + dx]) return false;
+    return true;
+  }
+  place(x: number, y: number, w: number, h: number): void {
+    this.ensureRows(y + h);
+    for (let dy = 0; dy < h; dy++) for (let dx = 0; dx < w; dx++) this.occ[y + dy][x + dx] = true;
+  }
+  fragmentation(): number {
+    let holes = 0;
+    for (let y = 0; y < this.occ.length; y++) for (let x = 0; x < this.cols; x++) if (!this.occ[y][x]) {
+      // hole with occupied below
+      if (y + 1 < this.occ.length && this.occ[y + 1][x]) holes++;
+    }
+    return holes;
+  }
+}
+
+const CANDIDATES: Array<{ w: number; h: number }> = [
+  { w: 1, h: 1 },
+  { w: 2, h: 1 },
+  { w: 1, h: 2 },
+  { w: 2, h: 2 },
+];
+
+export function composeBento(tiles: BentoTile[], cols: number, opts?: { rowUnit?: number }): BentoPlacement[] {
+  const rowUnit = opts?.rowUnit ?? 96;
+  const colW = 300;
+  const ordered = tiles.toSorted((a, b) => b.priority - a.priority);
+  const grid = new BentoGrid(cols);
+  const out: BentoPlacement[] = [];
+  for (const tile of ordered) {
+    const span = Math.min(tile.span || 1, cols);
+    const shapes = CANDIDATES.filter((s) => s.w === span || (span === 1 && s.w <= 1) || (span > 1 && s.w === span)).length
+      ? CANDIDATES.filter((s) => s.w === span)
+      : [{ w: span, h: 1 }];
+    // resizable false with tall pref prefers h=2
+    const tall = !tile.resizable && tile.prefH != null && tile.prefH > rowUnit * 1.5;
+    const candShapes = tall ? shapes.filter((s) => s.h === 2).length ? shapes.filter((s) => s.h === 2) : shapes : shapes.filter((s) => s.h === 1);
+    const shapesToTry = candShapes.length ? candShapes : shapes;
+    let best: { x: number; y: number; w: number; h: number; score: number } | null = null;
+    // search up to 20 rows
+    for (const sh of shapesToTry) {
+      for (let y = 0; y < 20; y++) {
+        for (let x = 0; x <= cols - sh.w; x++) {
+          if (!grid.canPlace(x, y, sh.w, sh.h)) continue;
+          const ratio = aspectMatch(tile, sh.w, sh.h, colW, rowUnit);
+          const pw = posWeight(x, y, tile.zone);
+          const score = 2 * ratio + 2 * tile.priority * pw - 0.1 * grid.fragmentation();
+          if (!best || score > best.score) best = { x, y, w: sh.w, h: sh.h, score };
+        }
+      }
+    }
+    if (best) {
+      grid.place(best.x, best.y, best.w, best.h);
+      out.push({ id: tile.id, x: best.x, y: best.y, w: best.w, h: best.h });
+    }
+  }
+  return out;
+}
+
 /**
  * Deep module for page tiling.
  *
