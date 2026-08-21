@@ -1,4 +1,4 @@
-import { HoverCard, Text } from '@astryxdesign/core';
+import { Text } from '@astryxdesign/core';
 import { Server } from 'lucide-react';
 import type { ServerStatsConfig } from '../../../shared/widgets/server-stats';
 import type { ServerInfo, ServerStatsData } from '../../../shared/widgets/payloads';
@@ -44,43 +44,6 @@ function Bar({ label, value, sub, available = true }: { label: string; value: st
   );
 }
 
-function HoverDetails({ server }: { server: ServerInfo }) {
-  const age = useAge(server.bootTime || null);
-  return (
-    <div className={styles.details}>
-      <div className={styles.detailRow}>
-        <span className={styles.detailLabel}>Host</span>
-        <span>{server.hostname || server.name}</span>
-      </div>
-      {server.platform ? (
-        <div className={styles.detailRow}>
-          <span className={styles.detailLabel}>Platform</span>
-          <span>{server.platform}</span>
-        </div>
-      ) : null}
-      <div className={styles.detailRow}>
-        <span className={styles.detailLabel}>Uptime</span>
-        <span>{age || 'unknown'}</span>
-      </div>
-      <div className={styles.detailRow}>
-        <span className={styles.detailLabel}>CPU load</span>
-        <span>{server.cpu.loadIsAvailable ? server.cpu.load.toFixed(2) : 'n/a'}</span>
-      </div>
-      {server.memory.isAvailable ? (
-        <div className={styles.detailRow}>
-          <span className={styles.detailLabel}>Memory</span>
-          <span>{`${fmtBytes(server.memory.used)} / ${fmtBytes(server.memory.total)}`}</span>
-        </div>
-      ) : null}
-      {server.mountpoints.map((m) => (
-        <div key={m.path} className={styles.detailRow}>
-          <span className={styles.detailLabel}>{m.path}</span>
-          <span>{`${fmtBytes(m.used)} / ${fmtBytes(m.total)} (${pct(m.used, m.total)}%)`}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 function ServerCard({ server }: { server: ServerInfo }) {
   const age = useAge(server.bootTime || null);
@@ -92,24 +55,21 @@ function ServerCard({ server }: { server: ServerInfo }) {
         <Text as="h3" size="lg" weight="semibold" display="block" className={styles.serverName}>
           {server.name}
         </Text>
-        {server.hostname && server.hostname !== server.name ? (
-          <span className={styles.serverHost}>{server.hostname}</span>
-        ) : null}
+        {server.hostname && server.hostname !== server.name ? <span className={styles.serverHost}>{server.hostname}</span> : null}
         {age ? <span className={styles.uptime}>{age}</span> : null}
       </header>
 
       {server.isReachable ? (
         <div className={styles.serverStats}>
           <Bar label="CPU" value={`${Math.round(server.cpu.load * 100)}`} available={server.cpu.loadIsAvailable} />
-          <Bar
-            label="MEM"
-            value={`${memPct}%`}
-            sub={server.memory.isAvailable ? fmtBytes(server.memory.total) : undefined}
-            available={server.memory.isAvailable}
-          />
+          {server.gpu?.map((g) => (
+            <Bar key={g.model} label={`GPU ${g.model}`} value={g.temp != null ? `${Math.round(g.temp)}°C` : '—'} available={g.temp != null} />
+          ))}
+          <Bar label="RAM" value={`${memPct}%`} sub={server.memory.isAvailable ? `${fmtBytes(server.memory.used)} / ${fmtBytes(server.memory.total)}` : undefined} available={server.memory.isAvailable} />
           {server.mountpoints.map((m) => (
             <Bar key={m.path} label={`DISK ${m.path}`} value={`${pct(m.used, m.total)}%`} sub={fmtBytes(m.total)} />
           ))}
+          {server.temp?.isAvailable ? <Bar label="TEMP" value={`${Math.round(server.temp.main!)}°C`} /> : null}
         </div>
       ) : (
         <p className={styles.unreachable}>Unreachable</p>
@@ -132,14 +92,7 @@ function ServerStats({ config, data, error, isLoading }: WidgetComponentProps) {
       isLoading={loading}
     >
       {servers.map((s) => (
-        <HoverCard
-          key={`${s.name}-${s.hostname}`}
-          content={<HoverDetails server={s} />}
-          placement="above"
-          label={`${s.name} details`}
-        >
-          <ServerCard server={s} />
-        </HoverCard>
+        <ServerCard key={`${s.name}-${s.hostname}`} server={s} />
       ))}
     </WidgetChrome>
   );

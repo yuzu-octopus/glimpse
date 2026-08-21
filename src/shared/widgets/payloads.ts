@@ -190,9 +190,11 @@ export interface ServerInfo {
   hostname: string;
   platform: string;
   bootTime: string;
-  cpu: { load: number; loadIsAvailable: boolean };
+  cpu: { load: number; loadIsAvailable: boolean; temp?: number | null };
   memory: { used: number; total: number; isAvailable: boolean };
   mountpoints: ServerMount[];
+  temp?: { main: number | null; isAvailable: boolean };
+  gpu?: Array<{ model: string; temp?: number | null }>;
   isReachable: boolean;
 }
 

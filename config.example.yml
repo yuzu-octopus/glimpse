@@ -98,30 +98,30 @@ pages:
     columns:
       - size: full
         widgets:
-          - type: releases
-            repositories:
-              - glanceapp/glance
-              - sharkdp/bat
-              - BurntSushi/ripgrep
-            show-source-icon: true
-            limit: 10
+          - type: split-column
+            widgets:
+              - type: releases
+                repositories:
+                  - glanceapp/glance
+                  - sharkdp/bat
+                  - BurntSushi/ripgrep
+                show-source-icon: true
+                limit: 10
+              - type: repository
+                repository: glanceapp/glance
+                pull-requests-limit: 5
+                issues-limit: 5
           - type: videos
             title: Tech — recent
             limit: 9
             style: grid-cards
             channels:
-              - UCsBjURrPoezykLs9EqgamOA
+              - "@Fireship"
               - "@ByCloud"
               - "@BetterStack"
               - "@Bug-I"
               - "@CalebWritesCode"
               - "@AZisk"
-              - UCkQS_dP6GJTmYnMlox-YiKQ
-              - "@Fireship"
-          - type: repository
-            repository: glanceapp/glance
-            pull-requests-limit: 5
-            issues-limit: 5
       - size: small
         widgets:
           - type: custom-api

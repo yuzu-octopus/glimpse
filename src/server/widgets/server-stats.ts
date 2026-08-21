@@ -10,17 +10,43 @@ const REMOTE_TIMEOUT_MS = 5_000;
  * individually guarded so a missing sensor degrades to "unavailable", not
  * an error — same philosophy as system-stats. */
 async function localServer(name?: string): Promise<ServerInfo> {
-  const [os, load, mem, fs, time] = await Promise.all([
+  const [os, load, mem, fs] = await Promise.all([
     (si.osInfo as () => Promise<unknown>)().catch(() => null),
     (si.currentLoad as () => Promise<unknown>)().catch(() => null) as Promise<{ avgLoad?: number | null } | null>,
     (si.mem as () => Promise<unknown>)().catch(() => null),
     (si.fsSize as () => Promise<unknown>)().catch(() => []) as Promise<{ mount?: string; size?: number; used?: number }[]>,
-    (si.time as () => { uptime?: number })(),
+  ]);
+  const time = (() => {
+    try {
+      return (si.time as unknown as () => { uptime?: number })();
+    } catch {
+      return { uptime: 0 };
+    }
+  })();
+  const [temp, graphics] = await Promise.all([
+    (async () => {
+      try {
+        const fn = (si as unknown as Record<string, unknown>).cpuTemperature as (() => Promise<{ main?: number | null }>) | undefined;
+        return fn ? await fn().catch(() => null) : null;
+      } catch {
+        return null;
+      }
+    })() as Promise<{ main?: number | null } | null>,
+    (async () => {
+      try {
+        const fn = (si as unknown as Record<string, unknown>).graphics as (() => Promise<{ controllers?: Array<{ model?: string; temperatureGpu?: number | null }> }>) | undefined;
+        return fn ? await fn().catch(() => null) : null;
+      } catch {
+        return null;
+      }
+    })() as Promise<{ controllers?: Array<{ model?: string; temperatureGpu?: number | null }> } | null>,
   ]);
 
   const osData = os as { hostname?: string; platform?: string; distro?: string } | null;
   const memData = mem as { total?: number; active?: number; used?: number } | null;
-  const uptime = time?.uptime ?? null;
+  const uptime = (time as { uptime?: number })?.uptime ?? null;
+  const tempData = temp as { main?: number | null } | null;
+  const gpuData = graphics as { controllers?: Array<{ model?: string; temperatureGpu?: number | null }> } | null;
 
   return {
     name: name ?? osData?.hostname ?? 'Local',
@@ -44,6 +70,8 @@ async function localServer(name?: string): Promise<ServerInfo> {
       }
       return out;
     })(),
+    temp: tempData?.main != null ? { main: tempData.main, isAvailable: true } : { main: null, isAvailable: false },
+    gpu: Array.isArray(gpuData?.controllers) ? gpuData.controllers.filter((c) => c.model).map((c) => ({ model: String(c.model), temp: c.temperatureGpu ?? null })) : [],
     isReachable: true,
   };
 }

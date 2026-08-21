@@ -1,4 +1,5 @@
 /** Side-effect barrel: each widget module registers its component. */
+import './clock';
 import './bookmarks';
 import './calendar';
 import './custom-api';
