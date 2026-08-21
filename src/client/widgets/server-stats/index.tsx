@@ -31,12 +31,12 @@ function Bar({ label, value, sub, available = true }: { label: string; value: st
           {sub ? <span className={styles.statSub}>{` ${sub}`}</span> : null}
         </span>
       </div>
-      <div
+      <meter
         className={`${styles.bar} ${available ? '' : styles.barUnavailable}`}
         style={{ '--progress': `${p}%` } as React.CSSProperties}
-        role="meter"
-        aria-valuemin={0}
-        aria-valuemax={100}
+        min={0}
+        max={100}
+        value={available ? p : 0}
         aria-valuenow={available ? p : undefined}
         aria-label={label}
       />

@@ -83,16 +83,14 @@ async function fetchAdguard(
   const blockedPercent = totalQueries > 0 ? Math.round((blockedQueries / totalQueries) * 100) : 0;
   const responseTime = Math.round((j.avg_processing_time ?? 0) * 1000);
   const series = hideGraph ? [] : buildBars(j.dns_queries ?? [], j.blocked_filtering ?? []);
-  let topBlockedDomains: DnsStats['topBlockedDomains'] = [];
+  const topBlockedDomains: DnsStats['topBlockedDomains'] = [];
   if (!hideTopDomains && j.top_blocked_domains) {
-    const raw = j.top_blocked_domains.slice(0, 5);
-    topBlockedDomains = raw
-      .map((m) => {
-        const domain = Object.keys(m)[0] ?? '';
-        const count = m[domain] ?? 0;
-        return { domain, percentBlocked: blockedQueries > 0 ? Math.round((count / blockedQueries) * 100) : 0 };
-      })
-      .filter((d) => d.domain);
+    for (const m of j.top_blocked_domains.slice(0, 5)) {
+      const domain = Object.keys(m)[0] ?? '';
+      if (!domain) continue;
+      const count = m[domain] ?? 0;
+      topBlockedDomains.push({ domain, percentBlocked: blockedQueries > 0 ? Math.round((count / blockedQueries) * 100) : 0 });
+    }
   }
   return {
     totalQueries,

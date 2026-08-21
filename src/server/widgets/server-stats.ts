@@ -36,9 +36,14 @@ async function localServer(name?: string): Promise<ServerInfo> {
       used: (memData?.active ?? memData?.used ?? 0) as number,
       isAvailable: !!memData,
     },
-    mountpoints: (Array.isArray(fs) ? fs : [])
-      .filter((d) => d.mount && d.size)
-      .map((d) => ({ path: String(d.mount), used: Number(d.used ?? 0), total: Number(d.size ?? 0) })),
+    mountpoints: (() => {
+      const out: ServerInfo['mountpoints'] = [];
+      for (const d of Array.isArray(fs) ? (fs as Array<Record<string, unknown>>) : []) {
+        if (!d.mount || !d.size) continue;
+        out.push({ path: String(d.mount), used: Number(d.used ?? 0), total: Number(d.size ?? 0) });
+      }
+      return out;
+    })(),
     isReachable: true,
   };
 }

@@ -116,8 +116,8 @@ export function DnsStatsWidget({ config, data, error, isLoading }: WidgetCompone
               </svg>
             </div>
             <div className={styles.columns}>
-              {d.series.map((pt, i) => (
-                <div key={i} className={styles.column} data-testid="dns-column">
+              {d.series.map((pt, idx) => (
+                <div key={d.timeLabels[idx] ?? String(pt.queries)} className={styles.column} data-testid="dns-column">
                   <div className={styles.tip} data-testid="dns-tip">
                     <div>
                       <div className={styles.tipValue}>{fmt(pt.queries)}</div>
@@ -141,7 +141,7 @@ export function DnsStatsWidget({ config, data, error, isLoading }: WidgetCompone
                     </div>
                   ) : null}
                   <div className={styles.time} data-testid="dns-time">
-                    {d.timeLabels[i] ?? ''}
+                    {d.timeLabels[idx] ?? ''}
                   </div>
                 </div>
               ))}
