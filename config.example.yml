@@ -1,15 +1,10 @@
-# Glimpse showcase — flat glance-faithful demo (4 pages, hide-headers, Singapore).
-# Copy to config.yml and edit. See README for full widget reference.
-# Pages: Home (daily feeds) · Dev (releases / repos / videos) · Social (collage / reddit) · Lab (homelab).
-# Flat style: 1px border / 5px radius / JetBrains Mono / no shadows — applied by the theme, not the config.
-# videos: @handle primary, UC fallback — channels accept "@handle" (easy, e.g. @Fireship, @spokeishere, @Bug-I, @CalebWritesCode, @AZisk) or UC IDs (UC...) — both resolve via handle→UC cache (youtube.com/@handle + Mozilla UA) to the same YouTube RSS feed.
-# Singapore weather repeated on Home/Dev/Lab for parity.
+# Glimpse — curated demo (4 pages, hide-headers, Singapore).
+# Tiling: Home/Dev/Lab = columns (small stays 300px), Social = collage bento (340px).
+# New widgets: server-stats / dns-stats / docker-containers (all homelab, on Lab).
 pages:
   - name: Home
     slug: home
     hide-headers: true
-    # columns (default) keeps small at 300px — preferred-size for clock/weather/calendar
-    # (previous collage+320 stretched small to ~500px). Social keeps collage as bento demo.
     head-widgets:
       - type: search
         placeholder: Search the web or jump with a bang…
@@ -113,20 +108,16 @@ pages:
           - type: videos
             title: Tech — recent
             limit: 9
-            # style: horizontal-cards (1 row + overflow) | grid-cards (wrap) | vertical-list (rows) (default: horizontal-cards)
-            # channels: @handle primary (easy) — UC fallback also works
-            #   @handle: "@Fireship" / "@spokeishere" / "@Bug-I" / "@CalebWritesCode" / "@AZisk" → resolved via youtube.com/@handle (Mozilla UA + handleChannelCache) to UC
-            #   UC ID: "UCsBjURrPoezykLs9EqgamOA" also works — use what you know, mix freely. Bare handles ("spokeishere") normalized to @handle.
             style: grid-cards
             channels:
-              - "@Fireship"               # → UCsBjURrPoezykLs9EqgamOA (UC fallback: same feed via channel_id)
-              - "@ByCloud"                # → UC6r0JH23PKZfogSwn2Q-oMw
-              - "@BetterStack"            # → UCkVfrGwV-iG9bSsgCbrNPxQ
-              - "@Bug-I"                  # https://www.youtube.com/@Bug-I → UCeUHo1UGx4p97AQllOYuneA — hyphen test
-              - "@CalebWritesCode"        # https://www.youtube.com/@CalebWritesCode → UCuU9jE4MHHEIyYMbDfUPSew
-              - "@AZisk"                  # https://www.youtube.com/@AZisk → UCajiMK_CY9icRhLepS8_3ug
-              - "@JiaBinHuang"            # → UCkQS_dP6GJTmYnMlox-YiKQ — also works as UC ID fallback
-              # UC fallback example (uncomment to use): UCsBjURrPoezykLs9EqgamOA  # same as @Fireship
+              - UCsBjURrPoezykLs9EqgamOA
+              - "@ByCloud"
+              - "@BetterStack"
+              - "@Bug-I"
+              - "@CalebWritesCode"
+              - "@AZisk"
+              - UCkQS_dP6GJTmYnMlox-YiKQ
+              - "@Fireship"
           - type: repository
             repository: glanceapp/glance
             pull-requests-limit: 5
@@ -164,53 +155,38 @@ pages:
     slug: social
     hide-headers: true
     tiling: collage
-    min-column-width: 320
+    min-column-width: 340
     columns:
       - size: full
-        span: 2
         widgets:
-          - type: split-column
-            widgets:
-              - type: videos
-                title: Tech creators
-                limit: 6
-                # style: horizontal-cards (1 row + overflow) | grid-cards (wrap) | vertical-list (rows) (default: horizontal-cards)
-                # channels: @handle primary — e.g. "@Fireship" / "@spokeishere" / "@Bug-I" all resolve via youtube.com/@handle + cache
-                style: vertical-list
-                channels:
-                  - "@Fireship"               # → UCsBjURrPoezykLs9EqgamOA (UC fallback: UCsBjURrPoezykLs9EqgamOA also works)
-                  - "@ByCloud"                # → UC6r0JH23PKZfogSwn2Q-oMw
-                  - "@BetterStack"            # → UCkVfrGwV-iG9bSsgCbrNPxQ
-              - type: videos
-                title: Minecraft — Unstable Universe & friends
-                limit: 3
-                # style: horizontal-cards (1 row + overflow) | grid-cards (wrap) | vertical-list (rows) (default: horizontal-cards)
-                # @handle primary — mix UC and @handle freely; handles with hyphens like @Bug-I also work
-                # All @handles resolve via handle→UC cache (youtube.com/@handle, Mozilla UA). Try lower-case "@spokeishere" or bare "spokeishere" too.
-                style: grid-cards
-                channels:
-                  - "@UnstableUniverse"       # → UCGwHHBGD-1ysDvq1Z4xXw7g (also as UC fallback)
-                  - "@ParrotX2"               # → UCPLMPHT-d8GZOqL_AHJFdQQ
-                  - "@Wemmbu"                 # → UCkzzNLnuM-VsATWC53ehwOQ (@wemmbumc)
-                  - "@FlameFrags"             # → UCkvg04omHN08nuKdvKZoNuA
-                  - "@SpokeIsHere"            # → UCk2uxbWi5py_iJXaEsh2YRA — also "@spokeishere" lower-case / bare "spokeishere"
+          - type: videos
+            title: Tech creators
+            limit: 6
+            style: vertical-list
+            channels:
+              - UCsBjURrPoezykLs9EqgamOA
+              - "@ByCloud"
+              - "@BetterStack"
+      - size: full
+        widgets:
+          - type: videos
+            title: Minecraft
+            limit: 3
+            style: grid-cards
+            channels:
+              - UCGwHHBGD-1ysDvq1Z4xXw7g
+              - UCPLMPHT-d8GZOqL_AHJFdQQ
+              - UCkzzNLnuM-VsATWC53ehwOQ
+              - "@SpokeIsHere"
+      - size: small
+        widgets:
           - type: reddit
             subreddit: selfhosted
-            limit: 10
+            limit: 8
             collapse-after: 5
             show-thumbnails: true
             show-flairs: true
             source-header: true
-            # Reddit anonymous JSON now 403s; add one of:
-            # app-auth: { id: "CLIENT_ID", secret: "CLIENT_SECRET" }  # POST https://www.reddit.com/api/v1/access_token then GET https://oauth.reddit.com
-            # proxy: "https://user:pass@proxy.example.com:8080"
-            # request-url-template: "https://proxy.local/{REQUEST-URL}"
-          # - type: lobsters
-          #   limit: 8
-          #   collapse-after: 5
-          #   source-header: true
-      - size: full
-        widgets:
           - type: bookmarks
             groups:
               - title: Social
@@ -227,15 +203,29 @@ pages:
   - name: Lab
     slug: lab
     hide-headers: true
-    # Homelab showcase — every required Lab widget in one page.
-    # Columns stay `columns` (flex) so small = 300px fixed; Lab intentionally
-    # repeats weather/calendar/todo/markets/bookmarks/videos/releases/monitor
-    # so all four pages together exercise every element/usecase even repeated.
+    # Homelab showcase — columns so small stays 300px, full is the main stage.
+    # New homelab widgets (server-stats / dns-stats / docker-containers) live here.
     columns:
       - size: small
         widgets:
           - type: calendar
             first-day-of-week: monday
+          - type: server-stats
+            title: Servers
+            servers:
+              - type: local
+                name: Glimpse
+          - type: dns-stats
+            title: Pi-hole
+            service: pihole
+            url: http://pihole.lab
+            hide-graph: false
+            hide-top-domains: false
+          - type: docker-containers
+            title: Containers
+            sock-path: /var/run/docker.sock
+            running-only: true
+            hide-by-default: false
           - type: todo
             id: lab-todo
           - type: weather
@@ -305,13 +295,6 @@ pages:
                 title: Authentik
               - url: https://code.lab
                 title: Gitea
-          - type: custom-api
-            title: Homelab stats
-            url: https://api.github.com/repos/home-assistant/core
-            options:
-              path: $.stargazers_count
-              title: Home Assistant stars
-              description: github.com/home-assistant/core — proxy for lab stats
           - type: rss
             title: Self-hosted blogs
             limit: 10
@@ -339,21 +322,16 @@ pages:
             collapse-after: 5
             show-thumbnails: true
             source-header: true
-            # Reddit anonymous JSON now 403s; add one of:
-            # app-auth: { id: "CLIENT_ID", secret: "CLIENT_SECRET" }
-            # proxy: "https://user:pass@proxy.example.com:8080"
       - size: small
         widgets:
           - type: videos
             title: Homelab — recent
             limit: 8
             style: grid-cards
-            # @handle primary — UC fallback also works; all resolve via handle→UC cache
             channels:
-              - "@LinusTechTips"          # Linus Tech Tips → UCXuqSBlHAE6Xw-yeJA0Tunw (UC fallback: UCXuqSBlHAE6Xw-yeJA0Tunw)
-              - "@jeffgeerling"           # Jeff Geerling → UCR-DXc1voovS8nhAvccRZhg
-              - "@Fireship"               # → UCsBjURrPoezykLs9EqgamOA
-              - "@MKBHD"                  # Marques Brownlee → UCBJycsmduvYEL83R_U4JriQ
+              - UCXuqSBlHAE6Xw-yeJA0Tunw
+              - UCR-DXc1voovS8nhAvccRZhg
+              - UCsBjURrPoezykLs9EqgamOA
           - type: releases
             title: Homelab releases
             repositories:
