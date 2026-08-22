@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import type { ClockConfig } from '../../../shared/widgets/clock';
+import { CLOCK_DEFAULTS, type ClockConfig } from '../../../shared/widgets/clock';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import styles from './clock.module.css';
+void CLOCK_DEFAULTS;
 
 /** Formatters cached per hour12/timezone combo (rebuilt each tick otherwise). */
 const timeFormatters = new Map<string, Intl.DateTimeFormat>();

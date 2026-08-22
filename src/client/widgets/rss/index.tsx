@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from '@astryxdesign/core';
 import { ChevronRight } from 'lucide-react';
-import type { RssConfig } from '../../../shared/widgets/feeds';
+import { RSS_DEFAULTS, type RssConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { formatAge } from '../useRelativeTime';
@@ -9,6 +9,7 @@ import type { RssItem } from '../../../shared/widgets/payloads';
 import styles from './rss.module.css';
 import Feed, { type FeedItem } from '../feed/Feed';
 import chromeStyles from '../../components/widget-chrome.module.css';
+void RSS_DEFAULTS;
 
 // glance image-placeholder icon (heroicons photo, stroke inherits)
 const IMAGE_ICON_PATH =

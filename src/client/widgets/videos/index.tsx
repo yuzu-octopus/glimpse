@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from '@astryxdesign/core';
 import { ChevronRight } from 'lucide-react';
-import type { VideosConfig } from '../../../shared/widgets/keyed';
+import { VIDEOS_DEFAULTS, type VideosConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { useAge } from '../useAge';
@@ -34,7 +34,7 @@ function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as VideosConfig;
   const loading = isLoading ?? ((data as unknown) == null && !error);
   const videos = ((data as { videos?: Video[] } | null)?.videos ?? []) as Video[];
-  const style = cfg.style ?? 'horizontal-cards';
+  const style = cfg.style ?? VIDEOS_DEFAULTS.style;
   const collapseAfter = style === 'grid-cards' ? cfg['collapse-after-rows'] : cfg['collapse-after'];
   const [expanded, setExpanded] = useState(false);
 

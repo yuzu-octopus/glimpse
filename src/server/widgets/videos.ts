@@ -1,4 +1,4 @@
-import { videosSchema } from '../../shared/widgets/keyed';
+import { VIDEOS_DEFAULTS, videosSchema } from '../../shared/widgets/keyed';
 import { fetchText } from './http';
 import { registerWidget } from './registry';
 import type { Video } from '../../shared/widgets/payloads';
@@ -271,6 +271,6 @@ registerWidget('videos', async (ctx, config) => {
     return tb - ta;
   });
 
-  const limit = cfg.limit ?? 5;
+  const limit = cfg.limit ?? VIDEOS_DEFAULTS.limit;
   return { videos: videos.slice(0, limit) };
 });

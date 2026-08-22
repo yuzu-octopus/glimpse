@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { ConfigSchema } from './config';
+import { ConfigSchema, resolveSpan } from './config';
+
+declare const Bun: { YAML: { parse(s: string): unknown } } | undefined;
 
 const validYaml = {
   pages: [
@@ -189,7 +191,7 @@ describe('ConfigSchema', () => {
   });
 
   it('rejects out-of-range or non-number column spans', () => {
-    for (const span of [0, 5, '2', 1.5, -1]) {
+    for (const span of [0, 13, '2', 1.5, -1]) {
       const r = ConfigSchema.safeParse({
         pages: [
           {
@@ -344,14 +346,202 @@ describe('ConfigSchema', () => {
     expect(monitor.success).toBe(true);
   });
 
-  it('minecraft example limit is 3', () => {
+  it('minecraft example limit is 9', () => {
     const raw = readFileSync('config.example.yml', 'utf8');
-    expect(raw).toMatch(/Minecraft[\s\S]*?limit:\s*3/);
+    expect(raw).toMatch(/Minecraft[\s\S]*?limit:\s*9/);
   });
 
   it('WidgetType has no twitch', () => {
     const src = readFileSync('src/shared/widgets/keyed.ts', 'utf8');
     expect(src).not.toMatch(/twitch-/);
     expect(src).not.toMatch(/twitch\.ts/);
+  });
+
+  it('infers span 9/3 for full+small via ConfigSchema and resolveSpan', () => {
+    const r = ConfigSchema.safeParse({
+      pages: [
+        {
+          name: 'X',
+          columns: [
+            { size: 'full', widgets: [{ type: 'clock' }] },
+            { size: 'small', widgets: [{ type: 'clock' }] },
+          ],
+        },
+      ],
+    });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(resolveSpan(r.data.pages[0].columns!)).toEqual([9, 3]);
+    }
+    // reverse order
+    expect(resolveSpan([{ size: 'small', widgets: [] }, { size: 'full', widgets: [] }])).toEqual([3, 9]);
+    // single
+    expect(resolveSpan([{ size: 'full', widgets: [] }])).toEqual([12]);
+    expect(resolveSpan([{ size: 'small', widgets: [] }])).toEqual([3]);
+  });
+
+  it('infers span 6/6 for full+full', () => {
+    expect(resolveSpan([{ size: 'full', widgets: [] }, { size: 'full', widgets: [] }])).toEqual([6, 6]);
+  });
+
+  it('infers span 4/4/4 for three full', () => {
+    expect(
+      resolveSpan([
+        { size: 'full', widgets: [] },
+        { size: 'full', widgets: [] },
+        { size: 'full', widgets: [] },
+      ]),
+    ).toEqual([4, 4, 4]);
+  });
+
+  it('infers span 6/3/3 with full position varies', () => {
+    expect(
+      resolveSpan([
+        { size: 'full', widgets: [] },
+        { size: 'small', widgets: [] },
+        { size: 'small', widgets: [] },
+      ]),
+    ).toEqual([6, 3, 3]);
+    expect(
+      resolveSpan([
+        { size: 'small', widgets: [] },
+        { size: 'full', widgets: [] },
+        { size: 'small', widgets: [] },
+      ]),
+    ).toEqual([3, 6, 3]);
+    expect(
+      resolveSpan([
+        { size: 'small', widgets: [] },
+        { size: 'small', widgets: [] },
+        { size: 'full', widgets: [] },
+      ]),
+    ).toEqual([3, 3, 6]);
+  });
+
+  it('explicit span 4/8 wins over size', () => {
+    const r = ConfigSchema.safeParse({
+      pages: [
+        {
+          name: 'X',
+          columns: [
+            { size: 'full', span: 4, widgets: [{ type: 'clock' }] },
+            { size: 'full', span: 8, widgets: [{ type: 'clock' }] },
+          ],
+        },
+      ],
+    });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(resolveSpan(r.data.pages[0].columns!)).toEqual([4, 8]);
+    }
+    // direct explicit without ConfigSchema
+    expect(
+      resolveSpan([
+        { size: 'small', span: 4, widgets: [] },
+        { size: 'small', span: 8, widgets: [] },
+      ]),
+    ).toEqual([4, 8]);
+  });
+
+  it('all explicit spans return directly', () => {
+    expect(
+      resolveSpan([
+        { size: 'full', span: 2, widgets: [] },
+        { size: 'full', span: 10, widgets: [] },
+      ]),
+    ).toEqual([2, 10]);
+    expect(
+      resolveSpan([
+        { size: 'full', span: 4, widgets: [] },
+        { size: 'full', span: 4, widgets: [] },
+        { size: 'full', span: 4, widgets: [] },
+      ]),
+    ).toEqual([4, 4, 4]);
+  });
+
+  it('throws on mixed explicit and size-derived spans', () => {
+    expect(() => resolveSpan([{ size: 'full', span: 4, widgets: [] }, { size: 'small', widgets: [] }])).toThrow(
+      /mix of explicit span and size not allowed/,
+    );
+  });
+
+  it('ConfigSchema still parses old size-only configs', () => {
+    const r = ConfigSchema.safeParse({
+      pages: [
+        {
+          name: 'Home',
+          columns: [
+            { size: 'small', widgets: [{ type: 'clock' }] },
+            { size: 'full', widgets: [{ type: 'rss', feeds: [{ url: 'https://example.com/feed.xml' }] }] },
+          ],
+        },
+      ],
+    });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.pages[0].columns![0].span).toBeUndefined();
+      expect(resolveSpan(r.data.pages[0].columns!)).toEqual([3, 9]);
+    }
+  });
+
+  it('example config is handle-only with Social 4/8 spans', () => {
+    const raw = readFileSync('config.example.yml', 'utf8');
+    expect(raw).not.toMatch(/UC[A-Za-z0-9_-]{22}/);
+    expect(raw).toContain('@SpokeIsHere');
+    expect(raw).toContain('@Evourai');
+    expect(raw).toContain('@wemmbu');
+    expect(raw).toContain('@ParroX2');
+    // Bun.YAML is available when running under Bun; fallback to raw checks under Node vitest
+    if (typeof Bun !== 'undefined' && Bun.YAML) {
+      const parsed: unknown = Bun.YAML.parse(raw);
+      expect(parsed).toBeTruthy();
+      const r = ConfigSchema.safeParse(parsed);
+      expect(r.success).toBe(true);
+      if (r.success) {
+        const social = r.data.pages.find((p) => p.slug === 'social');
+        expect(social).toBeDefined();
+        expect(social!.columns).toHaveLength(2);
+        expect(social!.columns![0].span).toBe(4);
+        expect(social!.columns![1].span).toBe(8);
+        expect(social!.columns![0].size).toBe('full');
+        expect(social!.columns![1].size).toBe('full');
+        const leftVideos = social!.columns![0].widgets.find((w) => w.type === 'videos') as unknown as {
+          channels: string[];
+          limit: number;
+          style: string;
+        };
+        expect(leftVideos.channels).toEqual(['@Fireship', '@ByCloud', '@BetterStack']);
+        expect(leftVideos.limit).toBe(6);
+        expect(leftVideos.style).toBe('vertical-list');
+        const rightVideos = social!.columns![1].widgets.find((w) => w.type === 'videos') as unknown as {
+          channels: string[];
+          limit: number;
+          style: string;
+        };
+        expect(rightVideos.channels).toEqual([
+          '@wemmbu',
+          '@ParroX2',
+          '@FlameFrags',
+          '@SpokeIsHere',
+          '@Evourai',
+          '@Minotaurmc',
+          '@TheNamesSX',
+        ]);
+        expect(rightVideos.limit).toBe(9);
+        expect(rightVideos.style).toBe('grid-cards');
+        const reddit = social!.columns![0].widgets.find((w) => w.type === 'reddit') as unknown as Record<
+          string,
+          unknown
+        >;
+        expect(reddit['limit']).toBe(8);
+        expect(reddit['collapse-after']).toBe(5);
+      }
+    } else {
+      expect(raw).toMatch(/span:\s*4/);
+      expect(raw).toMatch(/span:\s*8/);
+      expect(raw).toMatch(/Tech creators[\s\S]*?limit:\s*6/);
+      expect(raw).toMatch(/Minecraft[\s\S]*?limit:\s*9/);
+      expect(raw).toMatch(/@Evourai/);
+    }
   });
 });

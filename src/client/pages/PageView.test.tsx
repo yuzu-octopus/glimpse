@@ -496,7 +496,7 @@ describe('PageView', () => {
   it('page content has uniform bottom gap regardless of tiling', () => {
     const css = readFileSync('src/client/pages/page.module.css', 'utf8');
     // .page must keep both padding-block and explicit padding-bottom (calc allowed) so collage stretch can't collapse the footer gap
-    expect(css).toMatch(/\.page\s*\{[^}]*padding-bottom:\s*(var\(--space-gap\)|calc\(var\(--space-gap\))/);
+    expect(css).toMatch(/\.page\s*\{[^}]*padding-bottom:\s*(var\(--(space-gap|widget-gap)\)|calc\(var\(--(space-gap|widget-gap)\))/);
     expect(css).toMatch(/\.autoTiling\s*\{[^}]*align-content:\s*start/);
   });
   it('skeleton mirrors columns (no CLS)', () => {
@@ -633,5 +633,51 @@ describe('PageView', () => {
     expect(css).toMatch(/\.bentoGrid\s*\{[^}]*grid-template-columns:\s*1fr\s*!important/);
     expect(css).toMatch(/\.bentoItem\s*\{[^}]*grid-column:\s*1\s*\/\s*-1\s*!important/);
     expect(css).toMatch(/\.bentoItem\s*\{[^}]*grid-row:\s*auto\s*!important/);
+  });
+
+  it('columns css: 12-col grid, --col-span sizing, mobile collapse to full width', () => {
+    const css = readFileSync('src/client/pages/page.module.css', 'utf8');
+    expect(css).toMatch(
+      /\.columns\s*\{[^}]*display:\s*grid[^}]*repeat\(12,\s*minmax\(0,\s*1fr\)\)[^}]*gap:\s*var\(--widget-gap\)[^}]*align-content:\s*start/,
+    );
+    expect(css).toMatch(/\.column\s*\{[^}]*grid-column:\s*span var\(--col-span,\s*12\)/);
+    const media = css.slice(css.indexOf('@media (max-width: 768px)'));
+    expect(media).toMatch(/\.columns \.column\s*\{[^}]*grid-column:\s*1 \/ -1/);
+  });
+
+  it('Social 4/8 columns map to spans (--col-span)', async () => {
+    renderPage(
+      payload({
+        slug: 'social',
+        name: 'Social',
+        tiling: 'columns',
+        columns: [
+          { size: 'full', span: 4, widgets: [{ type: 'clock', config: { type: 'clock', title: 'Left' }, data: null }] },
+          { size: 'full', span: 8, widgets: [{ type: 'clock', config: { type: 'clock', title: 'Right' }, data: null }] },
+        ],
+      }),
+    );
+    // wait past the loading-fallback column: only the fetched payload's
+    // two grid columns carry --col-span
+    await waitFor(() => expect(screen.getAllByTestId('column')).toHaveLength(2));
+    const cols = screen.getAllByTestId('column');
+    expect(cols[0].style.getPropertyValue('--col-span')).toBe('4');
+    expect(cols[1].style.getPropertyValue('--col-span')).toBe('8');
+  });
+
+  it('size-derived spans map via resolveSpan (full+small → 9/3)', async () => {
+    renderPage(
+      payload({
+        tiling: 'columns',
+        columns: [
+          { size: 'full', widgets: [{ type: 'clock', config: { type: 'clock', title: 'Wide' }, data: null }] },
+          { size: 'small', widgets: [{ type: 'clock', config: { type: 'clock', title: 'Narrow' }, data: null }] },
+        ],
+      }),
+    );
+    await waitFor(() => expect(screen.getAllByTestId('column')).toHaveLength(2));
+    const cols = screen.getAllByTestId('column');
+    expect(cols[0].style.getPropertyValue('--col-span')).toBe('9');
+    expect(cols[1].style.getPropertyValue('--col-span')).toBe('3');
   });
 });

@@ -1,4 +1,4 @@
-import { releasesSchema } from '../../shared/widgets/feeds';
+import { RELEASES_DEFAULTS, releasesSchema } from '../../shared/widgets/feeds';
 import { registerWidget, type WidgetFetchContext } from './registry';
 import { fetchJson } from './http';
 import type { Release } from '../../shared/widgets/payloads';
@@ -154,7 +154,7 @@ async function fetchReleases(
 
 registerWidget('releases', async (ctx, config) => {
   const cfg = releasesSchema.parse(config);
-  const limit = cfg.limit ?? 5;
+  const limit = cfg.limit ?? RELEASES_DEFAULTS.limit;
   const githubToken = cfg.token ?? ctx.env.GITHUB_TOKEN;
 
   const settled = await Promise.allSettled(

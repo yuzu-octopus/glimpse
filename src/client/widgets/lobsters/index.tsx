@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
-import type { LobstersConfig } from '../../../shared/widgets/keyed';
+import { LOBSTERS_DEFAULTS, type LobstersConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { formatAge } from '../useRelativeTime';
 import type { LobsterPost } from '../../../shared/widgets/payloads';
 import Feed, { type FeedItem } from '../feed/Feed';
 import chromeStyles from '../../components/widget-chrome.module.css';
+void LOBSTERS_DEFAULTS;
 
 function domainOf(url: string): string | null {
   try {

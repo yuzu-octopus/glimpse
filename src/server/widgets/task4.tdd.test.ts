@@ -85,8 +85,9 @@ describe('T4 TDD failing', () => {
     // advance past STATIC_TTL_MS (3_600_000) + a bit
     shouldFail = true;
     vi.advanceTimersByTime(3_600_000 + 1000);
-    // need to also let real timers for fetch? use fake but fetch mock is sync promise
-    const second = (await fetcher(ctx, cfg)) as { videos: Video[] };
+    const pending = fetcher(ctx, cfg) as Promise<{ videos: Video[] }>;
+    await vi.advanceTimersByTimeAsync(4000);
+    const second = await pending;
     expect(second.videos[0].title).toBe('V1');
     vi.useRealTimers();
   });

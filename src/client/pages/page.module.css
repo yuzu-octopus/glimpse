@@ -24,7 +24,7 @@
   padding-block: var(--space-gap);
   /* uniform bottom gap like glance .page — explicit !important to survive grid stretch / flex collapse
      and ensure SHOW LESS lobsters never touches viewport bottom */
-  padding-bottom: var(--space-gap) !important;
+  padding-bottom: var(--widget-gap) !important;
   padding-inline: var(--space-viewport);
   width: 100%;
   box-sizing: border-box;
@@ -73,13 +73,12 @@
   margin-bottom: var(--widget-gap);
 }
 
-/* page-columns: flex row, gap var(--widget-gap). Column sizing lives in
-   .fullColumn/.smallColumn — no inline grid template. */
+/* page-columns: 12-col grid, gap var(--widget-gap). Column sizing via --col-span. */
 .columns {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: var(--widget-gap);
-  /* Query container: widget-internal container queries respond to the real
-     column width, and it anchors a future band-snapped tiling variant. */
+  align-content: start;
   container-type: inline-size;
 }
 
@@ -118,10 +117,6 @@
   align-items: stretch; /* tiles fill their spanned cell */
   align-content: start;
   container-type: inline-size;
-  /* bottom spacer: grid gap only between rows, not after last row —
-     explicit padding guarantees gap below last tile (Social split-column
-     videos + lobsters) even if .page height collapses */
-  padding-bottom: var(--widget-gap);
 }
 
 /* auto/collage mode treats every column as a tile — kill the explicit-mode
@@ -183,6 +178,7 @@
 }
 
 .column {
+  grid-column: span var(--col-span, 12);
   min-width: 0;
 }
 
@@ -199,6 +195,8 @@
 .columnWidgets {
   display: grid;
   gap: var(--widget-gap);
+  align-content: start;
+  height: auto;
   min-width: 0;
 }
 
@@ -309,8 +307,8 @@
 }
 
 @media (max-width: 768px) {
-  .columns {
-    flex-direction: column;
+  .columns .column {
+    grid-column: 1 / -1;
   }
   /* auto grid collapses to a single track; span hints must not open
      implicit tracks (1 / -1 forces full width of the one explicit track) */

@@ -1,4 +1,4 @@
-import { repositorySchema } from '../../shared/widgets/keyed';
+import { REPOSITORY_DEFAULTS, repositorySchema } from '../../shared/widgets/keyed';
 import { fetchJson } from './http';
 import { registerWidget } from './registry';
 import type { RepoPull } from '../../shared/widgets/payloads';
@@ -35,12 +35,12 @@ registerWidget('repository', async (ctx, config) => {
     fetchJson<GitHubRepo>(ctx, base, { headers }),
     fetchJson<GitHubIssueLike[]>(
       ctx,
-      `${base}/pulls?state=open&per_page=${cfg['pull-requests-limit'] ?? 5}`,
+      `${base}/pulls?state=open&per_page=${cfg['pull-requests-limit'] ?? REPOSITORY_DEFAULTS['pull-requests-limit']}`,
       { headers },
     ),
     fetchJson<GitHubIssueLike[]>(
       ctx,
-      `${base}/issues?state=open&per_page=${cfg['issues-limit'] ?? 5}`,
+      `${base}/issues?state=open&per_page=${cfg['issues-limit'] ?? REPOSITORY_DEFAULTS['issues-limit']}`,
       { headers },
     ),
   ]);

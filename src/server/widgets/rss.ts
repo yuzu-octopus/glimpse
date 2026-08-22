@@ -1,4 +1,4 @@
-import { rssSchema } from '../../shared/widgets/feeds';
+import { RSS_DEFAULTS, rssSchema } from '../../shared/widgets/feeds';
 import { registerWidget } from './registry';
 import { fetchText } from './http';
 import { widgetLimit } from './runtime';
@@ -172,7 +172,7 @@ registerWidget('rss', async (ctx, config) => {
     cfg.feeds.map(async (feed) => {
       const raw = await fetchText(ctx, feed.url, { headers: feed.headers });
       const parsed = parseFeed(raw);
-      const perFeedLimit = feed.limit ?? widgetLimit(cfg);
+      const perFeedLimit = feed.limit ?? widgetLimit(cfg, RSS_DEFAULTS.limit);
       const slice = parsed.items.slice(0, perFeedLimit);
       return slice.map((item) => ({
         title: itemTitle(item),
@@ -200,6 +200,6 @@ registerWidget('rss', async (ctx, config) => {
       return tb - ta;
     });
   }
-  const limit = widgetLimit(cfg);
+  const limit = widgetLimit(cfg, RSS_DEFAULTS.limit);
   return { items: items.slice(0, limit) };
 });

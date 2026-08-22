@@ -1,5 +1,5 @@
 import { JSONPath } from 'jsonpath-plus';
-import { customApiSchema } from '../../shared/widgets/keyed';
+import { CUSTOM_API_DEFAULTS, customApiSchema } from '../../shared/widgets/keyed';
 import { registerWidget } from './registry';
 import type { CustomApiItem } from '../../shared/widgets/payloads';
 
@@ -79,7 +79,7 @@ registerWidget('custom-api', async (ctx, config) => {
   const rootResult = JSONPath({ path: cfg.options.path, json: payload as object }) as unknown;
   const list: unknown[] = Array.isArray(rootResult) ? rootResult : [rootResult];
 
-  const limit = cfg.limit ?? 5;
+  const limit = cfg.limit ?? CUSTOM_API_DEFAULTS.limit;
   const sliced = list.slice(0, limit);
   const items: CustomApiItem[] = sliced.map((item) => {
     const mapped: CustomApiItem = {

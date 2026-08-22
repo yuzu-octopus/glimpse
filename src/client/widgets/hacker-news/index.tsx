@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
-import type { HackerNewsConfig } from '../../../shared/widgets/feeds';
+import { HACKER_NEWS_DEFAULTS, type HackerNewsConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { formatAge } from '../useRelativeTime';
 import type { HnPost } from '../../../shared/widgets/payloads';
 import Feed, { type FeedItem } from '../feed/Feed';
 import chromeStyles from '../../components/widget-chrome.module.css';
+void HACKER_NEWS_DEFAULTS;
 
 /** post source host, minus www (glance rss-list shows the channel/domain). */
 function domainOf(url: string): string | null {

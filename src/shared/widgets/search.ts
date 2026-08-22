@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { sharedWidgetFields, type Pref } from './shared';
 
-// Defaults — change here (cols/rows on 12-col, priority 0-10, zone main|sidebar, resizable)
+// ── per-widget defaults (file header owns DEFAULTS + Schema + PREF) ──
+export const SEARCH_DEFAULTS = { bangs: [], 'new-tab': true } as const;
 export const SEARCH_PREF: Pref = { cols: 4, rows: 1, resizable: false, priority: 9, zone: 'main', preferredWidth: 300, preferredHeight: 90 };
 
 export const searchSchema = z.object({
@@ -21,8 +22,8 @@ export const searchSchema = z.object({
         url: z.string(),
       }),
     )
-    .default([]),
-  'new-tab': z.boolean().default(true),
+    .default([...SEARCH_DEFAULTS.bangs]),
+  'new-tab': z.boolean().default(SEARCH_DEFAULTS['new-tab']),
   autofocus: z.boolean().optional(),
   placeholder: z.string().optional(),
   target: z.string().optional(),

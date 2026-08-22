@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { sharedWidgetFields, type Pref } from './shared';
 
-// Defaults — change here (cols/rows on 12-col, priority 0-10, zone main|sidebar, resizable)
+// ── per-widget defaults (file header owns DEFAULTS + Schema + PREF) ──
+export const SERVER_STATS_DEFAULTS = { servers: [{ type: 'local' as const }] } as const;
 export const SERVER_STATS_PREF: Pref = { cols: 6, rows: 2, resizable: false, priority: 7, zone: 'main', preferredWidth: 340, preferredHeight: 240 };
 
 /** One monitored server: the local machine, or a remote Glimpse instance
@@ -19,7 +20,7 @@ export const serverStatsSchema = z
     type: z.literal('server-stats'),
     ...sharedWidgetFields,
     /** Defaults to a single local server. */
-    servers: z.array(serverEntrySchema).min(1).default([{ type: 'local' }]),
+    servers: z.array(serverEntrySchema).min(1).default(SERVER_STATS_DEFAULTS.servers as unknown as { type: 'local' | 'remote'; url?: string; name?: string }[]),
   })
   .loose();
 

@@ -1,12 +1,17 @@
 import { z } from 'zod';
 import { sharedWidgetFields, type Pref } from './shared';
 
-// Defaults — change here (cols/rows on 12-col, priority 0-10, zone main|sidebar, resizable)
+// ── per-widget defaults (file header owns DEFAULTS + Schema + PREF) ──
+export const RSS_DEFAULTS = { limit: 5 } as const;
 export const RSS_PREF: Pref = { cols: null, rows: 3, resizable: true, priority: 10, zone: 'main', preferredWidth: null, preferredHeight: null };
 
+export const HACKER_NEWS_DEFAULTS = { limit: 5 } as const;
 export const HACKER_NEWS_PREF: Pref = { cols: 4, rows: 3, resizable: false, priority: 8, zone: 'main', preferredWidth: null, preferredHeight: null };
+export const REDDIT_DEFAULTS = { limit: 5 } as const;
 export const REDDIT_PREF: Pref = { cols: 4, rows: 3, resizable: false, priority: 7, zone: 'main', preferredWidth: null, preferredHeight: null };
+export const RELEASES_DEFAULTS = { limit: 5 } as const;
 export const RELEASES_PREF: Pref = { cols: 4, rows: 2, resizable: false, priority: 6, zone: 'main', preferredWidth: 360, preferredHeight: 260 };
+export const WEATHER_DEFAULTS = {} as const;
 export const WEATHER_PREF: Pref = { cols: 3, rows: 2, resizable: false, priority: 9, zone: 'sidebar', preferredWidth: 300, preferredHeight: 280 };
 
 const feedSchema = z.object({
@@ -22,7 +27,7 @@ export const rssSchema = z.object({
   type: z.literal('rss'),
   ...sharedWidgetFields,
   feeds: z.array(feedSchema).min(1),
-  limit: z.number().int().min(0).default(5),
+  limit: z.number().int().min(0).default(RSS_DEFAULTS.limit),
   'collapse-after': z.number().int().min(-1).optional(),
   'source-header': z.boolean().optional(),
   style: z
@@ -39,7 +44,7 @@ export type RssConfig = z.infer<typeof rssSchema>;
 export const hackerNewsSchema = z.object({
   type: z.literal('hacker-news'),
   ...sharedWidgetFields,
-  limit: z.number().int().min(0).default(5),
+  limit: z.number().int().min(0).default(HACKER_NEWS_DEFAULTS.limit),
   'sort-by': z.enum(['top', 'new', 'best']).optional(),
   'extra-sort-by': z.enum(['engagement']).optional(),
   'comments-url-template': z.string().optional(),
@@ -55,7 +60,7 @@ export const redditSchema = z.object({
   'sort-by': z.enum(['hot', 'new', 'top', 'rising']).optional(),
   'top-period': z.string().optional(),
   search: z.string().optional(),
-  limit: z.number().int().min(0).default(5),
+  limit: z.number().int().min(0).default(REDDIT_DEFAULTS.limit),
   'collapse-after': z.number().int().min(-1).optional(),
   'source-header': z.boolean().optional(),
   'show-thumbnails': z.boolean().optional(),
@@ -102,7 +107,7 @@ export const releasesSchema = z.object({
   'show-source-icon': z.boolean().optional(),
   token: z.string().optional(),
   'gitlab-token': z.string().optional(),
-  limit: z.number().int().min(0).default(5),
+  limit: z.number().int().min(0).default(RELEASES_DEFAULTS.limit),
   'collapse-after': z.number().int().min(-1).optional(),
 });
 export type ReleasesConfig = z.infer<typeof releasesSchema>;

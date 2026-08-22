@@ -1,5 +1,6 @@
-import { redditSchema } from '../../shared/widgets/feeds';
+import { REDDIT_DEFAULTS, redditSchema } from '../../shared/widgets/feeds';
 import { parseCacheDuration } from '../cache';
+import { fetchWithRetry, type HttpOptions } from './http';
 import { registerWidget, type WidgetFetchContext } from './registry';
 import type { RedditPost } from '../../shared/widgets/payloads';
 interface RedditChild {
@@ -42,16 +43,22 @@ async function getAccessToken(
   return ctx.singleflight.run('reddit:token', async () => {
     const again = ctx.cache.get<string>('reddit:token') ?? ctx.cache.getStale<string>('reddit:token');
     if (again) return again;
-    const res = await ctx.fetch('https://www.reddit.com/api/v1/access_token', {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${btoa(`${appAuth.id}:${appAuth.secret}`)}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': USER_AGENT,
-      },
-      body: 'grant_type=client_credentials',
-    });
-    if (!res.ok) throw new Error(`reddit token: HTTP ${res.status}`);
+    let res: Response;
+    try {
+      res = await fetchWithRetry(ctx, 'https://www.reddit.com/api/v1/access_token', {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${btoa(`${appAuth.id}:${appAuth.secret}`)}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': USER_AGENT,
+        },
+        body: 'grant_type=client_credentials',
+      });
+    } catch (err) {
+      const m = /HTTP (\d+)/.exec(String((err as Error).message));
+      if (m) throw new Error(`reddit token: HTTP ${m[1]}`);
+      throw err;
+    }
     const body = (await res.json()) as { access_token?: string; expires_in?: number };
     if (!body.access_token) throw new Error('reddit token: no access_token in response');
 
@@ -63,7 +70,7 @@ async function getAccessToken(
 
 registerWidget('reddit', async (ctx, config) => {
   const cfg = redditSchema.parse(config);
-  const limit = cfg.limit ?? 5;
+  const limit = cfg.limit ?? REDDIT_DEFAULTS.limit;
   const sort = cfg['sort-by'] ?? 'hot';
   const period = cfg['top-period'] ?? 'day';
 
@@ -89,17 +96,23 @@ registerWidget('reddit', async (ctx, config) => {
     headers.Authorization = `Bearer ${await getAccessToken(ctx, cfg['app-auth'])}`;
   }
 
-  const res = await ctx.fetch(url, {
-    headers,
-    signal: AbortSignal.timeout(proxy?.timeout ? parseCacheDuration(proxy.timeout) : 15_000),
-    ...(proxy ? { proxy: proxy.url } : {}),
-  } as unknown as RequestInit & { proxy?: string });
-  if (!res.ok) {
-    const hint =
-      res.status === 403 && !cfg['app-auth']
-        ? ' — anonymous Reddit JSON is now blocked (403); add reddit.app-auth id/secret or proxy/request-url-template to fetch via OAuth'
-        : '';
-    throw new Error(`HTTP ${res.status} for ${url}${hint}`);
+  let res: Response;
+  try {
+    res = await fetchWithRetry(
+      ctx,
+      url,
+      {
+        headers,
+        timeoutMs: proxy?.timeout ? parseCacheDuration(proxy.timeout) : 15_000,
+        ...(proxy ? { proxy: proxy.url } : {}),
+      } as unknown as HttpOptions & { proxy?: string },
+    );
+  } catch (err) {
+    const msg = String((err as Error).message);
+    if (msg.includes('403') && !cfg['app-auth']) {
+      throw new Error(`${msg} — anonymous Reddit JSON is now blocked (403); add reddit.app-auth id/secret or proxy/request-url-template to fetch via OAuth`);
+    }
+    throw err;
   }
   const listing = (await res.json()) as RedditListing;
 

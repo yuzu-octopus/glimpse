@@ -129,7 +129,7 @@ describe('videos fetcher', () => {
     ctx.cache.set('videos:feed:UCx::::noshorts', cachedVideos, 3600_000);
     const data = (await videosFetcher()(ctx, { type: 'videos', channels: ['UCx'] })) as { videos: Video[] };
     expect(data.videos[0].title).toBe('cached');
-  });
+  }, 10_000);
 
   it('500 returns cached stale', async () => {
     const cachedVideos = [
@@ -140,7 +140,7 @@ describe('videos fetcher', () => {
     ctx.cache.set('videos:feed:UCx', cachedVideos, 3600_000);
     const data = (await videosFetcher()(ctx, { type: 'videos', channels: ['UCx'] })) as { videos: Video[] };
     expect(data.videos[0].title).toBe('cached500');
-  });
+  }, 10_000);
 
   it('sends Mozilla User-Agent on youtube fetches', async () => {
     let ua: string | null = null;

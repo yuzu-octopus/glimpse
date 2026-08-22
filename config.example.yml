@@ -154,10 +154,9 @@ pages:
   - name: Social
     slug: social
     hide-headers: true
-    tiling: collage
-    min-column-width: 340
     columns:
       - size: full
+        span: 4
         widgets:
           - type: videos
             title: Tech creators
@@ -174,17 +173,6 @@ pages:
             show-thumbnails: true
             show-flairs: true
             source-header: true
-      - size: full
-        widgets:
-          - type: videos
-            title: Minecraft
-            limit: 3
-            style: grid-cards
-            channels:
-              - UCGwHHBGD-1ysDvq1Z4xXw7g
-              - UCPLMPHT-d8GZOqL_AHJFdQQ
-              - UCkzzNLnuM-VsATWC53ehwOQ
-              - "@SpokeIsHere"
           - type: bookmarks
             groups:
               - title: Social
@@ -195,6 +183,21 @@ pages:
                     url: https://lobste.rs
                   - title: Twitch
                     url: https://twitch.tv
+      - size: full
+        span: 8
+        widgets:
+          - type: videos
+            title: Minecraft
+            limit: 9
+            style: grid-cards
+            channels:
+              - "@wemmbu"
+              - "@ParroX2"
+              - "@FlameFrags"
+              - "@SpokeIsHere"
+              - "@Evourai"
+              - "@Minotaurmc"
+              - "@TheNamesSX"
           - type: todo
             id: social-todo
   - name: Lab
@@ -326,9 +329,9 @@ pages:
             limit: 8
             style: grid-cards
             channels:
-              - UCXuqSBlHAE6Xw-yeJA0Tunw
-              - UCR-DXc1voovS8nhAvccRZhg
-              - UCsBjURrPoezykLs9EqgamOA
+              - "@TechnoTim"
+              - "@CraftComputing"
+              - "@NetworkChuck"
           - type: releases
             title: Homelab releases
             repositories:

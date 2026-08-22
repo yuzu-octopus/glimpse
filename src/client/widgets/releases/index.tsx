@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link } from '@astryxdesign/core';
 import { ChevronDown, Container, GitBranch } from 'lucide-react';
-import type { ReleasesConfig } from '../../../shared/widgets/feeds';
+import { RELEASES_DEFAULTS, type ReleasesConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { useAge } from '../useAge';
 import type { Release } from '../../../shared/widgets/payloads';
 import styles from './releases.module.css';
+void RELEASES_DEFAULTS;
 
 function SourceIcon({ source }: { source: Release['source'] }) {
   if (source === 'github') return <GitBranch size={16} className={styles.icon} />;

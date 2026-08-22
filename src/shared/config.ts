@@ -6,9 +6,31 @@ export type { WidgetConfig, WidgetType } from './widgets';
 export const ColumnSchema = z.object({
   size: z.enum(['small', 'full']),
   widgets: z.array(WidgetSchema),
-  span: z.number().int().min(1).max(4).optional(),
+  span: z.number().int().min(1).max(12).optional(),
 });
 export type Column = z.infer<typeof ColumnSchema>;
+
+export function resolveSpan(columns: Column[]): number[] {
+  if (columns.every((c) => typeof c.span === 'number')) return columns.map((c) => c.span as number);
+  if (columns.some((c) => typeof c.span === 'number')) throw new Error('mix of explicit span and size not allowed');
+  const sizes = columns.map((c) => c.size);
+  if (sizes.length === 1) return sizes[0] === 'small' ? [3] : [12];
+  if (sizes.length === 2) {
+    if (sizes[0] === 'full' && sizes[1] === 'full') return [6, 6];
+    if (sizes[0] === 'full' && sizes[1] === 'small') return [9, 3];
+    if (sizes[0] === 'small' && sizes[1] === 'full') return [3, 9];
+  }
+  if (sizes.length === 3) {
+    if (sizes.every((s) => s === 'full')) return [4, 4, 4];
+    if (sizes.filter((s) => s === 'full').length === 1) {
+      const idx = sizes.indexOf('full');
+      const out = [3, 3, 3];
+      out[idx] = 6;
+      return out;
+    }
+  }
+  return columns.map(() => 4);
+}
 
 export const PageSchema = z
   .object({

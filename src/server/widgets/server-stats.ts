@@ -86,7 +86,15 @@ async function localServer(name?: string): Promise<ServerInfo> {
       return out;
     })(),
     temp: tempData?.main != null ? { main: tempData.main, isAvailable: true } : { main: null, isAvailable: false },
-    gpu: Array.isArray(gpuData?.controllers) ? gpuData.controllers.filter((c) => c.model).map((c) => ({ model: String(c.model), temp: c.temperatureGpu ?? null })) : [],
+    gpu: (() => {
+      const out: Array<{ model: string; temp: number | null }> = [];
+      if (!Array.isArray(gpuData?.controllers)) return out;
+      for (const c of gpuData.controllers as Array<Record<string, unknown>>) {
+        if (!c.model) continue;
+        out.push({ model: String(c.model), temp: (c.temperatureGpu as number | null) ?? null });
+      }
+      return out;
+    })(),
     isReachable: true,
   };
 }

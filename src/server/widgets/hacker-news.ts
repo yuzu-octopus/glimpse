@@ -1,4 +1,4 @@
-import { hackerNewsSchema } from '../../shared/widgets/feeds';
+import { HACKER_NEWS_DEFAULTS, hackerNewsSchema } from '../../shared/widgets/feeds';
 import { registerWidget } from './registry';
 import { fetchJson } from './http';
 import { widgetLimit } from './runtime';
@@ -38,7 +38,7 @@ function pLimit(concurrency: number) {
 registerWidget('hacker-news', async (ctx, config) => {
   const cfg = hackerNewsSchema.parse(config);
   const sort = cfg['sort-by'] ?? 'top';
-  const limit = widgetLimit(cfg);
+  const limit = widgetLimit(cfg, HACKER_NEWS_DEFAULTS.limit);
 
   const ids = await fetchJson<number[]>(
     ctx,

@@ -1,10 +1,11 @@
 import { Link } from '@astryxdesign/core';
 import { ArrowDown, ArrowUp } from 'lucide-react';
-import type { MarketsConfig } from '../../../shared/widgets/keyed';
+import { MARKETS_DEFAULTS, type MarketsConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import type { Market } from '../../../shared/widgets/payloads';
 import styles from './markets.module.css';
+void MARKETS_DEFAULTS;
 
 /** 21-point sparkline, hand-rolled inline SVG (glance parity — a chart, not an icon). */
 export function Sparkline({ values }: { values: number[] }) {

@@ -1,7 +1,8 @@
-import { useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Banner, Card, Tab, TabList, Text } from '@astryxdesign/core';
 import { ChevronDown } from 'lucide-react';
 import type { WidgetPayload } from '../../shared/api';
+import { resolveSpan } from '../../shared/config';
 import type { Page } from '../../shared/config';
 import type { WidgetType } from '../../shared/config';
 import { HideHeadersContext } from '../components/HideHeadersContext';
@@ -263,6 +264,7 @@ function MobileColumn({
   small,
   span,
   rowSpan,
+  style,
   children,
 }: {
   label: string;
@@ -272,6 +274,8 @@ function MobileColumn({
   /** Collage estimated row span (1-4); skeleton only — the live hook
    * overwrites these with measured spans on hydrate. */
   rowSpan?: number;
+  /** Inline vars for the columns-mode grid (--col-span). */
+  style?: CSSProperties;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(true);
@@ -286,6 +290,7 @@ function MobileColumn({
           ? `${styles.column} ${styles.smallColumn}`
           : `${styles.column} ${styles.fullColumn}`
       }
+      style={style}
     >
       <button
         type="button"
@@ -481,12 +486,28 @@ export function PageView({
           />
         ) : (
           <div ref={tilingProps.measure || resolved.tiling === 'auto' ? columnsRef : null} className={tilingProps.className} style={tilingProps.style}>
-            {resolved.columns.map((col, i) => (
+            {(() => {
+              // Columns-mode spans: explicit config span wins; otherwise size
+              // maps to a 12-col footprint via resolveSpan (Social 4/8 etc).
+              let inferred: number[] | undefined;
+              if (resolved.tiling !== 'auto' && resolved.tiling !== 'collage') {
+                try {
+                  inferred = resolveSpan(
+                    resolved.columns.map((c) => ({ size: c.size, widgets: [], span: c.span })),
+                  );
+                } catch {
+                  inferred = undefined;
+                }
+              }
+              return resolved.columns.map((col, i) => {
+                const span = col.span ?? inferred?.[i] ?? 1;
+                return (
               <MobileColumn
                 key={columnKey(col, i)}
                 label={columnLabel(col, i)}
                 small={col.size === 'small'}
-                span={col.span ?? 1}
+                span={span}
+                style={{ '--col-span': String(span) } as CSSProperties}
               >
                 <div className={styles.columnWidgets}>
                   {col.widgets.map((w, j) => (
@@ -494,7 +515,9 @@ export function PageView({
                   ))}
                 </div>
               </MobileColumn>
-            ))}
+              );
+            });
+            })()}
           </div>
         )}
       </div>

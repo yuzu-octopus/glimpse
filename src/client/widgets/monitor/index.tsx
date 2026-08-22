@@ -1,9 +1,10 @@
 import { Link } from '@astryxdesign/core';
-import type { MonitorConfig } from '../../../shared/widgets/keyed';
+import { MONITOR_DEFAULTS, type MonitorConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import type { MonitorSite } from '../../../shared/widgets/payloads';
 import styles from './monitor.module.css';
+void MONITOR_DEFAULTS;
 
 function SiteRow({ site }: { site: MonitorSite }) {
   // Down + error-url configured -> error-url is the link; same-tab controls target (default new tab).

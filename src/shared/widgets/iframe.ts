@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { sharedWidgetFields, type Pref } from './shared';
 
-// Defaults — change here (cols/rows on 12-col, priority 0-10, zone main|sidebar, resizable)
+// ── per-widget defaults (file header owns DEFAULTS + Schema + PREF) ──
+export const IFRAME_DEFAULTS = {} as const;
 export const IFRAME_PREF: Pref = { cols: 6, rows: 3, resizable: false, priority: 4, zone: 'main', preferredWidth: 500, preferredHeight: 400 };
 
 export const iframeSchema = z.object({
@@ -12,6 +13,7 @@ export const iframeSchema = z.object({
 });
 export type IframeConfig = z.infer<typeof iframeSchema>;
 
+export const HTML_DEFAULTS = {} as const;
 export const htmlSchema = z.object({
   type: z.literal('html'),
   ...sharedWidgetFields,

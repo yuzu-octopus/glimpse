@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from '@astryxdesign/core';
 import { ChevronRight } from 'lucide-react';
-import type { RedditConfig } from '../../../shared/widgets/feeds';
+import { REDDIT_DEFAULTS, type RedditConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { formatAge } from '../useRelativeTime';
@@ -9,6 +9,7 @@ import type { RedditPost } from '../../../shared/widgets/payloads';
 import styles from './reddit.module.css';
 import Feed, { type FeedItem } from '../feed/Feed';
 import chromeStyles from '../../components/widget-chrome.module.css';
+void REDDIT_DEFAULTS;
 
 function Card({ post, showMeta }: { post: RedditPost; showMeta: boolean }) {
   const age = formatAge(post.ageSeconds);
