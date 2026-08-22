@@ -4,10 +4,10 @@ import { ChevronRight } from 'lucide-react';
 import { REDDIT_DEFAULTS, type RedditConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import { formatAge } from '../useRelativeTime';
+import { formatAge } from '../_hooks/useRelativeTime';
 import type { RedditPost } from '../../../shared/widgets/payloads';
 import styles from './reddit.module.css';
-import Feed, { type FeedItem } from '../feed/Feed';
+import Feed, { type FeedItem } from '../feed/feed';
 import chromeStyles from '../../components/widget-chrome.module.css';
 void REDDIT_DEFAULTS;
 

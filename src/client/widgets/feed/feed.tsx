@@ -1,5 +1,5 @@
 import { Link } from '@astryxdesign/core';
-import styles from './Feed.module.css';
+import styles from './feed.module.css';
 
 /**
  * Generic flat feed module — deep module, small interface.

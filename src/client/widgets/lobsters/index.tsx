@@ -3,9 +3,9 @@ import { ChevronRight } from 'lucide-react';
 import { LOBSTERS_DEFAULTS, type LobstersConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import { formatAge } from '../useRelativeTime';
+import { formatAge } from '../_hooks/useRelativeTime';
 import type { LobsterPost } from '../../../shared/widgets/payloads';
-import Feed, { type FeedItem } from '../feed/Feed';
+import Feed, { type FeedItem } from '../feed/feed';
 import chromeStyles from '../../components/widget-chrome.module.css';
 void LOBSTERS_DEFAULTS;
 

@@ -4,11 +4,11 @@ import { ChevronRight } from 'lucide-react';
 import { VIDEOS_DEFAULTS, type VideosConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import { useAge } from '../useAge';
-import { formatAge } from '../useRelativeTime';
+import { useAge } from '../_hooks/useAge';
+import { formatAge } from '../_hooks/useRelativeTime';
 import type { Video } from '../../../shared/widgets/payloads';
 import styles from './videos.module.css';
-import Feed, { type FeedItem } from '../feed/Feed';
+import Feed, { type FeedItem } from '../feed/feed';
 import chromeStyles from '../../components/widget-chrome.module.css';
 
 function Card({ video }: { video: Video }) {

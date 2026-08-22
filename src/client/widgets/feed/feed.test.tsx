@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import Feed from './Feed';
-import styles from './Feed.module.css';
+import Feed from './feed';
+import styles from './feed.module.css';
 
 describe('Feed (generic)', () => {
   it('renders flat list with title links, meta, description, image and tags', () => {

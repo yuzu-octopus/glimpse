@@ -4,7 +4,7 @@ import type { ServerStatsConfig } from '../../../shared/widgets/server-stats';
 import type { ServerInfo, ServerStatsData } from '../../../shared/widgets/payloads';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import { useAge } from '../useAge';
+import { useAge } from '../_hooks/useAge';
 import styles from './server-stats.module.css';
 
 function fmtBytes(b: number): string {

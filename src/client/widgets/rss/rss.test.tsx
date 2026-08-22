@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import Rss from './index';
-import feedStyles from '../feed/Feed.module.css';
+import feedStyles from '../feed/feed.module.css';
 import type { RssItem } from '../../../shared/widgets/payloads';
 
 const items: RssItem[] = [

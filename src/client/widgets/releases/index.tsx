@@ -4,7 +4,7 @@ import { ChevronDown, Container, GitBranch } from 'lucide-react';
 import { RELEASES_DEFAULTS, type ReleasesConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import { useAge } from '../useAge';
+import { useAge } from '../_hooks/useAge';
 import type { Release } from '../../../shared/widgets/payloads';
 import styles from './releases.module.css';
 void RELEASES_DEFAULTS;

@@ -638,10 +638,10 @@ describe('PageView', () => {
   it('columns css: 12-col grid, --col-span sizing, mobile collapse to full width', () => {
     const css = readFileSync('src/client/pages/page.module.css', 'utf8');
     expect(css).toMatch(
-      /\.columns\s*\{[^}]*display:\s*grid[^}]*repeat\(12,\s*minmax\(0,\s*1fr\)\)[^}]*gap:\s*var\(--widget-gap\)[^}]*align-content:\s*start/,
+      /\.columns\s*\{[^}]*display:\s*grid[^}]*repeat\(12,\s*minmax\(0,\s*1fr\)\)[^}]*gap:\s*(var\(--widget-gap\)|clamp\([^)]*\))[^}]*align-content:\s*start/,
     );
     expect(css).toMatch(/\.column\s*\{[^}]*grid-column:\s*span var\(--col-span,\s*12\)/);
-    const media = css.slice(css.indexOf('@media (max-width: 768px)'));
+    const media = css.slice(css.indexOf('@media (max-width: 599px)'));
     expect(media).toMatch(/\.columns \.column\s*\{[^}]*grid-column:\s*1 \/ -1/);
   });
 
