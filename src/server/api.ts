@@ -51,10 +51,10 @@ export async function buildPagePayload(
   page: Page & { slug: string },
   ctx: WidgetFetchContext,
 ): Promise<PagePayload> {
-  const buildColumn = (col: { size: 'small' | 'full'; span?: number; widgets: unknown[] }) =>
+  const buildColumn = (col: { size: 'small' | 'full'; span?: number; widgets: unknown[] }, colIdx: number) =>
     Promise.all(
       col.widgets.map((w, i) =>
-        fetchWidget(ctx, page.slug, `${col.size === 'small' ? 's' : 'f'}:${i}`, isRecord(w) ? w : { type: 'unknown' }),
+        fetchWidget(ctx, page.slug, `c:${colIdx}:${i}`, isRecord(w) ? w : { type: 'unknown' }),
       ),
     ).then((widgets) => ({
       size: col.size,
@@ -80,7 +80,7 @@ export async function buildPagePayload(
     : Promise.resolve([]);
 
   const columnsPromise = Array.isArray((page as Record<string, unknown>).columns)
-    ? Promise.all(((page as { columns?: Array<{ size: 'small' | 'full'; span?: number; widgets: unknown[] }> }).columns ?? []).map((col) => buildColumn(col)))
+    ? Promise.all(((page as { columns?: Array<{ size: 'small' | 'full'; span?: number; widgets: unknown[] }> }).columns ?? []).map((col, idx) => buildColumn(col, idx)))
     : Promise.resolve([]);
 
   const [headWidgets, flatWidgets, columns] = await Promise.all([headPromise, flatWidgetsPromise, columnsPromise]);
@@ -148,7 +148,7 @@ export async function* streamPagePayload(
     const cols = (page as { columns?: Array<{ size: 'small' | 'full'; widgets: unknown[] }> }).columns ?? [];
     cols.forEach((col, ci) => {
       col.widgets.forEach((w, wi) => {
-        const cachePath = `${col.size === 'small' ? 's' : 'f'}:${wi}`;
+        const cachePath = `c:${ci}:${wi}`;
         push(`columns[${ci}].widgets[${wi}]`, cachePath, isRecord(w) ? w : { type: 'unknown' });
       });
     });
