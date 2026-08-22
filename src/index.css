@@ -41,7 +41,7 @@
   --widget-content-vertical-padding: 15px;
   --widget-content-horizontal-padding: 17px;
   --widget-content-padding: 15px 17px;
-  --content-bounds-padding: 15px;
+  --content-bounds-padding: var(--widget-gap);
   --border-radius: 5px;
   --mobile-navigation-height: 50px;
   --font-size-h1: 17px;

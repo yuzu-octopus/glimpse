@@ -2,7 +2,7 @@
  * widget-body) becomes the scroll rail / grid, glance cards-horizontal/grid. */
 .cards [data-testid="widget-body"] {
   display: flex;
-  gap: 12px;
+  gap: var(--widget-gap);
   overflow-x: auto;
   padding-bottom: 4px;
 }
@@ -10,7 +10,7 @@
 .gridWrap [data-testid="widget-body"] {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 12px;
+  gap: var(--widget-gap);
 }
 
 /* glance .card (widget-content-frame): framed card holding the thumbnail */
