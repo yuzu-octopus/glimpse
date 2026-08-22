@@ -189,8 +189,35 @@ registerWidget('videos', async (ctx, config) => {
         ctx.cache.set(fullCacheKey, videos, STATIC_TTL_MS);
       };
       try {
-        const raw = await fetchText(ctx, url, { headers: { 'User-Agent': YT_UA } });
-        const parsed = parseVideoFeed(raw);
+        let raw = await fetchText(ctx, url, { headers: { 'User-Agent': YT_UA } });
+        let parsed = parseVideoFeed(raw);
+        // Fallback for handles that return 0 entries (YouTube flakiness for small MC channels): try handle /videos page scrape
+        if (parsed.items.length === 0 && source.startsWith('@')) {
+          try {
+            const html = await fetchText(ctx, `https://www.youtube.com/${source}/videos`, { headers: { 'User-Agent': YT_UA } });
+            const ids = [...html.matchAll(/"videoId":"([A-Za-z0-9_-]{11})"/g)].map((m) => m[1]);
+            const seenIds = new Set<string>();
+            const fallbackItems: Array<Record<string, unknown>> = [];
+            for (const vid of ids) {
+              if (seenIds.has(vid)) continue;
+              seenIds.add(vid);
+              // Need title — try to extract nearby title, fallback to vid
+              const titleMatch = html.match(new RegExp(`"videoId":"${vid}"[^}]*"title":\\{"runs":\\[\\{"text":"([^"]+)"`, 's'));
+              fallbackItems.push({
+                title: titleMatch ? titleMatch[1] : vid,
+                link: `https://www.youtube.com/watch?v=${vid}`,
+                published: null,
+                'media:group': { 'media:thumbnail': { '@url': `https://i.ytimg.com/vi/${vid}/hqdefault.jpg` } },
+              } as unknown as Record<string, unknown>);
+              if (fallbackItems.length >= 15) break;
+            }
+            if (fallbackItems.length > 0) {
+              parsed = { title: source, items: fallbackItems };
+            }
+          } catch {
+            // ignore fallback error, keep original empty
+          }
+        }
         const videos = parsed.items.flatMap((item) => {
           let link = '';
           const rawLink = (item as Record<string, unknown>).link;
@@ -246,6 +273,34 @@ registerWidget('videos', async (ctx, config) => {
         setCached(videos);
         return videos;
       } catch (err) {
+        // Try handle /videos scrape fallback for @handles before giving up
+        if (source.startsWith('@')) {
+          try {
+            const html = await fetchText(ctx, `https://www.youtube.com/${source}/videos`, { headers: { 'User-Agent': YT_UA } });
+            const ids = [...html.matchAll(/"videoId":"([A-Za-z0-9_-]{11})"/g)].map((m) => m[1]);
+            const seenIds = new Set<string>();
+            const fallback: Video[] = [];
+            for (const vid of ids) {
+              if (seenIds.has(vid)) continue;
+              seenIds.add(vid);
+              const titleMatch = html.match(new RegExp(`"videoId":"${vid}"[^}]*"title":\\{"runs":\\[\\{"text":"([^"]+)"`, 's'));
+              fallback.push({
+                title: titleMatch ? titleMatch[1] : vid,
+                url: `https://www.youtube.com/watch?v=${vid}`,
+                channel: source,
+                published: null,
+                thumbnail: `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`,
+              } as unknown as Video);
+              if (fallback.length >= 15) break;
+            }
+            if (fallback.length > 0) {
+              setCached(fallback);
+              return fallback;
+            }
+          } catch {
+            // ignore
+          }
+        }
         const cached = getCached();
         if (cached) return cached;
         throw err;
