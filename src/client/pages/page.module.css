@@ -306,6 +306,16 @@
   min-width: 0;
 }
 
+@media (max-width: 1024px) and (min-width: 769px) {
+  .columns {
+    gap: calc(var(--widget-gap) * 0.75);
+  }
+  /* Keep 12-col but ensure narrow spans don't overflow tablet */
+  .column {
+    min-width: 0;
+  }
+}
+
 @media (max-width: 768px) {
   .columns .column {
     grid-column: 1 / -1;

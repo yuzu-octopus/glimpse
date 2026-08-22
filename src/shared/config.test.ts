@@ -489,8 +489,8 @@ describe('ConfigSchema', () => {
     expect(raw).not.toMatch(/UC[A-Za-z0-9_-]{22}/);
     expect(raw).toContain('@SpokeIsHere');
     expect(raw).toContain('@Evourai');
-    expect(raw).toContain('@wemmbu');
-    expect(raw).toContain('@ParroX2');
+    expect(raw).toContain('@wemmbumc');
+    expect(raw).toContain('@ParrotX2');
     // Bun.YAML is available when running under Bun; fallback to raw checks under Node vitest
     if (typeof Bun !== 'undefined' && Bun.YAML) {
       const parsed: unknown = Bun.YAML.parse(raw);
@@ -519,8 +519,8 @@ describe('ConfigSchema', () => {
           style: string;
         };
         expect(rightVideos.channels).toEqual([
-          '@wemmbu',
-          '@ParroX2',
+          '@wemmbumc',
+          '@ParrotX2',
           '@FlameFrags',
           '@SpokeIsHere',
           '@Evourai',
