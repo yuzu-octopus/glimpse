@@ -77,7 +77,7 @@
 .columns {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: var(--widget-gap);
+  gap: clamp(12px, 1.6vw, var(--widget-gap));
   align-content: start;
   container-type: inline-size;
 }
@@ -312,17 +312,25 @@
   min-width: 0;
 }
 
-@media (max-width: 1024px) and (min-width: 769px) {
+/* Tablet landscape — keep 12, slightly tighter gap */
+@media (min-width: 900px) and (max-width: 1199px) and (orientation: landscape) {
   .columns {
-    gap: calc(var(--widget-gap) * 0.75);
-  }
-  /* Keep 12-col but ensure narrow spans don't overflow tablet */
-  .column {
-    min-width: 0;
+    gap: clamp(14px, 1.4vw, 20px);
   }
 }
 
-@media (max-width: 768px) {
+/* Tablet portrait — 8 cols, remap 12→8 so rows still fit */
+@media (min-width: 600px) and (max-width: 899px) and (orientation: portrait) {
+  .columns {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+  [style*="--col-span: 8"] { --col-span: 5 !important; }
+  [style*="--col-span: 6"] { --col-span: 4 !important; }
+  [style*="--col-span: 4"] { --col-span: 3 !important; }
+  [style*="--col-span: 3"] { --col-span: 2 !important; }
+}
+
+@media (max-width: 599px) {
   .columns .column {
     grid-column: 1 / -1;
   }
