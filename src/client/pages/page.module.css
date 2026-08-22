@@ -188,8 +188,14 @@
 }
 
 .smallColumn {
-  width: 300px;
-  flex-shrink: 0;
+  width: 100%;
+  max-width: none;
+}
+
+.columns .smallColumn,
+.columns .fullColumn {
+  width: 100%;
+  max-width: none;
 }
 
 .columnWidgets {
