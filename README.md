@@ -22,7 +22,7 @@ Where glance's config shapes fought that architecture we kept our own (e.g. `cus
   - **Containers**: `group` (tabbed widgets), `split-column` (two widgets side by side)
 
 - **Theming**: 58 presets (52 curated base16 schemes from [tinted-theming](https://github.com/tinted-theming/schemes) plus 6 glance classics), a nav theme picker (system / light / dark), and a YAML theme block in glance's HSL format for custom colors.
-- **Glance-style layout**: `pages` → `columns` (small = 300px fixed, full = remaining width, up to 3 per page) → `widgets`; optional `head-widgets` above the columns.
+- **12-col bento layout**: `pages` → `columns` (`size: small/full` → `span` on a 12-col grid, e.g. `Home 3/6/3`, `Social 4/8`; `gap: clamp(12px,1.6vw,23px)`; responsive `12 → 8` portrait `600–899` with `8→5,6→4,4→3,3→2` remap, `≤599` stacked) → `widgets`; optional `head-widgets` above the columns.
 - **PWA**: installable via `vite-plugin-pwa` with an offline app shell; API calls stay network-first.
 - Server-side fetching means secrets are configured once, server-side (see [Environment variables](#environment-variables)).
 
