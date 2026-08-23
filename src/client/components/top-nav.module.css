@@ -12,6 +12,35 @@
   box-shadow: none;
 }
 
+.logoLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+  flex-shrink: 0;
+  line-height: 45px;
+  font-size: 20px;
+  color: var(--color-text-highlight);
+  border-right: 1px solid var(--color-widget-content-border);
+  padding-right: var(--widget-content-horizontal-padding);
+  text-decoration: none;
+}
+
+.logoLink:hover {
+  opacity: 0.85;
+}
+
+.logoIcon {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.logoText {
+  line-height: 45px;
+}
+
 .logo {
   height: 100%;
   flex-shrink: 0;

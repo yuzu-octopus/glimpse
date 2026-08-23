@@ -30,7 +30,22 @@ export function TopNav({ width }: { width?: 'default' | 'slim' | 'wide' }) {
         width ? { maxWidth: PAGE_WIDTHS[width], marginInline: 'auto' } : undefined
       }
     >
-      <span className={styles.logo}>Glimpse</span>
+      <a
+        href="https://github.com/yuzu-octopus/glimpse"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={styles.logoLink}
+        aria-label="Glimpse on GitHub (opens in new tab)"
+      >
+        <img
+          src="/icon.svg"
+          alt=""
+          width={22}
+          height={22}
+          className={styles.logoIcon}
+        />
+        <span className={styles.logoText}>Glimpse</span>
+      </a>
       <div className={styles.navLinks}>
         {pages.map((p) => (
           <Link
