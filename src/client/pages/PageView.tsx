@@ -67,7 +67,7 @@ function widgetKeysFor(list: WidgetLike[]): string[] {
 
 /** Column label from the first widget's title. */
 function columnLabel(
-  col: { size: 'small' | 'full'; widgets: WidgetLike[] },
+  col: { size?: 'small' | 'full'; widgets: WidgetLike[] },
   i: number,
 ): string {
   return widgetTitle(col.widgets[0]) ?? `Column ${i + 1}`;
@@ -75,7 +75,7 @@ function columnLabel(
 
 /** Stable key for a column slot (first widget's key, else index). Supports per-render dedup via counts. */
 function columnKey(
-  col: { size: 'small' | 'full'; widgets: WidgetLike[] },
+  col: { size?: 'small' | 'full'; widgets: WidgetLike[] },
   i: number,
   counts?: Map<string, number>,
 ): string {

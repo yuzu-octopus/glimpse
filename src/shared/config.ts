@@ -5,11 +5,15 @@ export type { WidgetConfig, WidgetType } from './widgets';
 
 export const PAGE_WIDTHS = { default: 1600, slim: 1100, wide: 1920 } as const;
 
-export const ColumnSchema = z.object({
-  size: z.enum(['small', 'full']),
-  widgets: z.array(WidgetSchema),
-  span: z.number().int().min(1).max(12).optional(),
-});
+export const ColumnSchema = z
+  .object({
+    size: z.enum(['small', 'full']).optional(),
+    widgets: z.array(WidgetSchema),
+    span: z.number().int().min(1).max(12).optional(),
+  })
+  .refine((c) => c.size !== undefined || c.span !== undefined, {
+    message: 'column requires `size` or `span`',
+  });
 export type Column = z.infer<typeof ColumnSchema>;
 
 export function resolveSpan(columns: Column[]): number[] {

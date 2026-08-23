@@ -14,14 +14,13 @@ pages:
   - name: Home            # slug = slugify(name); must be unique
     width: default        # default | slim | wide
     columns:              # OR flat `widgets:` (pure bento) — never both
-      - size: small       # small=300px fixed, full=remaining width
-        span: 3           # OPTIONAL; explicit spans on ALL columns or NONE
+      - span: 3           # span tracks on 12-col grid; legacy size: small/full still accepted
         widgets:
           - type: clock
     head-widgets:         # optional row above columns
       - type: search
 ```
-Max 3 columns/page, exactly 1–2 `full`. Groups cannot nest `group`/`split-column`.
+Max 3 columns/page, columns require `size` or `span` (span explicit on all or none); when using `size`, exactly 1–2 `full`. Groups cannot nest `group`/`split-column`.
 
 ## Shared widget props
 | Prop | Notes |

@@ -28,7 +28,7 @@ Built with **Bun**, **TypeScript**, **Vite**, **React 19** and the **Astryx** de
 
 - **24 widget types** — feeds, homelab monitoring, containers — see [Widgets](#widgets)
 - **48 theme presets** — curated base16 schemes + 6 glance classics, system / light / dark picker, glance-format HSL custom themes, custom CSS
-- **12-column bento layout** — `pages` → `columns` (`size: small/full` → `span`), responsive remap on tablet/mobile, optional `head-widgets`
+- **12-column bento layout** — `pages` → `columns` (`span` tracks on a 12-col grid; legacy `size: small/full` still works), responsive remap on tablet/mobile, optional `head-widgets`
 - **Progressive loading** — the server streams widgets as their data settles over a skeleton-first NDJSON stream; widget components are lazy chunks preloaded after first paint
 - **Server-side fetching** — secrets configured once in the server environment; live SWR updates (1s poll for homelab pages, 30s otherwise) without losing stale content mid-refresh
 - **PWA** — installable app shell, offline precache, network-first API
@@ -63,10 +63,10 @@ Glimpse reads a YAML file (default `./config.yml`; override with the first CLI a
 pages:
   - name: Home
     columns:
-      - size: small          # 300px fixed
+      - span: 3              # span tracks on 12-col grid (size: small/full still accepted)
         widgets:
           - type: clock
-      - size: full           # remaining width; 1-2 full columns per page
+      - span: 9
         widgets:
           - type: rss
             title: Interesting reads
@@ -81,7 +81,7 @@ pages:
 - `${ENV_VAR}` references in any string value are interpolated at load time (missing variable = validation error). The `${secret:name}` Docker-secrets syntax is not supported.
 - `$include: <path>` merges another config file (relative to the including file; pages append, theme keys override).
 - The config file is watched and auto-reloaded on save; last good config stays active on validation errors.
-- All configs are zod-validated, including glance's structural rules (1–3 columns per page, exactly 1–2 `full` columns, no nested groups, unique slugs).
+- All configs are zod-validated, including glance's structural rules (1–3 columns per page, columns require `size` or `span` — `span` explicit on all or none; when using `size`, exactly 1–2 `full` columns, no nested groups, unique slugs).
 
 See [`config.example.yml`](config.example.yml) for a working four-page starting point.
 

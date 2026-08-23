@@ -19,8 +19,7 @@ pages:
             shortcut: wiki
             url: https://en.wikipedia.org/wiki/Special:Search?search={QUERY}
     columns:
-      - size: small
-        span: 3
+      - span: 2
         widgets:
           - type: clock
             hour-format: 24h
@@ -36,10 +35,7 @@ pages:
             units: metric
           - type: calendar
             first-day-of-week: monday
-          - type: todo
-            id: home-todo
-      - size: full
-        span: 6
+      - span: 7
         widgets:
           - type: rss
             limit: 10
@@ -65,9 +61,10 @@ pages:
             sort-by: top
             collapse-after: 5
             source-header: true
-      - size: small
-        span: 3
+      - span: 3
         widgets:
+          - type: todo
+            id: home-todo
           - type: markets
             markets:
               - symbol: SPY
@@ -99,8 +96,7 @@ pages:
     slug: dev
     hide-headers: true
     columns:
-      - size: full
-        span: 8
+      - span: 8
         widgets:
           - type: split-column
             widgets:
@@ -126,8 +122,7 @@ pages:
               - "@Bug-I"
               - "@CalebWritesCode"
               - "@AZisk"
-      - size: small
-        span: 4
+      - span: 4
         widgets:
           - type: custom-api
             url: https://api.github.com/repos/glanceapp/glance
@@ -160,8 +155,7 @@ pages:
     slug: social
     hide-headers: true
     columns:
-      - size: full
-        span: 4
+      - span: 4
         widgets:
           - type: videos
             title: Tech creators
@@ -188,8 +182,7 @@ pages:
                     url: https://lobste.rs
                   - title: Twitch
                     url: https://twitch.tv
-      - size: full
-        span: 8
+      - span: 8
         widgets:
           - type: videos
             title: Minecraft
@@ -211,8 +204,7 @@ pages:
     # Homelab showcase — columns so small stays 300px, full is the main stage.
     # New homelab widgets (server-stats / dns-stats / docker-containers) live here.
     columns:
-      - size: small
-        span: 3
+      - span: 3
         widgets:
           - type: calendar
             first-day-of-week: monday
@@ -237,48 +229,16 @@ pages:
           - type: weather
             location: Singapore
             units: metric
-          - type: bookmarks
-            groups:
-              - title: Homelab
-                links:
-                  - title: Grafana
-                    url: https://grafana.lab
-                    icon: si:grafana
-                  - title: Immich
-                    url: https://immich.lab
-                    icon: si:immich
-                  - title: Home Assistant
-                    url: https://home.lab
-                    icon: si:homeassistant
-                  - title: Jellyfin
-                    url: https://jellyfin.lab
-                    icon: si:jellyfin
-                  - title: Pi-hole
-                    url: https://pihole.lab
-                    icon: si:pihole
-              - title: Infra
-                links:
-                  - title: Proxmox
-                    url: https://proxmox.lab
-                  - title: Portainer
-                    url: https://portainer.lab
-                  - title: TrueNAS
-                    url: https://truenas.lab
-                  - title: Authentik
-                    url: https://auth.lab
-          - type: markets
-            markets:
-              - symbol: SPY
-                name: S&P 500
-              - symbol: BTC-USD
-                name: Bitcoin
-              - symbol: ETH-USD
-                name: Ethereum
-              - symbol: NVDA
-                name: NVIDIA
-      - size: full
-        span: 6
+      - span: 6
         widgets:
+          - type: videos
+            title: Homelab — recent
+            limit: 8
+            style: grid-cards
+            channels:
+              - "@TechnoTim"
+              - "@CraftComputing"
+              - "@NetworkChuck"
           - type: monitor
             title: Homelab — health
             sites:
@@ -323,23 +283,43 @@ pages:
             sort-by: top
             collapse-after: 5
             source-header: true
+      - span: 3
+        widgets:
           - type: reddit
             subreddit: homelab
             limit: 8
             collapse-after: 5
             show-thumbnails: true
             source-header: true
-      - size: small
-        span: 3
-        widgets:
-          - type: videos
-            title: Homelab — recent
-            limit: 8
-            style: grid-cards
-            channels:
-              - "@TechnoTim"
-              - "@CraftComputing"
-              - "@NetworkChuck"
+          - type: bookmarks
+            groups:
+              - title: Homelab
+                links:
+                  - title: Grafana
+                    url: https://grafana.lab
+                    icon: si:grafana
+                  - title: Immich
+                    url: https://immich.lab
+                    icon: si:immich
+                  - title: Home Assistant
+                    url: https://home.lab
+                    icon: si:homeassistant
+                  - title: Jellyfin
+                    url: https://jellyfin.lab
+                    icon: si:jellyfin
+                  - title: Pi-hole
+                    url: https://pihole.lab
+                    icon: si:pihole
+              - title: Infra
+                links:
+                  - title: Proxmox
+                    url: https://proxmox.lab
+                  - title: Portainer
+                    url: https://portainer.lab
+                  - title: TrueNAS
+                    url: https://truenas.lab
+                  - title: Authentik
+                    url: https://auth.lab
           - type: releases
             title: Homelab releases
             repositories:

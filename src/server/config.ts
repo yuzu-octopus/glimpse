@@ -235,14 +235,17 @@ function loadYamlTree(
   }
 }
 
-/** Column invariant from glance docs: 1-2 full columns, up to 3 total. */
+/** Column invariant from glance docs: 1-2 full columns, up to 3 total.
+ * When every column declares an explicit `span`, the size invariant is
+ * not applicable — the grid is explicitly sized. */
 function validateColumns(pages: unknown, errors: string[]): void {
   if (!Array.isArray(pages)) return;
   pages.forEach((page, pi) => {
     if (!isRecord(page) || !Array.isArray(page.columns)) return;
-    const fullCount = page.columns.filter(
-      (c) => isRecord(c) && c.size === 'full',
-    ).length;
+    const cols = page.columns as unknown[];
+    const usesExplicitSpan = cols.every((c) => isRecord(c) && typeof c.span === 'number');
+    if (usesExplicitSpan) return;
+    const fullCount = cols.filter((c) => isRecord(c) && c.size === 'full').length;
     if (fullCount < 1) {
       errors.push(`pages[${pi}]: must have at least one full column`);
     }

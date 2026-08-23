@@ -63,7 +63,7 @@ Env: `GLIMPSE_CONFIG` (CLI arg wins > env > ./config.yml), `GLIMPSE_PORT=3000`, 
 
 ## Important Files
 - Entry: `index.html` (FOUC boot script reads `glimpse.paint.v1`) → `src/main.tsx` (scheduleWidgetPreload) → `src/App.tsx`; server `src/server/index.ts`
-- Config contract: `src/shared/config.ts` (WidgetSchema union; PageSchema requires columns OR flat widgets; ≤3 columns; resolveSpan explicit-spans-all-or-none), `config.example.yml` (Home/Dev/Social/Lab)
+- Config contract: `src/shared/config.ts` (WidgetSchema union; PageSchema requires columns OR flat widgets; ≤3 columns; columns require `size` or `span` — when `span` used it must be on all columns or none), `config.example.yml` (Home/Dev/Social/Lab)
 - Data contract: `src/shared/api.ts` (`PagePayload`, `WidgetPayload` — config carries BOTH kebab+camel aliases for hide-headers), `src/server/api.ts` (build/stream/skeleton + cache-path templates)
 - Grid/layout: `src/client/pages/PageView.tsx`, `page.module.css`, `tiling.ts` (COLLAGE_ROW_SPAN_MIN/MAX shared with skeleton estimators), `src/shared/widgets/preferredSizes.ts`
 - Engine: `src/client/hooks/usePageData.ts` (SWR/streaming/liveKey), `src/server/cache.ts`, `src/server/widgets/runtime.ts` (stale-on-error), `src/shared/live.ts` (single TTL/poll source)
