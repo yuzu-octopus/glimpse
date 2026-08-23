@@ -72,10 +72,18 @@ async function localServer(name?: string): Promise<ServerInfo> {
     },
     mountpoints: (() => {
       const all = Array.isArray(fs) ? (fs as Array<Record<string, unknown>>) : [];
-      // Single Disk: prefer "/" else first non-filtered mount
-      const pick = all.find(d => d.mount === '/') ?? all.find(d => d.mount && d.size && !String(d.mount).includes('cryptexd') && !String(d.mount).includes('MobileAsset')) ?? null;
-      if (!pick || !pick.size) return [];
-      return [{ path: String(pick.mount), used: Number(pick.used ?? 0), total: Number(pick.size ?? 0) }];
+      const out: ServerInfo['mountpoints'] = [];
+      for (const d of all) {
+        if (!d.mount || !d.size) continue;
+        const p = String(d.mount);
+        if (p.includes('cryptexd') || p.includes('MobileAsset') || p === '/System/Volumes/VM' || p === '/System/Volumes/Preboot' || p === '/System/Volumes/Update' || p === '/System/Volumes/xarts' || p === '/System/Volumes/iSCPreboot' || p === '/System/Volumes/Hardware') continue;
+        out.push({ path: p, used: Number(d.used ?? 0), total: Number(d.size ?? 0) });
+      }
+      if (!out.length) return [];
+      // APFS "/" + "/System/Volumes/Data" share container — pick fuller for single Disk row
+      let best = out[0];
+      for (const m of out) if (m.used / m.total > best.used / best.total) best = m;
+      return [best];
     })(),
     temp: tempData?.main != null ? { main: tempData.main, isAvailable: true } : { main: null, isAvailable: false },
     gpu: (() => {
