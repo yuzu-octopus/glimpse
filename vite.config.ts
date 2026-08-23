@@ -20,11 +20,14 @@ export default defineConfig({
         icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml' }],
       },
       workbox: {
+        globPatterns: ['**/*.{js,css,html,woff2,svg}'],
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
             // Boot-critical: serve the cached config when the network stalls
             // (3s) or is offline, so the page chrome renders immediately.
+            // /api/config sends `no-store` — the SW cache is an intentional
+            // second layer for offline/stall, not a replacement for revalidation.
             urlPattern: /^\/api\/config(\?.*)?$/,
             handler: 'NetworkFirst',
             options: {
@@ -45,6 +48,15 @@ export default defineConfig({
               expiration: { maxEntries: 50, maxAgeSeconds: 300 },
             },
           },
+          {
+            urlPattern: /^\/api\/theme(\?.*)?$/,
+            handler: 'NetworkFirst',
+            options: {
+              networkTimeoutSeconds: 3,
+              cacheName: 'api-theme',
+              expiration: { maxEntries: 1, maxAgeSeconds: 60 },
+            },
+          },
         ],
       },
     }),
@@ -53,9 +65,10 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // Stable vendor chunks: react/dom, Astryx core, icons. Keeps the
-          // main bundle small and lets the SW cache vendors across deploys.
+          // Stable vendor chunks: react/dom (+ react-router), Astryx core, icons.
+          // Keeps the main bundle small and lets the SW cache vendors across deploys.
           // `node_modules/react` also matches react-dom's path.
+          if (id.includes('node_modules/react-router')) return 'react-router-dom';
           if (id.includes('node_modules/react')) return 'react';
           if (id.includes('node_modules/@astryxdesign/core')) return 'astryx';
           if (id.includes('node_modules/lucide-react')) return 'icons';
@@ -67,7 +80,7 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': 'http://localhost:3000',
+      '/api': { target: 'http://localhost:3000', changeOrigin: true },
     },
   },
   test: {

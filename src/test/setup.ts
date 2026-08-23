@@ -56,3 +56,7 @@ if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.sho
 // the real Bun runtime when available so server code takes its fast path and
 // the minimal fallbacks in config.ts/rss.ts stay dormant.
 if (typeof Bun !== 'undefined') globalThis.Bun = Bun;
+
+// Widget lazy chunks: suites that need synchronous registration can
+// `await import('../client/widgets').then(m => m.preloadWidgets())` or
+// `await __preloadWidgetsForTests()`. Default is lazy + Suspense fallback.
