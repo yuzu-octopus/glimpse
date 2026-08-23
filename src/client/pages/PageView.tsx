@@ -193,6 +193,15 @@ export function PageSkeleton({ page }: { page: Page & { slug: string } }) {
   );
 }
 
+function DelayedSkeleton({ delay = 250, children }: { delay?: number; children: ReactNode }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const id = window.setTimeout(() => setShow(true), delay);
+    return () => window.clearTimeout(id);
+  }, [delay]);
+  return show ? <>{children}</> : null;
+}
+
 /** Stable per-span style refs so memoized columns don't see a fresh object each render. */
 const spanStyles = new Map<number, CSSProperties>();
 function spanStyle(span: number): CSSProperties {
@@ -523,7 +532,12 @@ export function PageView({
     return () => ro.disconnect();
   }, [isCollageLikeForChooser, chooserMinW]);
   if (!data && !error) {
-    if (page) return <PageSkeleton page={page} />;
+    if (page)
+      return (
+        <DelayedSkeleton>
+          <PageSkeleton page={page} />
+        </DelayedSkeleton>
+      );
     // Fallback when rendered without config (direct mounts): structure-ready chrome.
     return (
       <div className={styles.page}>

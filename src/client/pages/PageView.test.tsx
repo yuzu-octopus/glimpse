@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PagePayload } from '../../shared/api';
@@ -130,15 +130,9 @@ describe('PageView', () => {
   });
 
   it('renders per-widget skeleton cards from the page config while loading, then fills', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () =>
-        new Response(JSON.stringify(payload()), {
-          status: 200,
-          headers: { 'content-type': 'application/json' },
-        }),
-      ),
-    );
+    vi.useFakeTimers();
+    const { promise: fetchPromise, resolve: resolveFetch } = Promise.withResolvers<Response>();
+    vi.stubGlobal('fetch', vi.fn(() => fetchPromise));
     const page: Page & { slug: string } = {
       slug: 'home',
       name: 'Home',
@@ -159,6 +153,11 @@ describe('PageView', () => {
         <PageView slug="home" page={page} />
       </MemoryRouter>,
     );
+    // Before delay: no skeleton (flash suppression)
+    expect(screen.queryByTestId('page-skeleton')).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(260);
+    });
     // Loading: the config structure renders one skeleton card per widget.
     expect(screen.getByTestId('page-skeleton')).toBeInTheDocument();
     expect(screen.getAllByTestId('widget-loading')).toHaveLength(2);
@@ -174,12 +173,19 @@ describe('PageView', () => {
         t.getAttribute('data-span'),
       ),
     ).toEqual(['2']);
-    // ...then the fetched data fills the widgets in.
+    // Resolve fetch and let data fill
+    vi.useRealTimers();
+    await act(async () => {
+      resolveFetch(
+        new Response(JSON.stringify(payload()), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      );
+    });
     const widget = await screen.findByTestId('clock-widget');
     expect(within(widget).getByText('Clock')).toBeInTheDocument();
-    await waitFor(() =>
-      expect(screen.queryByTestId('widget-loading')).toBeNull(),
-    );
+    await waitFor(() => expect(screen.queryByTestId('widget-loading')).toBeNull());
   });
 
   it('renders a placeholder for unimplemented widgets', async () => {
@@ -355,6 +361,8 @@ describe('PageView', () => {
   });
 
   it('emits estimated row spans on collage skeleton tiles', () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
     const page: Page & { slug: string } = {
       slug: 'home',
       name: 'Home',
@@ -383,6 +391,10 @@ describe('PageView', () => {
         <PageView slug="home" page={page} />
       </MemoryRouter>,
     );
+    expect(screen.queryByTestId('page-skeleton')).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(260);
+    });
     const skeleton = screen.getByTestId('page-skeleton');
     const grid = skeleton.querySelector('[class*="columns"]') as HTMLElement;
     expect(grid.className).toContain('collageTiling');
@@ -392,6 +404,8 @@ describe('PageView', () => {
     );
     // feed(3)+markets(2)=5→now 5 (clamp 8); clock→1 omitted (rowSpan>1 only); group→2
     expect(spans).toEqual(['5', '2']);
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   it('renders a mobile page-name header when show-mobile-header is set', async () => {
@@ -667,6 +681,29 @@ describe('PageView', () => {
     const cols = screen.getAllByTestId('column');
     expect(cols[0].style.getPropertyValue('--col-span')).toBe('4');
     expect(cols[1].style.getPropertyValue('--col-span')).toBe('8');
+  });
+
+  it('does not render skeleton before 250ms', () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+    const page: Page & { slug: string } = {
+      slug: 'home',
+      name: 'Home',
+      tiling: 'auto',
+      columns: [{ size: 'full', widgets: [{ type: 'clock', title: 'Clock' }] }],
+    } as unknown as Page & { slug: string };
+    render(
+      <MemoryRouter>
+        <PageView slug="home" page={page} />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByTestId('page-skeleton')).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(260);
+    });
+    expect(screen.getByTestId('page-skeleton')).toBeTruthy();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   it('size-derived spans map via resolveSpan (full+small → 9/3)', async () => {
