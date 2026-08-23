@@ -1,10 +1,8 @@
 import type { Page } from '../shared/config';
 import type { PagePayload, WidgetPayload } from '../shared/api';
+import { isRecord } from '../shared/is-record';
 import { serverWidgets, type WidgetFetchContext } from './widgets/registry';
 import { fetchWidgetData } from './widgets/runtime';
-export function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
 
 function containerChildren(
   config: Record<string, unknown>,
@@ -127,13 +125,24 @@ export async function* streamPagePayload(
   page: Page & { slug: string },
   ctx: WidgetFetchContext,
 ): AsyncGenerator<StreamChunk> {
-  type Pending = Promise<StreamChunk>;
-  const pending: Pending[] = [];
+  const hideHeaders = page['hide-headers'] === true;
+  const pending: Promise<StreamChunk>[] = [];
 
   const push = (path: string, cachePath: string, widget: Record<string, unknown>) => {
-    pending.push(
-      fetchWidget(ctx, page.slug, cachePath, widget).then((payload) => ({ path, payload })),
-    );
+    const task = fetchWidget(ctx, page.slug, cachePath, widget).then((payload) => {
+      if (hideHeaders) {
+        const forceHide = (widgets: WidgetPayload[]): void => {
+          for (const w of widgets) {
+            w.config = { ...w.config, 'hide-header': true };
+            if (w.widgets) forceHide(w.widgets);
+          }
+        };
+        payload.config = { ...payload.config, 'hide-header': true };
+        if (payload.widgets) forceHide(payload.widgets);
+      }
+      return { path, payload } satisfies StreamChunk;
+    });
+    pending.push(task);
   };
 
   if (Array.isArray(page['head-widgets'])) {
@@ -154,14 +163,95 @@ export async function* streamPagePayload(
     });
   }
 
-  // Flush in settlement order (head widgets typically win). Use indexed race
-  // so the winner's position can be removed without re-creating promises.
-  const remaining = pending.slice();
-  while (remaining.length) {
-    const raced = await Promise.race(
-      remaining.map((p, idx) => p.then((v) => ({ v, idx }))),
+  if (pending.length === 0) return;
+
+  // Resolved-queue: each promise enqueues its result as soon as it settles.
+  // Harden with .catch so a single rejection never poisons the stream
+  // (fetchWidget already swallows, but this guarantees progress).
+  const queue: StreamChunk[] = [];
+  let pendingCount = pending.length;
+  let notify: (() => void) | null = null;
+  let waitPromise: Promise<void> | null = null;
+
+  const getWait = (): Promise<void> => {
+    if (!waitPromise) waitPromise = new Promise<void>((resolve) => { notify = resolve; });
+    return waitPromise;
+  };
+  const wake = (): void => {
+    if (notify) { notify(); waitPromise = null; notify = null; }
+  };
+
+  for (const p of pending) {
+    p.then(
+      (v) => { queue.push(v); pendingCount -= 1; wake(); },
+      () => { pendingCount -= 1; wake(); },
     );
-    yield raced.v;
-    remaining.splice(raced.idx, 1);
   }
+
+  while (queue.length > 0 || pendingCount > 0) {
+    if (queue.length === 0) {
+      await getWait();
+      continue;
+    }
+    const next = queue.shift();
+    if (next) yield next;
+  }
+}
+
+/** Sync skeleton mirroring buildPagePayload's shape with every widget data:null. */
+export function skeletonPagePayload(page: Page & { slug: string }): PagePayload {
+  const skel = (w: unknown): WidgetPayload => {
+    const rec = isRecord(w) ? w : { type: 'unknown' };
+    const type = typeof rec.type === 'string' ? rec.type : 'unknown';
+    const out: WidgetPayload = { type, config: rec, data: null };
+    const children = containerChildren(rec);
+    if (children) out.widgets = children.map(skel);
+    return out;
+  };
+  const hideHeaders = page['hide-headers'] === true;
+  const forceHide = (widgets: WidgetPayload[]) => {
+    if (!hideHeaders) return;
+    for (const w of widgets) {
+      w.config = { ...w.config, 'hide-header': true };
+      if (w.widgets) forceHide(w.widgets);
+    }
+  };
+  const headWidgets = Array.isArray(page['head-widgets'])
+    ? (page['head-widgets'] as unknown[]).map(skel)
+    : [];
+  const columns = Array.isArray(page.columns)
+    ? ((page.columns ?? []) as Array<{ size: 'small' | 'full'; span?: number; widgets: unknown[] }>).map((col) => ({
+        size: col.size,
+        widgets: col.widgets.map(skel),
+        ...(col.span !== undefined ? { span: col.span } : {}),
+      }))
+    : [];
+  const isFlat = Array.isArray((page as { widgets?: unknown[] }).widgets);
+  const flatWidgets = isFlat
+    ? ((page as { widgets?: unknown[] }).widgets ?? []).map(skel)
+    : [];
+  forceHide(headWidgets);
+  for (const col of columns) forceHide(col.widgets);
+  forceHide(flatWidgets);
+  return {
+    slug: page.slug,
+    name: page.name,
+    width: page.width ?? 'default',
+    ...(page['center-vertically'] !== undefined ? { 'center-vertically': page['center-vertically'] } : {}),
+    ...(page['show-mobile-header'] !== undefined ? { 'show-mobile-header': page['show-mobile-header'] } : {}),
+    ...(hideHeaders ? { 'hide-headers': true as const, hideHeaders: true as const } : {}),
+    tiling: page.tiling ?? 'columns',
+    minColumnWidth: page['min-column-width'] ?? 300,
+    headWidgets,
+    columns,
+    ...(isFlat
+      ? {
+          widgets: flatWidgets,
+          gridColumns:
+            ((page as Record<string, unknown>)['grid-columns'] as number | undefined) ?? 12,
+          gridRowHeight:
+            ((page as Record<string, unknown>)['grid-row-height'] as number | undefined) ?? 96,
+        }
+      : {}),
+  };
 }

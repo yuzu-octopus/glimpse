@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Column, WidgetConfig } from '../shared/config';
-import { buildPagePayload, streamPagePayload, type StreamChunk } from './api';
+import {
+  buildPagePayload,
+  skeletonPagePayload,
+  streamPagePayload,
+  type StreamChunk,
+} from './api';
 import { registerWidget, serverWidgets, type WidgetFetchContext } from './widgets/registry';
 import { Singleflight, TtlCache } from './cache';
 
@@ -258,5 +263,18 @@ describe('streamPagePayload', () => {
     expect(chunks).toHaveLength(2);
     expect(chunks[0].path).toMatch(/headWidgets/);
     expect(chunks[1].path).toMatch(/columns/);
+  });
+});
+
+describe('skeletonPagePayload', () => {
+  it('forces hide-header on flat widgets too when hide-headers is set', () => {
+    const flatPage = {
+      name: 'Grid',
+      slug: 'grid',
+      'hide-headers': true,
+      widgets: [{ type: 'clock', timezones: [] }],
+    } as unknown as Parameters<typeof skeletonPagePayload>[0];
+    const payload = skeletonPagePayload(flatPage);
+    expect(payload.widgets?.[0].config).toMatchObject({ 'hide-header': true });
   });
 });

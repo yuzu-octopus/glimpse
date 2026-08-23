@@ -3,6 +3,17 @@ import type { WidgetFetchContext } from './registry';
 export interface HttpOptions extends Omit<RequestInit, 'signal'> {
   headers?: Record<string, string>;
   timeoutMs?: number;
+  signal?: AbortSignal;
+}
+
+function sanitizeUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    return `${u.origin}${u.pathname}${u.search ? '?…' : ''}`;
+  } catch {
+    const q = url.indexOf('?');
+    return q === -1 ? url : `${url.slice(0, q)}?…`;
+  }
 }
 
 export interface RetryOptions {
@@ -49,11 +60,27 @@ export async function fetchWithRetry(
   for (let attempt = 0; attempt <= retries; attempt++) {
     let res: Response | undefined;
     try {
-      const { timeoutMs, ...rest } = httpOpts;
+      const { timeoutMs, signal: outerSignal, ...rest } = httpOpts;
+      const timeoutSignal = AbortSignal.timeout(timeoutMs ?? 15_000);
+      const signal = outerSignal
+        ? (typeof AbortSignal.any === 'function'
+            ? AbortSignal.any([outerSignal, timeoutSignal])
+            : outerSignal.aborted
+              ? outerSignal
+              : timeoutSignal.aborted
+                ? timeoutSignal
+                : (() => {
+                    const ac = new AbortController();
+                    const onAbort = (): void => ac.abort((outerSignal as unknown as { reason?: unknown }).reason ?? timeoutSignal.reason);
+                    outerSignal.addEventListener('abort', onAbort, { once: true });
+                    timeoutSignal.addEventListener('abort', onAbort, { once: true });
+                    return ac.signal;
+                  })())
+        : timeoutSignal;
       res = await ctx.fetch(url, {
         ...rest,
         headers: httpOpts.headers,
-        signal: AbortSignal.timeout(timeoutMs ?? 15_000),
+        signal,
       } as RequestInit & { proxy?: string });
     } catch (err) {
       if (attempt === retries) throw err;
@@ -69,11 +96,11 @@ export async function fetchWithRetry(
     if (res.ok) return res;
 
     if (!RETRYABLE[res.status]) {
-      throw new Error(`HTTP ${res.status} for ${url}`);
+      throw new Error(`HTTP ${res.status} for ${sanitizeUrl(url)}`);
     }
 
     if (attempt === retries) {
-      throw new Error(`HTTP ${res.status} for ${url}`);
+      throw new Error(`HTTP ${res.status} for ${sanitizeUrl(url)}`);
     }
 
     let delay = baseDelay * Math.pow(factor, attempt) + Math.random() * 100;
@@ -89,7 +116,7 @@ export async function fetchWithRetry(
     }
   }
   // unreachable
-  throw new Error(`HTTP fetch failed for ${url}`);
+  throw new Error(`HTTP fetch failed for ${sanitizeUrl(url)}`);
 }
 
 /** JSON GET helper — every fetcher goes through ctx.fetch (injectable). */

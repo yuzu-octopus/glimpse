@@ -2,7 +2,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, normalize, resolve, sep } from 'node:path';
 import { initConfig, getConfig } from './config';
 import { Singleflight, TtlCache } from './cache';
-import { buildPagePayload, streamPagePayload } from './api';
+import { buildPagePayload, skeletonPagePayload, streamPagePayload } from './api';
 import type { WidgetFetchContext } from './widgets/registry';
 import './widgets'; // side-effect: registers all widget fetchers
 
@@ -83,10 +83,35 @@ function readThemeCss(cssFile: string): string | null {
 }
 
 
+function etagMatches(header: string | null, etag: string): boolean {
+  if (!header) return false;
+  const normalize = (v: string): string => v.trim().replace(/^W\//i, '');
+  const want = normalize(etag);
+  if (header.trim() === '*') return true;
+  return header.split(',').some((part) => normalize(part) === want || part.trim() === '*');
+}
+
+const distDirCache = join(process.cwd(), 'dist');
+let distExistsCache: boolean | null = null;
+const existsCache = new Map<string, boolean>();
+
+function cachedExistsSync(p: string): boolean {
+  const hit = existsCache.get(p);
+  if (hit !== undefined) return hit;
+  const result = existsSync(p);
+  existsCache.set(p, result);
+  if (existsCache.size > 200) {
+    const first = existsCache.keys().next().value;
+    if (first !== undefined) existsCache.delete(first);
+  }
+  return result;
+}
+
 /** Serve the built SPA from dist/ (production path; dev uses Vite). */
 function serveDist(pathname: string): Response {
-  const dist = join(process.cwd(), 'dist');
-  if (!existsSync(dist)) return json({ error: 'not found' }, 404);
+  const dist = distDirCache;
+  if (distExistsCache === null) distExistsCache = cachedExistsSync(dist);
+  if (!distExistsCache) return json({ error: 'not found' }, 404);
 
   let filePath: string;
   try {
@@ -100,7 +125,7 @@ function serveDist(pathname: string): Response {
   if (!filePath.startsWith(dist + sep) && filePath !== dist + sep + 'index.html') {
     return json({ error: 'forbidden' }, 403);
   }
-  if (!existsSync(filePath) || !filePath.startsWith(dist + sep)) {
+  if (!cachedExistsSync(filePath) || !filePath.startsWith(dist + sep)) {
     filePath = join(dist, 'index.html'); // SPA fallback
   }
   const headers: Record<string, string> = {
@@ -171,13 +196,38 @@ const server = Bun.serve({
       const page = r.config?.pages.find((p) => p.slug === slug);
       if (!page) return json({ error: `page "${slug}" not found` }, 404);
       if (url.searchParams.has('stream')) {
+        const abortController = new AbortController();
+        const enc = new TextEncoder();
+        const streamCtx: WidgetFetchContext = {
+          ...ctx,
+          fetch: ((input: string | URL | Request, init?: RequestInit) => {
+            const innerSignal = init?.signal as AbortSignal | undefined;
+            const signal = innerSignal
+              ? (typeof AbortSignal.any === 'function'
+                  ? AbortSignal.any([innerSignal, abortController.signal])
+                  : abortController.signal)
+              : abortController.signal;
+            return ctx.fetch(input as string, { ...init, signal } as RequestInit);
+          }) as typeof ctx.fetch,
+        };
         const stream = new ReadableStream({
           async start(controller) {
-            const enc = new TextEncoder();
-            for await (const chunk of streamPagePayload(page, ctx)) {
-              controller.enqueue(enc.encode(`${JSON.stringify(chunk)}\n`));
+            try {
+              // Layout-first line so cold loads paint the full skeleton before
+              // any widget fetch settles.
+              controller.enqueue(
+                enc.encode(`${JSON.stringify({ path: '$skeleton', payload: skeletonPagePayload(page) })}\n`),
+              );
+              for await (const chunk of streamPagePayload(page, streamCtx)) {
+                controller.enqueue(enc.encode(`${JSON.stringify(chunk)}\n`));
+              }
+              controller.close();
+            } catch (e) {
+              controller.error(e);
             }
-            controller.close();
+          },
+          cancel() {
+            abortController.abort();
           },
         });
         return new Response(stream, {
@@ -190,7 +240,7 @@ const server = Bun.serve({
       const payload = await buildPagePayload(page, ctx);
       const body = JSON.stringify(payload);
       const etag = `W/"${Bun.hash(body).toString(16)}"`;
-      if (req.headers.get('if-none-match') === etag) {
+      if (etagMatches(req.headers.get('if-none-match'), etag)) {
         return new Response(null, { status: 304, headers: { etag } });
       }
       return new Response(body, {
