@@ -76,7 +76,13 @@ function applyChunk(base: PagePayload, path: string, payload: unknown): void {
     return;
   }
   m = /^widgets\[(\d+)\]$/.exec(path);
-  if (m && base.widgets && base.widgets[Number(m[1])]) base.widgets[Number(m[1])] = w;
+  if (m && base.widgets) {
+    const idx = Number(m[1]);
+    if (base.widgets[idx]) {
+      base.widgets = base.widgets.slice();
+      base.widgets[idx] = w;
+    }
+  }
 }
 
 function reconcileWithCached(skeleton: PagePayload, cached: PagePayload): PagePayload {
@@ -223,7 +229,7 @@ async function fetchPage(
     const result = await p;
     return result;
   } finally {
-    inflight.delete(slug);
+    if (inflight.get(slug) === p) inflight.delete(slug);
   }
 }
 

@@ -494,4 +494,70 @@ describe('usePageData stale-while-revalidate', () => {
     });
     expect(result2.current.isValidating).toBe(false);
   });
+
+  it('flat widgets copy-on-write: second chunk delivers different widgets array identity', async () => {
+    const FLAT_SKELETON: PagePayload = {
+      slug: 'lab',
+      name: 'Lab',
+      width: 'default',
+      tiling: 'collage',
+      minColumnWidth: 300,
+      headWidgets: [],
+      columns: [],
+      widgets: [
+        { type: 'clock', config: { type: 'clock', title: 'Clock' }, data: null, error: undefined },
+        { type: 'clock', config: { type: 'clock', title: 'Clock 2' }, data: null, error: undefined },
+      ],
+    };
+    const W0 = { type: 'clock', config: { type: 'clock', title: 'Clock' }, data: { time: 't0' }, error: undefined };
+    const W1 = { type: 'clock', config: { type: 'clock', title: 'Clock 2' }, data: { time: 't1' }, error: undefined };
+
+    let controller!: ReadableStreamDefaultController<Uint8Array>;
+    const enc = new TextEncoder();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(new ReadableStream<Uint8Array>({ start(c) { controller = c; } }), { headers: { 'content-type': 'application/x-ndjson' } })),
+    );
+    vi.resetModules();
+    ({ usePageData } = await import('./usePageData'));
+    const { result } = renderHook(() => usePageData('lab'));
+
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    controller.enqueue(enc.encode(JSON.stringify({ path: '$skeleton', payload: FLAT_SKELETON }) + '\n'));
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    // skeleton delivered — widgets exist
+    expect(result.current.data?.widgets).toHaveLength(2);
+
+    controller.enqueue(enc.encode(JSON.stringify({ path: 'widgets[0]', payload: W0 }) + '\n'));
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    const ref1 = result.current.data?.widgets;
+    expect(ref1?.[0].data).toEqual(W0.data);
+
+    controller.enqueue(enc.encode(JSON.stringify({ path: 'widgets[1]', payload: W1 }) + '\n'));
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    const ref2 = result.current.data?.widgets;
+    expect(ref2?.[1].data).toEqual(W1.data);
+    // BentoGrid memo relies on new array identity — second chunk must have new widgets array
+    expect(ref1).not.toBe(ref2);
+
+    controller.close();
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(result.current.isValidating).toBe(false);
+  });
 });
