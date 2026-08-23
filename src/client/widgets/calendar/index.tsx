@@ -35,15 +35,17 @@ function Calendar({ config }: WidgetComponentProps) {
     const offset = (((first.getDay() + 6) % 7) - start + 7) % 7;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const daysInPrev = new Date(year, month, 0).getDate();
-    const out: { day: number; current: boolean }[] = [];
+    const out: { id: string; day: number; current: boolean }[] = [];
     for (let i = offset - 1; i >= 0; i--) {
-      out.push({ day: daysInPrev - i, current: false });
+      const day = daysInPrev - i;
+      out.push({ id: `prev-${day}-${out.length}`, day, current: false });
     }
     for (let d = 1; d <= daysInMonth; d++) {
-      out.push({ day: d, current: true });
+      out.push({ id: `cur-${d}`, day: d, current: true });
     }
     while (out.length % 7 !== 0) {
-      out.push({ day: out.length - offset - daysInMonth + 1, current: false });
+      const day = out.length - offset - daysInMonth + 1;
+      out.push({ id: `next-${day}-${out.length}`, day, current: false });
     }
     return out;
   }, [year, month, start]);
@@ -62,7 +64,8 @@ function Calendar({ config }: WidgetComponentProps) {
         ))}
         {cells.map((c) => (
           <div
-            key={`${c.current ? 'c' : 'p'}-${c.day}`}
+            key={c.id}
+            aria-current={c.current && c.day === now.getDate() ? 'date' : undefined}
             className={`${styles.day} ${c.current ? '' : styles.other} ${c.current && c.day === now.getDate() ? styles.today : ''}`}
           >
             {c.day}

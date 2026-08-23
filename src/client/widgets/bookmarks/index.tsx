@@ -20,15 +20,15 @@ function Bookmarks({ config }: WidgetComponentProps) {
       {groups.map((group) => {
         const links = group.links ?? [];
         return (
-          <div key={group.title ?? links[0]?.url ?? 'untitled'} className={styles.group}>
+          <div key={`${group.title ?? ''}::${links[0]?.url ?? ''}::${links.length}`} className={styles.group}>
             {group.title ? (
               <div className={styles.groupTitle} style={group.color ? { color: group.color } : undefined}>
                 {group.title}
               </div>
             ) : null}
             <ul className={styles.links}>
-              {links.map((link, j) => (
-                <li key={`${link.title}-${j}`} className={styles.linkItem}>
+              {links.map((link) => (
+                <li key={`${link.title}::${link.url}::${link.description ?? ''}`} className={styles.linkItem}>
                   <Link
                     href={link.url}
                     target={link['same-tab'] || group['same-tab'] || cfg['same-tab'] ? undefined : '_blank'}

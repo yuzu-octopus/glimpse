@@ -45,7 +45,7 @@ function CustomApi({ config, data, error, isLoading }: WidgetComponentProps) {
   const frameless = cfg.frameless === true;
   const collapseAfter = cfg['collapse-after'];
 
-  const rows = items.map((item) => <ItemRow key={item.title + (item.url ?? '')} item={item} />);
+  const rows = items.map((item) => <ItemRow key={`${item.title}::${item.url ?? ''}::${item.timestamp ?? ''}`} item={item} />);
   if (frameless) {
     // frameless has no chrome to hang error/loading on — surface inline but still respect collapseAfter
     if (loading) {

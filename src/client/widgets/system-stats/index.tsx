@@ -23,7 +23,7 @@ function Row({ label, value, sub }: { label: string; value: string; sub?: string
 
 export function SystemStats({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as SystemStatsConfig;
-  const loading = isLoading === true;
+  const loading = isLoading ?? ((data as unknown) == null && !error);
   const d = data as SystemStatsData | null;
 
   if (loading) {
@@ -91,7 +91,7 @@ export function SystemStats({ config, data, error, isLoading }: WidgetComponentP
 
   // GPU
   for (const g of d.gpu) {
-    rows.push(<Row key={`gpu-${g.model}`} label="GPU" value={g.model} sub={g.temp != null ? `${g.temp}°C` : undefined} />);
+    rows.push(<Row key={`gpu-${g.model}-${g.temp ?? 'na'}`} label="GPU" value={g.model} sub={g.temp != null ? `${g.temp}°C` : undefined} />);
   }
 
   return (

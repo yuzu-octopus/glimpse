@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { fmtNumber } from '../_helpers/fmtNumber';
 import { Link } from '@astryxdesign/core';
 import { CircleDot, GitPullRequest, Star } from 'lucide-react';
 import type { RepositoryConfig } from '../../../shared/widgets/keyed';
@@ -31,7 +32,7 @@ function SubList({ icon, label, rows }: {
 
 function Repository({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as RepositoryConfig;
-  const loading = isLoading === true;
+  const loading = isLoading ?? ((data as unknown) == null && !error);
   const repo = (data ?? {}) as Partial<RepositoryData>;
   const pulls = repo.pulls ?? [];
   const issues = repo.issues ?? [];
@@ -51,7 +52,7 @@ function Repository({ config, data, error, isLoading }: WidgetComponentProps) {
           {repo.stars !== null && repo.stars !== undefined ? (
             <span className={styles.stars}>
               <Star size={13} />
-              {repo.stars.toLocaleString()}
+              {fmtNumber(repo.stars)}
             </span>
           ) : null}
           {repo.description ? <div className={styles.desc}>{repo.description}</div> : null}

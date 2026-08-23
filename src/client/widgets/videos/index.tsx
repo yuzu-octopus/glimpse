@@ -1,15 +1,11 @@
-import { useState } from 'react';
 import { Link } from '@astryxdesign/core';
-import { ChevronRight } from 'lucide-react';
 import { VIDEOS_DEFAULTS, type VideosConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { useAge } from '../_hooks/useAge';
-import { formatAge } from '../_hooks/useRelativeTime';
 import type { Video } from '../../../shared/widgets/payloads';
 import styles from './videos.module.css';
-import Feed, { type FeedItem } from '../feed/feed';
-import chromeStyles from '../../components/widget-chrome.module.css';
+import Feed from '../feed/feed';
 
 function Card({ video }: { video: Video }) {
   const rawAge = useAge(video.published);
@@ -36,7 +32,6 @@ function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
   const videos = ((data as { videos?: Video[] } | null)?.videos ?? []) as Video[];
   const style = cfg.style ?? VIDEOS_DEFAULTS.style;
   const collapseAfter = style === 'grid-cards' ? cfg['collapse-after-rows'] : cfg['collapse-after'];
-  const [expanded, setExpanded] = useState(false);
 
   if (loading) {
     return (
@@ -64,19 +59,6 @@ function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
   }
 
   if (style === 'vertical-list') {
-    const feedItems: FeedItem[] = videos.map((v) => {
-      const age = v.published ? formatAge((Date.now() - Date.parse(v.published)) / 1000) : null;
-      const meta = [age, v.channel].filter(Boolean).join(' • ');
-      return {
-        title: v.title,
-        url: v.url,
-        meta: meta || null,
-        image: v.thumbnail,
-      };
-    });
-    const hasCollapse =
-      typeof collapseAfter === 'number' && collapseAfter >= 0 && feedItems.length > collapseAfter;
-    const visible = hasCollapse && !expanded ? feedItems.slice(0, collapseAfter) : feedItems;
     return (
       <WidgetChrome
         title={cfg.title}
@@ -84,26 +66,11 @@ function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
         hideHeader={cfg['hide-header']}
         cssClass={cfg['css-class']}
         error={error}
-      >
-        <Feed items={visible} layout="list" />
-        {hasCollapse ? (
-          expanded ? (
-            <button
-              type="button"
-              className={`${chromeStyles.more} ${chromeStyles.moreExpanded}`}
-              onClick={() => setExpanded(false)}
-            >
-              Show less
-              <ChevronRight size={12} className={chromeStyles.chevron} />
-            </button>
-          ) : (
-            <button type="button" className={chromeStyles.more} onClick={() => setExpanded(true)}>
-              {`Show more (${feedItems.length - (collapseAfter as number)})`}
-              <ChevronRight size={12} className={chromeStyles.chevron} />
-            </button>
-          )
-        ) : null}
-      </WidgetChrome>
+        collapseAfter={collapseAfter}
+        items={videos.map((v) => (
+          <VideoRow key={v.url} video={v} />
+        ))}
+      />
     );
   }
 
@@ -119,6 +86,12 @@ function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
       items={videos.map((v) => <Card key={v.url} video={v} />)}
     />
   );
+}
+
+function VideoRow({ video }: { video: Video }) {
+  const age = useAge(video.published) || null;
+  const meta = [age, video.channel].filter(Boolean).join(' • ');
+  return <Feed items={[{ title: video.title, url: video.url, meta: meta || null, image: video.thumbnail }]} layout="list" />;
 }
 
 registerWidgetComponent('videos', Videos);

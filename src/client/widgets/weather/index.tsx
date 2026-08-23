@@ -60,7 +60,7 @@ const DAY_NAMES = new Intl.DateTimeFormat('en-GB', { weekday: 'short' });
 
 export function Weather({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as WeatherConfig;
-  const loading = isLoading === true;
+  const loading = isLoading ?? ((data as unknown) == null && !error);
   const w = data as WeatherData | null;
   if (loading) {
     return (

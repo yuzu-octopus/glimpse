@@ -2,11 +2,8 @@ import type { DnsStatsConfig } from '../../../shared/widgets/dns';
 import type { DnsStats } from '../../../shared/widgets/payloads';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
+import { fmtNumber as fmt } from '../_helpers/fmtNumber';
 import styles from './dns.module.css';
-
-function fmt(n: number): string {
-  return n.toLocaleString('en-US');
-}
 
 function fmtApprox(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -117,7 +114,7 @@ export function DnsStatsWidget({ config, data, error, isLoading }: WidgetCompone
             </div>
             <div className={styles.columns}>
               {d.series.map((pt, idx) => (
-                <div key={d.timeLabels[idx] ?? String(pt.queries)} className={styles.column} data-testid="dns-column">
+                <div key={`dns-${pt.queries}-${pt.blocked}-${pt.percentBlocked}-${pt.percentTotal}`} className={styles.column} data-testid="dns-column">
                   <div className={styles.tip} data-testid="dns-tip">
                     <div>
                       <div className={styles.tipValue}>{fmt(pt.queries)}</div>

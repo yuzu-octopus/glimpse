@@ -40,7 +40,7 @@ describe('repository widget', () => {
   });
 
   it('falls back to the configured repository name when data is missing', () => {
-    render(<Repository config={{ type: 'repository', repository: 'user/other' }} data={null} />);
+    render(<Repository config={{ type: 'repository', repository: 'user/other' }} data={null} isLoading={false} />);
     expect(screen.getByText('user/other')).toBeInTheDocument();
   });
 

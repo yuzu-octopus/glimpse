@@ -4,7 +4,7 @@ import { ChevronRight } from 'lucide-react';
 import { RSS_DEFAULTS, type RssConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import { formatAge } from '../_hooks/useRelativeTime';
+import { formatAge, useRelativeTime } from '../_hooks/useRelativeTime';
 import type { RssItem } from '../../../shared/widgets/payloads';
 import styles from './rss.module.css';
 import Feed, { type FeedItem } from '../feed/feed';
@@ -45,12 +45,12 @@ function toFeedItems(items: RssItem[], detailed: boolean): FeedItem[] {
   });
 }
 
-function Cards({ items, title, titleUrl, hideHeader, cssClass, cardHeight, thumbnailHeight, overlay }: {
+function Cards({ items, title, titleUrl, hideHeader, cssClass, cardHeight, thumbnailHeight, overlay, error, isLoading }: {
   items: RssItem[]; title?: string; titleUrl?: string; hideHeader?: boolean; cssClass?: string;
-  cardHeight?: number; thumbnailHeight?: number; overlay?: boolean;
+  cardHeight?: number; thumbnailHeight?: number; overlay?: boolean; error?: string; isLoading?: boolean;
 }) {
   return (
-    <WidgetChrome title={title} titleUrl={titleUrl} hideHeader={hideHeader} cssClass={cssClass}>
+    <WidgetChrome title={title} titleUrl={titleUrl} hideHeader={hideHeader} cssClass={cssClass} error={error} isLoading={isLoading}>
       <div className={styles.cardRow}>
         {items.map((item) =>
           overlay ? (
@@ -106,6 +106,8 @@ function Cards({ items, title, titleUrl, hideHeader, cssClass, cardHeight, thumb
 }
 
 function Rss({ config, data, error, isLoading }: WidgetComponentProps) {
+  // ticker drives relative times live without per-row timers
+  useRelativeTime(0);
   const cfg = config as unknown as RssConfig;
   const loading = isLoading ?? ((data as unknown) == null && !error);
   const items = ((data as { items?: RssItem[] } | null)?.items ?? []) as RssItem[];
@@ -145,6 +147,8 @@ function Rss({ config, data, error, isLoading }: WidgetComponentProps) {
         cardHeight={cfg['card-height']}
         thumbnailHeight={cfg['thumbnail-height']}
         overlay={cfg['overlay'] === true}
+        error={error}
+        isLoading={loading}
       />
     );
   }

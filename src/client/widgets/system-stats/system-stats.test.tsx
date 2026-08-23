@@ -21,7 +21,7 @@ describe('SystemStats client', () => {
   });
 
   it('shows placeholder when data is null', () => {
-    render(<SystemStats config={baseConfig} data={null} />);
+    render(<SystemStats config={baseConfig} data={null} isLoading={false} />);
     expect(screen.getByText('No data — not running on homelab host')).toBeInTheDocument();
   });
 

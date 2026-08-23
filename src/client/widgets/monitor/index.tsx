@@ -12,7 +12,7 @@ function SiteRow({ site }: { site: MonitorSite }) {
   const target = site.sameTab ? undefined : '_blank';
   return (
     <div className={styles.row}>
-      <span className={`${styles.dot} ${site.ok ? styles.dotUp : styles.dotDown}`} aria-label={site.ok ? 'up' : 'down'} />
+      <span role="img" className={`${styles.dot} ${site.ok ? styles.dotUp : styles.dotDown}`} aria-label={site.ok ? 'up' : 'down'} />
       <div className={styles.rowBody}>
         <Link href={href} target={target} className={styles.title} hasUnderline={false}>
           {site.title || site.url}

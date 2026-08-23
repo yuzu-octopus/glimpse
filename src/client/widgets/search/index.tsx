@@ -51,11 +51,7 @@ export function Search({ config }: WidgetComponentProps) {
       newTab,
     });
     if (!url) return;
-    if (newTab) {
-      window.open(url, target, 'noopener,noreferrer');
-    } else {
-      window.open(url, target, 'noopener,noreferrer');
-    }
+    window.open(url, target, 'noopener,noreferrer');
     lastQueryRef.current = rest;
     setQuery('');
   };

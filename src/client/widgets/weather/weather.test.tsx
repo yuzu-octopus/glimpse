@@ -33,7 +33,7 @@ describe('weather widget', () => {
   });
 
   it('shows the empty state without data', () => {
-    render(<Weather config={{ type: 'weather', location: 'London' }} data={null} />);
+    render(<Weather config={{ type: 'weather', location: 'London' }} data={null} isLoading={false} />);
     expect(screen.getByText('No weather data.')).toBeInTheDocument();
   });
 

@@ -3,6 +3,7 @@ import { ArrowDown, ArrowUp } from 'lucide-react';
 import { MARKETS_DEFAULTS, type MarketsConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
+import { fmtNumber } from '../_helpers/fmtNumber';
 import type { Market } from '../../../shared/widgets/payloads';
 import styles from './markets.module.css';
 void MARKETS_DEFAULTS;
@@ -39,7 +40,7 @@ function Change({ change, changePct }: { change: number | null; changePct: numbe
   return (
     <span className={cls ? `${styles.change} ${cls}` : styles.change}>
       {up ? <ArrowUp size={12} /> : down ? <ArrowDown size={12} /> : null}
-      {change.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+      {fmtNumber(change, { maximumFractionDigits: 2 })}
       {changePct !== null ? ` (${changePct.toFixed(2)}%)` : ''}
     </span>
   );
@@ -86,7 +87,7 @@ function Row({ market, symbolLink, chartLink }: { market: Market } & RowLinks) {
       <div className={styles.values}>
         <Change change={market.change} changePct={market.changePct} />
         <span className={styles.price}>
-          {market.price !== null ? market.price.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'}
+          {market.price !== null ? fmtNumber(market.price, { maximumFractionDigits: 2 }) : '—'}
         </span>
       </div>
     </div>
