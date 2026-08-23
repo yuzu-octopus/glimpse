@@ -211,4 +211,25 @@ theme:
     expect(r.ok).toBe(false);
     expect(r.errors?.some((e) => e.includes('circular'))).toBe(true);
   });
+
+  it('returns files for main + every include after a diamond include', () => {
+    write('common.yml', 'pages:\n  - name: Common\n    columns:\n      - size: full\n        widgets: [{ type: clock }]\n');
+    write('left.yml', '$include: common.yml\n');
+    write('right.yml', '$include: common.yml\n');
+    const main = write('glance.yml', `
+$include:
+  - left.yml
+  - right.yml
+pages:
+  - name: Home
+    columns:
+      - size: full
+        widgets: [{ type: clock }]
+`);
+    const r = loadConfig(main);
+    expect(r.ok).toBe(true);
+    for (const name of ['glance.yml', 'left.yml', 'right.yml', 'common.yml']) {
+      expect(r.files).toContain(join(dir, name));
+    }
+  });
 });

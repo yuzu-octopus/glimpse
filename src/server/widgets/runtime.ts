@@ -38,16 +38,6 @@ type Fetcher<T = unknown> = (
   config: Record<string, unknown>,
 ) => Promise<T>;
 
-function isWidgetCtx(v: unknown): v is WidgetFetchContext {
-  return (
-    typeof v === 'object' &&
-    v !== null &&
-    'cache' in v &&
-    'singleflight' in v &&
-    'fetch' in v
-  );
-}
-
 export async function fetchWidgetData<T = unknown>(
   ctx: WidgetFetchContext,
   type: string,
@@ -55,8 +45,6 @@ export async function fetchWidgetData<T = unknown>(
   cacheKey: string,
   fetcher: Fetcher<T>,
 ): Promise<T> {
-  if (!isWidgetCtx(ctx)) throw new Error('fetchWidgetData: invalid ctx');
-
   const ttlMs =
     typeof config.cache === 'string'
       ? parseCacheDuration(config.cache)
@@ -65,7 +53,15 @@ export async function fetchWidgetData<T = unknown>(
   const cached = ctx.cache.get<T>(cacheKey);
   if (cached !== undefined) return cached;
 
-  const data = await ctx.singleflight.run(cacheKey, () => fetcher(ctx, config));
+  let data: T;
+  try {
+    data = await ctx.singleflight.run(cacheKey, () => fetcher(ctx, config));
+  } catch (err) {
+    // Stale-on-error: prefer last good value over propagating the failure.
+    const stale = ctx.cache.getStale<T>(cacheKey);
+    if (stale !== undefined) return stale;
+    throw err;
+  }
   ctx.cache.set(cacheKey, data, ttlMs);
   return data;
 }

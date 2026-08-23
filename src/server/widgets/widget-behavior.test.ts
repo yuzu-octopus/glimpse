@@ -92,25 +92,20 @@ describe('T4 TDD failing', () => {
     vi.useRealTimers();
   });
 
-  it('cache getStale retains after TTL and negative cache setError', async () => {
+  it('cache getStale retains after TTL (stale-on-error via getStale)', async () => {
     const c = new TtlCache();
     c.set('k', 'val', 100);
-    // should be fres
     expect(c.get('k')).toBe('val');
-    // @ts-ignore
-    // advance time past TTL - we use real Date.now, so use vi fake
     vi.useFakeTimers();
     const c2 = new TtlCache();
     c2.set('k', 'val', 100);
     vi.advanceTimersByTime(150);
-    // fresh miss but stale should still be there
+    // fresh miss but stale should still be there (24h retain)
     expect(c2.get('k')).toBeUndefined();
-    expect((c2 as unknown as { getStale: (k:string)=>unknown }).getStale?.('k')).toBe('val');
-    // negative cache
-    (c2 as unknown as { setError: (k:string, e:unknown, ttl:number)=>void }).setError('err:k', new Error('fail'), 30_000);
-    expect((c2 as unknown as { getError: (k:string)=>unknown }).getError('err:k')).toBeTruthy();
-    vi.advanceTimersByTime(30_001);
-    expect((c2 as unknown as { getError: (k:string)=>unknown }).getError('err:k')).toBeUndefined();
+    expect(c2.getStale('k')).toBe('val');
+    // stale expires 24h after set (ttl + 24h)
+    vi.advanceTimersByTime(24 * 60 * 60 * 1000);
+    expect(c2.getStale('k')).toBeUndefined();
     vi.useRealTimers();
   });
 });

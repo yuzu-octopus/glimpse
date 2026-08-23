@@ -5,7 +5,7 @@ import {
   type Config,
   type ResolvedConfig,
 } from '../shared/config';
-import { isRecord } from './api';
+import { isRecord } from '../shared/is-record';
 import type { WidgetFetchContext } from './widgets/registry';
 
 function parseYaml(text: string): unknown {
@@ -172,7 +172,7 @@ function interpolateEnv(
 function loadYamlTree(
   filePath: string,
   errors: string[],
-  files: string[],
+  files: Set<string>,
   seen: Set<string>,
 ): Record<string, unknown> | null {
   const abs = resolve(filePath);
@@ -181,53 +181,58 @@ function loadYamlTree(
     return null;
   }
   seen.add(abs);
-  files.push(abs);
-
-  let raw: string;
   try {
-    raw = readFileSync(abs, 'utf8');
-  } catch (e) {
-    errors.push(`cannot read config file ${abs}: ${(e as Error).message}`);
-    return null;
-  }
-  let doc: unknown;
-  try {
-    doc = parseYaml(raw);
-  } catch (e) {
-    errors.push(`invalid YAML in ${abs}: ${(e as Error).message}`);
-    return null;
-  }
-  if (doc === null || doc === undefined) return {};
-  if (!isRecord(doc)) {
-    errors.push(`config root must be a mapping in ${abs}`);
-    return null;
-  }
+    files.add(abs);
 
-  const merged: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(doc)) {
-    if (k !== '$include') merged[k] = v;
-  }
+    let raw: string;
+    try {
+      raw = readFileSync(abs, 'utf8');
+    } catch (e) {
+      errors.push(`cannot read config file ${abs}: ${(e as Error).message}`);
+      return null;
+    }
+    let doc: unknown;
+    try {
+      doc = parseYaml(raw);
+    } catch (e) {
+      errors.push(`invalid YAML in ${abs}: ${(e as Error).message}`);
+      return null;
+    }
+    if (doc === null || doc === undefined) return {};
+    if (!isRecord(doc)) {
+      errors.push(`config root must be a mapping in ${abs}`);
+      return null;
+    }
 
-  const includes = doc['$include'];
-  if (includes !== undefined) {
-    const list = Array.isArray(includes) ? includes : [includes];
-    for (const inc of list) {
-      if (typeof inc !== 'string') {
-        errors.push(`$include entries must be strings in ${abs}`);
-        continue;
-      }
-      const incAbs = isAbsolute(inc) ? inc : resolve(dirname(abs), inc);
-      const sub = loadYamlTree(incAbs, errors, files, seen);
-      if (!sub) continue;
-      const parentPages = Array.isArray(merged.pages) ? merged.pages : [];
-      const subPages = Array.isArray(sub.pages) ? sub.pages : [];
-      merged.pages = [...parentPages, ...subPages];
-      if (sub.theme !== undefined) {
-        merged.theme = { ...(isRecord(merged.theme) ? merged.theme : {}), ...(isRecord(sub.theme) ? sub.theme : {}) };
+    const merged: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(doc)) {
+      if (k !== '$include') merged[k] = v;
+    }
+
+    const includes = doc['$include'];
+    if (includes !== undefined) {
+      const list = Array.isArray(includes) ? includes : [includes];
+      for (const inc of list) {
+        if (typeof inc !== 'string') {
+          errors.push(`$include entries must be strings in ${abs}`);
+          continue;
+        }
+        const incAbs = isAbsolute(inc) ? inc : resolve(dirname(abs), inc);
+        if (files.has(incAbs) && !seen.has(incAbs)) continue;
+        const sub = loadYamlTree(incAbs, errors, files, seen);
+        if (!sub) continue;
+        const parentPages = Array.isArray(merged.pages) ? merged.pages : [];
+        const subPages = Array.isArray(sub.pages) ? sub.pages : [];
+        merged.pages = [...parentPages, ...subPages];
+        if (sub.theme !== undefined) {
+          merged.theme = { ...(isRecord(merged.theme) ? merged.theme : {}), ...(isRecord(sub.theme) ? sub.theme : {}) };
+        }
       }
     }
+    return merged;
+  } finally {
+    seen.delete(abs);
   }
-  return merged;
 }
 
 /** Column invariant from glance docs: 1-2 full columns, up to 3 total. */
@@ -293,8 +298,9 @@ function deriveSlugs(raw: unknown, errors: string[]): unknown {
 /** Load + validate a config file. Pure with respect to the filesystem. */
 export function loadConfig(configPath: string): LoadResult {
   const errors: string[] = [];
-  const files: string[] = [];
-  const doc = loadYamlTree(configPath, errors, files, new Set());
+  const fileSet = new Set<string>();
+  const doc = loadYamlTree(configPath, errors, fileSet, new Set());
+  const files = [...fileSet];
   if (!doc) return { ok: false, errors, files };
 
   const interpolated = interpolateEnv(doc, errors, 'config') as Record<string, unknown>;
