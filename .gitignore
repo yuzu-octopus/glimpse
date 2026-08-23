@@ -15,8 +15,16 @@ dev-dist/
 !.env.example
 config.yml
 
-# local tooling
-.agents/
+# local tooling (.agents/skills/<name> re-included individually below so
+# cloners receive project skills; astryx stays local-only — it documents
+# an invented API, see AGENTS.md)
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/configuring-glimpse
+!.agents/skills/adding-widgets
+!.agents/skills/troubleshooting-glimpse
+!.agents/skills/theming-glimpse
 skills-lock.json
 .vite/
 *.local
