@@ -11,6 +11,7 @@ interface WidgetChromeProps {
   cssClass?: string;
   isLoading?: boolean;
   error?: string;
+  skeletonShape?: 'list' | 'stat' | 'chart' | 'rows';
   /** When set (>= 0), lists longer than this collapse behind a "Show more"
    * toggle. -1 (glance semantics) — or any negative — never collapses. */
   collapseAfter?: number;
@@ -27,10 +28,20 @@ export function WidgetChrome({
   cssClass,
   isLoading,
   error,
+  skeletonShape,
   collapseAfter,
   items,
   children,
 }: WidgetChromeProps) {
+  const shape = skeletonShape ?? 'rows';
+  const shapeClass =
+    shape === 'list'
+      ? styles.shapeList
+      : shape === 'stat'
+        ? styles.shapeStat
+        : shape === 'chart'
+          ? styles.shapeChart
+          : styles.shapeRows;
   const globalHide = useContext(HideHeadersContext);
   const effectiveHide = hideHeader || globalHide;
   const [expanded, setExpanded] = useState(false);
@@ -74,10 +85,31 @@ export function WidgetChrome({
       <Card ref={cardRef} className={cssClass ? `${styles.bodyCard} ${cssClass}` : styles.bodyCard} padding={0}>
         <div className={styles.body} data-testid="widget-body">
           {isLoading ? (
-            <div className={styles.skeleton} data-testid="widget-loading">
-              <Skeleton width="100%" height={14} />
-              <Skeleton width="92%" height={14} />
-              <Skeleton width="97%" height={14} />
+            <div className={`${styles.skeleton} ${shapeClass}`} data-testid="widget-loading">
+              {shape === 'list' ? (
+                Array.from({ length: 5 }, (_, i) => (
+                  <div key={i} className={styles.listRow}>
+                    <Skeleton width={24} height={24} radius="rounded" />
+                    <div className={styles.listLines}>
+                      <Skeleton width="70%" height={12} />
+                      <Skeleton width="45%" height={10} />
+                    </div>
+                  </div>
+                ))
+              ) : shape === 'stat' ? (
+                <>
+                  <Skeleton width="100%" height={48} />
+                  <Skeleton width="40%" height={12} />
+                </>
+              ) : shape === 'chart' ? (
+                <Skeleton width="100%" height={120} />
+              ) : (
+                <>
+                  <Skeleton width="100%" height={14} />
+                  <Skeleton width="92%" height={14} />
+                  <Skeleton width="97%" height={14} />
+                </>
+              )}
             </div>
           ) : error ? (
             <Banner status="error" title={error} />

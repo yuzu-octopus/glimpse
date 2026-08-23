@@ -54,6 +54,15 @@ export const PREFERRED_SIZES: Record<WidgetType, Pref> = {
   'server-stats': SERVER_STATS_PREF,
 };
 
+/** Skeleton silhouette per widget type (WidgetChrome loading state). */
+export const SKELETON_SHAPE: Record<string, 'list' | 'stat' | 'chart' | 'rows'> = {
+  rss: 'list', 'hacker-news': 'list', lobsters: 'list', reddit: 'list', releases: 'list',
+  clock: 'stat', weather: 'stat', markets: 'stat', 'server-stats': 'stat',
+  'system-stats': 'stat', repository: 'stat',
+  videos: 'chart', 'custom-api': 'chart',
+};
+// anything absent -> 'rows'
+
 export function assertAllWidgetsCovered(widgetTypes: string[]): void {
   const missing = widgetTypes.filter((t) => !(t in PREFERRED_SIZES));
   if (missing.length > 0) {

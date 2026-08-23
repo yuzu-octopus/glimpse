@@ -13,7 +13,7 @@ import { ensureWidgetLoaded } from '../widgets';
 import { PAGE_WIDTHS } from '../../shared/config';
 import { COLLAGE_ROW_SPAN_MAX, COLLAGE_ROW_SPAN_MIN, MAX_TILING_COLS, chooseColumnCount, composeBento, getTilingProps, type BentoPlacement, type BentoTile } from './tiling';
 import { useCollageTiling } from './useCollageTiling';
-import { PREFERRED_SIZES } from '../../shared/widgets/preferredSizes';
+import { PREFERRED_SIZES, SKELETON_SHAPE } from '../../shared/widgets/preferredSizes';
 import styles from './page.module.css';
 
 /** Config-page shape the loading skeleton needs (subset of WidgetConfig). */
@@ -121,6 +121,7 @@ function WidgetSkeleton({ widget }: { widget: SkeletonWidget }) {
       title={widgetTitle(widget)}
       hideHeader={widget['hide-header'] === true}
       isLoading
+      skeletonShape={SKELETON_SHAPE[widget.type ?? ''] ?? 'rows'}
     />
   );
 }
@@ -213,6 +214,7 @@ const WidgetSlot = memo(function WidgetSlot({ widget }: { widget: WidgetPayload 
           title={widgetTitle(widget)}
           hideHeader={widget.config['hide-header'] === true}
           isLoading
+          skeletonShape={SKELETON_SHAPE[(widget.type as string) ?? (widget.config.type as string) ?? ''] ?? 'rows'}
         />
       }
     >

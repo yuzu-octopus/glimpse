@@ -81,8 +81,39 @@
 }
 
 .skeleton {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
+}
+
+.shapeList {
+  gap: 10px;
+}
+
+.shapeStat {
+  gap: 10px;
+}
+
+.shapeChart {
+  gap: 8px;
+}
+
+.shapeRows {
+  gap: 8px;
+}
+
+.listRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.listLines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
 }
 
 /* glance utils.css .expand-toggle-button */

@@ -126,4 +126,13 @@ describe('WidgetChrome', () => {
     // both scroll off — identical non-sticky positioning
     expect(getComputedStyle(lessBtn).position).toBe(getComputedStyle(moreBtn).position);
   });
+
+  it('renders list-shaped skeleton rows', () => {
+    render(<WidgetChrome title="Feed" isLoading skeletonShape="list" />);
+    expect(screen.getByTestId('widget-loading').className).toContain('shapeList');
+  });
+  it('renders stat-shaped skeleton', () => {
+    render(<WidgetChrome title="Clock" isLoading skeletonShape="stat" />);
+    expect(screen.getByTestId('widget-loading').className).toContain('shapeStat');
+  });
 });
