@@ -19,7 +19,7 @@ pages:
             shortcut: wiki
             url: https://en.wikipedia.org/wiki/Special:Search?search={QUERY}
     columns:
-      - span: 2
+      - span: 4
         widgets:
           - type: clock
             hour-format: 24h
@@ -35,7 +35,7 @@ pages:
             units: metric
           - type: calendar
             first-day-of-week: monday
-      - span: 7
+      - span: 4
         widgets:
           - type: rss
             limit: 10
@@ -61,7 +61,7 @@ pages:
             sort-by: top
             collapse-after: 5
             source-header: true
-      - span: 3
+      - span: 4
         widgets:
           - type: todo
             id: home-todo
@@ -96,21 +96,15 @@ pages:
     slug: dev
     hide-headers: true
     columns:
-      - span: 8
+      - span: 4
         widgets:
-          - type: split-column
-            widgets:
-              - type: releases
-                repositories:
-                  - glanceapp/glance
-                  - sharkdp/bat
-                  - BurntSushi/ripgrep
-                show-source-icon: true
-                limit: 10
-              - type: repository
-                repository: glanceapp/glance
-                pull-requests-limit: 5
-                issues-limit: 5
+          - type: releases
+            repositories:
+              - glanceapp/glance
+              - sharkdp/bat
+              - BurntSushi/ripgrep
+            show-source-icon: true
+            limit: 10
           - type: videos
             title: Tech — recent
             limit: 9
@@ -130,6 +124,12 @@ pages:
               path: $.stargazers_count
               title: Stargazers
               description: github.com/glanceapp/glance
+          - type: repository
+            repository: glanceapp/glance
+            pull-requests-limit: 5
+            issues-limit: 5
+      - span: 4
+        widgets:
           - type: markets
             markets:
               - symbol: AAPL
