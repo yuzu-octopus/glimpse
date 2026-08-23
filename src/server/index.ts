@@ -34,7 +34,7 @@ const ctx: WidgetFetchContext = {
 
 initConfig(CONFIG_PATH, (r) => {
   console.log(r.ok ? '[config] reloaded' : `[config] reload failed: ${r.errors?.join('; ')}`);
-  void warmCache(ctx).catch(() => {});
+  if (r.ok) void warmCache(ctx).catch(() => {});
 });
 void warmCache(ctx).catch(() => {});
 

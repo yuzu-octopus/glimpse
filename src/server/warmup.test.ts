@@ -93,4 +93,18 @@ describe('warmCache', () => {
     await warmCache(ctx);
     expect(mocks.buildPagePayload).not.toHaveBeenCalled();
   });
+
+  it('clears stale cache prefixes before warming', async () => {
+    mocks.getConfig.mockReturnValue(okConfig);
+    const ctx = makeCtx();
+    ctx.cache.set('a:0', 'stale', 60_000);
+    ctx.cache.set('a:head:0', 'stale', 60_000);
+    ctx.cache.set('b:0', 'stale', 60_000);
+    ctx.cache.set('other:0', 'keep', 60_000);
+    await warmCache(ctx);
+    expect(ctx.cache.get('a:0')).toBeUndefined();
+    expect(ctx.cache.get('a:head:0')).toBeUndefined();
+    expect(ctx.cache.get('b:0')).toBeUndefined();
+    expect(ctx.cache.get('other:0')).toBe('keep');
+  });
 });
