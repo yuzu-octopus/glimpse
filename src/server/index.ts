@@ -4,6 +4,7 @@ import { initConfig, getConfig } from './config';
 import { Singleflight, TtlCache } from './cache';
 import { buildPagePayload, skeletonPagePayload, streamPagePayload } from './api';
 import type { WidgetFetchContext } from './widgets/registry';
+import { warmCache } from './warmup';
 import './widgets'; // side-effect: registers all widget fetchers
 
 const CONFIG_PATH =
@@ -31,13 +32,11 @@ const ctx: WidgetFetchContext = {
   singleflight: new Singleflight(),
 };
 
-initConfig(
-  CONFIG_PATH,
-  (r) => {
-    console.log(r.ok ? '[config] reloaded' : `[config] reload failed: ${r.errors?.join('; ')}`);
-  },
-  ctx,
-);
+initConfig(CONFIG_PATH, (r) => {
+  console.log(r.ok ? '[config] reloaded' : `[config] reload failed: ${r.errors?.join('; ')}`);
+  void warmCache(ctx).catch(() => {});
+});
+void warmCache(ctx).catch(() => {});
 
 // Bun 1.4: drop the widget cache under memory pressure — entries re-fetch on
 // next request, so this is a safe (if briefly slower) way to relieve RSS.
