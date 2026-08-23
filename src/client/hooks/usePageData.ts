@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import type { PagePayload, WidgetPayload } from '../../shared/api';
 import { LIVE_POLL_MS, LIVE_TYPES } from '../../shared/live';
 
@@ -6,22 +6,30 @@ export type PageDataResult = {
   data: PagePayload | null;
   error: string | null;
   isValidating: boolean;
-  status: 'loading' | 'ready' | 'error';
   validate: () => Promise<void>;
+  reload: (force?: boolean) => Promise<void>;
 };
 
-function hasLiveWidget(payload: PagePayload): boolean {
-  const check = (widgets: WidgetPayload[]): boolean => {
+function getLiveKey(payload: PagePayload): 'none' | 'live' | 'homelab' {
+  let hasLive = false;
+  let hasHomelab = false;
+  const check = (widgets: WidgetPayload[]): void => {
     for (const w of widgets) {
-      if (w.type === 'group' && (w as any).widgets) return check((w as any).widgets as WidgetPayload[]);
-      if (w.type === 'split-column' && (w as any).widgets) return check((w as any).widgets as WidgetPayload[]);
-      if ((LIVE_TYPES as Record<string, true>)[w.type as string]) return true;
+      const type = w.type;
+      if (w.widgets) {
+        check(w.widgets);
+        if (type === 'group' || type === 'split-column') continue;
+      }
+      if (type === 'server-stats' || type === 'system-stats') hasHomelab = true;
+      else if (LIVE_TYPES[type]) hasLive = true;
     }
-    return false;
   };
-  if (payload.headWidgets && check(payload.headWidgets)) return true;
-  for (const col of payload.columns) if (check(col.widgets)) return true;
-  return false;
+  if (payload.headWidgets) check(payload.headWidgets);
+  for (const col of payload.columns) check(col.widgets);
+  if (payload.widgets) check(payload.widgets);
+  if (hasHomelab) return 'homelab';
+  if (hasLive) return 'live';
+  return 'none';
 }
 
 const pageCache = new Map<string, { data: PagePayload; fetchedAt: number }>();
@@ -54,18 +62,123 @@ function isStale(slug: string): boolean {
   return Date.now() - entry.fetchedAt > STALE_MS;
 }
 
-async function fetchPage(slug: string, signal: AbortSignal, onProgress?: (p: PagePayload) => void): Promise<PagePayload> {
-  if (inflight.has(slug)) return inflight.get(slug)!;
-  const p = (async () => {
-    const res = await fetch(`/api/page/${encodeURIComponent(slug)}`, { signal });
-    if (!res.ok) {
-      const body = (await res.json().catch(() => ({}))) as { error?: string };
-      throw new Error(body.error ?? `HTTP ${res.status}`);
+function applyChunk(base: PagePayload, path: string, payload: unknown): void {
+  const w = payload as WidgetPayload;
+  let m = /^columns\[(\d+)\]\.widgets\[(\d+)\]$/.exec(path);
+  if (m) {
+    const col = base.columns[Number(m[1])];
+    if (col?.widgets[Number(m[2])]) col.widgets[Number(m[2])] = w;
+    return;
+  }
+  m = /^headWidgets\[(\d+)\]$/.exec(path);
+  if (m) {
+    if (base.headWidgets[Number(m[1])]) base.headWidgets[Number(m[1])] = w;
+    return;
+  }
+  m = /^widgets\[(\d+)\]$/.exec(path);
+  if (m && base.widgets && base.widgets[Number(m[1])]) base.widgets[Number(m[1])] = w;
+}
+
+function reconcileWithCached(skeleton: PagePayload, cached: PagePayload): PagePayload {
+  const base: PagePayload = skeleton;
+  if (base.headWidgets && cached.headWidgets) {
+    for (let i = 0; i < base.headWidgets.length; i++) {
+      if (cached.headWidgets[i]) base.headWidgets[i] = cached.headWidgets[i];
     }
-    const data = (await res.json()) as PagePayload;
-    setCache(slug, data);
-    onProgress?.(data);
-    return data;
+  }
+  for (let ci = 0; ci < base.columns.length; ci++) {
+    const sCol = base.columns[ci];
+    const cCol = cached.columns[ci];
+    if (!cCol) continue;
+    for (let wi = 0; wi < sCol.widgets.length; wi++) {
+      if (cCol.widgets[wi]) sCol.widgets[wi] = cCol.widgets[wi];
+    }
+  }
+  if (base.widgets && cached.widgets) {
+    for (let i = 0; i < base.widgets.length; i++) {
+      if (cached.widgets[i]) base.widgets[i] = cached.widgets[i];
+    }
+  }
+  return base;
+}
+
+async function fetchPage(
+  slug: string,
+  signal: AbortSignal,
+  onProgress?: (p: PagePayload) => void,
+  force = false,
+): Promise<PagePayload> {
+  if (!force && inflight.has(slug)) return inflight.get(slug)!;
+  const p = (async () => {
+    const internal = new AbortController();
+    const res = await fetch(`/api/page/${encodeURIComponent(slug)}?stream`, { signal: internal.signal });
+    if (!res.ok) {
+      const rawBody: unknown = await res.json().catch(() => ({}));
+      let msg = `HTTP ${res.status}`;
+      if (rawBody !== null && typeof rawBody === 'object' && 'error' in rawBody) {
+        const maybe = rawBody.error;
+        if (typeof maybe === 'string' && maybe) msg = maybe;
+      }
+      throw new Error(msg);
+    }
+    const ct = res.headers.get('content-type') ?? '';
+    const isNdjson = ct.includes('ndjson');
+    const text = await res.text();
+
+    if (!isNdjson) {
+      try {
+        const parsed: unknown = JSON.parse(text);
+        if (parsed !== null && typeof parsed === 'object' && 'columns' in parsed) {
+          const payload = parsed as PagePayload;
+          setCache(slug, payload);
+          if (!signal.aborted) onProgress?.(payload);
+          return payload;
+        }
+      } catch {
+        // fall through to newline-split fallback
+      }
+    }
+
+    const cached = force ? null : getCached(slug);
+    const cachedBase = cached ? structuredClone(cached) : null;
+    let base: PagePayload | null = null;
+    const skeletonOf = (chunk: { path?: string; payload?: unknown }): PagePayload | null => {
+      if (chunk.path !== '$skeleton') return null;
+      const candidate = chunk.payload;
+      if (candidate === null || typeof candidate !== 'object') return null;
+      if (!('columns' in candidate)) return null;
+      return candidate as PagePayload;
+    };
+
+    for (const line of text.split('\n')) {
+      if (!line.trim() || signal.aborted) continue;
+      let chunk: { path?: string; payload?: unknown };
+      try {
+        chunk = JSON.parse(line);
+      } catch {
+        continue;
+      }
+      const skeleton = skeletonOf(chunk);
+      if (skeleton) {
+        if (!base) {
+          if (cachedBase) base = reconcileWithCached(skeleton, cachedBase);
+          else base = skeleton;
+          if (!signal.aborted) onProgress?.({ ...base });
+        }
+        continue;
+      }
+      if (!base) {
+        if (!cachedBase) continue;
+        base = cachedBase;
+        if (!signal.aborted) onProgress?.({ ...base });
+      }
+      if (!chunk.path) continue;
+      applyChunk(base, chunk.path, chunk.payload);
+      if (!signal.aborted) onProgress?.({ ...base });
+    }
+    if (!base) throw new Error('empty stream');
+    setCache(slug, base);
+    return base;
   })();
   inflight.set(slug, p);
   try {
@@ -79,8 +192,10 @@ async function fetchPage(slug: string, signal: AbortSignal, onProgress?: (p: Pag
 export function prefetchPage(slug: string) {
   if (!isStale(slug) && pageCache.has(slug)) return;
   const ac = new AbortController();
-  fetchPage(slug, ac.signal).catch(() => {});
-  setTimeout(() => ac.abort(), 10000);
+  const t = setTimeout(() => ac.abort(), 10000);
+  fetchPage(slug, ac.signal)
+    .catch(() => {})
+    .finally(() => clearTimeout(t));
 }
 
 export function usePageData(slug: string): PageDataResult {
@@ -91,46 +206,58 @@ export function usePageData(slug: string): PageDataResult {
   const isValidating = isPending || isValidatingRaw;
   const dataRef = useRef<PagePayload | null>(data);
   const abortRef = useRef<AbortController | null>(null);
+  const validatingCountRef = useRef(0);
 
   useEffect(() => {
     dataRef.current = data;
   }, [data]);
 
-  const doFetch = async (signal: AbortSignal) => {
-    if (signal.aborted) return;
-    setIsValidatingRaw(true);
-    try {
-      const onProgress = (progress: PagePayload) => {
-        if (signal.aborted) return;
-        startTransition(() => {
+  const doFetch = useCallback(
+    async (signal: AbortSignal, force = false) => {
+      if (signal.aborted) return;
+      validatingCountRef.current += 1;
+      setIsValidatingRaw(true);
+      try {
+        const onProgress = (progress: PagePayload) => {
+          if (signal.aborted) return;
           dataRef.current = progress;
           setData(progress);
           setError(null);
+        };
+        const next = await fetchPage(slug, signal, onProgress, force);
+        if (signal.aborted) return;
+        startTransition(() => {
+          dataRef.current = next;
+          setData(next);
+          setError(null);
         });
-      };
-      const next = await fetchPage(slug, signal, onProgress);
-      if (signal.aborted) return;
-      startTransition(() => {
-        dataRef.current = next;
-        setData(next);
-        setError(null);
-      });
-      if (!signal.aborted) setIsValidatingRaw(false);
-    } catch (e) {
-      if ((e as Error).name === 'AbortError' || signal.aborted) return;
-      if (!dataRef.current) {
-        startTransition(() => setError(e instanceof Error ? e.message : String(e)));
+      } catch (e) {
+        if ((e instanceof Error && e.name === 'AbortError') || signal.aborted) return;
+        if (!dataRef.current) {
+          const msg = e instanceof Error ? e.message : String(e);
+          startTransition(() => setError(msg));
+        }
+      } finally {
+        validatingCountRef.current = Math.max(0, validatingCountRef.current - 1);
+        if (validatingCountRef.current === 0) setIsValidatingRaw(false);
       }
-      if (!signal.aborted) setIsValidatingRaw(false);
-    }
-  };
+    },
+    [slug],
+  );
 
-  const validate = async () => {
-    abortRef.current?.abort();
-    const ac = new AbortController();
-    abortRef.current = ac;
-    await doFetch(ac.signal);
-  };
+  const reload = useCallback(
+    async (force = false) => {
+      abortRef.current?.abort();
+      const ac = new AbortController();
+      abortRef.current = ac;
+      await doFetch(ac.signal, force);
+    },
+    [doFetch],
+  );
+
+  const validate = useCallback(async () => {
+    await reload(false);
+  }, [reload]);
 
   useEffect(() => {
     const cached = getCached(slug);
@@ -145,7 +272,7 @@ export function usePageData(slug: string): PageDataResult {
     abortRef.current?.abort();
     const ac = new AbortController();
     abortRef.current = ac;
-    void doFetch(ac.signal);
+    void doFetch(ac.signal, false);
     const onFocus = () => {
       if (isStale(slug)) void validate();
     };
@@ -154,21 +281,18 @@ export function usePageData(slug: string): PageDataResult {
       ac.abort();
       window.removeEventListener('focus', onFocus);
     };
-  }, [slug]);
+  }, [slug, doFetch, validate]);
+
+  const liveKey = data ? getLiveKey(data) : 'none';
 
   useEffect(() => {
-    if (!data) return;
-    if (!hasLiveWidget(data)) return;
-    const isHomelab = JSON.stringify(data).includes('"server-stats"') || JSON.stringify(data).includes('"system-stats"');
-    const interval = isHomelab ? 1000 : LIVE_POLL_MS;
+    if (liveKey === 'none') return;
+    const interval = liveKey === 'homelab' ? 1000 : LIVE_POLL_MS;
     const id = window.setInterval(() => {
       void validate();
     }, interval);
     return () => window.clearInterval(id);
-  }, [data]);
+  }, [liveKey, validate]);
 
-  // Prefetching is handled via TopNav hover; idle prefetch disabled in tests to avoid mock interference
-
-  const status: PageDataResult['status'] = error ? 'error' : data ? 'ready' : 'loading';
-  return { data, error, isValidating, status, validate };
+  return { data, error, isValidating, validate, reload };
 }
