@@ -46,4 +46,7 @@ npm-debug.log*
 /AUDIT_*.md
 /TODO.md
 /research/
-docs/superpowers/
+.superpowers/
+docs/superpowers/*
+!docs/superpowers/plans/
+!docs/superpowers/specs/

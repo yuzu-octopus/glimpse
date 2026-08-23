@@ -29,8 +29,8 @@ Built with **Bun**, **TypeScript**, **Vite**, **React 19** and the **Astryx** de
 - **24 widget types** — feeds, homelab monitoring, containers — see [Widgets](#widgets)
 - **48 theme presets** — curated base16 schemes + 6 glance classics, system / light / dark picker, glance-format HSL custom themes, custom CSS
 - **12-column bento layout** — `pages` → `columns` (`span` tracks on a 12-col grid; legacy `size: small/full` still works), responsive remap on tablet/mobile, optional `head-widgets`
-- **Progressive loading** — the server streams widgets as their data settles over a skeleton-first NDJSON stream; widget components are lazy chunks preloaded after first paint
-- **Server-side fetching** — secrets configured once in the server environment; live SWR updates (1s poll for homelab pages, 30s otherwise) without losing stale content mid-refresh
+- **Progressive loading** — the server streams widgets as their data settles over a skeleton-first NDJSON stream; widget components are lazy chunks preloaded after first paint. Fast (cached/config-only) widgets paint instantly while slow API widgets show type-shaped skeletons and fill in as responses arrive; the server pre-warms its widget cache at boot and on config changes so the first visitor never waits on upstreams
+- **Server-side fetching** — secrets configured once in the server environment; live SWR updates (1s poll for homelab pages, 30s otherwise) without losing stale content mid-refresh. GitHub-backed widgets (releases, repository) automatically use `GITHUB_TOKEN`/`GH_TOKEN` or a logged-in `gh` CLI token when available, lifting the API rate limit from 60 to 5,000 req/h
 - **PWA** — installable app shell, offline precache, network-first API
 
 ## Quick start

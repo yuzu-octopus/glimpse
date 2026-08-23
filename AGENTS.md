@@ -15,8 +15,10 @@ config.yml → shared/config.ts (Zod discriminated union) → server/config.ts (
 - **Shared contract:** `src/shared/` Zod schemas + wire types (`api.ts`) + theme tokens are imported by both sides; shared is a leaf (no runtime imports of server/client).
 - **Widget path:** `shared/widgets/<group>.ts` (schema + DEFAULTS + PREF), `server/widgets/<type>.ts` (`registerWidget`), `client/widgets/<type>/index.tsx` (`registerWidgetComponent`). Typed registries join them.
 - **Caching:** per-widget TTL cache keyed `slug:path` (`h:i`, `w:i`, `c:col:i`); fresh hit short-circuits; on fetcher failure `getStale` serves the 24h-retained copy (stale-on-error). `Singleflight.run(key, fn)` dedupes concurrent fetches.
-- **Streaming:** first NDJSON line is `{path:'$skeleton', payload:skeletonPagePayload(page)}` (full layout, all `data:null`) so cold loads paint immediately; subsequent chunks use path forms `headWidgets[i]`, `widgets[i]`, `columns[ci].widgets[wi]` — note these differ from cache-key paths. Stream `cancel()` aborts upstream fetches (`AbortSignal.any`).
-- **Client SWR:** module-level `pageCache` (30s stale, 5m GC) + inflight dedupe; caller aborts never kill the shared fetch (internal AbortController); `reload(force)` bypasses cache+inflight for skeleton refill; `reconcileWithCached` adopts skeleton layout and overlays cached payloads by index so config-shape changes appear instantly; errors surface only when there is no last-good data.
+- **Streaming:** first NDJSON line is `{path:'$skeleton', payload:skeletonPagePayload(page)}` (full layout, all `data:null`) so cold loads paint immediately; subsequent chunks use path forms `headWidgets[i]`, `widgets[i]`, `columns[ci].widgets[wi]` — note these differ from cache-key paths. Stream `cancel()` aborts upstream fetches (`AbortSignal.any`). `?force=1` clears that slug's server cache first (explicit reload hits upstream).
+- **Client SWR:** module-level `pageCache` (30s stale, 5m GC) + inflight dedupe (identity-guarded delete); caller aborts never kill the shared fetch (internal AbortController); `fetchPage` reads the NDJSON body incrementally (`getReader()`, per-line) so chunks render as they arrive — never buffer with `res.text()`. `applyChunk` is copy-on-write for the flat `widgets[]` path (slice before assignment) so memoized consumers see new array refs; `reload(force)` clears data for instant skeleton; `reconcileWithCached` adopts skeleton layout and overlays cached payloads by index so config-shape changes appear instantly; errors surface only when there is no last-good data.
+- **Warm-up:** `server/warmup.ts` `warmCache(ctx)` builds every page through the normal cache path at boot and on config reload (`initConfig(path, onChange?)` callback), deleting all slug prefixes first so edited configs never serve stale TTL entries. Fire-and-forget, all-settled, guarded on `r.ok` for reloads.
+- **Skeletons:** `WidgetChrome` prop `skeletonShape` ('list'|'stat'|'chart'|'rows', default 'rows') from shared `SKELETON_SHAPE` map; `PageSkeleton` is delayed 250ms (`DelayedSkeleton`) so fast loads show nothing.
 - **Polling:** `liveKey` single tree walk → homelab types poll 1s, other LIVE_TYPES 30s, static none. TTL sources live only in `shared/live.ts`.
 - **Theme:** presets/base16 → `ThemeSourcePair` → `glanceRamp` → `[light,dark]` tuples → Astryx `defineTheme` + `documentElement` mirror + paint snapshot `localStorage['glimpse.paint.v1']` (anti-FOUC boot script reads it pre-React).
 
@@ -39,7 +41,7 @@ bun run test         # vitest run (jsdom, globals)
 bun run test:watch   # vitest watch
 npx react-doctor@latest  # full scan gate; glance/** ignored via doctor.config.json
 ```
-Env: `GLIMPSE_CONFIG` (CLI arg wins > env > ./config.yml), `GLIMPSE_PORT=3000`, `GITHUB_TOKEN`, `${VAR}` interpolation in YAML. No `.env` loader (`.env*` gitignored).
+Env: `GLIMPSE_CONFIG` (CLI arg wins > env > ./config.yml), `GLIMPSE_PORT=3000`, `GITHUB_TOKEN`/`GH_TOKEN` (GitHub widgets; falls back to `gh auth token` via `server/github-token.ts`, then unauthenticated 60 req/h), `${VAR}` interpolation in YAML. No `.env` loader (`.env*` gitignored).
 
 ## Code Conventions & Common Patterns
 - **Strict TS:** `strict`, `verbatimModuleSyntax`, `ES2024/bundler`, `noEmit`, noUnusedLocals/Parameters. No `ReturnType` aliases, no inline casts (except CSSProperties custom-var objects), unconditional hooks.
