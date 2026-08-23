@@ -119,8 +119,13 @@
   width: var(--progress, 0%);
   border-radius: inherit;
   transition: width 0.4s ease;
-  /* green below 85%, blending to warning as capacity fills */
-  background: color-mix(in srgb, var(--color-warning) clamp(0%, calc((var(--progress, 0%) - 85) * 20), 100%), var(--color-positive));
+  background: var(--color-positive);
+}
+.bar[data-high="true"]::before {
+  background: var(--color-warning);
+}
+.bar[data-critical="true"]::before {
+  background: var(--color-negative);
 }
 
 .barUnavailable {
@@ -233,16 +238,18 @@
   flex-shrink: 0;
 }
 .rowDetail {
-  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--color-text-subdue);
   font-weight: 400;
+  flex-shrink: 1;
+}
+.rowSpacer {
+  flex: 1;
 }
 .rowTemp {
-  margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 2px;
@@ -252,6 +259,7 @@
   color: var(--color-text-base);
 }
 .rowValue {
+  flex-shrink: 0;
   font-variant-numeric: tabular-nums;
   color: var(--color-text-base);
 }

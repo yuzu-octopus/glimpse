@@ -36,6 +36,8 @@ function Row({
   available?: boolean;
 }) {
   const p = available ? Math.max(0, Math.min(100, percent)) : 0;
+  const isHigh = p >= 85;
+  const isCritical = p >= 95;
   return (
     <div className={styles.row} data-testid="server-row">
       <div className={styles.rowHead}>
@@ -48,6 +50,10 @@ function Row({
             · {detail}
           </span>
         ) : null}
+        <span className={styles.rowSpacer} />
+        <Text as="span" size="sm" className={`${styles.rowValue} ${available ? '' : styles.statUnavailable}`}>
+          {available ? value : 'n/a'}
+        </Text>
         {temp != null ? (
           <span className={styles.rowTemp} title={`${Math.round(temp)}°C`}>
             <Thermometer size={12} aria-hidden /> {Math.round(temp)}°
@@ -56,6 +62,8 @@ function Row({
       </div>
       <meter
         className={`${styles.bar} ${available ? '' : styles.barUnavailable}`}
+        data-high={isHigh || undefined}
+        data-critical={isCritical || undefined}
         style={{ '--progress': `${p}%` } as React.CSSProperties}
         min={0}
         max={100}
@@ -63,9 +71,6 @@ function Row({
         aria-valuenow={available ? p : undefined}
         aria-label={label}
       />
-      <Text as="div" size="sm" className={`${styles.rowValue} ${available ? '' : styles.statUnavailable}`}>
-        {available ? value : 'n/a'}
-      </Text>
     </div>
   );
 }
