@@ -80,10 +80,11 @@ async function localServer(name?: string): Promise<ServerInfo> {
         out.push({ path: p, used: Number(d.used ?? 0), total: Number(d.size ?? 0) });
       }
       if (!out.length) return [];
-      // APFS "/" + "/System/Volumes/Data" share container — pick fuller for single Disk row
-      let best = out[0];
-      for (const m of out) if (m.used / m.total > best.used / best.total) best = m;
-      return [best];
+      // Single Disk: sum used to match fastfetch (e.g. / 12 + Data 177 = 191), total = container size (max)
+      const total = Math.max(...out.map(m => m.total));
+      const used = out.reduce((a, m) => a + m.used, 0);
+      // Cap at total (APFS shared container, sum can exceed seen free)
+      return [{ path: '/', used: Math.min(used, total), total }];
     })(),
     temp: tempData?.main != null ? { main: tempData.main, isAvailable: true } : { main: null, isAvailable: false },
     gpu: (() => {
