@@ -159,4 +159,18 @@ describe('releases fetcher', () => {
     })) as { releases: Release[] };
     expect(data.releases).toHaveLength(3);
   });
+
+  it('does not double-encode pre-escaped path segments', async () => {
+    const routes = {
+      'https://api.github.com/repos/o/repo%20name/releases?per_page=5': [],
+    };
+    const { ctx, fetchMock } = makeCtx(routes);
+    await releasesFetcher()(ctx, {
+      type: 'releases',
+      repositories: ['o/repo%20name'],
+    });
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      'https://api.github.com/repos/o/repo%20name/releases?per_page=5',
+    );
+  });
 });

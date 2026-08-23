@@ -1,6 +1,7 @@
 import { REDDIT_DEFAULTS, redditSchema } from '../../shared/widgets/feeds';
 import { parseCacheDuration } from '../cache';
 import { fetchWithRetry, type HttpOptions } from './http';
+import { compareEngagement } from './engagement';
 import { registerWidget, type WidgetFetchContext } from './registry';
 import type { RedditPost } from '../../shared/widgets/payloads';
 interface RedditChild {
@@ -33,15 +34,26 @@ interface ProxyConfig {
   timeout?: string;
 }
 
+function hashSecret(s: string): string {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) >>> 0;
+  return h.toString(16);
+}
+
+function redditTokenKey(id: string, secret: string): string {
+  return `reddit:token:${id}:${hashSecret(secret)}`;
+}
+
 /** Reddit app-only OAuth: token cached for ~1h (Reddit tokens live 24h). */
 async function getAccessToken(
   ctx: WidgetFetchContext,
   appAuth: { id: string; secret: string },
 ): Promise<string> {
-  const cached = ctx.cache.get<string>('reddit:token') ?? ctx.cache.getStale<string>('reddit:token');
+  const key = redditTokenKey(appAuth.id, appAuth.secret);
+  const cached = ctx.cache.get<string>(key);
   if (cached) return cached;
-  return ctx.singleflight.run('reddit:token', async () => {
-    const again = ctx.cache.get<string>('reddit:token') ?? ctx.cache.getStale<string>('reddit:token');
+  return ctx.singleflight.run(key, async () => {
+    const again = ctx.cache.get<string>(key);
     if (again) return again;
     let res: Response;
     try {
@@ -63,7 +75,7 @@ async function getAccessToken(
     if (!body.access_token) throw new Error('reddit token: no access_token in response');
 
     const ttl = Math.min((body.expires_in ?? 3600) * 1000, 3600_000);
-    ctx.cache.set('reddit:token', body.access_token, ttl);
+    ctx.cache.set(key, body.access_token, ttl);
     return body.access_token;
   });
 }
@@ -103,7 +115,7 @@ registerWidget('reddit', async (ctx, config) => {
       url,
       {
         headers,
-        timeoutMs: proxy?.timeout ? parseCacheDuration(proxy.timeout) : 15_000,
+        timeoutMs: parseCacheDuration(proxy?.timeout, 15_000),
         ...(proxy ? { proxy: proxy.url } : {}),
       } as unknown as HttpOptions & { proxy?: string },
     );
@@ -138,7 +150,7 @@ registerWidget('reddit', async (ctx, config) => {
   );
 
   if (cfg['extra-sort-by'] === 'engagement') {
-    posts.sort((a, b) => b.score + b.comments - (a.score + a.comments));
+    posts.sort(compareEngagement);
   }
   return { posts: posts.slice(0, limit) };
 });

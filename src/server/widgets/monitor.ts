@@ -34,7 +34,7 @@ registerWidget('monitor', async (ctx, config) => {
           try {
             res = await ctx.fetch(checkUrl, {
               headers,
-              signal: AbortSignal.timeout(parseCacheDuration(site.timeout ?? '3s')),
+              signal: AbortSignal.timeout(parseCacheDuration(site.timeout, 3000)),
             });
             lastErr = null;
             break;

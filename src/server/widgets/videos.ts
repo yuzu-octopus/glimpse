@@ -4,46 +4,7 @@ import { registerWidget } from './registry';
 import type { Video } from '../../shared/widgets/payloads';
 import type { WidgetFetchContext } from './registry';
 import { STATIC_TTL_MS } from '../../shared/live';
-
-function getBXML(): { parse(s: string): unknown } {
-  const b = (globalThis as unknown as { Bun?: { XML?: { parse(s: string): unknown } } }).Bun?.XML;
-  if (b) return b;
-  // vitest/jsdom fallback via DOMParser
-  return { parse: fallbackXmlParse };
-}
-
-function fallbackXmlParse(xml: string): unknown {
-  const DP = (globalThis as unknown as { DOMParser?: new () => { parseFromString(s: string, t: string): Document } }).DOMParser;
-  if (!DP) throw new Error('Bun.XML not available and DOMParser missing');
-  const doc = new DP().parseFromString(xml, 'text/xml');
-  const root = doc.documentElement;
-  if (!root) return {};
-  const out: Record<string, unknown> = {};
-  out[root.tagName] = domToObj(root);
-  return out;
-}
-
-function domToObj(el: Element): unknown {
-  const obj: Record<string, unknown> = {};
-  for (const attr of Array.from(el.attributes)) obj[`@${attr.name}`] = attr.value;
-  const children = Array.from(el.children);
-  if (children.length === 0) {
-    const text = el.textContent?.trim() ?? '';
-    if (Object.keys(obj).length === 0) return text || '';
-    if (text) obj['#text'] = text;
-    return obj;
-  }
-  for (const child of children) {
-    const val = domToObj(child);
-    const key = child.tagName;
-    if (key in obj) {
-      const existing = obj[key];
-      if (Array.isArray(existing)) (existing as unknown[]).push(val);
-      else obj[key] = [existing, val];
-    } else obj[key] = val;
-  }
-  return obj;
-}
+import { getBXML } from './xml';
 
 const YT_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const PLAYLIST_PREFIX = 'playlist:';

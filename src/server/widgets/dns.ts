@@ -210,52 +210,48 @@ async function fetchPiholeV6(
     took?: number;
   };
 
+  const [histRes, topRes] = await Promise.all([
+    !hideGraph
+      ? ctx.fetch(`${root}/api/history`, { headers: sidHeader, signal: AbortSignal.timeout(15_000) }).catch(() => null)
+      : Promise.resolve(null),
+    !hideTopDomains
+      ? ctx.fetch(`${root}/api/stats/top_domains?blocked=true`, { headers: sidHeader, signal: AbortSignal.timeout(15_000) }).catch(() => null)
+      : Promise.resolve(null),
+  ]);
+
   let series: DnsStats['series'] = [];
-  if (!hideGraph) {
-    const histRes = await ctx.fetch(`${root}/api/history`, {
-      headers: sidHeader,
-      signal: AbortSignal.timeout(15_000),
-    });
-    if (histRes.ok) {
-      const hist = (await histRes.json()) as { history: Array<{ timestamp: number; total: number; blocked: number }> };
-      const h = hist.history ?? [];
-      // v6 returns 145, drop first (oldest)
-      const sliced = h.length === 145 ? h.slice(1) : h;
-      if (sliced.length === 144) {
-        const qHourly: number[] = [];
-        const bHourly: number[] = [];
-        for (let hour = 0; hour < 24; hour++) {
-          let q = 0;
-          let b = 0;
-          for (let p = 0; p < 6; p++) {
-            const idx = hour * 6 + p;
-            q += sliced[idx]?.total ?? 0;
-            b += sliced[idx]?.blocked ?? 0;
-          }
-          qHourly.push(q);
-          bHourly.push(b);
+  if (histRes?.ok) {
+    const hist = (await histRes.json()) as { history: Array<{ timestamp: number; total: number; blocked: number }> };
+    const h = hist.history ?? [];
+    const sliced = h.length === 145 ? h.slice(1) : h;
+    if (sliced.length === 144) {
+      const qHourly: number[] = [];
+      const bHourly: number[] = [];
+      for (let hour = 0; hour < 24; hour++) {
+        let q = 0;
+        let b = 0;
+        for (let p = 0; p < 6; p++) {
+          const idx = hour * 6 + p;
+          q += sliced[idx]?.total ?? 0;
+          b += sliced[idx]?.blocked ?? 0;
         }
-        series = buildBars(qHourly, bHourly);
+        qHourly.push(q);
+        bHourly.push(b);
       }
+      series = buildBars(qHourly, bHourly);
     }
   }
 
   let topBlockedDomains: DnsStats['topBlockedDomains'] = [];
-  if (!hideTopDomains) {
-    const topRes = await ctx.fetch(`${root}/api/stats/top_domains?blocked=true`, {
-      headers: sidHeader,
-      signal: AbortSignal.timeout(15_000),
-    });
-    if (topRes.ok) {
-      const tj = (await topRes.json()) as { domains: Array<{ domain: string; count: number }> };
-      const blocked = summary.queries?.blocked ?? 0;
-      const raw = (tj.domains ?? []).slice(0, 5).map((d) => ({
-        domain: d.domain,
-        percentBlocked: blocked > 0 ? Math.round((d.count / blocked) * 100) : 0,
-      }));
-      raw.sort((a, b) => b.percentBlocked - a.percentBlocked);
-      topBlockedDomains = raw;
-    }
+  if (topRes?.ok) {
+    const tj = (await topRes.json()) as { domains: Array<{ domain: string; count: number }> };
+    const blocked = summary.queries?.blocked ?? 0;
+    const raw = (tj.domains ?? []).slice(0, 5).map((d) => ({
+      domain: d.domain,
+      percentBlocked: blocked > 0 ? Math.round((d.count / blocked) * 100) : 0,
+    }));
+    raw.sort((a, b) => b.percentBlocked - a.percentBlocked);
+    topBlockedDomains = raw;
   }
 
   // responseTime: pihole summary has no latency; keep 0 so UI shows DOMAINS

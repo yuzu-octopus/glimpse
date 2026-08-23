@@ -38,11 +38,28 @@ const SOURCE_PREFIXES: Record<string, Release['source']> = {
 };
 
 /** glance repo forms: "owner/repo", "gitlab:x", "dockerhub:image[:tag]". */
+function encodePathSegments(path: string): string {
+  return path
+    .split('/')
+    .map((seg) => {
+      try {
+        // Pre-escaped segment (%XX round-trips to something else): leave as-is.
+        if (decodeURIComponent(seg) !== seg) return seg;
+      } catch {
+        // invalid escape sequence (e.g. "50%off") falls through to encoding
+      }
+      return encodeURIComponent(seg);
+    })
+    .join('/');
+}
+
 function parseRepoString(input: string): { source: Release['source']; path: string; tag?: string } {
+  if (!input.trim()) throw new Error('releases: empty repository');
   const prefixed = /^([a-z-]+):(.+)$/.exec(input);
   if (prefixed && SOURCE_PREFIXES[prefixed[1]]) {
     const source = SOURCE_PREFIXES[prefixed[1]];
     let path = prefixed[2];
+    if (!path.trim()) throw new Error('releases: empty repository');
     let tag: string | undefined;
     if (source === 'docker-hub') {
       const tagSep = path.lastIndexOf(':');
@@ -66,6 +83,7 @@ function parseRepo(
     return { ...parseRepoString(repo), includePrereleases };
   }
   const url = repo.url ?? repo.repository ?? '';
+  if (!url.trim()) throw new Error('releases: empty repository');
   const m = /^https?:\/\/([^/]+)\/(.+?)\/?$/.exec(url);
   if (m) {
     const host = m[1];
@@ -76,6 +94,7 @@ function parseRepo(
       : host.includes('docker') ? 'docker-hub'
       : (repo.source ?? 'github');
     const path = source === 'docker-hub' && m[2].startsWith('r/') ? m[2].slice(2) : m[2];
+    if (!path.trim()) throw new Error('releases: empty repository');
     return { source, path, includePrereleases };
   }
   return { source: repo.source ?? 'github', path: url, includePrereleases };
@@ -100,7 +119,7 @@ async function fetchReleases(
     if (token) headers.Authorization = `Bearer ${token}`;
     const data = await fetchJson<GitHubRelease[]>(
       ctx,
-      `https://api.github.com/repos/${path}/releases?per_page=${limit}`,
+      `https://api.github.com/repos/${encodePathSegments(path)}/releases?per_page=${limit}`,
       { headers },
     );
     // glance parity: the `/releases/latest` endpoint excludes prereleases
@@ -121,7 +140,7 @@ async function fetchReleases(
     // a pinned tag needs to see past `limit` results, so widen the page
     const data = await fetchJson<DockerTags>(
       ctx,
-      `https://hub.docker.com/v2/repositories/${path}/tags?page_size=${req.tag ? 100 : limit}`,
+      `https://hub.docker.com/v2/repositories/${encodePathSegments(path)}/tags?page_size=${req.tag ? 100 : limit}`,
     );
     const results = (data.results ?? []).filter(
       (r) => !req.tag || r.name === req.tag,

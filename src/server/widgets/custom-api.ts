@@ -1,5 +1,6 @@
 import { JSONPath } from 'jsonpath-plus';
 import { CUSTOM_API_DEFAULTS, customApiSchema } from '../../shared/widgets/keyed';
+import { fetchWithRetry, type HttpOptions } from './http';
 import { registerWidget } from './registry';
 import type { CustomApiItem } from '../../shared/widgets/payloads';
 
@@ -49,12 +50,8 @@ registerWidget('custom-api', async (ctx, config) => {
     else url.searchParams.set(k, v);
   }
 
-  const init: RequestInit = { method, headers };
-  if (cfg.body !== undefined) {
-    init.body =
-      typeof cfg.body === 'string' ? cfg.body : JSON.stringify(cfg.body);
-  }
-  const res = await ctx.fetch(url.toString(), init);
+  const body = cfg.body !== undefined ? (typeof cfg.body === 'string' ? cfg.body : JSON.stringify(cfg.body)) : undefined;
+  const res = await fetchWithRetry(ctx, url.toString(), { method, headers, body } as unknown as HttpOptions & { proxy?: string });
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   // skip-json-validation tolerates JSON Lines responses: each non-empty line
   // parses into one array element. A single JSON document still parses as-is

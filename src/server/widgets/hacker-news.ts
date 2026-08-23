@@ -1,6 +1,7 @@
 import { HACKER_NEWS_DEFAULTS, hackerNewsSchema } from '../../shared/widgets/feeds';
 import { registerWidget } from './registry';
 import { fetchJson } from './http';
+import { compareEngagement } from './engagement';
 import { widgetLimit } from './runtime';
 import type { HnPost } from '../../shared/widgets/payloads';
 
@@ -77,7 +78,7 @@ registerWidget('hacker-news', async (ctx, config) => {
     }
   }
   if (cfg['extra-sort-by'] === 'engagement') {
-    posts.sort((a, b) => b.score + b.comments - (a.score + a.comments));
+    posts.sort(compareEngagement);
   }
   return { posts: posts.slice(0, limit) };
 });
