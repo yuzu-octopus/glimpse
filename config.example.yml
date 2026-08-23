@@ -19,7 +19,7 @@ pages:
             shortcut: wiki
             url: https://en.wikipedia.org/wiki/Special:Search?search={QUERY}
     columns:
-      - span: 4
+      - span: 3
         widgets:
           - type: clock
             hour-format: 24h
@@ -35,7 +35,7 @@ pages:
             units: metric
           - type: calendar
             first-day-of-week: monday
-      - span: 4
+      - span: 6
         widgets:
           - type: rss
             limit: 10
@@ -61,7 +61,7 @@ pages:
             sort-by: top
             collapse-after: 5
             source-header: true
-      - span: 4
+      - span: 3
         widgets:
           - type: todo
             id: home-todo
