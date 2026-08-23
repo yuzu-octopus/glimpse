@@ -59,6 +59,7 @@ beforeEach(async () => {
 afterEach(() => {
   clientWidgets.delete('clock' as WidgetType);
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 function renderPage(p: PagePayload) {
@@ -173,7 +174,7 @@ describe('PageView', () => {
         t.getAttribute('data-span'),
       ),
     ).toEqual(['2']);
-    // Resolve fetch and let data fill
+    // Switch to real timers for async fill (afterEach is safety net on failure)
     vi.useRealTimers();
     await act(async () => {
       resolveFetch(
@@ -404,8 +405,6 @@ describe('PageView', () => {
     );
     // feed(3)+markets(2)=5→now 5 (clamp 8); clock→1 omitted (rowSpan>1 only); group→2
     expect(spans).toEqual(['5', '2']);
-    vi.useRealTimers();
-    vi.unstubAllGlobals();
   });
 
   it('renders a mobile page-name header when show-mobile-header is set', async () => {
@@ -701,9 +700,7 @@ describe('PageView', () => {
     act(() => {
       vi.advanceTimersByTime(260);
     });
-    expect(screen.getByTestId('page-skeleton')).toBeTruthy();
-    vi.useRealTimers();
-    vi.unstubAllGlobals();
+    expect(screen.getByTestId('page-skeleton')).toBeInTheDocument();
   });
 
   it('size-derived spans map via resolveSpan (full+small → 9/3)', async () => {
