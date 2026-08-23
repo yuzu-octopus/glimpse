@@ -79,7 +79,7 @@ export class TtlCache {
 
 
 export function getDefaultTtl(type: string): number {
-  if (type === "server-stats" || type === "system-stats") return 5_000;
+  if (type === "server-stats" || type === "system-stats") return 1_000;
   return LIVE_TYPES[type] ? LIVE_TTL_MS : STATIC_TTL_MS;
 }
 

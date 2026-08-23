@@ -30,7 +30,11 @@ function payload(overrides: Partial<PagePayload> = {}): PagePayload {
   };
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+  try {
+    const mod = await import('../hooks/usePageData');
+    (mod as any).__clearCacheForTests?.();
+  } catch {}
   registerWidgetComponent('clock' as WidgetType, ({ config, error }) => (
     <div data-testid="clock-widget">
       {error ? <span data-testid="widget-error">{error}</span> : String(config.title)}

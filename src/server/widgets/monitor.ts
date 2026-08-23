@@ -28,10 +28,23 @@ registerWidget('monitor', async (ctx, config) => {
               )}`,
             }
           : undefined;
-        const res = await ctx.fetch(checkUrl, {
-          headers,
-          signal: AbortSignal.timeout(parseCacheDuration(site.timeout ?? '3s')),
-        });
+        let res: Response | null = null;
+        let lastErr: unknown = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            res = await ctx.fetch(checkUrl, {
+              headers,
+              signal: AbortSignal.timeout(parseCacheDuration(site.timeout ?? '3s')),
+            });
+            lastErr = null;
+            break;
+          } catch (e) {
+            lastErr = e;
+            if (attempt === 2) throw e;
+            await new Promise(r => setTimeout(r, 200 * Math.pow(2, attempt)));
+          }
+        }
+        if (!res) throw lastErr ?? new Error('no response');
         const expected = site['expected-status-code'];
         const alts = new Set(site['alt-status-codes'] ?? []);
         const ok =

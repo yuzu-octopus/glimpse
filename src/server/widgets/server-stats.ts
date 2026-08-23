@@ -12,7 +12,7 @@ const REMOTE_TIMEOUT_MS = 5_000;
 async function localServer(name?: string): Promise<ServerInfo> {
   const [os, load, mem, fs] = await Promise.all([
     (si.osInfo as () => Promise<unknown>)().catch(() => null),
-    (si.currentLoad as () => Promise<unknown>)().catch(() => null) as Promise<{ avgLoad?: number | null } | null>,
+    (si.currentLoad as () => Promise<unknown>)().catch(() => null) as Promise<{ currentLoad?: number | null; avgLoad?: number | null } | null>,
     (si.mem as () => Promise<unknown>)().catch(() => null),
     (si.fsSize as () => Promise<unknown>)().catch(() => []) as Promise<{ mount?: string; size?: number; used?: number }[]>,
   ]);
@@ -62,8 +62,14 @@ async function localServer(name?: string): Promise<ServerInfo> {
     bootTime: uptime != null ? new Date(Date.now() - uptime * 1000).toISOString() : '',
     cpu: {
       name: cpuName,
-      load: Number(load?.avgLoad ?? 0),
-      loadIsAvailable: load?.avgLoad != null,
+      load: (() => {
+        const raw = (load as any)?.currentLoad ?? (load as any)?.avgLoad ?? 0;
+        const v = Number(raw);
+        // currentLoad is 0-100, avgLoad is 0-~10 load avg — normalize only currentLoad
+        if ((load as any)?.currentLoad != null) return v > 1 ? v / 100 : v;
+        return v;
+      })(),
+      loadIsAvailable: ((load as any)?.currentLoad ?? (load as any)?.avgLoad) != null,
     },
     memory: {
       total: memData?.total ?? 0,

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { prefetchPage } from '../hooks/usePageData';
 import { Menu } from 'lucide-react';
 import { useConfig } from '../hooks/useConfig';
 import { PAGE_WIDTHS } from '../../shared/layout';
@@ -41,6 +42,8 @@ export function TopNav({ width }: { width?: 'default' | 'slim' | 'wide' }) {
                 : styles.navLink
             }
             aria-current={isSelected(p.slug) ? 'page' : undefined}
+              onMouseEnter={() => prefetchPage(p.slug)}
+              onFocus={() => prefetchPage(p.slug)}
           >
             {p.name}
           </Link>

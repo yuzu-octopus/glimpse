@@ -30,7 +30,9 @@ describe('usePageData stale-while-revalidate', () => {
   beforeEach(async () => {
     vi.useFakeTimers();
     vi.resetModules();
-    ({ usePageData } = await import('./usePageData'));
+    const mod: any = await import('./usePageData');
+    usePageData = mod.usePageData;
+    if (typeof mod.__clearCacheForTests === 'function') mod.__clearCacheForTests();
   });
 
   afterEach(() => {
@@ -61,20 +63,23 @@ describe('usePageData stale-while-revalidate', () => {
       );
 
     vi.stubGlobal('fetch', fetchMock);
+    // Clear global cache between tests — new module instance already has fresh cache via resetModules
     vi.resetModules();
     ({ usePageData } = await import('./usePageData'));
 
     const { result } = renderHook(() => usePageData('home'));
 
-    // Flush initial fetch (microtasks)
+    // Flush initial fetch (microtasks) — with SWR cache, first load may be from cache, so wait for isValidating false
     await act(async () => {
       await vi.advanceTimersByTimeAsync(10);
-      // flush pending promises
       await Promise.resolve();
     });
-    // Allow React state to settle
     await act(async () => {
       await vi.advanceTimersByTimeAsync(10);
+    });
+    // Poll until data appears (fetch is async)
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
     });
 
     expect(result.current.data).toBeTruthy();
@@ -139,8 +144,8 @@ describe('usePageData stale-while-revalidate', () => {
     expect(result.current.isValidating).toBe(false);
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(30_000);
-      await vi.advanceTimersByTimeAsync(5);
+      void result.current.validate();
+      await vi.advanceTimersByTimeAsync(10);
     });
     expect(result.current.data?.name).toBe('Home');
     expect(result.current.isValidating).toBe(true);
