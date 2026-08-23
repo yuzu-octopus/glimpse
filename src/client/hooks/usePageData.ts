@@ -181,21 +181,39 @@ async function fetchPage(
       return base;
     }
 
-    const reader = res.body!.getReader();
+    if (!res.body) throw new Error('empty stream');
+    const reader = res.body.getReader();
     const dec = new TextDecoder();
     let buf = '';
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done || signal.aborted) break;
-      buf += dec.decode(value, { stream: true });
-      let nl: number;
-      while ((nl = buf.indexOf('\n')) >= 0) {
-        handleLine(buf.slice(0, nl));
-        buf = buf.slice(nl + 1);
+    const onAbort = (): void => {
+      reader.cancel().catch(() => {});
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (signal.aborted) {
+          await reader.cancel().catch(() => {});
+          break;
+        }
+        buf += dec.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = buf.indexOf('\n')) >= 0) {
+          handleLine(buf.slice(0, nl));
+          buf = buf.slice(nl + 1);
+        }
+      }
+      buf += dec.decode();
+      handleLine(buf);
+    } finally {
+      signal.removeEventListener('abort', onAbort);
+      if (signal.aborted) {
+        try {
+          await reader.cancel();
+        } catch {}
       }
     }
-    buf += dec.decode();
-    handleLine(buf);
     if (!base) throw new Error('empty stream');
     setCache(slug, base);
     return base;
