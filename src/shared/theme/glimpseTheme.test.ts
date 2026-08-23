@@ -59,7 +59,7 @@ describe('glanceRamp (dark)', () => {
 
   it('clamps lightness into range', () => {
     const r = glanceRamp({ h: 240, s: 8, l: 99 }, DEFAULT_PRIMARY, DEFAULT_NEGATIVE, DEFAULT_PRIMARY, true);
-    expect(r.widgetBackground).toBe('hsl(240 8% 98%)');
+    expect(r.widgetBackground).toBe('hsl(240 8% 100%)');
     expect(r.textSubdue).toBe('hsl(240 8% 65%)');
   });
 });
@@ -69,7 +69,7 @@ describe('glanceRamp (light inversion)', () => {
 
   it('flips surface deltas subtractive', () => {
     expect(ramp.background).toBe('hsl(240 8% 9%)');
-    expect(ramp.widgetBackground).toBe('hsl(240 8% 8%)'); // l-1
+    expect(ramp.widgetBackground).toBe('hsl(240 8% 10%)'); // l+1 (glance parity: always lighter)
     expect(ramp.widgetContentBorder).toBe('hsl(240 8% 5%)'); // l-4
     expect(ramp.widgetShadow).toBe('hsl(240 8% 9.5%)'); // l+0.5
   });
@@ -165,7 +165,7 @@ describe('buildGlimpseTheme', () => {
   it('emits the glance ramp vars as light-dark tuples', () => {
     const t = def.tokens;
     expect(t['--color-background']).toBe(ld('hsl(240 8% 9%)', 'hsl(240 8% 9%)'));
-    expect(t['--color-widget-background']).toBe(ld('hsl(240 8% 8%)', 'hsl(240 8% 10%)'));
+    expect(t['--color-widget-background']).toBe(ld('hsl(240 8% 10%)', 'hsl(240 8% 10%)'));
     expect(t['--color-widget-content-border']).toBe(ld('hsl(240 8% 5%)', 'hsl(240 8% 13%)'));
     expect(t['--color-text-highlight']).toBe(ld('hsl(240 8% 15%)', 'hsl(240 8% 85%)'));
     expect(t['--color-primary']).toBe(ld('hsl(43 50% 70%)', 'hsl(43 50% 70%)'));

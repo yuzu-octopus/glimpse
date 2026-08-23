@@ -1,6 +1,12 @@
 /**
  * Theme sources + the glance→Astryx theme builder.
  *
+ * ONLY valid API reference is the shipped types in
+ * node_modules/@astryxdesign/core/dist/theme/defineTheme.d.ts and
+ * node_modules/@astryxdesign/core/dist/theme/Theme.d.ts
+ * (defineTheme / <Theme mode>). skill://astryx documents an invented API —
+ * do not use it as a source of truth.
+ *
  * A ThemeSource is the seed data for one mode: background + accent blocks
  * in HSL. `buildGlimpseTheme` runs the glance ramp for both modes and maps
  * the resulting colors onto glance CSS vars AND Astryx semantic tokens.
@@ -280,8 +286,11 @@ export function glanceColorVars(
   return out;
 }
 
-export function buildGlimpseTheme(pair: ThemeSourcePair): DefinedTheme {
-  const colorTokens = glanceColorVars(pair);
+export function buildGlimpseTheme(
+  pair: ThemeSourcePair,
+  cachedColorVars?: Record<string, [string, string]>,
+): DefinedTheme {
+  const colorTokens = cachedColorVars ?? glanceColorVars(pair);
 
   const tokens: Record<string, TokenValue> = {
     ...DIMS,

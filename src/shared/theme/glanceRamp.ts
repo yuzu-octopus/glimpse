@@ -51,6 +51,10 @@ function hslStr(h: number, s: number, l: number): string {
  * Build a glance ramp. `light` flips the sign of every surface delta and
  * inverts the text ramp (dark text on light page); the accent blocks pass
  * through untouched, matching glance's `--scheme` behavior.
+ *
+ * contrast-multiplier / text-saturation-multiplier are accepted for config
+ * compat but intentionally ignored (user decision — no dynamic contrast
+ * scaling; glance's multipliers are not surfaced).
  */
 export function glanceRamp(
   bg: Hsl,
@@ -66,7 +70,7 @@ export function glanceRamp(
   const same = (c: Hsl) => hslStr(c.h, c.s, c.l);
   return {
     background: same(bg),
-    widgetBackground: hslStr(bg.h, bg.s, lift(1)),
+    widgetBackground: hslStr(bg.h, bg.s, clamp(bg.l + 1, 100)),
     widgetContentBorder: hslStr(bg.h, bg.s, lift(4)),
     widgetBackgroundHighlight: hslStr(bg.h, bg.s, lift(4)),
     separator: hslStr(bg.h, bg.s, lift(4)),

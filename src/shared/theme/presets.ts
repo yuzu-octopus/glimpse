@@ -34,12 +34,14 @@ const PAIRS: [string, string][] = [
   ['tomorrow-night', 'tomorrow'],
 ];
 
+const pairIds = new Set(PAIRS.flat());
+
 const presetsFromSchemes: Preset[] = [];
 for (const [darkId, lightId] of PAIRS) {
   presetsFromSchemes.push(fromScheme(darkId, scheme(lightId).colors));
 }
 for (const s of generatedSchemes) {
-  if (PAIRS.some(([d]) => d === s.id)) continue; // already added as a pair
+  if (pairIds.has(s.id)) continue; // already added as a pair (both sides)
   const light =
     s.variant === 'light'
       ? invertLuminance(s.colors) // light-only scheme: dark side derived

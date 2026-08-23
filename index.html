@@ -12,6 +12,23 @@
       crossorigin
       href="/fonts/JetBrainsMono-Regular.woff2"
     />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="/fonts/JetBrainsMono-SemiBold.woff2"
+    />
+    <script>
+      try {
+        var s = JSON.parse(localStorage.getItem('glimpse.paint.v1') || 'null');
+        if (s && s.scheme && s.bg && s.fg) {
+          document.documentElement.style.colorScheme = s.scheme;
+          document.documentElement.style.backgroundColor = s.bg;
+          document.documentElement.style.color = s.fg;
+        }
+      } catch (e) {}
+    </script>
     <title>Glimpse</title>
   </head>
   <body>

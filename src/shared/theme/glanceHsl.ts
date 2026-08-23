@@ -29,6 +29,9 @@ function parseOr(input: string | undefined, fallback: string): { h: number; s: n
  * machinery. Mirrors the glance-classics ramp in presets.ts: surfaces step
  * off the background lightness, text derives from the light/dark polarity,
  * accents pass through with glance's documented defaults for missing colors.
+ *
+ * contrast-multiplier / text-saturation-multiplier are accepted for config
+ * compat but intentionally ignored (user decision).
  */
 export function hslBlockToColors(block: ThemePreset): Base16Colors {
   const isLight = block.light === true;

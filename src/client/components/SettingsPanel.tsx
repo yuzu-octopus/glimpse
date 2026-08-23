@@ -20,7 +20,7 @@ interface AboutInfo {
 }
 
 export function SettingsPanel() {
-  const { presetId, setPresetId, configPresets } = useThemeSettings();
+  const { presetId, setPresetId, configPresets, mode, setMode } = useThemeSettings();
   const [open, setOpen] = useState(false);
   const [section, setSection] = useState<SettingsSection>('appearance');
   const [about, setAbout] = useState<AboutInfo | null>(null);
@@ -168,6 +168,24 @@ export function SettingsPanel() {
                 aria-labelledby="settings-tab-appearance"
               >
                 <h2 className={styles.sectionTitle}>Appearance</h2>
+                <div className={styles.field}>
+                  <div className={styles.groupLabel}>Mode</div>
+                  <div className={styles.modeRow} role="group" aria-label="Color mode">
+                    {(['system', 'light', 'dark'] as const).map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        aria-pressed={mode === m}
+                        data-testid={`mode-${m}`}
+                        data-active={mode === m}
+                        className={mode === m ? `${styles.modeButton} ${styles.modeButtonActive}` : styles.modeButton}
+                        onClick={() => setMode(m)}
+                      >
+                        {m[0].toUpperCase() + m.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className={styles.gallery}>
                   {renderGroup('Dark', dark)}
                   {renderGroup('Light', light)}

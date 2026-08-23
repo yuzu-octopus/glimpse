@@ -3,6 +3,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -17,6 +18,7 @@ import type { Hsl } from '../../shared/theme/glanceRamp';
 import { useConfig } from '../hooks/useConfig';
 
 const STORAGE_KEY = 'glimpse.theme.v1';
+const PAINT_KEY = 'glimpse.paint.v1';
 
 export interface ThemeSettings {
   mode: ThemeMode;
@@ -138,23 +140,46 @@ export function GlimpseThemeProvider({ children }: { children: ReactNode }) {
     );
   }, [settings.presetId, configState, configPresets]);
 
-  const theme = useMemo(() => buildGlimpseTheme(pair), [pair]);
+  const colorVars = useMemo(() => glanceColorVars(pair), [pair]);
+  const theme = useMemo(() => buildGlimpseTheme(pair, colorVars), [pair, colorVars]);
 
   // Astryx <Theme> already emits light-dark() tokens, but on a wrapper inside
   // #root; this mirror is still needed so the html element itself (page
-  // background) resolves the themed vars.
+  // background) resolves the themed vars. Update in place on change; remove
+  // only on unmount to avoid bulk-remove-then-readd flash.
+  const appliedRef = useRef<string[]>([]);
   useEffect(() => {
     const root = document.documentElement;
-    const decls = glanceColorVars(pair);
-    const applied: string[] = [];
-    for (const [name, [light, dark]] of Object.entries(decls)) {
+    for (const [name, [light, dark]] of Object.entries(colorVars)) {
       root.style.setProperty(name, `light-dark(${light}, ${dark})`);
-      applied.push(name);
     }
+    appliedRef.current = Object.keys(colorVars);
+    try {
+      const mode = settings.mode;
+      const scheme: 'dark' | 'light' =
+        mode === 'system'
+          ? window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light'
+          : (mode as 'dark' | 'light');
+      const bgTuple = colorVars['--color-background'];
+      const fgTuple = colorVars['--color-text-base'];
+      if (bgTuple && fgTuple) {
+        const bg = scheme === 'dark' ? bgTuple[1] : bgTuple[0];
+        const fg = scheme === 'dark' ? fgTuple[1] : fgTuple[0];
+        localStorage.setItem(PAINT_KEY, JSON.stringify({ scheme, bg, fg }));
+        root.style.colorScheme = scheme;
+      }
+    } catch {
+      // storage or matchMedia unavailable (tests / private mode)
+    }
+  }, [colorVars, settings.mode]);
+  useEffect(() => {
     return () => {
-      for (const name of applied) root.style.removeProperty(name);
+      const root = document.documentElement;
+      for (const name of appliedRef.current) root.style.removeProperty(name);
     };
-  }, [pair]);
+  }, []);
 
   const api = useMemo<ThemeSettings>(
     () => ({

@@ -4,8 +4,8 @@ import { BASE16_KEYS, presets } from './presets';
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
 describe('presets', () => {
-  it('curates at least 45 presets', () => {
-    expect(presets.length).toBeGreaterThanOrEqual(45);
+  it('curates 48 presets (10 pairs deduped, 6 glance classics)', () => {
+    expect(presets.length).toBe(48);
   });
 
   it('has unique ids and names', () => {
