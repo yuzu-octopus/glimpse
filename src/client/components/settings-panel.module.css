@@ -184,6 +184,16 @@
   --_card-ring: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 55%, transparent);
 }
 
+/* Astryx SelectableCard paints an opaque --color-overlay-hover ::after over
+   the card on hover/press, which covers the swatches ("censored" look).
+   Kill the overlay; our ring + border carry the hover affordance.
+   (!important — StyleX hover rule stacks .x.x:hover + 7x :not(#\#)). */
+.card::after,
+.card:hover::after,
+.card:active::after {
+  display: none !important;
+}
+
 /* glance .theme-color */
 .swatch {
   background-color: var(--color);

@@ -68,7 +68,14 @@ export function SettingsPanel() {
                 label={p.name}
                 isSelected={current}
                 onChange={(selected) => {
-                  if (selected) setPresetId(p.id);
+                  if (selected) {
+                    setPresetId(p.id);
+                    // light-dark() vars resolve via color-scheme, which
+                    // follows mode — a light preset under dark mode paints
+                    // dark-side text on the light background (washed-out
+                    // top bar, invisible scrollbar). Sync mode to variant.
+                    setMode(p.variant);
+                  }
                 }}
                 className={styles.card}
                 style={

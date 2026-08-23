@@ -169,6 +169,11 @@ export function GlimpseThemeProvider({ children }: { children: ReactNode }) {
         const fg = scheme === 'dark' ? fgTuple[1] : fgTuple[0];
         localStorage.setItem(PAINT_KEY, JSON.stringify({ scheme, bg, fg }));
         root.style.colorScheme = scheme;
+        // Keep the boot-script inline paint in sync — the html element sits
+        // outside every themed scope, so a stale inline bg/color survives
+        // theme switches (dark strip above the header row).
+        root.style.backgroundColor = bg;
+        root.style.color = fg;
       }
     } catch {
       // storage or matchMedia unavailable (tests / private mode)

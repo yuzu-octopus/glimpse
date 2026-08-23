@@ -42,11 +42,12 @@ for (const [darkId, lightId] of PAIRS) {
 }
 for (const s of generatedSchemes) {
   if (pairIds.has(s.id)) continue; // already added as a pair (both sides)
-  const light =
-    s.variant === 'light'
-      ? invertLuminance(s.colors) // light-only scheme: dark side derived
-      : undefined; // dark-only: light side derived in buildTheme
-  presetsFromSchemes.push({ id: s.id, name: s.name, variant: s.variant, dark: s.colors, light });
+  // Light-only scheme: the authored palette IS the light side; derive the
+  // dark side. Dark-only: authored palette is the dark side; light side is
+  // derived in sourcePairFromPreset.
+  const dark = s.variant === 'light' ? invertLuminance(s.colors) : s.colors;
+  const light = s.variant === 'light' ? s.colors : undefined;
+  presetsFromSchemes.push({ id: s.id, name: s.name, variant: s.variant, dark, light });
 }
 
 function fromScheme(id: string, light?: Base16Colors): Preset {

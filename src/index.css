@@ -32,6 +32,11 @@
 }
 
 :root {
+  /* light-dark() resolution switch — provider sets the concrete value
+     (light/dark) inline on documentElement; this declares the property so
+     themed vars resolve even before the provider mounts. */
+  color-scheme: light dark;
+
   /* dimensions — canonical (StyleX defineTheme) + aliases */
   --space-gap: 23px;
   --space-viewport: 15px;
