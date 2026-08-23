@@ -3,6 +3,8 @@ import { WidgetSchema } from './widgets';
 
 export type { WidgetConfig, WidgetType } from './widgets';
 
+export const PAGE_WIDTHS = { default: 1600, slim: 1100, wide: 1920 } as const;
+
 export const ColumnSchema = z.object({
   size: z.enum(['small', 'full']),
   widgets: z.array(WidgetSchema),

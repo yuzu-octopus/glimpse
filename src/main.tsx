@@ -4,8 +4,10 @@ import { BrowserRouter } from 'react-router-dom';
 import '@astryxdesign/core/reset.css';
 import '@astryxdesign/core/astryx.css';
 import './index.css';
-import './client/widgets';
+import { scheduleWidgetPreload } from './client/widgets';
 import App from './App';
+
+scheduleWidgetPreload();
 import { GlimpseThemeProvider } from './client/theme/GlimpseThemeProvider';
 
 createRoot(document.getElementById('root')!).render(

@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { prefetchPage } from '../hooks/usePageData';
 import { Menu } from 'lucide-react';
 import { useConfig } from '../hooks/useConfig';
-import { PAGE_WIDTHS } from '../../shared/layout';
+import { PAGE_WIDTHS } from '../../shared/config';
 import { SettingsPanel } from './SettingsPanel';
 import styles from './top-nav.module.css';
 

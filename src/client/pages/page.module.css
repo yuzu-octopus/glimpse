@@ -1,22 +1,3 @@
-.topProgress {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--color-primary, #bd93f9);
-  opacity: 1;
-  z-index: 9999;
-  pointer-events: none;
-  animation: topProgressPulse 1.2s ease-in-out infinite;
-}
-
-@keyframes topProgressPulse {
-  0% { opacity: 0.35; }
-  50% { opacity: 1; }
-  100% { opacity: 0.35; }
-}
-
 /* glance site.css/page-content.html port. `.page` doubles as the
    content-bounds wrapper (maxWidth inline from the page width prop). */
 .page {
@@ -79,7 +60,6 @@
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: clamp(12px, 1.6vw, var(--widget-gap));
   align-content: start;
-  container-type: inline-size;
 }
 
 /* tiling: auto — balanced grid tiles. small/full are ignored here; the
@@ -116,7 +96,6 @@
   grid-auto-rows: var(--tile-row, auto);
   align-items: stretch; /* tiles fill their spanned cell */
   align-content: start;
-  container-type: inline-size;
 }
 
 /* auto/collage mode treats every column as a tile — kill the explicit-mode
@@ -188,12 +167,6 @@
 }
 
 .smallColumn {
-  width: 100%;
-  max-width: none;
-}
-
-.columns .smallColumn,
-.columns .fullColumn {
   width: 100%;
   max-width: none;
 }
@@ -324,10 +297,12 @@
   .columns {
     grid-template-columns: repeat(8, minmax(0, 1fr));
   }
-  [style*="--col-span: 8"] { --col-span: 5 !important; }
-  [style*="--col-span: 6"] { --col-span: 4 !important; }
-  [style*="--col-span: 4"] { --col-span: 3 !important; }
-  [style*="--col-span: 3"] { --col-span: 2 !important; }
+  [data-span='12'] { --col-span: 8 !important; }
+  [data-span='9'] { --col-span: 5 !important; }
+  [data-span='8'] { --col-span: 5 !important; }
+  [data-span='6'] { --col-span: 4 !important; }
+  [data-span='4'] { --col-span: 3 !important; }
+  [data-span='3'] { --col-span: 2 !important; }
 }
 
 @media (max-width: 599px) {

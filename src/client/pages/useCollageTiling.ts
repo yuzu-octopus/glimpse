@@ -1,4 +1,5 @@
 import { useEffect, type RefObject } from 'react';
+import { COLLAGE_ROW_SPAN_MAX, COLLAGE_ROW_SPAN_MIN } from './tiling';
 
 export type TileHeightPref = { prefH: number | null; resizable: boolean };
 
@@ -72,9 +73,9 @@ export function useCollageTiling(
       const spans = heights.map((h, i) => {
         const pref = tilePrefs?.[i];
         if (pref && pref.prefH != null && !pref.resizable) {
-          return Math.min(Math.max(Math.ceil(pref.prefH / rowUnit), 1), 8);
+          return Math.min(Math.max(Math.ceil(pref.prefH / rowUnit), COLLAGE_ROW_SPAN_MIN), COLLAGE_ROW_SPAN_MAX);
         }
-        return Math.min(Math.max(Math.round(h / rowUnit), 1), 8);
+        return Math.min(Math.max(Math.round(h / rowUnit), COLLAGE_ROW_SPAN_MIN), COLLAGE_ROW_SPAN_MAX);
       });
       const key = spans.join(',');
       if (key === prevKey) return; // change guard: skip identical passes

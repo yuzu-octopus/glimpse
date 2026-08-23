@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { Suspense, memo, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Banner, Card, Tab, TabList, Text } from '@astryxdesign/core';
 import { ChevronDown } from 'lucide-react';
 import type { WidgetPayload } from '../../shared/api';
@@ -9,8 +9,9 @@ import { HideHeadersContext } from '../components/HideHeadersContext';
 import { WidgetChrome } from '../components/WidgetChrome';
 import { usePageData } from '../hooks/usePageData';
 import { clientWidgets } from '../widgets/registry';
-import { PAGE_WIDTHS } from '../../shared/layout';
-import { MAX_TILING_COLS, chooseColumnCount, composeBento, getTilingProps, type BentoTile } from './tiling';
+import { ensureWidgetLoaded } from '../widgets';
+import { PAGE_WIDTHS } from '../../shared/config';
+import { COLLAGE_ROW_SPAN_MAX, COLLAGE_ROW_SPAN_MIN, MAX_TILING_COLS, chooseColumnCount, composeBento, getTilingProps, type BentoPlacement, type BentoTile } from './tiling';
 import { useCollageTiling } from './useCollageTiling';
 import { PREFERRED_SIZES } from '../../shared/widgets/preferredSizes';
 import styles from './page.module.css';
@@ -47,11 +48,21 @@ function widgetTitle(w: WidgetLike | undefined): string | undefined {
   return undefined;
 }
 
-/** Stable key for a widget slot (title-based, falls back to index). */
-function widgetKey(w: WidgetLike, i: number): string {
+/** Stable key for a widget slot (title-based, falls back to index). Duplicates get #2,#3 suffixes per render. */
+function widgetKey(w: WidgetLike, i: number, counts?: Map<string, number>): string {
   const type = 'type' in w && typeof w.type === 'string' ? w.type : 'widget';
   const title = widgetTitle(w);
-  return title ? `${type}:${title}` : `${type}:${i}`;
+  const base = title ? `${type}:${title}` : `${type}:${i}`;
+  if (!title || !counts) return base;
+  const n = (counts.get(base) ?? 0) + 1;
+  counts.set(base, n);
+  return n === 1 ? base : `${base}#${n}`;
+}
+
+/** Per-render keys for a widget list — appends #2,#3 on duplicate base keys. */
+function widgetKeysFor(list: WidgetLike[]): string[] {
+  const counts = new Map<string, number>();
+  return list.map((w, i) => widgetKey(w, i, counts));
 }
 
 /** Column label from the first widget's title. */
@@ -62,12 +73,13 @@ function columnLabel(
   return widgetTitle(col.widgets[0]) ?? `Column ${i + 1}`;
 }
 
-/** Stable key for a column slot (first widget's key, else index). */
+/** Stable key for a column slot (first widget's key, else index). Supports per-render dedup via counts. */
 function columnKey(
   col: { size: 'small' | 'full'; widgets: WidgetLike[] },
   i: number,
+  counts?: Map<string, number>,
 ): string {
-  return col.widgets[0] ? widgetKey(col.widgets[0], 0) : `column-${i}`;
+  return col.widgets[0] ? widgetKey(col.widgets[0], 0, counts) : `column-${i}`;
 }
 
 /** Config-only row-span estimate for the loading skeleton (collage mode):
@@ -96,10 +108,10 @@ function estimateRowSpan(w: SkeletonWidget): number {
 }
 
 /** Skeleton tile (one column) spans the sum of its widgets' estimates,
- * clamped to the hook's 1-8 bound. */
+ * clamped to the hook's COLLAGE_ROW_SPAN bounds. */
 function estimateColumnRowSpan(col: { widgets: SkeletonWidget[] }): number {
   const total = col.widgets.reduce((sum, w) => sum + estimateRowSpan(w), 0);
-  return Math.min(Math.max(total, 1), 8);
+  return Math.min(Math.max(total, COLLAGE_ROW_SPAN_MIN), COLLAGE_ROW_SPAN_MAX);
 }
 
 /** Skeleton card for one configured widget slot (WidgetChrome isLoading). */
@@ -130,36 +142,49 @@ export function PageSkeleton({ page }: { page: Page & { slug: string } }) {
         ) : null}
         {page['head-widgets'] && page['head-widgets'].length > 0 ? (
           <div className={styles.headWidgets}>
-            {page['head-widgets'].map((w, i) => (
-              <WidgetSkeleton key={widgetKey(w, i)} widget={w} />
-            ))}
+            {(() => {
+              const wk = widgetKeysFor(page['head-widgets'] as unknown as WidgetLike[]);
+              return (page['head-widgets'] as unknown as WidgetLike[]).map((w, i) => (
+                <WidgetSkeleton key={wk[i]} widget={w as SkeletonWidget} />
+              ));
+            })()}
           </div>
         ) : null}
         <div className={tilingProps.className} style={tilingProps.style}>
           {(page as { widgets?: unknown[] }).widgets ? (
             <div className={styles.bentoGrid} data-testid="bento-skeleton" style={{ '--bento-cols': String((page as Record<string, unknown>)['grid-columns'] ?? 12) } as React.CSSProperties}>
-              {((page as { widgets?: unknown[] }).widgets ?? []).map((w, i) => (
-                <div key={widgetKey(w as WidgetLike, i)} className={styles.bentoItem}>
-                  <WidgetSkeleton widget={w as SkeletonWidget} />
-                </div>
-              ))}
+              {(() => {
+                const list = ((page as { widgets?: unknown[] }).widgets ?? []) as unknown as WidgetLike[];
+                const wk = widgetKeysFor(list);
+                return list.map((w, i) => (
+                  <div key={wk[i]} className={styles.bentoItem}>
+                    <WidgetSkeleton widget={w as SkeletonWidget} />
+                  </div>
+                ));
+              })()}
             </div>
           ) : (
-            (page.columns ?? []).map((col, i) => (
-              <MobileColumn
-                key={columnKey(col, i)}
-                label={columnLabel(col, i)}
-                small={col.size === 'small'}
-                span={col.span ?? 1}
-                rowSpan={page.tiling === 'collage' ? estimateColumnRowSpan(col) : undefined}
-              >
+            (() => {
+              const colCounts = new Map<string, number>();
+              return (page.columns ?? []).map((col, i) => (
+                <MobileColumn
+                  key={columnKey(col, i, colCounts)}
+                  label={columnLabel(col, i)}
+                  small={col.size === 'small'}
+                  span={col.span ?? 1}
+                  rowSpan={page.tiling === 'collage' ? estimateColumnRowSpan(col) : undefined}
+                >
                 <div className={styles.columnWidgets}>
-                  {col.widgets.map((w, j) => (
-                    <WidgetSkeleton key={widgetKey(w, j)} widget={w} />
-                  ))}
+                  {(() => {
+                    const wk = widgetKeysFor(col.widgets as unknown as WidgetLike[]);
+                    return col.widgets.map((w, j) => (
+                      <WidgetSkeleton key={wk[j]} widget={w as SkeletonWidget} />
+                    ));
+                  })()}
                 </div>
               </MobileColumn>
-            ))
+              ));
+            })()
           )}
         </div>
       </div>
@@ -167,12 +192,40 @@ export function PageSkeleton({ page }: { page: Page & { slug: string } }) {
   );
 }
 
-/** Renders one widget: registry component, container, or not-implemented. */
-function WidgetSlot({ widget }: { widget: WidgetPayload }) {
-  const Component = clientWidgets.get(widget.type as WidgetType);
+/** Stable per-span style refs so memoized columns don't see a fresh object each render. */
+const spanStyles = new Map<number, CSSProperties>();
+function spanStyle(span: number): CSSProperties {
+  let s = spanStyles.get(span);
+  if (!s) {
+    s = { '--col-span': String(span) } as CSSProperties;
+    spanStyles.set(span, s);
+  }
+  return s;
+}
 
+/** Renders one widget: registry component, container, or not-implemented. - memo safe: widget ref changes on update per streaming invariant */
+const WidgetSlot = memo(function WidgetSlot({ widget }: { widget: WidgetPayload }) {
   if (widget.widgets) return <ContainerWidget widget={widget} />;
+  return (
+    <Suspense
+      fallback={
+        <WidgetChrome
+          title={widgetTitle(widget)}
+          hideHeader={widget.config['hide-header'] === true}
+          isLoading
+        />
+      }
+    >
+      <WidgetSlotContent widget={widget} />
+    </Suspense>
+  );
+});
+
+function WidgetSlotContent({ widget }: { widget: WidgetPayload }) {
+  const Component = clientWidgets.get(widget.type as WidgetType);
   if (!Component) {
+    const pending = ensureWidgetLoaded(widget.type as string);
+    if (pending) throw pending;
     return (
       <WidgetChrome
         title={widgetTitle(widget)}
@@ -201,10 +254,11 @@ function ContainerWidget({ widget }: { widget: WidgetPayload }) {
   const [active, setActive] = useState(0);
 
   if (widget.type === 'split-column') {
+    const wk = widgetKeysFor(children as unknown as WidgetLike[]);
     return (
       <div className={styles.splitColumn}>
         {children.map((w, i) => (
-          <WidgetSlot key={widgetKey(w, i)} widget={w} />
+          <WidgetSlot key={wk[i]} widget={w} />
         ))}
       </div>
     );
@@ -213,10 +267,11 @@ function ContainerWidget({ widget }: { widget: WidgetPayload }) {
   // all tab panes so no content is trapped behind hidden navigation; the
   // stack gap reuses --widget-gap to stay uniform with columnWidgets.
   if (globalHide) {
+    const wk = widgetKeysFor(children as unknown as WidgetLike[]);
     return (
       <div className={styles.groupStack}>
         {children.map((w, i) => (
-          <WidgetSlot key={widgetKey(w, i)} widget={w} />
+          <WidgetSlot key={wk[i]} widget={w} />
         ))}
       </div>
     );
@@ -241,14 +296,17 @@ function ContainerWidget({ widget }: { widget: WidgetPayload }) {
           }
         }}
       >
-        {children.map((w, i) => (
-          <Tab
-            key={widgetKey(w, i)}
-            value={String(i)}
-            label={widgetTitle(w) ?? `Tab ${i + 1}`}
-            className={i === active ? styles.groupTabCurrent : undefined}
-          />
-        ))}
+        {(() => {
+          const wk = widgetKeysFor(children as unknown as WidgetLike[]);
+          return children.map((w, i) => (
+            <Tab
+              key={wk[i]}
+              value={String(i)}
+              label={widgetTitle(w) ?? `Tab ${i + 1}`}
+              className={i === active ? styles.groupTabCurrent : undefined}
+            />
+          ));
+        })()}
       </TabList>
       <div className={styles.tabContent}>
         {children[active] ? <WidgetSlot widget={children[active]} /> : null}
@@ -258,8 +316,8 @@ function ContainerWidget({ widget }: { widget: WidgetPayload }) {
 }
 
 /** Column wrapper: on mobile a toggle header collapses the section (glance
- * behavior); on desktop the toggle is hidden and content always shows. */
-function MobileColumn({
+ * behavior); on desktop the toggle is hidden and content always shows. - memo: props are stable objects per streaming invariant */
+const MobileColumn = memo(function MobileColumn({
   label,
   small,
   span,
@@ -269,20 +327,28 @@ function MobileColumn({
 }: {
   label: string;
   small: boolean;
-  /** Auto-tiling grid span (1-4); undefined keeps the default single track. */
   span?: number;
-  /** Collage estimated row span (1-4); skeleton only — the live hook
-   * overwrites these with measured spans on hydrate. */
   rowSpan?: number;
-  /** Inline vars for the columns-mode grid (--col-span). */
   style?: CSSProperties;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(true);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const handleToggle = () => {
+    const willClose = open;
+    if (willClose) {
+      const active = document.activeElement;
+      const content = contentRef.current;
+      if (active instanceof HTMLElement && content?.contains(active)) {
+        toggleRef.current?.focus();
+      }
+    }
+    setOpen((v) => !v);
+  };
   return (
     <div
       data-testid="column"
-      // grid-column: span N is a no-op for 1 — only emit the hint above 1.
       data-span={span && span > 1 ? String(span) : undefined}
       data-row-span={rowSpan && rowSpan > 1 ? String(rowSpan) : undefined}
       className={
@@ -293,20 +359,45 @@ function MobileColumn({
       style={style}
     >
       <button
+        ref={toggleRef}
         type="button"
         className={styles.mobileToggle}
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleToggle}
       >
         {label}
         <ChevronDown size={12} className={open ? styles.chevronUp : ''} />
       </button>
-      {open ? children : null}
+      {open ? <div ref={contentRef}>{children}</div> : null}
     </div>
   );
-}
+});
+
+const BentoItem = memo(function BentoItem({ placement, resizable, widget }: { placement?: BentoPlacement; resizable: boolean; widget: WidgetPayload }) {
+  return (
+    <div
+      className={styles.bentoItem}
+      style={
+        placement
+          ? ({
+              '--bento-x': String(placement.x + 1),
+              '--bento-y': String(placement.y + 1),
+              '--bento-w': String(placement.w),
+              '--bento-h': resizable ? undefined : String(placement.h),
+            } as React.CSSProperties)
+          : undefined
+      }
+      data-bento-x={placement?.x}
+      data-bento-y={placement?.y}
+      data-resizable={String(resizable)}
+    >
+      <WidgetSlot widget={widget} />
+    </div>
+  );
+});
 
 function BentoGrid({ widgets, gridCols, rowHeight }: { widgets: WidgetPayload[]; gridCols: number; rowHeight: number }) {
+  const widgetIds = useMemo(() => widgetKeysFor(widgets as unknown as WidgetLike[]), [widgets]);
   const tiles: BentoTile[] = useMemo(
     () =>
       widgets.map((w, i) => {
@@ -315,7 +406,7 @@ function BentoGrid({ widgets, gridCols, rowHeight }: { widgets: WidgetPayload[];
           (PREFERRED_SIZES as Record<string, { cols: number | null; rows: number; resizable: boolean; priority: number; zone: 'main' | 'sidebar'; preferredWidth: number | null; preferredHeight: number | null }>)[w.type] ??
           { cols: null, rows: 1, resizable: true, priority: 5, zone: 'main' as const, preferredWidth: null, preferredHeight: null };
         return {
-          id: widgetKey(w, i),
+          id: widgetIds[i],
           priority: typeof cfg.priority === 'number' ? cfg.priority : pref.priority,
           span: typeof cfg.span === 'number' ? cfg.span : (pref.cols ?? 1),
           zone: (cfg.zone as 'main' | 'sidebar' | undefined) ?? pref.zone,
@@ -326,18 +417,19 @@ function BentoGrid({ widgets, gridCols, rowHeight }: { widgets: WidgetPayload[];
           resizable: pref.resizable,
         } satisfies BentoTile;
       }),
-    [widgets],
+    [widgets, widgetIds],
   );
   const placements = useMemo(() => composeBento(tiles, gridCols, { rowUnit: rowHeight }), [tiles, gridCols, rowHeight]);
   const byId = useMemo(() => new Map(placements.map((p) => [p.id, p])), [placements]);
+  const tileById = useMemo(() => new Map(tiles.map((t) => [t.id, t])), [tiles]);
   // mobile 1-col stack via priority: render in priority order so the CSS
   // single-track override (grid-column 1/-1 !important) shows top priority first
   const ordered = useMemo(() => {
     const idxMap = new Map(tiles.map((t) => [t.id, t]));
     return widgets
-      .map((w, i) => ({ w, id: widgetKey(w, i) }))
+      .map((w, i) => ({ w, id: widgetIds[i] }))
       .toSorted((a, b) => (idxMap.get(b.id)?.priority ?? 0) - (idxMap.get(a.id)?.priority ?? 0));
-  }, [widgets, tiles]);
+  }, [widgets, tiles, widgetIds]);
   return (
     <div
       className={styles.bentoGrid}
@@ -346,20 +438,9 @@ function BentoGrid({ widgets, gridCols, rowHeight }: { widgets: WidgetPayload[];
     >
       {ordered.map(({ w, id }) => {
         const pl = byId.get(id);
-        const tile = tiles.find((t) => t.id === id);
+        const tile = tileById.get(id);
         const resizable = tile?.resizable ?? true;
-        return (
-          <div
-            key={id}
-            className={styles.bentoItem}
-            style={pl ? ({ '--bento-x': String(pl.x + 1), '--bento-y': String(pl.y + 1), '--bento-w': String(pl.w), '--bento-h': resizable ? undefined : String(pl.h) } as React.CSSProperties) : undefined}
-            data-bento-x={pl?.x}
-            data-bento-y={pl?.y}
-            data-resizable={String(resizable)}
-          >
-            <WidgetSlot widget={w} />
-          </div>
-        );
+        return <BentoItem key={id} placement={pl} resizable={resizable} widget={w} />;
       })}
     </div>
   );
@@ -412,18 +493,23 @@ export function PageView({
   // no-ops for every other tiling. PrefH path uses pref when !resizable.
   useCollageTiling(columnsRef, tilingForMeasure.measure && data ? [data] : [], tilePrefsForHook);
   const isCollageLikeForChooser = data?.tiling === 'collage' || data?.tiling === 'auto';
+  const chooserMinW = (data as { minColumnWidth?: number } | undefined)?.minColumnWidth;
+  const tilesRef = useRef(tiles);
   useEffect(() => {
-    if (!isCollageLikeForChooser || !data) return;
+    tilesRef.current = tiles;
+  }, [tiles]);
+  useEffect(() => {
+    if (!isCollageLikeForChooser) return;
     const container = columnsRef.current;
     if (!container) return;
     const gap = 23;
-    const minW = (data as { minColumnWidth?: number }).minColumnWidth ?? 300;
+    const minW = chooserMinW ?? 300;
     const maxCols = MAX_TILING_COLS;
     // clamp grid tracks to content-derived limit and to actual container width; MAX_TILING_COLS is the grid cap (not PageSchema max 3)
     const compute = () => {
       const W = container.clientWidth || container.getBoundingClientRect().width || 0;
       if (!(W > 0)) return;
-      const nStar = chooseColumnCount(W, gap, minW, maxCols, tiles);
+      const nStar = chooseColumnCount(W, gap, minW, maxCols, tilesRef.current);
       const actualW = (W - (nStar - 1) * gap) / nStar;
       container.style.setProperty('--min-column-width', `${actualW}px`);
       container.style.gridTemplateColumns = `repeat(${nStar}, 1fr)`;
@@ -433,7 +519,7 @@ export function PageView({
     const ro = new ResizeObserver(compute);
     ro.observe(container);
     return () => ro.disconnect();
-  }, [isCollageLikeForChooser, data, tiles]);
+  }, [isCollageLikeForChooser, chooserMinW]);
   if (!data && !error) {
     if (page) return <PageSkeleton page={page} />;
     // Fallback when rendered without config (direct mounts): structure-ready chrome.
@@ -473,9 +559,12 @@ export function PageView({
         ) : null}
         {resolved.headWidgets.length > 0 ? (
           <div className={styles.headWidgets}>
-            {resolved.headWidgets.map((w, i) => (
-              <WidgetSlot key={widgetKey(w, i)} widget={w} />
-            ))}
+            {(() => {
+              const wk = widgetKeysFor(resolved.headWidgets as unknown as WidgetLike[]);
+              return resolved.headWidgets.map((w, i) => (
+                <WidgetSlot key={wk[i]} widget={w} />
+              ));
+            })()}
           </div>
         ) : null}
         {(resolved as unknown as { widgets?: WidgetPayload[] }).widgets ? (
@@ -499,20 +588,24 @@ export function PageView({
                   inferred = undefined;
                 }
               }
+              const colCounts = new Map<string, number>();
               return resolved.columns.map((col, i) => {
                 const span = col.span ?? inferred?.[i] ?? 1;
                 return (
               <MobileColumn
-                key={columnKey(col, i)}
+                key={columnKey(col, i, colCounts)}
                 label={columnLabel(col, i)}
                 small={col.size === 'small'}
                 span={span}
-                style={{ '--col-span': String(span) } as CSSProperties}
+                style={spanStyle(span)}
               >
                 <div className={styles.columnWidgets}>
-                  {col.widgets.map((w, j) => (
-                    <WidgetSlot key={widgetKey(w, j)} widget={w} />
-                  ))}
+                  {(() => {
+                    const wk = widgetKeysFor(col.widgets as unknown as WidgetLike[]);
+                    return col.widgets.map((w, j) => (
+                      <WidgetSlot key={wk[j]} widget={w} />
+                    ));
+                  })()}
                 </div>
               </MobileColumn>
               );

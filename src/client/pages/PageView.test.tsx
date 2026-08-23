@@ -188,13 +188,13 @@ describe('PageView', () => {
         columns: [
           {
             size: 'full',
-            widgets: [{ type: 'reddit', config: { type: 'reddit' }, data: null }],
+            widgets: [{ type: 'unknown-widget' as unknown as WidgetType, config: { type: 'unknown-widget' }, data: null }],
           },
         ],
       }),
     );
     expect(
-      await screen.findByText(/reddit.*not implemented/i),
+      await screen.findByText(/unknown-widget.*not implemented/i),
     ).toBeInTheDocument();
   });
 

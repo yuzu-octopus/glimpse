@@ -4,6 +4,10 @@ import styles from './page.module.css';
 /** Underlying bento grid cap — 12 columns on desktop per bento spec; the chooser clamps to container width via min-column-width. */
 export const MAX_TILING_COLS = 12;
 
+/** Collage/skeleton row-span clamp — shared between the live hook and the skeleton estimator. */
+export const COLLAGE_ROW_SPAN_MIN = 1;
+export const COLLAGE_ROW_SPAN_MAX = 8;
+
 export type TilePref = {
   /** Preferred width/height in px — legacy collage chooser input; omitted on pure unit-based bento tiles. */
   prefW?: number | null;
