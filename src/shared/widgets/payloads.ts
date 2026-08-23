@@ -190,7 +190,7 @@ export interface ServerInfo {
   hostname: string;
   platform: string;
   bootTime: string;
-  cpu: { load: number; loadIsAvailable: boolean; temp?: number | null };
+  cpu: { name?: string | null; load: number; loadIsAvailable: boolean; temp?: number | null };
   memory: { used: number; total: number; isAvailable: boolean };
   mountpoints: ServerMount[];
   temp?: { main: number | null; isAvailable: boolean };

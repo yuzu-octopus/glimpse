@@ -211,3 +211,47 @@
   line-height: 1;
   color: var(--color-text-highlight);
 }
+
+/* Tailored list rows — icon · name · temp badge, bar, value below */
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.rowHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.rowIcon {
+  flex-shrink: 0;
+  color: var(--color-text-subdue);
+}
+.rowLabel {
+  flex-shrink: 0;
+}
+.rowDetail {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-subdue);
+  font-weight: 400;
+}
+.rowTemp {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  font-size: var(--font-size-h6);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-base);
+}
+.rowValue {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-base);
+}

@@ -23,7 +23,7 @@ async function localServer(name?: string): Promise<ServerInfo> {
       return { uptime: 0 };
     }
   })();
-  const [temp, graphics] = await Promise.all([
+  const [temp, graphics, cpuInfoRaw] = await Promise.all([
     (async () => {
       try {
         const fn = (si as unknown as Record<string, unknown>).cpuTemperature as (() => Promise<{ main?: number | null }>) | undefined;
@@ -40,6 +40,7 @@ async function localServer(name?: string): Promise<ServerInfo> {
         return null;
       }
     })() as Promise<{ controllers?: Array<{ model?: string; temperatureGpu?: number | null }> } | null>,
+    (si.cpu as unknown as () => Promise<unknown>)().catch(() => null) as Promise<{ manufacturer?: string; brand?: string } | null>,
   ]);
 
   const osData = os as { hostname?: string; platform?: string; distro?: string } | null;
@@ -48,12 +49,19 @@ async function localServer(name?: string): Promise<ServerInfo> {
   const tempData = temp as { main?: number | null } | null;
   const gpuData = graphics as { controllers?: Array<{ model?: string; temperatureGpu?: number | null }> } | null;
 
+  const cpuName = (() => {
+    const c = cpuInfoRaw as { manufacturer?: string; brand?: string } | null;
+    if (!c) return null;
+    const full = [c.manufacturer, c.brand].filter(Boolean).join(' ').trim();
+    return full || c.brand || c.manufacturer || null;
+  })();
   return {
     name: name ?? osData?.hostname ?? 'Local',
     hostname: osData?.hostname ?? '',
     platform: osData?.distro || osData?.platform || '',
     bootTime: uptime != null ? new Date(Date.now() - uptime * 1000).toISOString() : '',
     cpu: {
+      name: cpuName,
       load: Number(load?.avgLoad ?? 0),
       loadIsAvailable: load?.avgLoad != null,
     },
@@ -63,27 +71,11 @@ async function localServer(name?: string): Promise<ServerInfo> {
       isAvailable: !!memData,
     },
     mountpoints: (() => {
-      const out: ServerInfo['mountpoints'] = [];
-      const seen = new Set<string>();
-      for (const d of Array.isArray(fs) ? (fs as Array<Record<string, unknown>>) : []) {
-        if (!d.mount || !d.size) continue;
-        const p = String(d.mount);
-        if (
-          p.includes('cryptexd') ||
-          p.includes('MobileAsset') ||
-          p === '/System/Volumes/VM' ||
-          p === '/System/Volumes/Preboot' ||
-          p === '/System/Volumes/Update' ||
-          p === '/System/Volumes/xarts' ||
-          p === '/System/Volumes/iSCPreboot' ||
-          p === '/System/Volumes/Hardware'
-        )
-          continue;
-        if (seen.has(p)) continue;
-        seen.add(p);
-        out.push({ path: p, used: Number(d.used ?? 0), total: Number(d.size ?? 0) });
-      }
-      return out;
+      const all = Array.isArray(fs) ? (fs as Array<Record<string, unknown>>) : [];
+      // Single Disk: prefer "/" else first non-filtered mount
+      const pick = all.find(d => d.mount === '/') ?? all.find(d => d.mount && d.size && !String(d.mount).includes('cryptexd') && !String(d.mount).includes('MobileAsset')) ?? null;
+      if (!pick || !pick.size) return [];
+      return [{ path: String(pick.mount), used: Number(pick.used ?? 0), total: Number(pick.size ?? 0) }];
     })(),
     temp: tempData?.main != null ? { main: tempData.main, isAvailable: true } : { main: null, isAvailable: false },
     gpu: (() => {

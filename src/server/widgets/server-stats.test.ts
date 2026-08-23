@@ -10,6 +10,7 @@ const mockFsSize = vi.fn(async () => [
   { mount: '/System/Volumes/Data', size: 0, used: 0 }, // filtered out (no size)
 ]);
 const mockTime = vi.fn(() => ({ uptime: 3600 * 24 * 2 }));
+const mockCpu = vi.fn(async () => ({ manufacturer: 'Apple', brand: 'M5', speed: 2.4 }));
 
 vi.mock('systeminformation', () => ({
   osInfo: () => mockOsInfo(),
@@ -17,6 +18,7 @@ vi.mock('systeminformation', () => ({
   mem: () => mockMem(),
   fsSize: () => mockFsSize(),
   time: () => mockTime(),
+  cpu: () => mockCpu(),
 }));
 
 // Import fetcher after mock

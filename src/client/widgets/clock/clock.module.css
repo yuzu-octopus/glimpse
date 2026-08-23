@@ -1,4 +1,5 @@
 .time {
+  text-align: center;
   /* glance clock-time: --color-text-highlight; big display per glance's
      ~3.5-40px scale (35-40px at glance's 10px root) */
   font-size: 38px;
@@ -9,6 +10,7 @@
 }
 
 .date {
+  text-align: center;
   font-size: var(--font-size-base);
   color: var(--color-text-base-muted);
   margin-top: 2px;
