@@ -1,5 +1,6 @@
 import { REPOSITORY_DEFAULTS, repositorySchema } from '../../shared/widgets/keyed';
 import { fetchJson } from './http';
+import { getGitHubToken } from '../github-token';
 import { registerWidget } from './registry';
 import type { RepoPull } from '../../shared/widgets/payloads';
 
@@ -28,8 +29,13 @@ function mapIssue(p: GitHubIssueLike): RepoPull {
 registerWidget('repository', async (ctx, config) => {
   const cfg = repositorySchema.parse(config);
   const base = `https://api.github.com/repos/${cfg.repository}`;
-  const token = cfg.token ?? ctx.env.GITHUB_TOKEN;
-  const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+  const token = cfg.token ?? (await getGitHubToken(ctx.env));
+  const headers: Record<string, string> = {
+    Accept: 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+    'User-Agent': 'glimpse/1.0',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
 
   const [repo, pulls, issues] = await Promise.all([
     fetchJson<GitHubRepo>(ctx, base, { headers }),

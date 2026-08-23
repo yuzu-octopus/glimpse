@@ -1,6 +1,7 @@
 import { RELEASES_DEFAULTS, releasesSchema } from '../../shared/widgets/feeds';
 import { registerWidget, type WidgetFetchContext } from './registry';
 import { fetchJson } from './http';
+import { getGitHubToken } from '../github-token';
 import type { Release } from '../../shared/widgets/payloads';
 
 interface GitHubRelease {
@@ -115,7 +116,11 @@ async function fetchReleases(
 ): Promise<Release[]> {
   const { source, path } = req;
   if (source === 'github') {
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': 'glimpse/1.0',
+    };
     if (token) headers.Authorization = `Bearer ${token}`;
     const data = await fetchJson<GitHubRelease[]>(
       ctx,
@@ -174,7 +179,7 @@ async function fetchReleases(
 registerWidget('releases', async (ctx, config) => {
   const cfg = releasesSchema.parse(config);
   const limit = cfg.limit ?? RELEASES_DEFAULTS.limit;
-  const githubToken = cfg.token ?? ctx.env.GITHUB_TOKEN;
+  const githubToken = cfg.token ?? (await getGitHubToken(ctx.env));
 
   const settled = await Promise.allSettled(
     cfg.repositories.map((repo) => {

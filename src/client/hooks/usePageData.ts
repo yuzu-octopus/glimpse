@@ -111,7 +111,8 @@ async function fetchPage(
   if (!force && inflight.has(slug)) return inflight.get(slug)!;
   const p = (async () => {
     const internal = new AbortController();
-    const res = await fetch(`/api/page/${encodeURIComponent(slug)}?stream`, { signal: internal.signal });
+    const qs = force ? '?stream&force=1' : '?stream';
+    const res = await fetch(`/api/page/${encodeURIComponent(slug)}${qs}`, { signal: internal.signal });
     if (!res.ok) {
       const rawBody: unknown = await res.json().catch(() => ({}));
       let msg = `HTTP ${res.status}`;
@@ -247,6 +248,11 @@ export function usePageData(slug: string): PageDataResult {
 
   const reload = useCallback(
     async (force = false) => {
+      if (force) {
+        dataRef.current = null;
+        setData(null);
+        setError(null);
+      }
       abortRef.current?.abort();
       const ac = new AbortController();
       abortRef.current = ac;
@@ -267,6 +273,9 @@ export function usePageData(slug: string): PageDataResult {
       setError(null);
       setIsValidatingRaw(isStale(slug));
     } else {
+      dataRef.current = null;
+      setData(null);
+      setError(null);
       setIsValidatingRaw(true);
     }
     abortRef.current?.abort();

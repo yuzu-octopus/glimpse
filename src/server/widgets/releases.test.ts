@@ -55,7 +55,9 @@ describe('releases fetcher', () => {
     const { ctx, fetchMock } = makeCtx(routes);
     await releasesFetcher()(ctx, { type: 'releases', repositories: [{ url: 'o/r' }], token: 'sekrit' });
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(init.headers).toEqual({ Authorization: 'Bearer sekrit' });
+    expect(init.headers).toEqual(
+      expect.objectContaining({ Authorization: 'Bearer sekrit' }),
+    );
   });
 
   it('parses all string repo forms into the right endpoints', async () => {

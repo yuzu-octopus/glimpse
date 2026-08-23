@@ -195,6 +195,11 @@ const server = Bun.serve({
       const slug = decodeURIComponent(pageMatch[1]);
       const page = r.config?.pages.find((p) => p.slug === slug);
       if (!page) return json({ error: `page "${slug}" not found` }, 404);
+      // Explicit reload (client reload(true)) should bypass server cache
+      // so the next widget fetches actually hit the upstream APIs.
+      if (url.searchParams.has('force')) {
+        ctx.cache.deleteByPrefix(`${slug}:`);
+      }
       if (url.searchParams.has('stream')) {
         const abortController = new AbortController();
         const enc = new TextEncoder();
