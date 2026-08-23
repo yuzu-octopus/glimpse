@@ -124,21 +124,6 @@ async function fetchPage(
     }
     const ct = res.headers.get('content-type') ?? '';
     const isNdjson = ct.includes('ndjson');
-    const text = await res.text();
-
-    if (!isNdjson) {
-      try {
-        const parsed: unknown = JSON.parse(text);
-        if (parsed !== null && typeof parsed === 'object' && 'columns' in parsed) {
-          const payload = parsed as PagePayload;
-          setCache(slug, payload);
-          if (!signal.aborted) onProgress?.(payload);
-          return payload;
-        }
-      } catch {
-        // fall through to newline-split fallback
-      }
-    }
 
     const cached = force ? null : getCached(slug);
     const cachedBase = cached ? structuredClone(cached) : null;
@@ -151,32 +136,66 @@ async function fetchPage(
       return candidate as PagePayload;
     };
 
-    for (const line of text.split('\n')) {
-      if (!line.trim() || signal.aborted) continue;
+    const handleLine = (line: string): void => {
+      if (!line.trim() || signal.aborted) return;
       let chunk: { path?: string; payload?: unknown };
       try {
         chunk = JSON.parse(line);
       } catch {
-        continue;
+        return;
       }
       const skeleton = skeletonOf(chunk);
       if (skeleton) {
         if (!base) {
-          if (cachedBase) base = reconcileWithCached(skeleton, cachedBase);
-          else base = skeleton;
+          base = cachedBase ? reconcileWithCached(skeleton, cachedBase) : skeleton;
           if (!signal.aborted) onProgress?.({ ...base });
         }
-        continue;
+        return;
       }
       if (!base) {
-        if (!cachedBase) continue;
+        if (!cachedBase) return;
         base = cachedBase;
         if (!signal.aborted) onProgress?.({ ...base });
       }
-      if (!chunk.path) continue;
-      applyChunk(base, chunk.path, chunk.payload);
-      if (!signal.aborted) onProgress?.({ ...base });
+      if (!chunk.path) return;
+      applyChunk(base!, chunk.path!, chunk.payload);
+      if (!signal.aborted) onProgress?.({ ...base! });
+    };
+
+    if (!isNdjson) {
+      const text = await res.text();
+      try {
+        const parsed: unknown = JSON.parse(text);
+        if (parsed !== null && typeof parsed === 'object' && 'columns' in parsed) {
+          const payload = parsed as PagePayload;
+          setCache(slug, payload);
+          if (!signal.aborted) onProgress?.(payload);
+          return payload;
+        }
+      } catch {
+        // fall through to line-split fallback
+      }
+      for (const line of text.split('\n')) handleLine(line);
+      if (!base) throw new Error('empty stream');
+      setCache(slug, base);
+      return base;
     }
+
+    const reader = res.body!.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done || signal.aborted) break;
+      buf += dec.decode(value, { stream: true });
+      let nl: number;
+      while ((nl = buf.indexOf('\n')) >= 0) {
+        handleLine(buf.slice(0, nl));
+        buf = buf.slice(nl + 1);
+      }
+    }
+    buf += dec.decode();
+    handleLine(buf);
     if (!base) throw new Error('empty stream');
     setCache(slug, base);
     return base;

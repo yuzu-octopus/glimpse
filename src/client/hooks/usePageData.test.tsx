@@ -322,4 +322,56 @@ describe('usePageData stale-while-revalidate', () => {
     expect(result.current.data?.columns[1].widgets[0].type).toBe('weather');
     expect(result.current.isValidating).toBe(false);
   });
+
+  it('renders early chunks before the stream closes', async () => {
+    const SKELETON: PagePayload = {
+      slug: 'home',
+      name: 'Home',
+      width: 'default',
+      tiling: 'columns',
+      minColumnWidth: 300,
+      headWidgets: [],
+      columns: [
+        { size: 'full', widgets: [{ type: 'clock', config: { type: 'clock', title: 'Clock' }, data: null, error: undefined }] },
+      ],
+    };
+    const W0 = { type: 'clock', config: { type: 'clock', title: 'Clock' }, data: { time: 'live' }, error: undefined };
+
+    let controller!: ReadableStreamDefaultController<Uint8Array>;
+    const enc = new TextEncoder();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(new ReadableStream<Uint8Array>({ start(c) { controller = c; } }), { headers: { 'content-type': 'application/x-ndjson' } })),
+    );
+    vi.resetModules();
+    ({ usePageData } = await import('./usePageData'));
+    const { result } = renderHook(() => usePageData('home'));
+
+    // flush microtasks so hook starts fetching and fetch() captures controller
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    controller.enqueue(enc.encode(JSON.stringify({ path: '$skeleton', payload: SKELETON }) + '\n'));
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(result.current.data).not.toBeNull(); // skeleton painted WITHOUT closing stream
+
+    controller.enqueue(enc.encode(JSON.stringify({ path: 'columns[0].widgets[0]', payload: W0 }) + '\n'));
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(result.current.data?.columns[0].widgets[0].data).toEqual(W0.data); // chunk applied live
+
+    controller.close();
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(result.current.isValidating).toBe(false);
+  });
 });
