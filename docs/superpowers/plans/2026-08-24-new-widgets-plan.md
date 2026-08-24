@@ -1,8 +1,8 @@
-# New Widgets (6) Implementation Plan
+# New Widgets (5) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship 6 widgets — contribution-graph, github-trending, weather-radar, feed-reader (rss-reader alias), events-calendar, network — in one parallel batch with server fetcher + client renderer + schema + tests each.
+**Goal:** Ship 5 widgets — contribution-graph, github-trending, weather-radar, events-calendar, network — in one parallel batch with server fetcher + client renderer + schema + tests each.
 
 **Architecture:** Each widget follows existing pattern: Zod schema in `src/shared/widgets/*.ts` + wire payload in `src/shared/widgets/payloads.ts` if needed + server fetcher `src/server/widgets/<name>.ts` via `registerWidget` + client renderer `src/client/widgets/<name>/index.tsx` via `registerWidgetComponent` + lazy entry in `src/client/widgets/index.ts` + `preferredSizes.ts` entry + `config.example.yml` snippet. No new deps; reuse `fetchWithRetry`, `sanitizeUrl`, `Bun.XML`, `os.networkInterfaces`.
 
@@ -87,28 +87,8 @@
 - [ ] **Step 5: Component** (OSM base + radar overlay `img` grid, 2×2 tiles for v1, timestamp)
 - [ ] **Step 6: Wire + test + commit**
 
-### Task 4: feed-reader widget (rss-reader alias)
 
-**Files:**
-- Create: `src/server/widgets/feed-reader.ts`
-- Create: `src/client/widgets/feed-reader/index.tsx`
-- Modify: `src/shared/widgets/feeds.ts` — `FeedReaderSchema` (alias rss-reader)
-- Modify: `src/shared/widgets/index.ts`, `preferredSizes.ts`, registries
-- Test: `src/server/widgets/feed-reader.test.ts` (reuse rss fixtures)
-- Test: `src/client/widgets/feed-reader/feed-reader.test.tsx`
-
-**Interfaces:**
-- Consumes: `parseXml`, `Bun.XML`, same as `rss.ts`
-- Produces: `FeedItem {title, link, pubDate, source}[]`
-
-- [ ] **Step 1: Schema** (`feeds: {url, title?}[]`, `limit`, `collapse-after`, `cache`)
-- [ ] **Step 2: Failing fetcher test** (two feed fixtures, dedupe+sort by pubDate)
-- [ ] **Step 3: Implement fetcher** (share rss fetch path, no preview proxy; `Promise.allSettled` fan-out)
-- [ ] **Step 4: Component test** (title links to external, source + relative time)
-- [ ] **Step 5: Component** (news-feed list, external `_blank`, `rel noopener`)
-- [ ] **Step 6: Wire alias `rss-reader` → same fetcher/component, test both types, commit**
-
-### Task 5: events-calendar widget
+### Task 4: events-calendar widget
 
 **Files:**
 - Create: `src/server/widgets/events-calendar.ts`
@@ -128,7 +108,7 @@
 - [ ] **Step 5: Component** (day headers Today/Tomorrow/Mon 25, time range)
 - [ ] **Step 6: Wire + test + commit**
 
-### Task 6: network widget
+### Task 5: network widget
 
 **Files:**
 - Create: `src/server/widgets/network.ts`
@@ -149,7 +129,7 @@
 - [ ] **Step 5: Component** (stats row + in-memory ping history sparkline, 30s poll via `setInterval` or `usePageData` live; graceful — if unreachable)
 - [ ] **Step 6: Wire + test + commit**
 
-### Task 7: Integration + docs
+### Task 6: Integration + docs
 
 **Files:**
 - Modify: `config.example.yml` — one example per widget
