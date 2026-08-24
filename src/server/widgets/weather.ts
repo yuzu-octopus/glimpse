@@ -1,19 +1,8 @@
 import { weatherSchema } from '../../shared/widgets/feeds';
-import { registerWidget } from './registry';
+import { registerWidget, type WidgetFetchContext } from './registry';
 import { fetchJson } from './http';
 import type { WeatherData, WeatherDay } from '../../shared/widgets/payloads';
 
-interface GeocodeResult {
-  latitude?: number;
-  longitude?: number;
-  name?: string;
-  admin1?: string;
-  country?: string;
-}
-
-interface GeocodeResponse {
-  results?: GeocodeResult[];
-}
 
 interface ForecastCurrent {
   temperature_2m?: number;
@@ -34,18 +23,35 @@ interface ForecastResponse {
   daily?: ForecastDaily;
 }
 
+export interface GeocodePlace {
+  latitude?: number;
+  longitude?: number;
+  name?: string;
+  admin1?: string;
+  country?: string;
+}
+
+/** Shared open-meteo geocoding — used by weather + weather-radar. */
+export async function geocodeLocation(
+  ctx: WidgetFetchContext,
+  location: string,
+): Promise<GeocodePlace> {
+  const geo = await fetchJson<{ results?: GeocodePlace[] }>(
+    ctx,
+    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1`,
+  );
+  const place = geo.results?.[0];
+  if (!place || place.latitude == null || place.longitude == null) {
+    throw new Error(`location not found: ${location}`);
+  }
+  return place;
+}
+
 registerWidget('weather', async (ctx, config) => {
   const cfg = weatherSchema.parse(config);
   const units = cfg.units ?? 'metric';
 
-  const geo = await fetchJson<GeocodeResponse>(
-    ctx,
-    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cfg.location)}&count=1`,
-  );
-  const place = geo.results?.[0];
-  if (place?.latitude == null || place.longitude == null) {
-    throw new Error(`location not found: ${cfg.location}`);
-  }
+  const place = await geocodeLocation(ctx, cfg.location);
 
   const tempUnit = units === 'metric' ? 'celsius' : 'fahrenheit';
   const windUnit = units === 'metric' ? 'kmh' : 'mph';
