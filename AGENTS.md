@@ -23,9 +23,9 @@ config.yml → shared/config.ts (Zod discriminated union) → server/config.ts (
 - **Theme:** presets/base16 → `ThemeSourcePair` → `glanceRamp` → `[light,dark]` tuples → Astryx `defineTheme` + `documentElement` mirror + paint snapshot `localStorage['glimpse.paint.v1']` (anti-FOUC boot script reads it pre-React).
 
 ## Key Directories
-- `src/shared/` — Zod config (`config.ts`, `api.ts`, `layout` constants), `widgets/` schemas + `payloads.ts`/`preferredSizes.ts`, `theme/` (`base16.ts`, `schemes.generated.ts`, `glanceHsl.ts`, `glimpseTheme.ts`, `presets.ts`)
-- `src/server/` — `index.ts` (Bun.serve :3000, SPA + `/api/*`, ETag), `config.ts` (YAML load/watch), `cache.ts` (TtlCache/Singleflight), `api.ts` (payload build/stream/skeleton), `widgets/` fetchers + `registry.ts`/`runtime.ts`/`http.ts`/`xml.ts`/`engagement.ts`
-- `src/client/` — `main.tsx`→`App.tsx` (BrowserRouter), `pages/PageView.tsx` + `page.module.css` + `tiling.ts`/`useCollageTiling.ts`, `hooks/` (useConfig, usePageData), `components/` (TopNav, WidgetChrome, SettingsPanel), `widgets/` (lazy registry + renderers), `theme/GlimpseThemeProvider.tsx`
+- `src/shared/` — Zod config (`config.ts`, `api.ts`, `layout` constants), `widgets/` schemas + `payloads.ts`/`preferredSizes.ts` + `quota-types.ts`, `theme/` (`base16.ts`, `schemes.generated.ts`, `glanceHsl.ts`, `glimpseTheme.ts`, `presets.ts`)
+- `src/server/` — `index.ts` (Bun.serve :3000, SPA + `/api/*`, ETag), `config.ts` (YAML load/watch), `cache.ts` (TtlCache/Singleflight), `api.ts` (payload build/stream/skeleton), `warmup.ts`, `github-token.ts`, `quota/` (69 providers ported from CodexBar) + `widgets/` fetchers + `registry.ts`/`runtime.ts`/`http.ts`/`xml.ts`/`engagement.ts`
+- `src/client/` — `main.tsx`→`App.tsx` (BrowserRouter), `pages/PageView.tsx` + `page.module.css` + `tiling.ts`/`useCollageTiling.ts`, `hooks/` (useConfig, usePageData), `components/` (TopNav, WidgetChrome, SettingsPanel), `widgets/` (lazy registry + renderers: `ai-quota`, `timer`, `notepad` etc.), `theme/GlimpseThemeProvider.tsx`
 - `src/test/setup.ts` — jsdom polyfills (localStorage, HTMLDialogElement, Bun global)
 - `public/` — favicon/icon SVG, fonts (woff2 precached); `dist/` — hashed Vite build (gitignored); `glance/` — reference Go app (gitignored, never linted); `docs/superpowers/{specs,plans}` — design docs
 
@@ -52,7 +52,7 @@ Env: `GLIMPSE_CONFIG` (CLI arg wins > env > ./config.yml), `GLIMPSE_PORT=3000`, 
 - **Memo invariants (load-bearing):** streaming replaces whole widget object refs (`applyChunk` never mutates rendered payloads) — this is why `memo` on WidgetSlot/MobileColumn/BentoItem is safe; `spanStyle(span)` returns cached style objects so memoized columns never see fresh refs. Don't break either.
 - **Grid:** column footprint = `--col-span` CSS var; tile footprint hint = `data-span` attribute (emitted when span>1); mobile media queries remap with `!important` (12→8, 9→5, 8→5, 6→4, 4→3, 3→2).
 - **WidgetChrome:** `collapseAfter >= 0` truncates behind Show more; `-1` (any negative) never collapses; `items` renders rows, `children` otherwise.
-- **State:** no global store; `useConfig` (cached Promise, failures retried) + `usePageData(slug)`; `localStorage` only for theme (`glimpse.theme.v1`, paint snapshot `glimpse.paint.v1`) and todo.
+- **State:** no global store; `useConfig` (cached Promise, failures retried) + `usePageData(slug)`; `localStorage` only for theme (`glimpse.theme.v1`, paint snapshot `glimpse.paint.v1`), todo (`glimpse.todo.<id>`), timer (`glimpse.timer.<id>` + `.notes`), notepad (`glimpse.notepad.<id>`), and ai-quota has no client persistence.
 - **Astryx warning:** ONLY valid API reference is `node_modules/@astryxdesign/core/dist/**/*.d.ts` (`defineTheme`, `<Theme theme mode>`, Card/Banner/Text/TabList/Skeleton/SelectableCard/Dialog/Link). The `skill://astryx` documents an INVENTED API (ThemeProvider/createTheme/swizzle) — never "fix" code toward it.
 - **Deliberate ignores:** react-doctor off-rules (iframe-sandbox, no-multi-comp, no-fetch-in-effect, dangerous-html-sink, set-state-after-await-in-effect, unused-export, low-supply-chain-score) are intentional; don't re-enable or code around them silently.
 
