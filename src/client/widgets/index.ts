@@ -7,6 +7,7 @@ type Loader = () => Promise<unknown>;
 const iframeLoader: Loader = () => import('./iframe');
 
 export const widgetLoaders: Record<string, Loader> = {
+  'ai-quota': () => import('./ai-quota'),
   bookmarks: () => import('./bookmarks'),
   calendar: () => import('./calendar'),
   clock: () => import('./clock'),
