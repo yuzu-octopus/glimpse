@@ -14,14 +14,16 @@ export const AI_QUOTA_PREF: Pref = {
   preferredHeight: 180,
 };
 
-export const aiQuotaSchema = z.object({
-  type: z.literal('ai-quota'),
-  ...sharedWidgetFields,
-  provider: z.enum(['codex', 'claude', 'openai', 'anthropic', 'copilot']).default(() => AI_QUOTA_DEFAULTS.provider),
-  token: z.string().optional(),
-  tokenFile: z.string().optional(),
-  projectId: z.string().optional(),
-});
+export const aiQuotaSchema = z
+  .object({
+    type: z.literal('ai-quota'),
+    ...sharedWidgetFields,
+    provider: z.enum(['codex', 'claude', 'openai', 'anthropic', 'copilot']).default(() => AI_QUOTA_DEFAULTS.provider),
+    token: z.string().optional(),
+    tokenFile: z.string().optional(),
+    projectId: z.string().optional(),
+  })
+  .refine((c) => !!c.token || !!c.tokenFile, { message: 'token or tokenFile required' });
 
 export type AiQuotaConfig = z.infer<typeof aiQuotaSchema>;
 

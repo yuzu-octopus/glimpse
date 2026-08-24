@@ -338,3 +338,13 @@ pages:
             title: Grafana
             source: https://grafana.lab/d/000000001/homelab?orgId=1&kiosk
             height: 420
+
+# AI quota (CodexBar port) — subscription % + reset countdowns
+# Secrets stay server-side; use env interpolation or mounted token file.
+# - type: ai-quota
+#   provider: codex        # codex | claude | openai | anthropic | copilot
+#   token: ${CODEX_TOKEN}  # or tokenFile: /run/secrets/codex.json (mount ~/.codex/auth.json)
+#   # token: ${ANTHROPIC_ADMIN_KEY}  # for provider: anthropic
+#   # token: ${OPENAI_ADMIN_KEY}     # for provider: openai
+#   # token: ${GITHUB_TOKEN}         # for provider: copilot
+#   cache: 2m
