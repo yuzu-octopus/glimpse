@@ -201,3 +201,18 @@ export interface ServerInfo {
 export interface ServerStatsData {
   servers: ServerInfo[];
 }
+
+export interface AiQuotaWindow {
+  label: string;
+  usedPercent: number;
+  windowMinutes: number;
+  resetsAt: number;
+}
+
+export interface AiQuotaData {
+  provider: string;
+  plan?: string;
+  windows: AiQuotaWindow[];
+  balance?: number;
+  error?: string;
+}
