@@ -27,9 +27,9 @@ export const aiQuotaSchema = z
     token: z.string().optional(),
     // tokenFile docs (inline //): JetBrains ~/.config/JetBrains/*/AIAssistantQuotaManager2.xml, Kiro kiro-cli auth file, Grok ~/.grok/auth.json, Zed credentials
     tokenFile: z.string().optional(),
-    quotaUrl: z.string().url().optional(),
+    quotaUrl: z.url().optional(),
     projectId: z.string().optional(),
-    baseUrl: z.string().url().optional(),
+    baseUrl: z.url().optional(),
   })
   .refine((c) => !!c.token || !!c.tokenFile, { message: 'token or tokenFile required' })
   .superRefine((c, ctx) => {
