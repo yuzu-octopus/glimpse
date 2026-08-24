@@ -27,6 +27,7 @@ import { systemStatsSchema } from './system-stats';
 import { notepadSchema } from './notepad';
 import { timerSchema } from './timer';
 import { todoSchema } from './todo';
+import { aiQuotaSchema } from './ai-quota';
 const schemaEntries = [
   notepadSchema,
   timerSchema,
@@ -54,6 +55,7 @@ const schemaEntries = [
   dockerContainersSchema,
   dnsStatsSchema,
   serverStatsSchema,
+  aiQuotaSchema,
 ] as const;
 
 /** Public widget type union, derived from the schema entries. */

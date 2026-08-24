@@ -28,6 +28,7 @@ const ALL_WIDGET_TYPES = [
   'server-stats',
   'docker-containers',
   'dns-stats',
+  'ai-quota',
 ] as const;
 
 describe('PREFERRED_SIZES', () => {

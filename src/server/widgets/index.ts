@@ -16,3 +16,4 @@ import './system-stats';
 import './server-stats';
 import './videos';
 import './weather';
+import './ai-quota';

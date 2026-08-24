@@ -27,6 +27,7 @@ import { SYSTEM_STATS_PREF } from './system-stats';
 import { NOTEPAD_PREF } from './notepad';
 import { TIMER_PREF } from './timer';
 import { TODO_PREF } from './todo';
+import { AI_QUOTA_PREF } from './ai-quota';
 import type { Pref } from './shared';
 
 export const PREFERRED_SIZES: Record<WidgetType, Pref> = {
@@ -56,12 +57,14 @@ export const PREFERRED_SIZES: Record<WidgetType, Pref> = {
   'docker-containers': DOCKER_CONTAINERS_PREF,
   'dns-stats': DNS_STATS_PREF,
   'server-stats': SERVER_STATS_PREF,
+  'ai-quota': AI_QUOTA_PREF,
 };
 
 /** Skeleton silhouette per widget type (WidgetChrome loading state). */
 export const SKELETON_SHAPE: Record<string, 'list' | 'stat' | 'chart' | 'rows'> = {
   rss: 'list', 'hacker-news': 'list', lobsters: 'list', reddit: 'list', releases: 'list',
   clock: 'stat', weather: 'stat', markets: 'stat', 'server-stats': 'stat',
+  'ai-quota': 'stat',
   'system-stats': 'stat', repository: 'stat',
   videos: 'chart', 'custom-api': 'chart',
 };
