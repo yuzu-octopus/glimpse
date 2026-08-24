@@ -24,11 +24,10 @@ Glimpse is Bun+React 19+Astryx SPA, 27 widget types today, YAML `pages→columns
 - **Server:** Reuse weather geocode; return `{lat, lon, zoom}` + RainViewer tile URL template `https://tilecache.rainviewer.com/v2/radar/.../{z}/{x}/{y}/2/1_1.png`. No server proxy needed.
 - **Client:** OSM base + radar overlay `img` tiles (no Leaflet dep — ponytail: CSS grid of `img` tags). Timestamp of last radar frame.
 
-### 4. rss-reader
-- **Config:** `type: rss-reader`, `feeds: {url, title?}[]`, `limit` 20, `preview: boolean` default true, `cache` 30m
-- **Server:** Reuse `rss` feed fetch but payload includes `content`/`contentSnippet` for preview. When `preview` and article selected, optional server-side fetch of article URL + sanitize (strip scripts, keep p/img/a).
-- **Client:** Split view: list left, preview pane right (desktop) / modal (mobile). If `preview: false`, renders as enhanced `rss` list.
-- **Decision:** New type (not rss mode) to keep `rss` lean.
+### 4. feed-reader (rss-reader)
+- **Config:** `type: feed-reader` (alias `rss-reader`), `feeds: {url, title?}[]`, `limit` 20, `collapse-after` 10, `cache` 30m — same shape as `rss`
+- **Server:** Share `rss` fetch logic (RSS/Atom via `Bun.XML`); no article proxy. Payload `{items: {title, link, pubDate, source}[]}`.
+- **Client:** News-feed style list (like `hacker-news`/`lobsters`): title → external link (`target _blank`), source + relative time, no inline preview. Click goes to original site. Distinct chrome from `rss` if desired, but behavior = external.
 
 ### 5. events-calendar
 - **Config:** `type: events-calendar`, `urls: string[]` (ICS URLs) or `ics-url`, `days` default 14, `limit` 20
