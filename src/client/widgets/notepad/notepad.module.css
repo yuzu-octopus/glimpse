@@ -1,0 +1,22 @@
+.area {
+  width: 100%;
+  min-height: 140px;
+  height: 180px;
+  resize: vertical;
+  border: none;
+  background: transparent;
+  color: var(--color-text-base);
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  padding: var(--widget-content-padding);
+  outline: none;
+}
+
+.area::placeholder {
+  color: var(--color-text-subdue);
+}
+
+.area:focus {
+  outline: none;
+}

@@ -7,6 +7,7 @@ const ALL_WIDGET_TYPES = [
   'calendar',
   'bookmarks',
   'search',
+  'notepad',
   'timer',
   'todo',
   'iframe',

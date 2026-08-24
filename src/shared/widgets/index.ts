@@ -24,9 +24,11 @@ import {
 import { searchSchema } from './search';
 import { serverStatsSchema } from './server-stats';
 import { systemStatsSchema } from './system-stats';
+import { notepadSchema } from './notepad';
 import { timerSchema } from './timer';
 import { todoSchema } from './todo';
 const schemaEntries = [
+  notepadSchema,
   timerSchema,
   bookmarksSchema,
   searchSchema,
