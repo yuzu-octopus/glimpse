@@ -32,7 +32,30 @@ export type ProviderId =
   | 'kilo'
   | 'kilocode'
   | 'mistral'
-  | 'perplexity';
+  | 'perplexity'
+  | 'cursor'
+  | 'factory'
+  | 'droid'
+  | 'sakana'
+  | 'abacus'
+  | 'notion'
+  | 't3chat'
+  | 'opencode'
+  | 'alibaba'
+  | 'alibaba-coding-plan'
+  | 'alibaba-token-plan'
+  | 'qwen'
+  | 'qwen-cloud'
+  | 'manus'
+  | 'minimax'
+  | 'kimi'
+  | 'kimi-web'
+  | 'commandcode'
+  | 'devin'
+  | 'xiaomi-mimo'
+  | 'windsurf'
+  | 'openai-web'
+  | 'claude-web';
 
 export interface RateWindow {
   usedPercent: number;
