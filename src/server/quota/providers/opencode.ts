@@ -45,7 +45,7 @@ export async function fetchOpencodeUsage(auth: { token: string }, ctx: WidgetFet
             windowMinutes: 43200,
             resetsAt: data.usage.monthly.resetsAt ? Date.parse(data.usage.monthly.resetsAt) : 0,
           });
-        return { provider: 'opencode' as never, windows, raw: data };
+        return { provider: 'opencode', windows, raw: data };
       }
     } catch {
       // fall through to cookie path
@@ -57,7 +57,7 @@ export async function fetchOpencodeUsage(auth: { token: string }, ctx: WidgetFet
     auth.token,
   );
   return {
-    provider: 'opencode' as never,
+    provider: 'opencode',
     windows: [{ label: 'usage', usedPercent: data.usedPercent ?? 0, windowMinutes: 0, resetsAt: data.resetsAt ?? 0 }],
     balance: data.balance,
     raw: data,

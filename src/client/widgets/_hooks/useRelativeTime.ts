@@ -28,8 +28,13 @@ function getSnapshot(): number {
 }
 
 /** "5m ago" style relative time that ages by a minute per shared tick. */
+/** Re-render once per shared 60s tick (countdowns, live ages); returns tick count. */
+export function useNow(): number {
+  return useSyncExternalStore(subscribe, getSnapshot);
+}
+
 export function useRelativeTime(ageSeconds: number): string {
-  const ticks = useSyncExternalStore(subscribe, getSnapshot);
+  const ticks = useNow();
   return formatAge(ageSeconds + (ticks * TICK_MS) / 1000);
 }
 

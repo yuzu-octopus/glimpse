@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import type { AiQuotaData } from '../../../shared/widgets/payloads';
+import { useNow } from '../_hooks/useRelativeTime';
 import styles from './ai-quota.module.css';
 
 function fmtReset(ms: number): string {
@@ -13,13 +13,7 @@ function fmtReset(ms: number): string {
 
 export function AiQuota({ config, data, error, isLoading }: WidgetComponentProps) {
   const loading = isLoading ?? ((data as unknown) == null && !error);
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    if (!data) return;
-    const id = setInterval(() => setTick((x) => x + 1), 60000);
-    return () => clearInterval(id);
-  }, [data]);
-  void tick;
+  useNow(); // re-render each shared 60s tick so reset countdowns stay live
   if (loading) return <WidgetChrome title={(config as Record<string, string>).title} isLoading />;
   if (error) return <WidgetChrome title={(config as Record<string, string>).title} error={error} />;
   const d = data as AiQuotaData;

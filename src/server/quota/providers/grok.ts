@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { fetchJson } from '../../widgets/http';
 import type { WidgetFetchContext } from '../../widgets/registry';
-import type { UsageSnapshot } from '../../../shared/widgets/quota-types';
+import { extractToken, type UsageSnapshot } from '../../../shared/widgets/quota-types';
 
 // token: xAI API key or Grok session token; tokenFile: ~/.grok/auth.json
 export async function fetchGrokUsage(
@@ -12,10 +12,7 @@ export async function fetchGrokUsage(
     try {
       const bun = (globalThis as unknown as { Bun?: typeof Bun }).Bun;
       const text = bun ? await (async () => { const f = bun.file(path); return await f.exists() ? f.text() : ''; })() : await readFile(path, 'utf8').catch(() => '');
-      if (!text) return '';
-      const j: unknown = JSON.parse(text);
-      if (j && typeof j === 'object' && 'token' in j) return String((j as Record<string, unknown>).token ?? '');
-      if (j && typeof j === 'object' && 'access_token' in j) return String((j as Record<string, unknown>).access_token ?? '');
+      return extractToken(text) ?? '';
     } catch {}
     return '';
   };

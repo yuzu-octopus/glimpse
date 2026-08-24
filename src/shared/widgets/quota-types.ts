@@ -71,11 +71,19 @@ export const KNOWN_PROVIDERS = [
   'kiro',
 ] as const;
 
-export type KnownProvider = (typeof KNOWN_PROVIDERS)[number];
-export type ProviderId = KnownProvider | (string & {});
+export type ProviderId = string;
 
-export function isKnownProvider(v: string): v is KnownProvider {
-  return (KNOWN_PROVIDERS as readonly string[]).includes(v);
+/** Pull an auth token out of a JSON credential file body (codex/claude/grok/zed/…); undefined if not JSON-with-token. */
+export function extractToken(raw: string): string | undefined {
+  try {
+    const j: unknown = JSON.parse(raw);
+    if (!j || typeof j !== 'object') return undefined;
+    const o = j as Record<string, unknown>;
+    const tok = o.access_token ?? o.accessToken ?? o.token ?? o.apiKey ?? o.api_key;
+    return tok ? String(tok) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export interface RateWindow {

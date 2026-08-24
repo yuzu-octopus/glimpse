@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import type { ProviderId, UsageSnapshot } from '../../shared/widgets/quota-types';
+import { extractToken, type ProviderId, type UsageSnapshot } from '../../shared/widgets/quota-types';
 import type { WidgetFetchContext } from '../widgets/registry';
 import { fetchAnthropicUsage } from './anthropic';
 import { fetchChutesUsage } from './providers/chutes';
@@ -69,98 +69,92 @@ import { fetchXiaomiMimoUsage } from './providers/xiaomi';
 import { fetchZaiUsage } from './providers/zai';
 import { fetchZenmuxUsage } from './providers/zenmux';
 
-export async function fetchUsage(
-  provider: ProviderId,
-  auth: { token: string; accountId?: string; projectId?: string; baseUrl?: string; quotaUrl?: string; tokenFile?: string },
-  ctx: WidgetFetchContext,
-): Promise<UsageSnapshot> {
-  if (provider === 'codex') return fetchCodexUsage(auth, ctx);
-  if (provider === 'claude') return fetchClaudeUsage(auth, ctx);
-  if (provider === 'openai') return fetchOpenaiUsage(auth, ctx);
-  if (provider === 'anthropic') return fetchAnthropicUsage(auth, ctx);
-  if (provider === 'copilot') return fetchCopilotUsage(auth, ctx);
-  if (provider === 'openrouter') return fetchOpenRouterUsage(auth, ctx);
-  if (provider === 'deepseek') return fetchDeepSeekUsage(auth, ctx);
-  if (provider === 'moonshot') return fetchMoonshotUsage(auth as { token: string; baseUrl?: string }, ctx);
-  if (provider === 'synthetic') return fetchSyntheticUsage(auth, ctx);
-  if (provider === 'deepinfra') return fetchDeepInfraUsage(auth, ctx);
-  if (provider === 'fireworks') return fetchFireworksUsage(auth, ctx);
-  if (provider === 'chutes') return fetchChutesUsage(auth, ctx);
-  if (provider === 'groqcloud') return fetchGroqcloudUsage(auth, ctx);
-  if (provider === 'groq') return fetchGroqUsage(auth, ctx);
-  if (provider === 'warp') return fetchWarpUsage(auth, ctx);
-  if (provider === 'codebuff') return fetchCodebuffUsage(auth, ctx);
-  if (provider === 'crof') return fetchCrofUsage(auth, ctx);
-  if (provider === 'venice') return fetchVeniceUsage(auth, ctx);
-  if (provider === 'cline' || provider === 'clinepass') return fetchClineUsage(auth, ctx);
-  if (provider === 'llmproxy') return fetchLlmproxyUsage(auth as { token: string; baseUrl?: string }, ctx);
-  if (provider === 'clawrouter') return fetchClawrouterUsage(auth, ctx);
-  if (provider === 'wayfinder') return fetchWayfinderUsage(auth, ctx);
-  if (provider === 'litellm') return fetchLitellmUsage(auth as { token: string; baseUrl?: string }, ctx);
-  if (provider === 'deepgram') return fetchDeepgramUsage(auth, ctx);
-  if (provider === 'neuralwatt') return fetchNeuralwattUsage(auth, ctx);
-  if (provider === 'zenmux') return fetchZenmuxUsage(auth, ctx);
-  if (provider === 'xai') return fetchXaiUsage(auth, ctx);
-  if (provider === 'doubao') return fetchDoubaoUsage(auth, ctx);
-  if (provider === 'zai') return fetchZaiUsage(auth as { token: string; baseUrl?: string }, ctx);
-  if (provider === 'kilo') return fetchKiloUsage(auth, ctx);
-  if (provider === 'kilocode') return fetchKilocodeUsage(auth, ctx);
-  if (provider === 'mistral') return fetchMistralUsage(auth, ctx);
-  if (provider === 'perplexity') return fetchPerplexityUsage(auth, ctx);
-  if (provider === 'cursor') return fetchCursorUsage(auth, ctx);
-  if (provider === 'factory' || provider === 'droid') return fetchFactoryUsage(auth, ctx);
-  if (provider === 'sakana') return fetchSakanaUsage(auth, ctx);
-  if (provider === 'abacus') return fetchAbacusUsage(auth, ctx);
-  if (provider === 'notion') return fetchNotionUsage(auth, ctx);
-  if (provider === 't3chat') return fetchT3ChatUsage(auth, ctx);
-  if (provider === 'opencode' || provider === 'opencode-go') return fetchOpencodeUsage(auth, ctx);
-  if (provider === 'alibaba') return fetchAlibabaUsage(auth, ctx);
-  if (provider === 'alibaba-coding-plan') return fetchAlibabaCodingPlanUsage(auth, ctx);
-  if (provider === 'alibaba-token-plan') return fetchAlibabaTokenPlanUsage(auth, ctx);
-  if (provider === 'qwen') return fetchQwenUsage(auth, ctx);
-  if (provider === 'qwen-cloud') return fetchQwenCloudUsage(auth, ctx);
-  if (provider === 'manus') return fetchManusUsage(auth, ctx);
-  if (provider === 'minimax') return fetchMinimaxUsage(auth, ctx);
-  if (provider === 'kimi') return fetchKimiUsage(auth, ctx);
-  if (provider === 'kimi-web') return fetchKimiWebUsage(auth, ctx);
-  if (provider === 'commandcode') return fetchCommandcodeUsage(auth, ctx);
-  if (provider === 'devin') return fetchDevinUsage(auth, ctx);
-  if (provider === 'xiaomi-mimo') return fetchXiaomiMimoUsage(auth, ctx);
-  if (provider === 'windsurf') return fetchWindsurfUsage(auth, ctx);
-  if (provider === 'openai-web') return fetchOpenaiWebUsage(auth, ctx);
-  if (provider === 'claude-web') return fetchClaudeWebUsage(auth, ctx);
-  if (provider === 'jetbrains') return fetchJetbrainsUsage(auth as { token: string; tokenFile?: string }, ctx);
-  if (provider === 'zed') return fetchZedUsage(auth as { token: string; tokenFile?: string }, ctx);
-  if (provider === 'gemini') return fetchGeminiUsage(auth as { token: string; tokenFile?: string; baseUrl?: string; quotaUrl?: string }, ctx);
-  if (provider === 'vertex') return fetchVertexUsage(auth as { token: string; tokenFile?: string; baseUrl?: string; quotaUrl?: string }, ctx);
-  if (provider === 'kiro') return fetchKiroUsage(auth as { token: string; tokenFile?: string }, ctx);
-  if (provider === 'grok') return fetchGrokUsage(auth as { token: string; tokenFile?: string; baseUrl?: string; quotaUrl?: string }, ctx);
-  if (provider === 'antigravity') return fetchAntigravityUsage(auth as { token: string; tokenFile?: string; baseUrl?: string; quotaUrl?: string }, ctx);
-  if (provider === 'augment') return fetchAugmentUsage(auth as { token: string; tokenFile?: string; baseUrl?: string; quotaUrl?: string }, ctx);
-  if (provider === 'amp') return fetchAmpUsage(auth as { token: string; tokenFile?: string }, ctx);
-  if (provider === 'ollama') return fetchOllamaUsage(auth as { token: string; tokenFile?: string; baseUrl?: string; quotaUrl?: string }, ctx);
-  if (provider === 'bedrock') return fetchBedrockUsage(auth as { token: string; tokenFile?: string; baseUrl?: string; quotaUrl?: string }, ctx);
-  if (provider === 'stepfun') return fetchStepfunUsage(auth as { token: string; tokenFile?: string; baseUrl?: string; quotaUrl?: string }, ctx);
-  throw new Error(`provider ${provider} not implemented — contributors: add Sources/CodexBarCore/Providers/${provider}`);
-}
+type ProviderAuth = {
+  token: string;
+  accountId?: string;
+  projectId?: string;
+  baseUrl?: string;
+  quotaUrl?: string;
+  tokenFile?: string;
+};
 
-/**
- * CLI PTY fallback — not implemented.
- * Bun cannot reliably spawn an interactive PTY to drive `codex`/`claude` CLIs
- * for token extraction. Use OAuth/API token (or tokenFile mount) instead.
- * Throws sanitized not-implemented error (no URL/secret leakage).
- */
-export async function fetchCliUsage(): Promise<never> {
-  throw new Error('CLI PTY fallback not implemented — use OAuth/API token');
-}
+const PROVIDERS: Record<string, (auth: ProviderAuth, ctx: WidgetFetchContext) => Promise<UsageSnapshot>> = {
+  codex: fetchCodexUsage,
+  claude: fetchClaudeUsage,
+  openai: fetchOpenaiUsage,
+  anthropic: fetchAnthropicUsage,
+  copilot: fetchCopilotUsage,
+  openrouter: fetchOpenRouterUsage,
+  deepseek: fetchDeepSeekUsage,
+  moonshot: fetchMoonshotUsage,
+  synthetic: fetchSyntheticUsage,
+  deepinfra: fetchDeepInfraUsage,
+  fireworks: fetchFireworksUsage,
+  chutes: fetchChutesUsage,
+  groqcloud: fetchGroqcloudUsage,
+  groq: fetchGroqUsage,
+  warp: fetchWarpUsage,
+  codebuff: fetchCodebuffUsage,
+  crof: fetchCrofUsage,
+  venice: fetchVeniceUsage,
+  cline: fetchClineUsage,
+  clinepass: fetchClineUsage,
+  llmproxy: fetchLlmproxyUsage,
+  clawrouter: fetchClawrouterUsage,
+  wayfinder: fetchWayfinderUsage,
+  litellm: fetchLitellmUsage,
+  deepgram: fetchDeepgramUsage,
+  neuralwatt: fetchNeuralwattUsage,
+  zenmux: fetchZenmuxUsage,
+  xai: fetchXaiUsage,
+  doubao: fetchDoubaoUsage,
+  zai: fetchZaiUsage,
+  kilo: fetchKiloUsage,
+  kilocode: fetchKilocodeUsage,
+  mistral: fetchMistralUsage,
+  perplexity: fetchPerplexityUsage,
+  cursor: fetchCursorUsage,
+  factory: fetchFactoryUsage,
+  droid: fetchFactoryUsage,
+  sakana: fetchSakanaUsage,
+  abacus: fetchAbacusUsage,
+  notion: fetchNotionUsage,
+  t3chat: fetchT3ChatUsage,
+  opencode: fetchOpencodeUsage,
+  'opencode-go': fetchOpencodeUsage,
+  alibaba: fetchAlibabaUsage,
+  'alibaba-coding-plan': fetchAlibabaCodingPlanUsage,
+  'alibaba-token-plan': fetchAlibabaTokenPlanUsage,
+  qwen: fetchQwenUsage,
+  'qwen-cloud': fetchQwenCloudUsage,
+  manus: fetchManusUsage,
+  minimax: fetchMinimaxUsage,
+  kimi: fetchKimiUsage,
+  'kimi-web': fetchKimiWebUsage,
+  commandcode: fetchCommandcodeUsage,
+  devin: fetchDevinUsage,
+  'xiaomi-mimo': fetchXiaomiMimoUsage,
+  windsurf: fetchWindsurfUsage,
+  'openai-web': fetchOpenaiWebUsage,
+  'claude-web': fetchClaudeWebUsage,
+  jetbrains: fetchJetbrainsUsage,
+  zed: fetchZedUsage,
+  gemini: fetchGeminiUsage,
+  vertex: fetchVertexUsage,
+  kiro: fetchKiroUsage,
+  grok: fetchGrokUsage,
+  antigravity: fetchAntigravityUsage,
+  augment: fetchAugmentUsage,
+  amp: fetchAmpUsage,
+  ollama: fetchOllamaUsage,
+  bedrock: fetchBedrockUsage,
+  stepfun: fetchStepfunUsage,
+};
 
-/**
- * Web cookie fallback — requires browser cookie session (claude.ai / chatgpt.com).
- * Not implemented in Bun server; use OAuth/API token instead.
- * Throws sanitized not-implemented error (no URL/secret leakage).
- */
-export async function fetchWebUsage(): Promise<never> {
-  throw new Error('web cookie fallback not implemented — use OAuth/API token');
+export async function fetchUsage(provider: ProviderId, auth: ProviderAuth, ctx: WidgetFetchContext): Promise<UsageSnapshot> {
+  const fetcher = PROVIDERS[provider];
+  if (!fetcher) throw new Error(`provider ${provider} not implemented — contributors: add Sources/CodexBarCore/Providers/${provider}`);
+  return fetcher(auth, ctx);
 }
 
 const PROVIDER_ENV_KEYS: Record<string, string[]> = {
@@ -211,6 +205,12 @@ const PROVIDER_FILE_DEFAULTS: Record<string, string> = {
   amp: '~/.config/amp/auth.json',
 };
 
+function readTokenFrom(raw: string): string | undefined {
+  const trimmed = raw.trim();
+  // JSON credential files (codex/claude/grok/zed): pull the token field; otherwise the raw text IS the token
+  return trimmed ? (extractToken(trimmed) ?? trimmed) : undefined;
+}
+
 export function resolveAuth(
   env: Record<string, string | undefined>,
   cfg: { token?: string; tokenFile?: string; accountId?: string },
@@ -219,16 +219,8 @@ export function resolveAuth(
   if (cfg.token) return { token: cfg.token, accountId: cfg.accountId };
   if (cfg.tokenFile) {
     try {
-      const raw = readFileSync(cfg.tokenFile, 'utf8').trim();
-      if (raw) {
-        // if file is JSON (codex/claude), extract token field
-        try {
-          const j = JSON.parse(raw);
-          const tok = j.access_token ?? j.accessToken ?? j.token ?? j.apiKey ?? j.api_key;
-          if (tok) return { token: String(tok), accountId: cfg.accountId };
-        } catch {}
-        return { token: raw, accountId: cfg.accountId };
-      }
+      const tok = readTokenFrom(readFileSync(cfg.tokenFile, 'utf8'));
+      if (tok) return { token: tok, accountId: cfg.accountId };
     } catch {}
   }
   if (provider) {
@@ -240,15 +232,8 @@ export function resolveAuth(
     if (defFile) {
       try {
         const p = defFile.replace(/^~/, env.HOME ?? process.env.HOME ?? '');
-        const raw = readFileSync(p, 'utf8').trim();
-        if (raw) {
-          try {
-            const j = JSON.parse(raw);
-            const tok = j.access_token ?? j.accessToken ?? j.token ?? j.apiKey ?? j.api_key;
-            if (tok) return { token: String(tok), accountId: cfg.accountId };
-          } catch {}
-          return { token: raw, accountId: cfg.accountId };
-        }
+        const tok = readTokenFrom(readFileSync(p, 'utf8'));
+        if (tok) return { token: tok, accountId: cfg.accountId };
       } catch {}
     }
   }
