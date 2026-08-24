@@ -23,7 +23,6 @@ export const widgetLoaders: Record<string, Loader> = {
   monitor: () => import('./monitor'),
   reddit: () => import('./reddit'),
   releases: () => import('./releases'),
-  repository: () => import('./repository'),
   rss: () => import('./rss'),
   search: () => import('./search'),
   'server-stats': () => import('./server-stats'),
@@ -34,6 +33,8 @@ export const widgetLoaders: Record<string, Loader> = {
   videos: () => import('./videos'),
   weather: () => import('./weather'),
   'weather-radar': () => import('./weather-radar'),
+  'github-trending': () => import('./github-trending'),
+  network: () => import('./network'),
 };
 
 const widgetPromises = new Map<string, Promise<unknown>>();

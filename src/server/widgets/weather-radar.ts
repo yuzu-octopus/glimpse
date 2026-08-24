@@ -32,8 +32,8 @@ registerWidget('weather-radar', async (ctx, config) => {
   const host = (maps.host || DEFAULT_TILE_HOST).replace(/\/$/, '');
   const data: RadarData = {
     location: place.name ?? cfg.location,
-    lat: place.latitude,
-    lon: place.longitude,
+    lat: place.latitude as number,
+    lon: place.longitude as number,
     zoom,
     tileUrlTemplate: `${host}${last.path}/{z}/{x}/{y}/2/1_1.png`,
     frameTime: typeof last.time === 'number' ? last.time : null,

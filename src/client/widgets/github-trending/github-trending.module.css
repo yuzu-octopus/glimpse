@@ -1,0 +1,9 @@
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.row { display: grid; gap: 2px; }
+.name { font-weight: 600; color: var(--color-primary); text-decoration: none; }
+.name:hover { text-decoration: underline; }
+.desc { font-size: 13px; color: var(--color-text-subdue); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.meta { font-size: 12px; color: var(--color-text-muted); display: flex; gap: 8px; align-items: center; }
+.lang { padding: 1px 6px; border-radius: 8px; background: var(--color-widget-background); border: 1px solid var(--color-widget-content-border); }
+.today { color: var(--color-positive); }
+.empty { padding: 12px; color: var(--color-text-muted); }

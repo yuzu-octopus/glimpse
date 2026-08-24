@@ -10,6 +10,7 @@ import {
   redditSchema,
   releasesSchema,
   rssSchema,
+  weatherSchema,
 } from './feeds';
 import { groupSchema, setWidgetSchemaRef, splitColumnSchema } from './group';
 import { htmlSchema, iframeSchema } from './iframe';
@@ -28,6 +29,9 @@ import { notepadSchema } from './notepad';
 import { timerSchema } from './timer';
 import { todoSchema } from './todo';
 import { radarSchema } from './radar';
+import { githubTrendingSchema } from './github-trending';
+import { networkSchema } from './network';
+import { aiQuotaSchema } from './ai-quota';
 const schemaEntries = [
   notepadSchema,
   timerSchema,
@@ -59,6 +63,8 @@ const schemaEntries = [
   aiQuotaSchema,
   contributionGraphSchema,
   radarSchema,
+  githubTrendingSchema,
+  networkSchema,
 ] as const;
 
 /** Public widget type union, derived from the schema entries. */

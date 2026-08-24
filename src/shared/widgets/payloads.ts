@@ -247,3 +247,19 @@ export interface CalendarEvent {
   location?: string;
   allDay: boolean;
 }
+
+export interface TrendingRepo {
+  fullName: string;
+  description?: string;
+  language?: string;
+  stars: number;
+  starsToday: number;
+  url: string;
+}
+export type TrendingData = TrendingRepo[];
+
+export interface NetworkData {
+  localIp: string;
+  publicIp?: string | null;
+  pingMs?: number | null;
+}

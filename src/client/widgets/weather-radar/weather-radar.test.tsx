@@ -39,11 +39,11 @@ describe('weather-radar widget', () => {
       expect(img.src).toContain('/v2/radar/1700000600/7/');
       expect(img.src).toContain('/2/1_1.png');
     }
-    // centred on tile (63,42): the grid covers tiles x 62..63, y 41..42
     const xs = [...overlays].map((i) => Number(i.src.match(/\/7\/(\d+)\//)![1]));
     const ys = [...overlays].map((i) => Number(i.src.match(/\/7\/\d+\/(\d+)\//)![1]));
     expect(xs.slice().sort()).toEqual([62, 62, 63, 63]);
     expect(ys.slice().sort()).toEqual([41, 41, 42, 42]);
+    const bases = [...container.querySelectorAll<HTMLImageElement>('img.base')];
     expect(bases).toHaveLength(4);
     expect(bases[0].src).toContain('tile.openstreetmap.org/7/');
   });
@@ -51,7 +51,10 @@ describe('weather-radar widget', () => {
   it('places the 2x2 grid around the exact-boundary coordinate', () => {
     const { container } = render(<WeatherRadar config={{ type: 'weather-radar', location: 'X' }} data={EQUATOR} />);
     const overlays = [...container.querySelectorAll<HTMLImageElement>('img.overlay')];
-    const cells = overlays.map((i) => i.src.replace(/^.*\/3\//, '').replace(/\/2\/1_1\.png$/, ''));
+    const cells = overlays.map((i) => {
+      const m = i.src.match(/\/3\/(\d+)\/(\d+)\/2\/1_1\.png$/);
+      return m ? `${m[1]}/${m[2]}` : i.src;
+    });
     expect(cells.sort()).toEqual(['3/3', '3/4', '4/3', '4/4']);
   });
 

@@ -39,13 +39,10 @@ export function WeatherRadar({ config, data, error, isLoading }: WidgetComponent
     );
   }
 
-  // 2×2 tile grid centred on the location.
   const { x, y } = tileCoords(w.lat, w.lon, w.zoom);
   const baseX = Math.floor(x) - 1;
   const baseY = Math.floor(y) - 1;
-  const tiles = [0, 1].flatMap((dy) =>
-    [0, 1].map((dx) => ({ tx: baseX + dx, ty: baseY + dy })),
-  );
+  const tiles = [0, 1].flatMap((dy) => [0, 1].map((dx) => ({ tx: baseX + dx, ty: baseY + dy })));
 
   return (
     <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
@@ -53,20 +50,11 @@ export function WeatherRadar({ config, data, error, isLoading }: WidgetComponent
         <div className={styles.tiles}>
           {tiles.map(({ tx, ty }) => (
             <div key={`${tx}:${ty}`} className={styles.cell}>
+              <img {...SHARED_IMG} className={`${styles.base} base`} src={`https://tile.openstreetmap.org/${w.zoom}/${tx}/${ty}.png`} alt="" loading="lazy" />
               <img
                 {...SHARED_IMG}
-                className={styles.base}
-                src={`https://tile.openstreetmap.org/${w.zoom}/${tx}/${ty}.png`}
-                alt=""
-                loading="lazy"
-              />
-              <img
-                {...SHARED_IMG}
-                className={styles.overlay}
-                src={w.tileUrlTemplate
-                  .replace('{z}', String(w.zoom))
-                  .replace('{x}', String(tx))
-                  .replace('{y}', String(ty))}
+                className={`${styles.overlay} overlay`}
+                src={w.tileUrlTemplate.replace('{z}', String(w.zoom)).replace('{x}', String(tx)).replace('{y}', String(ty))}
                 alt=""
                 loading="lazy"
               />
@@ -82,3 +70,4 @@ export function WeatherRadar({ config, data, error, isLoading }: WidgetComponent
 }
 
 registerWidgetComponent('weather-radar', WeatherRadar);
+export default WeatherRadar;

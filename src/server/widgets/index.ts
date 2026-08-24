@@ -20,3 +20,5 @@ import './videos';
 import './weather';
 import './ai-quota';
 import './weather-radar';
+import './github-trending';
+import './network';
