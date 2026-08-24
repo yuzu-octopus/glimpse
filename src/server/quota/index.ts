@@ -113,7 +113,7 @@ export async function fetchUsage(
   if (provider === 'abacus') return fetchAbacusUsage(auth, ctx);
   if (provider === 'notion') return fetchNotionUsage(auth, ctx);
   if (provider === 't3chat') return fetchT3ChatUsage(auth, ctx);
-  if (provider === 'opencode') return fetchOpencodeUsage(auth, ctx);
+  if (provider === 'opencode' || provider === 'opencode-go') return fetchOpencodeUsage(auth, ctx);
   if (provider === 'alibaba') return fetchAlibabaUsage(auth, ctx);
   if (provider === 'alibaba-coding-plan') return fetchAlibabaCodingPlanUsage(auth, ctx);
   if (provider === 'alibaba-token-plan') return fetchAlibabaTokenPlanUsage(auth, ctx);

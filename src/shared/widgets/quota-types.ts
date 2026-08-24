@@ -41,6 +41,7 @@ export const KNOWN_PROVIDERS = [
   'notion',
   't3chat',
   'opencode',
+  'opencode-go',
   'alibaba',
   'alibaba-coding-plan',
   'alibaba-token-plan',
