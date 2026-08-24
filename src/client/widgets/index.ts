@@ -8,8 +8,11 @@ const iframeLoader: Loader = () => import('./iframe');
 
 export const widgetLoaders: Record<string, Loader> = {
   'ai-quota': () => import('./ai-quota'),
+  'contribution-graph': () => import('./contribution-graph'),
   bookmarks: () => import('./bookmarks'),
-  calendar: () => import('./calendar'),
+  'dns-stats': () => import('./dns'),
+  'docker-containers': () => import('./docker'),
+  'events-calendar': () => import('./events-calendar'),
   clock: () => import('./clock'),
   'custom-api': () => import('./custom-api'),
   'dns-stats': () => import('./dns'),
@@ -32,6 +35,7 @@ export const widgetLoaders: Record<string, Loader> = {
   todo: () => import('./todo'),
   videos: () => import('./videos'),
   weather: () => import('./weather'),
+  'weather-radar': () => import('./weather-radar'),
 };
 
 const widgetPromises = new Map<string, Promise<unknown>>();

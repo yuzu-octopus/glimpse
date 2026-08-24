@@ -1,8 +1,8 @@
 import type { WidgetType } from './index';
 import { BOOKMARKS_PREF } from './bookmarks';
-import { CALENDAR_PREF } from './calendar';
+import { CALENDAR_PREF, EVENTS_CALENDAR_PREF } from './calendar';
 import { CLOCK_PREF } from './clock';
-import { DOCKER_CONTAINERS_PREF } from './docker';
+import { CONTRIBUTION_GRAPH_PREF } from './contribution';
 import { DNS_STATS_PREF } from './dns';
 import {
   HACKER_NEWS_PREF,
@@ -27,7 +27,7 @@ import { SYSTEM_STATS_PREF } from './system-stats';
 import { NOTEPAD_PREF } from './notepad';
 import { TIMER_PREF } from './timer';
 import { TODO_PREF } from './todo';
-import { AI_QUOTA_PREF } from './ai-quota';
+import { RADAR_PREF } from './radar';
 import type { Pref } from './shared';
 
 export const PREFERRED_SIZES: Record<WidgetType, Pref> = {
@@ -58,11 +58,15 @@ export const PREFERRED_SIZES: Record<WidgetType, Pref> = {
   'dns-stats': DNS_STATS_PREF,
   'server-stats': SERVER_STATS_PREF,
   'ai-quota': AI_QUOTA_PREF,
+  'contribution-graph': CONTRIBUTION_GRAPH_PREF,
+  'weather-radar': RADAR_PREF,
+  'events-calendar': EVENTS_CALENDAR_PREF,
 };
 
 /** Skeleton silhouette per widget type (WidgetChrome loading state). */
 export const SKELETON_SHAPE: Record<string, 'list' | 'stat' | 'chart' | 'rows'> = {
   rss: 'list', 'hacker-news': 'list', lobsters: 'list', reddit: 'list', releases: 'list',
+  'events-calendar': 'list',
   clock: 'stat', weather: 'stat', markets: 'stat', 'server-stats': 'stat',
   'ai-quota': 'stat',
   'system-stats': 'stat', repository: 'stat',

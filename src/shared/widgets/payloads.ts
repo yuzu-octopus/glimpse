@@ -76,6 +76,18 @@ export interface WeatherData {
   daily: WeatherDay[];
 }
 
+export interface RadarData {
+  /** Display name resolved by geocoding. */
+  location: string;
+  lat: number;
+  lon: number;
+  zoom: number;
+  /** RainViewer tile URL with `{z}/{x}/{y}` placeholders. */
+  tileUrlTemplate: string;
+  /** Radar frame time, unix seconds. */
+  frameTime: number | null;
+}
+
 export interface MonitorSite {
   url: string;
   title: string;
@@ -215,4 +227,23 @@ export interface AiQuotaData {
   windows: AiQuotaWindow[];
   balance?: number;
   error?: string;
+}
+
+export interface ContributionDay {
+  date: string;
+  count: number;
+  level: 0 | 1 | 2 | 3 | 4;
+}
+
+export interface ContributionGraphData {
+  username: string;
+  days: ContributionDay[];
+}
+
+export interface CalendarEvent {
+  title: string;
+  startISO: string;
+  endISO?: string;
+  location?: string;
+  allDay: boolean;
 }

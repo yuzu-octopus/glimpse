@@ -1,15 +1,15 @@
 import { z } from 'zod';
 import { bookmarksSchema } from './bookmarks';
-import { calendarSchema } from './calendar';
+import { calendarSchema, eventsCalendarSchema } from './calendar';
 import { clockSchema } from './clock';
 import { dockerContainersSchema } from './docker';
 import { dnsStatsSchema } from './dns';
+import { contributionGraphSchema } from './contribution';
 import {
   hackerNewsSchema,
   redditSchema,
   releasesSchema,
   rssSchema,
-  weatherSchema,
 } from './feeds';
 import { groupSchema, setWidgetSchemaRef, splitColumnSchema } from './group';
 import { htmlSchema, iframeSchema } from './iframe';
@@ -27,7 +27,7 @@ import { systemStatsSchema } from './system-stats';
 import { notepadSchema } from './notepad';
 import { timerSchema } from './timer';
 import { todoSchema } from './todo';
-import { aiQuotaSchema } from './ai-quota';
+import { radarSchema } from './radar';
 const schemaEntries = [
   notepadSchema,
   timerSchema,
@@ -35,6 +35,7 @@ const schemaEntries = [
   searchSchema,
   clockSchema,
   calendarSchema,
+  eventsCalendarSchema,
   todoSchema,
   iframeSchema,
   htmlSchema,
@@ -56,6 +57,8 @@ const schemaEntries = [
   dnsStatsSchema,
   serverStatsSchema,
   aiQuotaSchema,
+  contributionGraphSchema,
+  radarSchema,
 ] as const;
 
 /** Public widget type union, derived from the schema entries. */
