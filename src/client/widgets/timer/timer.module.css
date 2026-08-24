@@ -1,0 +1,129 @@
+/* Timer widget — circular ring + center time + tabs + notepad. */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: var(--widget-content-vertical-padding) var(--widget-content-horizontal-padding);
+}
+
+.modeRow {
+  display: inline-flex;
+  border: 1px solid var(--color-widget-content-border);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.modeTab {
+  padding: 3px 12px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-subdue);
+  font-family: inherit;
+  font-size: var(--font-size-h6);
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.modeTab:hover {
+  color: var(--color-text-highlight);
+}
+
+.modeTabActive,
+.modeTabActive:hover {
+  background: var(--color-widget-background-highlight);
+  color: var(--color-text-highlight);
+}
+
+.ringButton {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.ringButton:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.ring {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.ringTrack {
+  fill: none;
+  stroke: var(--color-widget-content-border);
+  stroke-width: 6;
+}
+
+.ringValue {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.25s linear;
+}
+
+.ringDone {
+  stroke: var(--color-positive);
+}
+
+.timeText {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-h1);
+  font-weight: 600;
+  color: var(--color-text-highlight);
+  font-variant-numeric: tabular-nums;
+}
+
+.timeInput {
+  position: absolute;
+  inset: 0;
+  width: 80%;
+  margin: auto;
+  height: var(--font-size-h1);
+  border: none;
+  background: transparent;
+  color: var(--color-text-highlight);
+  font-family: inherit;
+  font-size: var(--font-size-h1);
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+}
+
+.notes {
+  width: 100%;
+  resize: vertical;
+  min-height: 60px;
+  border: 1px solid var(--color-widget-content-border);
+  border-radius: var(--border-radius);
+  background: var(--color-widget-background);
+  color: var(--color-text-base);
+  font-family: inherit;
+  font-size: var(--font-size-h5);
+  line-height: 1.5;
+  padding: 8px 10px;
+}
+
+.notes:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}

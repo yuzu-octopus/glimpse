@@ -24,6 +24,7 @@ import {
 import { SEARCH_PREF } from './search';
 import { SERVER_STATS_PREF } from './server-stats';
 import { SYSTEM_STATS_PREF } from './system-stats';
+import { TIMER_PREF } from './timer';
 import { TODO_PREF } from './todo';
 import type { Pref } from './shared';
 
@@ -33,6 +34,7 @@ export const PREFERRED_SIZES: Record<WidgetType, Pref> = {
   calendar: CALENDAR_PREF,
   bookmarks: BOOKMARKS_PREF,
   search: SEARCH_PREF,
+  timer: TIMER_PREF,
   todo: TODO_PREF,
   rss: RSS_PREF,
   'hacker-news': HACKER_NEWS_PREF,

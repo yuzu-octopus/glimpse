@@ -26,6 +26,7 @@ export const widgetLoaders: Record<string, Loader> = {
   search: () => import('./search'),
   'server-stats': () => import('./server-stats'),
   'system-stats': () => import('./system-stats'),
+  timer: () => import('./timer'),
   todo: () => import('./todo'),
   videos: () => import('./videos'),
   weather: () => import('./weather'),
