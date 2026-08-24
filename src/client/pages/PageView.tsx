@@ -166,25 +166,42 @@ export function PageSkeleton({ page }: { page: Page & { slug: string } }) {
             </div>
           ) : (
             (() => {
+              // Mirror the ready render's span derivation (explicit span or
+              // size-based resolveSpan) so the skeleton matches the real
+              // column widths instead of collapsing to full-width.
+              let inferred: number[] | undefined;
+              if (page.tiling !== 'auto' && page.tiling !== 'collage') {
+                try {
+                  inferred = resolveSpan(
+                    (page.columns ?? []).map((c) => ({ size: c.size, widgets: [], span: c.span })),
+                  );
+                } catch {
+                  inferred = undefined;
+                }
+              }
               const colCounts = new Map<string, number>();
-              return (page.columns ?? []).map((col, i) => (
-                <MobileColumn
-                  key={columnKey(col, i, colCounts)}
-                  label={columnLabel(col, i)}
-                  small={col.size === 'small'}
-                  span={col.span ?? 1}
-                  rowSpan={page.tiling === 'collage' ? estimateColumnRowSpan(col) : undefined}
-                >
-                <div className={styles.columnWidgets}>
-                  {(() => {
-                    const wk = widgetKeysFor(col.widgets as unknown as WidgetLike[]);
-                    return col.widgets.map((w, j) => (
-                      <WidgetSkeleton key={wk[j]} widget={w as SkeletonWidget} />
-                    ));
-                  })()}
-                </div>
-              </MobileColumn>
-              ));
+              return (page.columns ?? []).map((col, i) => {
+                const span = col.span ?? inferred?.[i] ?? 1;
+                return (
+                  <MobileColumn
+                    key={columnKey(col, i, colCounts)}
+                    label={columnLabel(col, i)}
+                    small={col.size === 'small'}
+                    span={span}
+                    rowSpan={page.tiling === 'collage' ? estimateColumnRowSpan(col) : undefined}
+                    style={spanStyle(span)}
+                  >
+                    <div className={styles.columnWidgets}>
+                      {(() => {
+                        const wk = widgetKeysFor(col.widgets as unknown as WidgetLike[]);
+                        return col.widgets.map((w, j) => (
+                          <WidgetSkeleton key={wk[j]} widget={w as SkeletonWidget} />
+                        ));
+                      })()}
+                    </div>
+                  </MobileColumn>
+                );
+              });
             })()
           )}
         </div>
