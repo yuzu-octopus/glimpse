@@ -172,27 +172,21 @@ export function Timer({ config, isLoading, error }: WidgetComponentProps) {
           ))}
         </div>
 
-        <button
-          type="button"
-          className={styles.ringButton}
-          onClick={editing ? undefined : startEdit}
-          aria-label={editing ? undefined : 'Edit duration'}
-          data-testid="timer-ring"
-        >
-          <svg viewBox="0 0 100 100" className={styles.ring} aria-hidden="true">
-            <circle cx="50" cy="50" r={R} className={styles.ringTrack} />
-            {state.mode === 'timer' ? (
-              <circle
-                cx="50"
-                cy="50"
-                r={R}
-                className={`${styles.ringValue} ${state.seconds <= 0 ? styles.ringDone : ''}`}
-                strokeDasharray={CIRC}
-                strokeDashoffset={CIRC * (1 - fraction)}
-              />
-            ) : null}
-          </svg>
-          {editing ? (
+        {editing ? (
+          <div className={styles.ringButton} data-testid="timer-ring">
+            <svg viewBox="0 0 100 100" className={styles.ring} aria-hidden="true">
+              <circle cx="50" cy="50" r={R} className={styles.ringTrack} />
+              {state.mode === 'timer' ? (
+                <circle
+                  cx="50"
+                  cy="50"
+                  r={R}
+                  className={`${styles.ringValue} ${state.seconds <= 0 ? styles.ringDone : ''}`}
+                  strokeDasharray={CIRC}
+                  strokeDashoffset={CIRC * (1 - fraction)}
+                />
+              ) : null}
+            </svg>
             <input
               ref={draftRef}
               className={styles.timeInput}
@@ -203,12 +197,33 @@ export function Timer({ config, isLoading, error }: WidgetComponentProps) {
               aria-label="Duration"
               autoFocus
             />
-          ) : (
+          </div>
+        ) : (
+          <button
+            type="button"
+            className={styles.ringButton}
+            onClick={startEdit}
+            aria-label="Edit duration"
+            data-testid="timer-ring"
+          >
+            <svg viewBox="0 0 100 100" className={styles.ring} aria-hidden="true">
+              <circle cx="50" cy="50" r={R} className={styles.ringTrack} />
+              {state.mode === 'timer' ? (
+                <circle
+                  cx="50"
+                  cy="50"
+                  r={R}
+                  className={`${styles.ringValue} ${state.seconds <= 0 ? styles.ringDone : ''}`}
+                  strokeDasharray={CIRC}
+                  strokeDashoffset={CIRC * (1 - fraction)}
+                />
+              ) : null}
+            </svg>
             <span className={styles.timeText} data-testid="timer-display">
               {formatDuration(state.seconds)}
             </span>
-          )}
-        </button>
+          </button>
+        )}
 
         <div className={styles.controls}>
           <Button label={state.running ? 'Pause' : 'Start'} onClick={toggle} data-testid="timer-toggle">

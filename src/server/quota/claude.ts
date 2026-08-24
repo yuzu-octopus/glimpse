@@ -13,14 +13,16 @@ export async function fetchClaudeUsage(
     'https://api.anthropic.com/api/oauth/usage',
     { headers: { Authorization: `Bearer ${auth.token}`, 'anthropic-beta': 'oauth-2025-04-20' } },
   );
-  const windows = Object.entries(data)
-    .filter(([k]) => k.includes('_'))
-    .map(([label, v]) => ({
+  const windows: UsageSnapshot['windows'] = [];
+  for (const [label, v] of Object.entries(data)) {
+    if (!label.includes('_')) continue;
+    windows.push({
       usedPercent: Number(v.utilization ?? v.used_percent ?? 0),
       windowMinutes: label === 'five_hour' ? 300 : 10080,
       resetsAt: v.reset_at ? Date.parse(v.reset_at) : Number(v.resetAt ?? 0) * 1000,
       label,
-    }));
+    });
+  }
   return { provider: 'claude', windows, raw: data };
 }
 
