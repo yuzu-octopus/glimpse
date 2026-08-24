@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import type { EventsCalendarConfig } from '../../../shared/widgets/calendar';
 import type { CalendarEvent } from '../../../shared/widgets/payloads';
 import { WidgetChrome } from '../../components/WidgetChrome';
@@ -53,9 +52,7 @@ function EventsCalendar({ config, data, error, isLoading }: WidgetComponentProps
   const cfg = config as unknown as EventsCalendarConfig;
   const loading = isLoading ?? ((data as unknown) == null && !error);
   const events = ((data as { events?: CalendarEvent[] } | null)?.events ?? []) as CalendarEvent[];
-
-  const groups = useMemo(() => groupByDay(events, new Date()), [events]);
-
+  const groups = groupByDay(events, new Date());
   return (
     <WidgetChrome
       title={cfg.title}

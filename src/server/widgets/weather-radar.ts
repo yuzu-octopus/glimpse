@@ -21,10 +21,8 @@ registerWidget('weather-radar', async (ctx, config) => {
   const zoom = cfg.zoom ?? RADAR_DEFAULTS.zoom;
   const place = await geocodeLocation(ctx, cfg.location);
 
-  const maps = await fetchJson<RainViewerMaps>(
-    ctx,
-    'https://api.rainviewer.com/public/weather-maps.json',
-  );
+  // eslint-disable-next-line react-doctor/server-sequential-independent-await -- place needed for error precedence (location 404 should win over radar 404)
+  const maps = await fetchJson<RainViewerMaps>(ctx, 'https://api.rainviewer.com/public/weather-maps.json');
   const past = maps.radar?.past ?? [];
   const last = past[past.length - 1];
   if (!last) throw new Error('no radar frames available');
@@ -40,4 +38,3 @@ registerWidget('weather-radar', async (ctx, config) => {
   };
   return data;
 });
-

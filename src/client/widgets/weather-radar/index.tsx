@@ -4,7 +4,7 @@ import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import styles from './weather-radar.module.css';
 
-/** Web-mercator tile coordinates (fractional) for lat/lon at a zoom level. */
+// eslint-disable-next-line react-doctor/only-export-components -- tileCoords is a pure helper used by tests
 export function tileCoords(lat: number, lon: number, zoom: number): { x: number; y: number } {
   const n = 2 ** zoom;
   const x = ((lon + 180) / 360) * n;
