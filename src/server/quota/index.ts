@@ -1,7 +1,10 @@
 import { readFileSync } from 'node:fs';
 import type { ProviderId, UsageSnapshot } from '../../shared/widgets/quota-types';
 import type { WidgetFetchContext } from '../widgets/registry';
+import { fetchAnthropicUsage } from './anthropic';
+import { fetchClaudeUsage } from './claude';
 import { fetchCodexUsage } from './codex';
+import { fetchOpenaiUsage } from './openai';
 
 export async function fetchUsage(
   provider: ProviderId,
@@ -9,6 +12,10 @@ export async function fetchUsage(
   ctx: WidgetFetchContext,
 ): Promise<UsageSnapshot> {
   if (provider === 'codex') return fetchCodexUsage(auth, ctx);
+  if (provider === 'claude') return fetchClaudeUsage(auth, ctx);
+  if (provider === 'openai') return fetchOpenaiUsage(auth, ctx);
+  if (provider === 'anthropic') return fetchAnthropicUsage(auth, ctx);
+  if (provider === 'copilot') throw new Error('provider copilot not implemented — use GitHub token');
   throw new Error(`provider ${provider} not implemented`);
 }
 
