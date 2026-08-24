@@ -51,6 +51,7 @@ Max 3 columns/page, columns require `size` or `span` (span explicit on all or no
 | `clock` | `timezones[]` {timezone, label}, hour-format 24h\|12h |
 | `calendar` | first-day-of-week |
 | `todo` / `iframe` / `html` | id / source+height / raw content |
+| `ai-quota` | `provider` (69 ids: codex/claude/openai/anthropic/copilot/gemini/vertex/jetbrains/zed/kimi/grok/amp/kiro/antigravity/ollama/bedrock/stepfun/… — `KNOWN_PROVIDERS` in `src/shared/widgets/quota-types.ts`), `token` (env `${VAR}`) or `tokenFile` (mounted path: JetBrains `AIAssistantQuotaManager2.xml`, Kiro `kiro-cli` auth file, Grok `~/.grok/auth.json`, Zed `~/.config/zed/credentials`, Amp `~/.config/amp/auth.json`), `quotaUrl` override (e.g. `Z_AI_API_HOST`, Ollama `http://localhost:11434`, Antigravity `https://localhost:8765`), `projectId` (OpenAI/Vertex/GCP), `baseUrl`, `cache` (`2m` default, `5m` for file/CLI) |
 
 Authoritative shapes: `src/shared/widgets/*.ts` (schema per widget) and working examples in `config.example.yml`.
 

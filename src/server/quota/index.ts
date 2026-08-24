@@ -25,12 +25,24 @@ import { fetchAbacusUsage } from './providers/abacus';
 import { fetchAlibabaCodingPlanUsage } from './providers/alibaba-coding-plan';
 import { fetchAlibabaTokenPlanUsage } from './providers/alibaba-token-plan';
 import { fetchAlibabaUsage } from './providers/alibaba';
+import { fetchAmpUsage } from './providers/amp';
+import { fetchAntigravityUsage } from './providers/antigravity';
+import { fetchAugmentUsage } from './providers/augment';
+import { fetchBedrockUsage } from './providers/bedrock';
 import { fetchClaudeWebUsage } from './providers/claude-web';
 import { fetchCommandcodeUsage } from './providers/commandcode';
 import { fetchCursorUsage } from './providers/cursor';
 import { fetchDevinUsage } from './providers/devin';
 import { fetchFactoryUsage } from './providers/factory';
+import { fetchGeminiUsage } from './providers/gemini';
+import { fetchGrokUsage } from './providers/grok';
+import { fetchJetbrainsUsage } from './providers/jetbrains';
 import { fetchKimiUsage } from './providers/kimi';
+import { fetchKiroUsage } from './providers/kiro';
+import { fetchOllamaUsage } from './providers/ollama';
+import { fetchStepfunUsage } from './providers/stepfun';
+import { fetchVertexUsage } from './providers/vertex';
+import { fetchZedUsage } from './providers/zed';
 import { fetchKimiWebUsage } from './providers/kimi-web';
 import { fetchManusUsage } from './providers/manus';
 import { fetchMinimaxUsage } from './providers/minimax';
@@ -59,7 +71,7 @@ import { fetchZenmuxUsage } from './providers/zenmux';
 
 export async function fetchUsage(
   provider: ProviderId,
-  auth: { token: string; accountId?: string; projectId?: string; baseUrl?: string },
+  auth: { token: string; accountId?: string; projectId?: string; baseUrl?: string; quotaUrl?: string; tokenFile?: string },
   ctx: WidgetFetchContext,
 ): Promise<UsageSnapshot> {
   if (provider === 'codex') return fetchCodexUsage(auth, ctx);
@@ -117,7 +129,19 @@ export async function fetchUsage(
   if (provider === 'windsurf') return fetchWindsurfUsage(auth, ctx);
   if (provider === 'openai-web') return fetchOpenaiWebUsage(auth, ctx);
   if (provider === 'claude-web') return fetchClaudeWebUsage(auth, ctx);
-  throw new Error(`provider ${provider} not implemented`);
+  if (provider === 'jetbrains') return fetchJetbrainsUsage(auth as { token: string; tokenFile?: string }, ctx);
+  if (provider === 'zed') return fetchZedUsage(auth as { token: string; tokenFile?: string }, ctx);
+  if (provider === 'gemini') return fetchGeminiUsage(auth as { token: string; tokenFile?: string; baseUrl?: string; quotaUrl?: string }, ctx);
+  if (provider === 'vertex') return fetchVertexUsage(auth as { token: string; tokenFile?: string; baseUrl?: string; quotaUrl?: string }, ctx);
+  if (provider === 'kiro') return fetchKiroUsage(auth as { token: string; tokenFile?: string }, ctx);
+  if (provider === 'grok') return fetchGrokUsage(auth as { token: string; tokenFile?: string; baseUrl?: string; quotaUrl?: string }, ctx);
+  if (provider === 'antigravity') return fetchAntigravityUsage(auth as { token: string; tokenFile?: string; baseUrl?: string; quotaUrl?: string }, ctx);
+  if (provider === 'augment') return fetchAugmentUsage(auth as { token: string; tokenFile?: string; baseUrl?: string; quotaUrl?: string }, ctx);
+  if (provider === 'amp') return fetchAmpUsage(auth as { token: string; tokenFile?: string }, ctx);
+  if (provider === 'ollama') return fetchOllamaUsage(auth as { token: string; tokenFile?: string; baseUrl?: string; quotaUrl?: string }, ctx);
+  if (provider === 'bedrock') return fetchBedrockUsage(auth as { token: string; tokenFile?: string; baseUrl?: string; quotaUrl?: string }, ctx);
+  if (provider === 'stepfun') return fetchStepfunUsage(auth as { token: string; tokenFile?: string; baseUrl?: string; quotaUrl?: string }, ctx);
+  throw new Error(`provider ${provider} not implemented — contributors: add Sources/CodexBarCore/Providers/${provider}`);
 }
 
 /**

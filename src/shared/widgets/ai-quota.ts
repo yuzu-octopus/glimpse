@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { sharedWidgetFields, type Pref } from './shared';
 import type { RateWindow } from './quota-types';
+import { KNOWN_PROVIDERS } from './quota-types';
+
+// Re-export for doc + refine usage
+export { KNOWN_PROVIDERS };
 
 export const AI_QUOTA_DEFAULTS = { provider: 'codex' as const, cache: '2m' };
 
@@ -18,73 +22,21 @@ export const aiQuotaSchema = z
   .object({
     type: z.literal('ai-quota'),
     ...sharedWidgetFields,
-    provider: z
-      .enum([
-        'codex',
-        'claude',
-        'openai',
-        'anthropic',
-        'copilot',
-        'openrouter',
-        'deepseek',
-        'moonshot',
-        'synthetic',
-        'deepinfra',
-        'fireworks',
-        'chutes',
-        'groqcloud',
-        'groq',
-        'warp',
-        'codebuff',
-        'crof',
-        'venice',
-        'cline',
-        'clinepass',
-        'llmproxy',
-        'clawrouter',
-        'wayfinder',
-        'litellm',
-        'deepgram',
-        'neuralwatt',
-        'zenmux',
-        'xai',
-        'doubao',
-        'zai',
-        'kilo',
-        'kilocode',
-        'mistral',
-        'perplexity',
-        'cursor',
-        'factory',
-        'droid',
-        'sakana',
-        'abacus',
-        'notion',
-        't3chat',
-        'opencode',
-        'alibaba',
-        'alibaba-coding-plan',
-        'alibaba-token-plan',
-        'qwen',
-        'qwen-cloud',
-        'manus',
-        'minimax',
-        'kimi',
-        'kimi-web',
-        'commandcode',
-        'devin',
-        'xiaomi-mimo',
-        'windsurf',
-        'openai-web',
-        'claude-web',
-      ])
-      .default(() => AI_QUOTA_DEFAULTS.provider),
+    // loose: any non-empty string so future CodexBar adds don't break validation
+    provider: z.string().min(1).default(() => AI_QUOTA_DEFAULTS.provider),
     token: z.string().optional(),
+    // tokenFile docs (inline //): JetBrains ~/.config/JetBrains/*/AIAssistantQuotaManager2.xml, Kiro kiro-cli auth file, Grok ~/.grok/auth.json, Zed credentials
     tokenFile: z.string().optional(),
+    quotaUrl: z.string().url().optional(),
     projectId: z.string().optional(),
     baseUrl: z.string().url().optional(),
   })
-  .refine((c) => !!c.token || !!c.tokenFile, { message: 'token or tokenFile required' });
+  .refine((c) => !!c.token || !!c.tokenFile, { message: 'token or tokenFile required' })
+  .superRefine((c, ctx) => {
+    if (!(KNOWN_PROVIDERS as readonly string[]).includes(c.provider)) {
+      ctx.addIssue({ code: 'custom', message: `unknown provider '${c.provider}' — known: ${KNOWN_PROVIDERS.slice(0, 5).join(', ')}…` });
+    }
+  });
 
 export type AiQuotaConfig = z.infer<typeof aiQuotaSchema>;
 

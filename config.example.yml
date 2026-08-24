@@ -348,3 +348,49 @@ pages:
 #   # token: ${OPENAI_ADMIN_KEY}     # for provider: openai
 #   # token: ${GITHUB_TOKEN}         # for provider: copilot
 #   cache: 2m
+# - type: ai-quota
+#   provider: jetbrains
+#   tokenFile: /run/secrets/jetbrains/AIAssistantQuotaManager2.xml  # JetBrains AIAssistantQuotaManager2.xml
+#   cache: 5m
+# - type: ai-quota
+#   provider: zed
+#   token: ${ZED_TOKEN}  # or tokenFile: /run/secrets/zed.json (cloud.zed.dev credentials)
+#   cache: 2m
+# - type: ai-quota
+#   provider: gemini
+#   token: ${GEMINI_API_KEY}  # or gcloud ADC via Bun.spawn(['gcloud','auth','print-access-token'])
+#   quotaUrl: https://generativelanguage.googleapis.com
+#   cache: 2m
+# - type: ai-quota
+#   provider: vertex
+#   token: ${GOOGLE_OAUTH_TOKEN}  # or gcloud ADC
+#   projectId: my-gcp-project
+#   quotaUrl: https://monitoring.googleapis.com
+#   cache: 5m
+# - type: ai-quota
+#   provider: grok
+#   token: ${XAI_API_KEY}  # or tokenFile: ~/.grok/auth.json ; fallback grok agent stdio
+#   quotaUrl: https://api.x.ai
+#   cache: 2m
+# - type: ai-quota
+#   provider: amp
+#   tokenFile: ~/.config/amp/auth.json  # or amp usage CLI probe (10s timeout)
+#   cache: 5m
+# - type: ai-quota
+#   provider: kiro
+#   tokenFile: ~/.config/kiro/auth.json  # kiro-cli chat --no-interactive "/usage" (10s timeout)
+#   cache: 2m
+# - type: ai-quota
+#   provider: antigravity
+#   quotaUrl: https://localhost:8765  # agy HTTPS localhost LSP RetrieveUserQuotaSummary
+#   token: ${ANTIGRAVITY_TOKEN}
+#   cache: 2m
+# - type: ai-quota
+#   provider: ollama
+#   quotaUrl: http://localhost:11434  # local Ollama host, no token needed
+#   cache: 1m
+# - type: ai-quota
+#   provider: bedrock
+#   token: ${AWS_BEDROCK_TOKEN}
+#   quotaUrl: https://bedrock-runtime.amazonaws.com
+#   cache: 2m
