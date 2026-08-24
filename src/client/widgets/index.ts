@@ -15,8 +15,6 @@ export const widgetLoaders: Record<string, Loader> = {
   'events-calendar': () => import('./events-calendar'),
   clock: () => import('./clock'),
   'custom-api': () => import('./custom-api'),
-  'dns-stats': () => import('./dns'),
-  'docker-containers': () => import('./docker'),
   'hacker-news': () => import('./hacker-news'),
   iframe: iframeLoader,
   html: iframeLoader,
