@@ -26,7 +26,7 @@ Built with **Bun**, **TypeScript**, **Vite**, **React 19** and the **Astryx** de
 
 ## Features
 
-- **27 widget types** — feeds, homelab monitoring, containers, AI quota, timer, notepad — see [Widgets](#widgets)
+- **32 widget types** — feeds, homelab monitoring, containers, AI quota, timer, notepad, calendars, radar, trending — see [Widgets](#widgets)
 - **48 theme presets** — curated base16 schemes + 6 glance classics, system / light / dark picker, glance-format HSL custom themes, custom CSS
 - **12-column bento layout** — `pages` → `columns` (`span` tracks on a 12-col grid; legacy `size: small/full` still works), responsive remap on tablet/mobile, optional `head-widgets`
 - **Progressive loading** — the server streams widgets as their data settles over a skeleton-first NDJSON stream; widget components are lazy chunks preloaded after first paint. Fast (cached/config-only) widgets paint instantly while slow API widgets show type-shaped skeletons and fill in as responses arrive; the server pre-warms its widget cache at boot and on config changes so the first visitor never waits on upstreams. Skeleton grid mirrors real column spans so layout never shifts.
@@ -118,9 +118,14 @@ All optional; read from the process environment (no `.env` loader).
 | `system-stats` | CPU / GPU / RAM / disk of the host | `systeminformation`; 1s live poll when present |
 | `dns-stats` | DNS server query stats | Pi-hole v6 (session auth) or Technitium |
 | `docker-containers` | Container status | Docker Engine API over unix socket |
-| `ai-quota` | AI provider quota (69 providers: Codex / Claude / OpenAI / Opencode etc.) | Ported from [CodexBar](https://github.com/steipete/CodexBar); token auto-resolved from env / `tokenFile` / `~/.codex/auth.json`; shows `used%`, reset countdown, plan/balance |
+| `ai-quota` | AI provider quota (70 providers: Codex / Claude / OpenAI / Opencode etc.) | Ported from [CodexBar](https://github.com/steipete/CodexBar); token auto-resolved from env / `tokenFile` / `~/.codex/auth.json`; shows `used%`, reset countdown, plan/balance |
 | `timer` | Circular countdown + stopwatch + notepad | Config-only; `duration: 25m` / `mm:ss`; editable ring, `notes: true` for scratch area |
 | `notepad` | Minimal sticky textbox | Config-only; persists per `id` to `localStorage` |
+| `events-calendar` | Upcoming events from ICS feeds | `urls[]` / `ics-url` (at least one required); `days` (14), `limit` (20) |
+| `weather-radar` | Animated precipitation radar | RainViewer tiles centered on `location`; `zoom` 3–10 (7) |
+| `github-trending` | Trending GitHub repositories | `language`, `since` daily / weekly / monthly, `limit` ≤ 25 (10) |
+| `contribution-graph` | GitHub contribution heatmap | `username` (required), optional `token`, `limit` weeks 1–104 (52) |
+| `network` | Local network + public IP at a glance | `ping-target` (1.1.1.1), `public-ip` (true) |
 Feed widgets respect the `cache` prop; unauthenticated GitHub/Reddit requests are rate-limited, so raise `cache` for those if you hit limits.
 
 ## Theming
@@ -164,7 +169,7 @@ Feed widgets respect the `cache` prop; unauthenticated GitHub/Reddit requests ar
 - `custom-api` maps fields via JSONPath, not Go `html/template`.
 - `todo` persists in browser localStorage only (per-browser, not shared).
 - Authentication and brute-force lockout are not implemented.
-- Not ported: `change-detection`, `extension`, `calendar-legacy`.
+- Not ported: `change-detection`, `extension`, `calendar-legacy`, `twitch-channels`, `twitch-top-games` (no Twitch credential flow).
 - `${secret:}` Docker-secrets syntax is unsupported.
 
 ## Development

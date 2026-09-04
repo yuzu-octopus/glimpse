@@ -37,11 +37,18 @@ Max 3 columns/page, columns require `size` or `span` (span explicit on all or no
 | `hacker-news` | sort `top/new/best`, limit, collapse-after |
 | `reddit` | `subreddit`, sort, `search` mode |
 | `releases` | `repositories[]`: `"owner/repo"` or gitlab:/codeberg:/dockerhub: prefixed, or `{repository, include-prereleases}`; optional per-repo `token` / `gitlab-token` |
+| `lobsters` | `instance-url` (default lobste.rs), `custom-url`, sort `hot/new`, `tags[]`, limit, collapse-after |
+| `repository` | `repository: owner/repo`, `pull-requests-limit` / `issues-limit` (5), `token` |
 | `videos` | `channels[]` (UC id or @handle), `playlists[]` (`playlist:<id>`), include-shorts |
 | `markets` | `markets[]`: {symbol (`SPY`, `BTC-USD`), name?, symbol-link?, chart-link?}, sort-by |
 | `monitor` | `sites[]`: url, check-url, error-url, timeout (`3s`), alt-status-codes, basic-auth, same-tab |
 | `custom-api` | `url`, method, headers/body, `options[]` JSONPath mappings |
 | `weather` | `location`, units metric\|imperial, hide-location |
+| `weather-radar` | `location` (required), `zoom` 3–10 (7) |
+| `github-trending` | `language`, `since` daily\|weekly\|monthly, limit ≤25 |
+| `contribution-graph` | `username` (required), `token`, `limit` weeks 1–104 (52) |
+| `network` | `ping-target`, `public-ip` |
+| `events-calendar` | `urls[]` / `ics-url` (one required), `days` (14), `limit` (20) |
 | `server-stats` | `servers[]`: {name?, type: local(default) \| remote, url?} |
 | `system-stats` | none required (host machine) |
 | `dns-stats` | `service`: pihole \| adguard \| technitium, `url`, credentials |
@@ -50,14 +57,18 @@ Max 3 columns/page, columns require `size` or `span` (span explicit on all or no
 | `search` | `search-engine` (preset name / URL / {name,url}), `bangs[]`, new-tab (default true), target |
 | `clock` | `timezones[]` {timezone, label}, hour-format 24h\|12h |
 | `calendar` | first-day-of-week |
+| `timer` | `id`, `duration: 25m` / `mm:ss` (user-editable), `notes: true` |
+| `notepad` | `id`, `placeholder` |
+| `group` | tabbed container; `widgets[]` (≥1; cannot nest `group`/`split-column`) |
+| `split-column` | side-by-side container; `widgets[]` (exactly 2; cannot nest `group`/`split-column`) |
 | `todo` / `iframe` / `html` | id / source+height / raw content |
-| `ai-quota` | `provider` (69 ids: codex/claude/openai/anthropic/copilot/gemini/vertex/jetbrains/zed/kimi/grok/amp/kiro/antigravity/ollama/bedrock/stepfun/… — `KNOWN_PROVIDERS` in `src/shared/widgets/quota-types.ts`), `token` (env `${VAR}`) or `tokenFile` (mounted path: JetBrains `AIAssistantQuotaManager2.xml`, Kiro `kiro-cli` auth file, Grok `~/.grok/auth.json`, Zed `~/.config/zed/credentials`, Amp `~/.config/amp/auth.json`), `quotaUrl` override (e.g. `Z_AI_API_HOST`, Ollama `http://localhost:11434`, Antigravity `https://localhost:8765`), `projectId` (OpenAI/Vertex/GCP), `baseUrl`, `cache` (`2m` default, `5m` for file/CLI) |
+| `ai-quota` | `provider` (70 ids: codex/claude/openai/anthropic/copilot/gemini/cursor/kimi/opencode/vertex/jetbrains/zed/grok/amp/kiro/antigravity/ollama/bedrock/stepfun/… — `KNOWN_PROVIDERS` in `src/shared/widgets/quota-types.ts`), `token` (env `${VAR}`) or `tokenFile` (mounted path: JetBrains `AIAssistantQuotaManager2.xml`, Kiro `kiro-cli` auth file, Grok `~/.grok/auth.json`, Zed `~/.config/zed/credentials`, Amp `~/.config/amp/auth.json`), `quotaUrl` override (e.g. `Z_AI_API_HOST`, Ollama `http://localhost:11434`, Antigravity `https://localhost:8765`), `projectId` (OpenAI/Vertex/GCP), `baseUrl`, `cache` (`2m` default, `5m` for file/CLI) |
 
 Authoritative shapes: `src/shared/widgets/*.ts` (schema per widget) and working examples in `config.example.yml`.
 
 ## Variables & includes
 - `${VAR}` interpolates from process env into any string; **missing var is a validation error** at startup. `${secret:…}` is NOT supported.
-- `$include: ./more.yml` — relative to including file; pages append, theme keys override; diamonds fine, true cycles rejected.
+- `$include: ./more.yml` (string or list; absolute paths OK) — relative to the including file, recursive with no depth limit; pages append (parent first, then includes in order), theme keys merge with the include winning; non-string entries are validation errors; diamonds are included once, true cycles rejected with `circular $include detected`.
 - Config auto-reloads on save; watch out: cache keys reset on reload.
 
 ## Theming (quick form)

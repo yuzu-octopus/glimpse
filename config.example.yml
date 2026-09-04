@@ -33,8 +33,25 @@ pages:
           - type: weather
             location: Singapore
             units: metric
+          - type: weather-radar
+            title: Rain radar
+            location: Singapore
+            zoom: 7
           - type: calendar
             first-day-of-week: monday
+          - type: events-calendar
+            title: Holidays
+            urls:
+              - https://calendar.google.com/calendar/ical/en.singapore%23holiday%40group.v.calendar.google.com/public/basic.ics
+            days: 30
+            limit: 10
+          - type: timer
+            id: home-timer
+            duration: 25m
+            notes: true
+          - type: notepad
+            id: home-notes
+            placeholder: Scratch notes…
       - span: 6
         widgets:
           - type: rss
@@ -128,6 +145,14 @@ pages:
             repository: glanceapp/glance
             pull-requests-limit: 5
             issues-limit: 5
+          - type: github-trending
+            title: Trending
+            language: typescript
+            since: weekly
+            limit: 10
+          - type: contribution-graph
+            title: Contributions
+            username: glanceapp
       - span: 4
         widgets:
           - type: markets
@@ -150,6 +175,12 @@ pages:
               - type: iframe
                 source: https://example.com
                 height: 360
+          - type: split-column
+            widgets:
+              - type: todo
+                id: dev-split-todo
+              - type: html
+                source: "<p>Side notes render here.</p>"
 
   - name: Social
     slug: social
@@ -171,6 +202,11 @@ pages:
             collapse-after: 5
             show-thumbnails: true
             show-flairs: true
+            source-header: true
+          - type: lobsters
+            limit: 8
+            sort-by: hot
+            collapse-after: 5
             source-header: true
           - type: bookmarks
             groups:
@@ -224,6 +260,12 @@ pages:
             sock-path: /var/run/docker.sock
             running-only: true
             hide-by-default: false
+          - type: system-stats
+            title: Host
+          - type: network
+            title: Network
+            ping-target: 1.1.1.1
+            public-ip: true
           - type: todo
             id: lab-todo
           - type: weather
@@ -339,14 +381,38 @@ pages:
             source: https://grafana.lab/d/000000001/homelab?orgId=1&kiosk
             height: 420
 
-# AI quota (CodexBar port) — subscription % + reset countdowns
+# AI quota (CodexBar port, 70 providers) — subscription % + reset countdowns
 # Secrets stay server-side; use env interpolation or mounted token file.
+# Full id list: KNOWN_PROVIDERS in src/shared/widgets/quota-types.ts
+# (codex, claude, openai, anthropic, copilot, gemini, cursor, kimi, opencode, ollama, …).
 # - type: ai-quota
-#   provider: codex        # codex | claude | openai | anthropic | copilot
+#   provider: codex        # token or tokenFile required
 #   token: ${CODEX_TOKEN}  # or tokenFile: /run/secrets/codex.json (mount ~/.codex/auth.json)
-#   # token: ${ANTHROPIC_ADMIN_KEY}  # for provider: anthropic
-#   # token: ${OPENAI_ADMIN_KEY}     # for provider: openai
-#   # token: ${GITHUB_TOKEN}         # for provider: copilot
+#   cache: 2m
+# - type: ai-quota
+#   provider: claude
+#   token: ${ANTHROPIC_API_KEY}  # or tokenFile: ~/.claude/.credentials.json
+#   cache: 2m
+# - type: ai-quota
+#   provider: openai
+#   token: ${OPENAI_ADMIN_KEY}
+#   projectId: my-project
+#   cache: 2m
+# - type: ai-quota
+#   provider: copilot
+#   token: ${GITHUB_TOKEN}  # device-flow OAuth token
+#   cache: 2m
+# - type: ai-quota
+#   provider: cursor
+#   token: ${CURSOR_TOKEN}
+#   cache: 2m
+# - type: ai-quota
+#   provider: kimi
+#   token: ${KIMI_API_KEY}
+#   cache: 2m
+# - type: ai-quota
+#   provider: opencode
+#   token: ${OPENCODE_TOKEN}  # or tokenFile: ~/.local/share/opencode/auth.json
 #   cache: 2m
 # - type: ai-quota
 #   provider: jetbrains

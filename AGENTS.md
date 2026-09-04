@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Overview
-Glimpse is a glance-inspired self-hosted dashboard — **Bun + Vite + React 19 + Astryx** SPA with server-side fetching. 22 widget types (feeds, keyed feeds, containers) rendered into a **12-col bento grid** (`pages → columns → widgets` from YAML). 48 base16 presets (+ glance HSL overrides), PWA shell (`vite-plugin-pwa`, network-first API). Config lives in `config.yml` (`$include`, `${ENV}` interpolation, `GLIMPSE_CONFIG` override); secrets stay server-side.
+Glimpse is a glance-inspired self-hosted dashboard — **Bun + Vite + React 19 + Astryx** SPA with server-side fetching. 32 widget types (feeds, keyed feeds, homelab, calendars, radar, trending, containers) rendered into a **12-col bento grid** (`pages → columns → widgets` from YAML). 48 base16 presets (+ glance HSL overrides), PWA shell (`vite-plugin-pwa`, network-first API). Config lives in `config.yml` (`$include`, `${ENV}` interpolation, `GLIMPSE_CONFIG` override); secrets stay server-side.
 
 ## Architecture & Data Flow
 ```
@@ -24,7 +24,7 @@ config.yml → shared/config.ts (Zod discriminated union) → server/config.ts (
 
 ## Key Directories
 - `src/shared/` — Zod config (`config.ts`, `api.ts`, `layout` constants), `widgets/` schemas + `payloads.ts`/`preferredSizes.ts` + `quota-types.ts`, `theme/` (`base16.ts`, `schemes.generated.ts`, `glanceHsl.ts`, `glimpseTheme.ts`, `presets.ts`)
-- `src/server/` — `index.ts` (Bun.serve :3000, SPA + `/api/*`, ETag), `config.ts` (YAML load/watch), `cache.ts` (TtlCache/Singleflight), `api.ts` (payload build/stream/skeleton), `warmup.ts`, `github-token.ts`, `quota/` (69 providers ported from CodexBar) + `widgets/` fetchers + `registry.ts`/`runtime.ts`/`http.ts`/`xml.ts`/`engagement.ts`
+- `src/server/` — `index.ts` (Bun.serve :3000, SPA + `/api/*`, ETag), `config.ts` (YAML load/watch), `cache.ts` (TtlCache/Singleflight), `api.ts` (payload build/stream/skeleton), `warmup.ts`, `github-token.ts`, `quota/` (70 providers ported from CodexBar) + `widgets/` fetchers + `registry.ts`/`runtime.ts`/`http.ts`/`xml.ts`/`engagement.ts`
 - `src/client/` — `main.tsx`→`App.tsx` (BrowserRouter), `pages/PageView.tsx` + `page.module.css` + `tiling.ts`/`useCollageTiling.ts`, `hooks/` (useConfig, usePageData), `components/` (TopNav, WidgetChrome, SettingsPanel), `widgets/` (lazy registry + renderers: `ai-quota`, `timer`, `notepad` etc.), `theme/GlimpseThemeProvider.tsx`
 - `src/test/setup.ts` — jsdom polyfills (localStorage, HTMLDialogElement, Bun global)
 - `public/` — favicon/icon SVG, fonts (woff2 precached); `dist/` — hashed Vite build (gitignored); `glance/` — reference Go app (gitignored, never linted); `docs/superpowers/{specs,plans}` — design docs
@@ -57,8 +57,8 @@ Env: `GLIMPSE_CONFIG` (CLI arg wins > env > ./config.yml), `GLIMPSE_PORT=3000`, 
 - **Deliberate ignores:** react-doctor off-rules (iframe-sandbox, no-multi-comp, no-fetch-in-effect, dangerous-html-sink, set-state-after-await-in-effect, unused-export, low-supply-chain-score) are intentional; don't re-enable or code around them silently.
 
 ### Adding a widget (checklist)
-1. Schema + DEFAULTS + PREF in `src/shared/widgets/<group>.ts` (feeds.ts / keyed.ts / clock.ts / …); add to `schemaEntries` in `src/shared/widgets/index.ts`.
-2. Size pref entry in `src/shared/widgets/preferredSizes.ts` (`assertAllWidgetsCovered` fails tests if missing).
+1. Schema + DEFAULTS + PREF + SKELETON in `src/shared/widgets/<group>.ts` (feeds.ts / keyed.ts / calendar.ts / contribution.ts / radar.ts / github-trending.ts / network.ts / clock.ts / …); add to `schemaEntries` in `src/shared/widgets/index.ts`.
+2. Registry row in `widgetMeta` (`src/shared/widgets/index.ts`) pairing schema + pref + skeleton — `PREFERRED_SIZES` / `SKELETON_SHAPE` derive from it (derivation test fails if a union member has no row; never edit `preferredSizes.ts` by hand).
 3. Data widgets: fetcher in `src/server/widgets/<name>.ts` (`registerWidget`) + import in `src/server/widgets/index.ts`. Config-only widgets (clock, bookmarks, search, todo, calendar, iframe, html, group, split-column): no fetcher — builder yields null data.
 4. Renderer `src/client/widgets/<name>/index.tsx` (`registerWidgetComponent`) + loader entry in `src/client/widgets/index.ts` `widgetLoaders`.
 5. Tests mirroring the three files (see Testing).
@@ -76,7 +76,7 @@ Env: `GLIMPSE_CONFIG` (CLI arg wins > env > ./config.yml), `GLIMPSE_PORT=3000`, 
 - **Runtime:** Bun ≥1.3 (`Bun.serve`, `Bun.file`, `Bun.YAML`, `Bun.XML`, `bun --watch`). Node never runs the server; plain-node YAML fallback exists only for vitest.
 - **Package manager:** `bun` / `bunx` (never npm/npx/node/pip). `bun.lock` is the lockfile; `trustedDependencies` covers @astryxdesign postinstall scripts.
 - **Build:** Vite 6 + `@vitejs/plugin-react`, `vite-plugin-pwa` (autoUpdate, `navigateFallbackDenylist [/^\/api\//]`), lazy widget chunks + manualChunks react/astryx/icons/react-router-dom. `/api/config` sends no-store while the SW caches it — intentional offline layering, documented in vite.config.ts.
-- **Constraints:** headless shared Chromium available for browser smoke tests; `glance/**` ignored everywhere; README's twitch-* section and omitted-widget list are STALE (twitch widgets don't exist; server-stats/dns-stats/docker-containers DO).
+- **Constraints:** headless shared Chromium available for browser smoke tests; `glance/**` ignored everywhere; unported glance widgets are tracked in README → Known deviations (`change-detection`, `extension`, `calendar-legacy`, `twitch-channels`, `twitch-top-games`; no auth/lockout).
 
 ## Testing & QA
 - **Stack:** Vitest 4 + jsdom + `@testing-library/react` + `jest-dom`, `globals:true`, `setupFiles: ./src/test/setup.ts` (localStorage polyfill, dialog shims, Bun global).
