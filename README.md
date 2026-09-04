@@ -129,6 +129,10 @@ All optional; read from the process environment (no `.env` loader).
 | `change-detection` | Watched URLs with change badges | `urls[]` (required, ≤ 10), `selector` tag / `#id` / `.class`, `cache` |
 | `twitch-channels` | Live status of followed Twitch channels | `channels[]` (required logins), `sort-by` viewers / live, `collapse-after` (5); needs `TWITCH_CLIENT_ID` + `TWITCH_CLIENT_SECRET` |
 | `twitch-top-games` | Twitch categories ranked by viewers | `limit` ≤ 25 (10), `collapse-after` (5), `exclude[]` category slugs; needs `TWITCH_CLIENT_ID` + `TWITCH_CLIENT_SECRET` |
+| `immich` | Recently added photos | `url` (required), `api-key` or `IMMICH_API_KEY`, `limit` (10) |
+| `jellyfin` | Recently added movies / episodes | `url` (required), `api-key` or `JELLYFIN_API_KEY`, `user-id` auto-resolved, `limit` (10) |
+| `qbittorrent` | Torrent status with progress bars | `url` (required), `username` / `password` or `QBITTORRENT_USERNAME` / `QBITTORRENT_PASSWORD`, `limit` (10) |
+| `transmission` | Torrent status with progress bars | `url` (required), `username` / `password` or `TRANSMISSION_USERNAME` / `TRANSMISSION_PASSWORD`, `limit` (10) |
 Feed widgets respect the `cache` prop; unauthenticated GitHub/Reddit requests are rate-limited, so raise `cache` for those if you hit limits.
 
 ## Theming

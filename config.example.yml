@@ -288,6 +288,30 @@ pages:
             exclude:
               - just-chatting
               - music
+          # Media stack — uncomment against live instances. Secrets stay
+          # server-side via env interpolation (missing var = config error).
+          # - type: immich
+          #   title: Recent photos
+          #   url: https://immich.lab
+          #   api-key: ${IMMICH_API_KEY}
+          #   limit: 10
+          # - type: jellyfin
+          #   title: Recently added
+          #   url: https://jellyfin.lab
+          #   api-key: ${JELLYFIN_API_KEY}
+          #   limit: 10
+          # - type: qbittorrent
+          #   title: Downloads
+          #   url: http://qb.lab:8080
+          #   username: ${QBITTORRENT_USERNAME}
+          #   password: ${QBITTORRENT_PASSWORD}
+          #   limit: 10
+          # - type: transmission
+          #   title: Torrents
+          #   url: http://transmission.lab:9091
+          #   username: ${TRANSMISSION_USERNAME}
+          #   password: ${TRANSMISSION_PASSWORD}
+          #   limit: 10
           - type: todo
             id: lab-todo
           - type: weather

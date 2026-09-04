@@ -23,4 +23,8 @@ import './weather-radar';
 import './github-trending';
 import './network';
 import './change-detection';
+import './immich';
+import './jellyfin';
+import './qbittorrent';
+import './transmission';
 import './twitch';

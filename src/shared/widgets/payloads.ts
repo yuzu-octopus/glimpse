@@ -275,6 +275,21 @@ export interface ChangeDetectionItem {
 }
 export type ChangeDetectionData = ChangeDetectionItem[];
 
+/** Recently-added library item, shared by the immich + jellyfin widgets. */
+export interface MediaItem {
+  title: string;
+  subtitle: string | null;
+  /** Direct poster/thumbnail URL on the media instance (may need instance auth in the browser). */
+  poster: string | null;
+  /** Deep link into the instance web UI. */
+  url: string | null;
+  date: string | null;
+}
+
+export interface MediaData {
+  items: MediaItem[];
+}
+
 export interface TwitchStream {
   login: string;
   displayName: string;
@@ -295,3 +310,20 @@ export interface TwitchGame {
   url: string;
 }
 export type TwitchTopGamesData = TwitchGame[];
+
+/** Single torrent, shared by the qbittorrent + transmission widgets. */
+export interface TorrentItem {
+  name: string;
+  /** 0..1 fraction complete. */
+  progress: number;
+  state: string;
+  size: number | null;
+  downloadSpeed: number | null;
+  uploadSpeed: number | null;
+  /** Seconds remaining, null when unknown/complete. */
+  eta: number | null;
+}
+
+export interface TorrentData {
+  torrents: TorrentItem[];
+}

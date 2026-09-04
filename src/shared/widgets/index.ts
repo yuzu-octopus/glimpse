@@ -78,6 +78,20 @@ import { networkSchema, NETWORK_PREF, NETWORK_SKELETON } from './network';
 import { aiQuotaSchema, AI_QUOTA_PREF, AI_QUOTA_SKELETON } from './ai-quota';
 import { changeDetectionSchema, CHANGE_DETECTION_PREF, CHANGE_DETECTION_SKELETON } from './change-detection';
 import { twitchChannelsSchema, twitchTopGamesSchema, TWITCH_CHANNELS_PREF, TWITCH_CHANNELS_SKELETON, TWITCH_TOP_GAMES_PREF, TWITCH_TOP_GAMES_SKELETON } from './twitch';
+import {
+  immichSchema,
+  jellyfinSchema,
+  qbittorrentSchema,
+  transmissionSchema,
+  IMMICH_PREF,
+  IMMICH_SKELETON,
+  JELLYFIN_PREF,
+  JELLYFIN_SKELETON,
+  QBITTORRENT_PREF,
+  QBITTORRENT_SKELETON,
+  TRANSMISSION_PREF,
+  TRANSMISSION_SKELETON,
+} from './media';
 import type { Pref, SkeletonShape } from './shared';
 
 const schemaEntries = [
@@ -114,6 +128,10 @@ const schemaEntries = [
   githubTrendingSchema,
   networkSchema,
   changeDetectionSchema,
+  immichSchema,
+  jellyfinSchema,
+  qbittorrentSchema,
+  transmissionSchema,
   twitchChannelsSchema,
   twitchTopGamesSchema,
 ] as const;
@@ -156,6 +174,10 @@ export const widgetMeta = {
   'github-trending': { schema: githubTrendingSchema, pref: TRENDING_PREF, skeleton: TRENDING_SKELETON },
   network: { schema: networkSchema, pref: NETWORK_PREF, skeleton: NETWORK_SKELETON },
   'change-detection': { schema: changeDetectionSchema, pref: CHANGE_DETECTION_PREF, skeleton: CHANGE_DETECTION_SKELETON },
+  immich: { schema: immichSchema, pref: IMMICH_PREF, skeleton: IMMICH_SKELETON },
+  jellyfin: { schema: jellyfinSchema, pref: JELLYFIN_PREF, skeleton: JELLYFIN_SKELETON },
+  qbittorrent: { schema: qbittorrentSchema, pref: QBITTORRENT_PREF, skeleton: QBITTORRENT_SKELETON },
+  transmission: { schema: transmissionSchema, pref: TRANSMISSION_PREF, skeleton: TRANSMISSION_SKELETON },
   'twitch-channels': { schema: twitchChannelsSchema, pref: TWITCH_CHANNELS_PREF, skeleton: TWITCH_CHANNELS_SKELETON },
   'twitch-top-games': { schema: twitchTopGamesSchema, pref: TWITCH_TOP_GAMES_PREF, skeleton: TWITCH_TOP_GAMES_SKELETON },
 } as const satisfies Record<string, { schema: z.ZodType; pref: Pref; skeleton: SkeletonShape }>;

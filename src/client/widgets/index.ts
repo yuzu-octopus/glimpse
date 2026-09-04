@@ -38,6 +38,10 @@ export const widgetLoaders: Record<string, Loader> = {
   'github-trending': () => import('./github-trending'),
   network: () => import('./network'),
   'change-detection': () => import('./change-detection'),
+  immich: () => import('./immich'),
+  jellyfin: () => import('./jellyfin'),
+  qbittorrent: () => import('./qbittorrent'),
+  transmission: () => import('./transmission'),
   'twitch-channels': () => import('./twitch-channels'),
   'twitch-top-games': () => import('./twitch-top-games'),
 };
