@@ -1,7 +1,7 @@
 import { writeFileSync, unlinkSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { TtlCache, Singleflight } from '../../cache';
-import { fetchJetbrainsUsage } from './jetbrains';
+import { fetchTableRow, tableRow } from './providerTable';
 
 describe('local providers', () => {
   it('JetBrains reads XML quota file', async () => {
@@ -13,7 +13,8 @@ describe('local providers', () => {
       cache: new TtlCache(),
       singleflight: new Singleflight(),
     };
-    const snap = await fetchJetbrainsUsage({ token: '', tokenFile: tmp }, ctx as never);
+    const snap = await fetchTableRow(tableRow('jetbrains'), { token: '', tokenFile: tmp }, ctx as never);
+    expect(snap.provider).toBe('jetbrains');
     expect(snap.windows[0].usedPercent).toBe(30);
     try { unlinkSync(tmp); } catch {}
   });
@@ -24,6 +25,6 @@ describe('local providers', () => {
       cache: new TtlCache(),
       singleflight: new Singleflight(),
     };
-    await expect(fetchJetbrainsUsage({ token: '', tokenFile: '/no/such.xml' }, ctx as never)).rejects.toThrow(/not found/i);
+    await expect(fetchTableRow(tableRow('jetbrains'), { token: '', tokenFile: '/no/such.xml' }, ctx as never)).rejects.toThrow(/not found/i);
   });
 });
