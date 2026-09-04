@@ -126,6 +126,7 @@ All optional; read from the process environment (no `.env` loader).
 | `github-trending` | Trending GitHub repositories | `language`, `since` daily / weekly / monthly, `limit` ≤ 25 (10) |
 | `contribution-graph` | GitHub contribution heatmap | `username` (required), optional `token`, `limit` weeks 1–104 (52) |
 | `network` | Local network + public IP at a glance | `ping-target` (1.1.1.1), `public-ip` (true) |
+| `change-detection` | Watched URLs with change badges | `urls[]` (required, ≤ 10), `selector` tag / `#id` / `.class`, `cache` |
 Feed widgets respect the `cache` prop; unauthenticated GitHub/Reddit requests are rate-limited, so raise `cache` for those if you hit limits.
 
 ## Theming

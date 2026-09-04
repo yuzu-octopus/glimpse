@@ -37,6 +37,7 @@ export const widgetLoaders: Record<string, Loader> = {
   'weather-radar': () => import('./weather-radar'),
   'github-trending': () => import('./github-trending'),
   network: () => import('./network'),
+  'change-detection': () => import('./change-detection'),
 };
 
 const widgetPromises = new Map<string, Promise<unknown>>();

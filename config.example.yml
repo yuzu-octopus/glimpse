@@ -267,6 +267,11 @@ pages:
             title: Network
             ping-target: 1.1.1.1
             public-ip: true
+          - type: change-detection
+            title: Watched pages
+            urls:
+              - https://example.com/prices
+            selector: main
           - type: todo
             id: lab-todo
           - type: weather

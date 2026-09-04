@@ -22,3 +22,4 @@ import './ai-quota';
 import './weather-radar';
 import './github-trending';
 import './network';
+import './change-detection';

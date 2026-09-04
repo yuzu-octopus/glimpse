@@ -10,8 +10,8 @@ const rows = Object.entries(widgetMeta) as [
 ][];
 
 describe('widget registry derivation', () => {
-  it('covers all 32 widget types with pref + skeleton', () => {
-    expect(rows).toHaveLength(32);
+  it('covers all 33 widget types with pref + skeleton', () => {
+    expect(rows).toHaveLength(33);
     // the union is built from exactly these schemas — reference check
     expect(WidgetSchema.options).toHaveLength(rows.length);
     for (const [, m] of rows) {

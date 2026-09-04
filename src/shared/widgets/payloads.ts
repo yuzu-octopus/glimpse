@@ -263,3 +263,14 @@ export interface NetworkData {
   publicIp?: string | null;
   pingMs?: number | null;
 }
+
+export interface ChangeDetectionItem {
+  url: string;
+  /** True when the content differs from the previous successful fetch. */
+  changed: boolean;
+  /** ISO timestamp of the last observed change, null when never changed. */
+  changedAt: string | null;
+  /** Leading excerpt of the new content, present only on a fresh change. */
+  diffSnippet?: string;
+}
+export type ChangeDetectionData = ChangeDetectionItem[];

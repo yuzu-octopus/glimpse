@@ -76,6 +76,7 @@ import { radarSchema, RADAR_PREF, RADAR_SKELETON } from './radar';
 import { githubTrendingSchema, TRENDING_PREF, TRENDING_SKELETON } from './github-trending';
 import { networkSchema, NETWORK_PREF, NETWORK_SKELETON } from './network';
 import { aiQuotaSchema, AI_QUOTA_PREF, AI_QUOTA_SKELETON } from './ai-quota';
+import { changeDetectionSchema, CHANGE_DETECTION_PREF, CHANGE_DETECTION_SKELETON } from './change-detection';
 import type { Pref, SkeletonShape } from './shared';
 
 const schemaEntries = [
@@ -111,6 +112,7 @@ const schemaEntries = [
   radarSchema,
   githubTrendingSchema,
   networkSchema,
+  changeDetectionSchema,
 ] as const;
 
 /** Co-located widget metadata: each row pairs the schema with its bento pref
@@ -150,6 +152,7 @@ export const widgetMeta = {
   'weather-radar': { schema: radarSchema, pref: RADAR_PREF, skeleton: RADAR_SKELETON },
   'github-trending': { schema: githubTrendingSchema, pref: TRENDING_PREF, skeleton: TRENDING_SKELETON },
   network: { schema: networkSchema, pref: NETWORK_PREF, skeleton: NETWORK_SKELETON },
+  'change-detection': { schema: changeDetectionSchema, pref: CHANGE_DETECTION_PREF, skeleton: CHANGE_DETECTION_SKELETON },
 } as const satisfies Record<string, { schema: z.ZodType; pref: Pref; skeleton: SkeletonShape }>;
 
 /** Public widget type union, derived from the schema entries. */
