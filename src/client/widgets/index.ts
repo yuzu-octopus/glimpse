@@ -38,6 +38,8 @@ export const widgetLoaders: Record<string, Loader> = {
   'github-trending': () => import('./github-trending'),
   network: () => import('./network'),
   'change-detection': () => import('./change-detection'),
+  'twitch-channels': () => import('./twitch-channels'),
+  'twitch-top-games': () => import('./twitch-top-games'),
 };
 
 const widgetPromises = new Map<string, Promise<unknown>>();

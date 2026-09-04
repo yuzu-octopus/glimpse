@@ -23,3 +23,4 @@ import './weather-radar';
 import './github-trending';
 import './network';
 import './change-detection';
+import './twitch';

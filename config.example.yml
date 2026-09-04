@@ -272,6 +272,22 @@ pages:
             urls:
               - https://example.com/prices
             selector: main
+          # Twitch widgets need TWITCH_CLIENT_ID + TWITCH_CLIENT_SECRET in env
+          # (Twitch app client-credentials flow; secrets stay server-side).
+          - type: twitch-channels
+            title: Live now
+            channels:
+              - shroud
+              - xqc
+            sort-by: viewers
+            collapse-after: 5
+          - type: twitch-top-games
+            title: Top games
+            limit: 10
+            collapse-after: 5
+            exclude:
+              - just-chatting
+              - music
           - type: todo
             id: lab-todo
           - type: weather

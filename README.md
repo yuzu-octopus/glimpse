@@ -127,6 +127,8 @@ All optional; read from the process environment (no `.env` loader).
 | `contribution-graph` | GitHub contribution heatmap | `username` (required), optional `token`, `limit` weeks 1–104 (52) |
 | `network` | Local network + public IP at a glance | `ping-target` (1.1.1.1), `public-ip` (true) |
 | `change-detection` | Watched URLs with change badges | `urls[]` (required, ≤ 10), `selector` tag / `#id` / `.class`, `cache` |
+| `twitch-channels` | Live status of followed Twitch channels | `channels[]` (required logins), `sort-by` viewers / live, `collapse-after` (5); needs `TWITCH_CLIENT_ID` + `TWITCH_CLIENT_SECRET` |
+| `twitch-top-games` | Twitch categories ranked by viewers | `limit` ≤ 25 (10), `collapse-after` (5), `exclude[]` category slugs; needs `TWITCH_CLIENT_ID` + `TWITCH_CLIENT_SECRET` |
 Feed widgets respect the `cache` prop; unauthenticated GitHub/Reddit requests are rate-limited, so raise `cache` for those if you hit limits.
 
 ## Theming
@@ -170,7 +172,7 @@ Feed widgets respect the `cache` prop; unauthenticated GitHub/Reddit requests ar
 - `custom-api` maps fields via JSONPath, not Go `html/template`.
 - `todo` persists in browser localStorage only (per-browser, not shared).
 - Authentication and brute-force lockout are not implemented.
-- Not ported: `change-detection`, `extension`, `calendar-legacy`, `twitch-channels`, `twitch-top-games` (no Twitch credential flow).
+- Not ported: `change-detection`, `extension`, `calendar-legacy`.
 - `${secret:}` Docker-secrets syntax is unsupported.
 
 ## Development

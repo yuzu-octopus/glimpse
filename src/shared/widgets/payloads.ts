@@ -274,3 +274,24 @@ export interface ChangeDetectionItem {
   diffSnippet?: string;
 }
 export type ChangeDetectionData = ChangeDetectionItem[];
+
+export interface TwitchStream {
+  login: string;
+  displayName: string;
+  title: string;
+  gameName: string;
+  viewerCount: number;
+  thumbnailUrl: string | null;
+  profileImageUrl: string | null;
+  url: string;
+  live: boolean;
+}
+export type TwitchChannelsData = TwitchStream[];
+
+export interface TwitchGame {
+  id: string;
+  name: string;
+  boxArtUrl: string | null;
+  url: string;
+}
+export type TwitchTopGamesData = TwitchGame[];

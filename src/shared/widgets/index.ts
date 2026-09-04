@@ -77,6 +77,7 @@ import { githubTrendingSchema, TRENDING_PREF, TRENDING_SKELETON } from './github
 import { networkSchema, NETWORK_PREF, NETWORK_SKELETON } from './network';
 import { aiQuotaSchema, AI_QUOTA_PREF, AI_QUOTA_SKELETON } from './ai-quota';
 import { changeDetectionSchema, CHANGE_DETECTION_PREF, CHANGE_DETECTION_SKELETON } from './change-detection';
+import { twitchChannelsSchema, twitchTopGamesSchema, TWITCH_CHANNELS_PREF, TWITCH_CHANNELS_SKELETON, TWITCH_TOP_GAMES_PREF, TWITCH_TOP_GAMES_SKELETON } from './twitch';
 import type { Pref, SkeletonShape } from './shared';
 
 const schemaEntries = [
@@ -113,6 +114,8 @@ const schemaEntries = [
   githubTrendingSchema,
   networkSchema,
   changeDetectionSchema,
+  twitchChannelsSchema,
+  twitchTopGamesSchema,
 ] as const;
 
 /** Co-located widget metadata: each row pairs the schema with its bento pref
@@ -153,6 +156,8 @@ export const widgetMeta = {
   'github-trending': { schema: githubTrendingSchema, pref: TRENDING_PREF, skeleton: TRENDING_SKELETON },
   network: { schema: networkSchema, pref: NETWORK_PREF, skeleton: NETWORK_SKELETON },
   'change-detection': { schema: changeDetectionSchema, pref: CHANGE_DETECTION_PREF, skeleton: CHANGE_DETECTION_SKELETON },
+  'twitch-channels': { schema: twitchChannelsSchema, pref: TWITCH_CHANNELS_PREF, skeleton: TWITCH_CHANNELS_SKELETON },
+  'twitch-top-games': { schema: twitchTopGamesSchema, pref: TWITCH_TOP_GAMES_PREF, skeleton: TWITCH_TOP_GAMES_SKELETON },
 } as const satisfies Record<string, { schema: z.ZodType; pref: Pref; skeleton: SkeletonShape }>;
 
 /** Public widget type union, derived from the schema entries. */
