@@ -17,7 +17,7 @@ export const changeDetectionSchema = z
   .object({
     type: z.literal('change-detection'),
     ...sharedWidgetFields,
-    urls: z.array(z.string().url()).min(1).max(10),
+    urls: z.array(z.url()).min(1).max(10),
     selector: z.string().min(1).max(200).optional(),
   })
   .loose();

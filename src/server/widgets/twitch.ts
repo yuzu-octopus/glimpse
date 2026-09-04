@@ -85,15 +85,21 @@ registerWidget('twitch-channels', async (ctx, config): Promise<TwitchChannelsDat
   const logins = [...new Set(cfg.channels.map((c) => c.toLowerCase()))];
 
   const users = new Map<string, HelixUser>();
-  for (const group of chunk(logins, 100)) {
-    const json = await fetchJson<{ data?: HelixUser[] }>(ctx, helixListUrl(`${HELIX}/users`, 'login', group), { headers });
-    for (const u of json.data ?? []) if (u.login) users.set(u.login.toLowerCase(), u);
-  }
   const live = new Map<string, HelixStream>();
-  for (const group of chunk(logins, 100)) {
-    const json = await fetchJson<{ data?: HelixStream[] }>(ctx, helixListUrl(`${HELIX}/streams`, 'user_login', group), { headers });
-    for (const s of json.data ?? []) if (s.user_login) live.set(s.user_login.toLowerCase(), s);
-  }
+  const [userPages, streamPages] = await Promise.all([
+    Promise.all(
+      chunk(logins, 100).map((group) =>
+        fetchJson<{ data?: HelixUser[] }>(ctx, helixListUrl(`${HELIX}/users`, 'login', group), { headers }),
+      ),
+    ),
+    Promise.all(
+      chunk(logins, 100).map((group) =>
+        fetchJson<{ data?: HelixStream[] }>(ctx, helixListUrl(`${HELIX}/streams`, 'user_login', group), { headers }),
+      ),
+    ),
+  ]);
+  for (const json of userPages) for (const u of json.data ?? []) if (u.login) users.set(u.login.toLowerCase(), u);
+  for (const json of streamPages) for (const s of json.data ?? []) if (s.user_login) live.set(s.user_login.toLowerCase(), s);
 
   const streams: TwitchStream[] = logins.map((login) => {
     const u = users.get(login);

@@ -173,12 +173,9 @@ registerWidget('monitor', async (ctx, config) => {
     }
   }
 
-  const settled = await Promise.allSettled(
-    (cfg.sites ?? []).map((site) => checkDirectSite(ctx, site)),
-  );
-
-  // Source failures degrade to no rows; direct checks still report.
-  const [kuma, hc] = await Promise.all([
+  // Direct checks + uptime sources fan out together; source failures degrade to no rows.
+  const [settled, kuma, hc] = await Promise.all([
+    Promise.allSettled((cfg.sites ?? []).map((site) => checkDirectSite(ctx, site))),
     kumaActive
       ? fetchKumaSites(ctx, cfg['kuma-url']!, cfg['kuma-slug']!).catch(() => [] as MonitorSite[])
       : Promise.resolve([] as MonitorSite[]),
