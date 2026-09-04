@@ -341,7 +341,7 @@ describe('PageView', () => {
     expect(document.querySelectorAll('[class*="mobileToggle"]')).toHaveLength(2);
   });
 
-  it('renders the collage tiling class and min-column-width var in collage mode', async () => {
+  it('renders the collage tiling class with place() tracks and row unit', async () => {
     renderPage(
       payload({
         tiling: 'collage',
@@ -355,13 +355,17 @@ describe('PageView', () => {
     await screen.findAllByTestId('clock-widget');
     const grid = document.querySelector('[class*="columns"]') as HTMLElement;
     expect(grid.className).toContain('collageTiling');
-    expect(grid.style.getPropertyValue('--min-column-width')).toBe('360px');
+    // tracks + row unit come from place(), not the measure pass: 12 desktop
+    // tracks at jsdom width, 96px rows; min-column-width is auto-mode only
+    expect(grid.style.gridTemplateColumns).toBe('repeat(12, minmax(0, 1fr))');
+    expect(grid.style.getPropertyValue('--tile-row')).toBe('96px');
+    expect(grid.style.getPropertyValue('--min-column-width')).toBe('');
     // span hints still emit their column footprint in collage mode
     const tiles = Array.from(grid.querySelectorAll('[data-span]'));
     expect(tiles.map((t) => t.getAttribute('data-span'))).toEqual(['2']);
   });
 
-  it('emits estimated row spans on collage skeleton tiles', () => {
+  it('emits placed row spans on collage skeleton tiles', () => {
     vi.useFakeTimers();
     vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
     const page: Page & { slug: string } = {
@@ -370,7 +374,7 @@ describe('PageView', () => {
       tiling: 'collage',
       'min-column-width': 360,
       columns: [
-        // tall feed (limit > 5) + markets: 3 + 2 = 5 (new clamp 8, so 5 not clamped)
+        // tall feed (limit > 5) + markets PREF rows: 3 + 1 = 4
         {
           size: 'full',
           widgets: [
@@ -378,9 +382,9 @@ describe('PageView', () => {
             { type: 'markets', title: 'Markets', markets: [{ symbol: 'SPY' }] },
           ],
         },
-        // clock: 1
+        // clock PREF rows: 2
         { size: 'small', widgets: [{ type: 'clock', title: 'Clock', timezones: [] }] },
-        // group container: 2
+        // group container PREF rows: 3
         {
           size: 'small',
           widgets: [{ type: 'group', title: 'Group', widgets: [{ type: 'clock', title: 'Child' }] }],
@@ -399,12 +403,14 @@ describe('PageView', () => {
     const skeleton = screen.getByTestId('page-skeleton');
     const grid = skeleton.querySelector('[class*="columns"]') as HTMLElement;
     expect(grid.className).toContain('collageTiling');
-    expect(grid.style.getPropertyValue('--min-column-width')).toBe('360px');
+    // skeleton geometry is place() output: 12 desktop tracks, 96px rows
+    expect(grid.style.gridTemplateColumns).toBe('repeat(12, minmax(0, 1fr))');
+    expect(grid.style.getPropertyValue('--tile-row')).toBe('96px');
     const spans = Array.from(grid.querySelectorAll('[data-row-span]')).map(
       (t) => t.getAttribute('data-row-span'),
     );
-    // feed(3)+markets(2)=5→now 5 (clamp 8); clock→1 omitted (rowSpan>1 only); group→2
-    expect(spans).toEqual(['5', '2']);
+    // feed(3)+markets(1)=4; clock PREF rows=2; group PREF rows=3
+    expect(spans).toEqual(['4', '2', '3']);
   });
 
   it('renders a mobile page-name header when show-mobile-header is set', async () => {
@@ -535,18 +541,7 @@ describe('PageView', () => {
     expect(container.querySelectorAll('[data-testid="column"]')).toHaveLength(2);
   });
 
-  it('collage chooser sets dynamic --min-column-width and grid tracks via flatMap prefs', async () => {
-    const roObserve = vi.fn();
-    const roDisconnect = vi.fn();
-    class FakeRO {
-      observe = roObserve;
-      disconnect = roDisconnect;
-      unobserve = vi.fn();
-    }
-    vi.stubGlobal('ResizeObserver', FakeRO as unknown as typeof ResizeObserver);
-    // 1920px wide container should pick >1 column; stub clientWidth to 1920
-    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => 1920 });
-    Object.defineProperty(HTMLElement.prototype, 'getBoundingClientRect', { configurable: true, value: () => ({ width: 1920 } as DOMRect) });
+  it('collage tiles carry their placed row spans from the single table', async () => {
     renderPage(
       payload({
         tiling: 'collage',
@@ -559,16 +554,12 @@ describe('PageView', () => {
       }),
     );
     await screen.findByTestId('clock-widget');
-    // allow effect + ResizeObserver compute to run
-    await waitFor(() => {
-      const grid = document.querySelector('[class*="collageTiling"]') as HTMLElement | null;
-      expect(grid).toBeTruthy();
-      expect(grid!.style.getPropertyValue('--min-column-width')).toMatch(/\d+px/);
-      expect(grid!.style.gridTemplateColumns).toMatch(/repeat\(\d+, 1fr\)/);
-    });
-    // flatMap check: a column with 2 widgets should give 2 tiles to chooser (clock 300 + rss fluid -> chooser sees 2 prefs)
-    // verify by rendering a page where one column has 2 widgets vs 1 — n* should reflect per-widget prefs
-    expect(roObserve).toHaveBeenCalled();
+    const grid = document.querySelector('[class*="collageTiling"]') as HTMLElement;
+    // clock/videos/monitor PREF rows are all 2: every tile spans 2 rows
+    const spans = Array.from(grid.querySelectorAll('[data-row-span]')).map((t) =>
+      t.getAttribute('data-row-span'),
+    );
+    expect(spans).toEqual(['2', '2', '2']);
   });
 
   it('global spacing vars exist', () => {
@@ -577,6 +568,8 @@ describe('PageView', () => {
     expect(css).toContain('--space-viewport');
     expect(css).toContain('--widget-content-vertical');
     expect(css).toContain('--widget-content-horizontal');
+    // single tiling row unit shared by place(), collage, and bento
+    expect(css).toContain('--tile-row');
     // DIMS also exposes them via theme tokens (read glimpseTheme file)
     const themeSrc = readFileSync('src/shared/theme/glimpseTheme.ts', 'utf8');
     expect(themeSrc).toContain("'--space-gap'");
@@ -609,7 +602,7 @@ describe('PageView', () => {
     expect(grid.style.getPropertyValue('--bento-cols')).toBe('12');
     expect(grid.style.getPropertyValue('--bento-row')).toBe('96px');
     expect(within(grid).getAllByTestId('clock-widget')).toHaveLength(2);
-    // every tile got a placement from composeBento
+    // every tile got a placement from place()
     expect(grid.querySelectorAll('[data-bento-x]').length).toBeGreaterThanOrEqual(2);
   });
 
@@ -658,7 +651,11 @@ describe('PageView', () => {
       /\.columns\s*\{[^}]*display:\s*grid[^}]*repeat\(12,\s*minmax\(0,\s*1fr\)\)[^}]*gap:\s*(var\(--widget-gap\)|clamp\([^)]*\))[^}]*align-content:\s*start/,
     );
     expect(css).toMatch(/\.column\s*\{[^}]*grid-column:\s*span var\(--col-span,\s*12\)/);
-    const media = css.slice(css.indexOf('@media (max-width: 599px)'));
+    // tablet: 6 tracks, spans above 6 collapse to 6
+    expect(css).toMatch(/@media \(max-width: 900px\)/);
+    expect(css).toMatch(/repeat\(6,\s*minmax\(0,\s*1fr\)\)/);
+    expect(css).toMatch(/--col-span:\s*6 !important/);
+    const media = css.slice(css.indexOf('@media (max-width: 600px)'));
     expect(media).toMatch(/\.columns \.column\s*\{[^}]*grid-column:\s*1 \/ -1/);
   });
 

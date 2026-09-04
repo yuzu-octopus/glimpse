@@ -1,4 +1,4 @@
-import { Suspense, memo, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { Suspense, memo, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { Banner, Card, Tab, TabList, Text } from '@astryxdesign/core';
 import { ChevronDown } from 'lucide-react';
 import type { WidgetPayload } from '../../shared/api';
@@ -11,9 +11,17 @@ import { usePageData } from '../hooks/usePageData';
 import { clientWidgets } from '../widgets/registry';
 import { ensureWidgetLoaded } from '../widgets';
 import { PAGE_WIDTHS } from '../../shared/config';
-import { COLLAGE_ROW_SPAN_MAX, COLLAGE_ROW_SPAN_MIN, MAX_TILING_COLS, chooseColumnCount, composeBento, getTilingProps, type BentoPlacement, type BentoTile } from './tiling';
-import { useCollageTiling } from './useCollageTiling';
-import { PREFERRED_SIZES, SKELETON_SHAPE } from '../../shared/widgets/preferredSizes';
+import {
+  ROW_UNIT,
+  columnPlaceInputs,
+  flatPlaceInput,
+  getTilingProps,
+  place,
+  tileResizable,
+  type FlatWidgetLike,
+  type PlacedTile,
+} from './tiling';
+import { SKELETON_SHAPE } from '../../shared/widgets/preferredSizes';
 import styles from './page.module.css';
 
 /** Config-page shape the loading skeleton needs (subset of WidgetConfig). */
@@ -82,36 +90,24 @@ function columnKey(
   return col.widgets[0] ? widgetKey(col.widgets[0], 0, counts) : `column-${i}`;
 }
 
-/** Config-only row-span estimate for the loading skeleton (collage mode):
- * Mirrors the hook's 1-8 clamp. */
-function estimateRowSpan(w: SkeletonWidget): number {
-  const type = w.type ?? '';
-  // feed-ish widgets with a declared limit > 5 are tall lists
-  if (
-    (type === 'rss' || type === 'hacker-news' || type === 'lobsters' || type === 'reddit') &&
-    (w.limit ?? 0) > 5
-  ) {
-    return 3;
-  }
-  // mid-height: markets/videos/calendar; containers group content
-  if (
-    type === 'markets' ||
-    type === 'videos' ||
-    type === 'calendar' ||
-    type === 'group' ||
-    type === 'split-column'
-  ) {
-    return 2;
-  }
-  // clock/weather/search/monitor/iframe/bookmarks + anything unknown: 1 row
-  return 1;
-}
-
-/** Skeleton tile (one column) spans the sum of its widgets' estimates,
- * clamped to the hook's COLLAGE_ROW_SPAN bounds. */
-function estimateColumnRowSpan(col: { widgets: SkeletonWidget[] }): number {
-  const total = col.widgets.reduce((sum, w) => sum + estimateRowSpan(w), 0);
-  return Math.min(Math.max(total, COLLAGE_ROW_SPAN_MIN), COLLAGE_ROW_SPAN_MAX);
+/** Container width for `place()`: window width until the grid mounts, then
+ * the measured content box. Live tiles and skeletons use the same hook on
+ * equivalent containers, so both sides place identically at every commit. */
+function usePlacedWidth(ref: RefObject<HTMLElement | null>): number {
+  const [width, setWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1280,
+  );
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => {
+      const w = el.clientWidth || el.getBoundingClientRect().width;
+      if (w > 0) setWidth(w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref]);
+  return width;
 }
 
 /** Skeleton card for one configured widget slot (WidgetChrome isLoading). */
@@ -131,6 +127,33 @@ function WidgetSkeleton({ widget }: { widget: SkeletonWidget }) {
 export function PageSkeleton({ page }: { page: Page & { slug: string } }) {
   const hideHeaders = page['hide-headers'] === true;
   const tilingProps = getTilingProps(page.tiling, page['min-column-width']);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const width = usePlacedWidth(gridRef);
+  const flatWidgets = (page as { widgets?: unknown[] }).widgets as FlatWidgetLike[] | undefined;
+  const isCollage = page.tiling === 'collage' && !flatWidgets;
+  // The same place() call the live tree makes: identical config-only inputs
+  // at an equivalent width, so skeleton geometry == tile geometry.
+  const placedById = useMemo(() => {
+    if (!isCollage || !page.columns) return null;
+    let inferred: number[] | undefined;
+    try {
+      inferred = resolveSpan(page.columns.map((c) => ({ size: c.size, widgets: [], span: c.span })));
+    } catch {
+      inferred = undefined;
+    }
+    const placed = place(columnPlaceInputs(page.columns, inferred), width);
+    return { placed, spans: page.columns.map((c, i) => c.span ?? inferred?.[i] ?? 1) };
+  }, [page, isCollage, width]);
+  const flatPlaced = useMemo(() => {
+    if (!flatWidgets) return null;
+    const ids = widgetKeysFor(flatWidgets as unknown as WidgetLike[]);
+    const gridCols = (page as { 'grid-columns'?: number })['grid-columns'] ?? 12;
+    return place(
+      flatWidgets.map((w, i) => flatPlaceInput(ids[i], w)),
+      width,
+      { cols: gridCols },
+    );
+  }, [page, flatWidgets, width]);
   return (
     <HideHeadersContext.Provider value={hideHeaders}>
       <div
@@ -151,26 +174,70 @@ export function PageSkeleton({ page }: { page: Page & { slug: string } }) {
             })()}
           </div>
         ) : null}
-        <div className={tilingProps.className} style={tilingProps.style}>
-          {(page as { widgets?: unknown[] }).widgets ? (
-            <div className={styles.bentoGrid} data-testid="bento-skeleton" style={{ '--bento-cols': String((page as Record<string, unknown>)['grid-columns'] ?? 12) } as React.CSSProperties}>
+        <div
+          ref={gridRef}
+          className={tilingProps.className}
+          style={
+            placedById
+              ? ({
+                  ...tilingProps.style,
+                  gridTemplateColumns: `repeat(${placedById.placed.cols}, minmax(0, 1fr))`,
+                  '--tile-row': `${placedById.placed.rowUnit}px`,
+                } as CSSProperties)
+              : tilingProps.style
+          }
+        >
+          {flatWidgets ? (
+            <div
+              className={styles.bentoGrid}
+              data-testid="bento-skeleton"
+              style={
+                {
+                  '--bento-cols': String(flatPlaced?.cols ?? 12),
+                  '--bento-row': `${ROW_UNIT}px`,
+                } as React.CSSProperties
+              }
+            >
               {(() => {
-                const list = ((page as { widgets?: unknown[] }).widgets ?? []) as unknown as WidgetLike[];
+                const list = flatWidgets as unknown as WidgetLike[];
                 const wk = widgetKeysFor(list);
-                return list.map((w, i) => (
-                  <div key={wk[i]} className={styles.bentoItem}>
-                    <WidgetSkeleton widget={w as SkeletonWidget} />
-                  </div>
-                ));
+                const byId = new Map((flatPlaced?.tiles ?? []).map((p) => [p.id, p]));
+                return list.map((w, i) => {
+                  const p = byId.get(wk[i]);
+                  const resizable = tileResizable((w as SkeletonWidget).type);
+                  return (
+                    <div
+                      key={wk[i]}
+                      className={styles.bentoItem}
+                      style={
+                        p
+                          ? ({
+                              '--bento-x': String(p.col + 1),
+                              '--bento-y': String(p.row + 1),
+                              '--bento-w': String(p.w),
+                              '--bento-h': resizable ? undefined : String(p.h),
+                            } as React.CSSProperties)
+                          : undefined
+                      }
+                      data-bento-x={p?.col}
+                      data-bento-y={p?.row}
+                      data-resizable={String(resizable)}
+                    >
+                      <WidgetSkeleton widget={w as SkeletonWidget} />
+                    </div>
+                  );
+                });
               })()}
             </div>
           ) : (
             (() => {
-              // Mirror the ready render's span derivation (explicit span or
-              // size-based resolveSpan) so the skeleton matches the real
-              // column widths instead of collapsing to full-width.
+              // Spans mirror the live tree: collage tiles use their placed
+              // footprint from place(); other modes share the ready render's
+              // span derivation (explicit span, else size-based resolveSpan).
+              const colCounts = new Map<string, number>();
+              const byId = new Map((placedById?.placed.tiles ?? []).map((p) => [p.id, p]));
               let inferred: number[] | undefined;
-              if (page.tiling !== 'auto' && page.tiling !== 'collage') {
+              if (!placedById && page.tiling !== 'auto') {
                 try {
                   inferred = resolveSpan(
                     (page.columns ?? []).map((c) => ({ size: c.size, widgets: [], span: c.span })),
@@ -179,17 +246,16 @@ export function PageSkeleton({ page }: { page: Page & { slug: string } }) {
                   inferred = undefined;
                 }
               }
-              const colCounts = new Map<string, number>();
               return (page.columns ?? []).map((col, i) => {
-                const span = col.span ?? inferred?.[i] ?? 1;
+                const tile = byId.get(`column-${i}`);
+                const span = tile?.w ?? col.span ?? inferred?.[i] ?? 1;
                 return (
                   <MobileColumn
                     key={columnKey(col, i, colCounts)}
                     label={columnLabel(col, i)}
                     small={col.size === 'small'}
                     span={span}
-                    rowSpan={page.tiling === 'collage' ? estimateColumnRowSpan(col) : undefined}
-                    style={spanStyle(span)}
+                    rowSpan={tile?.h}
                   >
                     <div className={styles.columnWidgets}>
                       {(() => {
@@ -219,13 +285,19 @@ function DelayedSkeleton({ delay = 250, children }: { delay?: number; children: 
   return show ? <>{children}</> : null;
 }
 
-/** Stable per-span style refs so memoized columns don't see a fresh object each render. */
-const spanStyles = new Map<number, CSSProperties>();
-function spanStyle(span: number): CSSProperties {
-  let s = spanStyles.get(span);
+/** Stable per-footprint style refs so memoized columns don't see a fresh
+ * object each render. `--col-span` drives the column footprint; collage
+ * tiles also span their placed rows from place(). */
+const tileStyles = new Map<string, CSSProperties>();
+function tileStyle(span: number, rowSpan?: number): CSSProperties {
+  const key = `${span}x${rowSpan ?? 0}`;
+  let s = tileStyles.get(key);
   if (!s) {
-    s = { '--col-span': String(span) } as CSSProperties;
-    spanStyles.set(span, s);
+    s = {
+      '--col-span': String(span),
+      ...(rowSpan != null ? { gridRow: `span ${rowSpan}` } : null),
+    } as CSSProperties;
+    tileStyles.set(key, s);
   }
   return s;
 }
@@ -350,14 +422,12 @@ const MobileColumn = memo(function MobileColumn({
   small,
   span,
   rowSpan,
-  style,
   children,
 }: {
   label: string;
   small: boolean;
   span?: number;
   rowSpan?: number;
-  style?: CSSProperties;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(true);
@@ -379,13 +449,12 @@ const MobileColumn = memo(function MobileColumn({
       data-testid="column"
       data-span={span && span > 1 ? String(span) : undefined}
       data-row-span={rowSpan && rowSpan > 1 ? String(rowSpan) : undefined}
-      className={
+            className={
         small
           ? `${styles.column} ${styles.smallColumn}`
           : `${styles.column} ${styles.fullColumn}`
       }
-      style={style}
-    >
+      style={tileStyle(span ?? 12, rowSpan)}>
       <button
         ref={toggleRef}
         type="button"
@@ -401,22 +470,22 @@ const MobileColumn = memo(function MobileColumn({
   );
 });
 
-const BentoItem = memo(function BentoItem({ placement, resizable, widget }: { placement?: BentoPlacement; resizable: boolean; widget: WidgetPayload }) {
+const BentoItem = memo(function BentoItem({ placement, resizable, widget }: { placement?: PlacedTile; resizable: boolean; widget: WidgetPayload }) {
   return (
     <div
       className={styles.bentoItem}
       style={
         placement
           ? ({
-              '--bento-x': String(placement.x + 1),
-              '--bento-y': String(placement.y + 1),
+              '--bento-x': String(placement.col + 1),
+              '--bento-y': String(placement.row + 1),
               '--bento-w': String(placement.w),
               '--bento-h': resizable ? undefined : String(placement.h),
             } as React.CSSProperties)
           : undefined
       }
-      data-bento-x={placement?.x}
-      data-bento-y={placement?.y}
+      data-bento-x={placement?.col}
+      data-bento-y={placement?.row}
       data-resizable={String(resizable)}
     >
       <WidgetSlot widget={widget} />
@@ -426,50 +495,44 @@ const BentoItem = memo(function BentoItem({ placement, resizable, widget }: { pl
 
 function BentoGrid({ widgets, gridCols, rowHeight }: { widgets: WidgetPayload[]; gridCols: number; rowHeight: number }) {
   const widgetIds = useMemo(() => widgetKeysFor(widgets as unknown as WidgetLike[]), [widgets]);
-  const tiles: BentoTile[] = useMemo(
+  const gridRef = useRef<HTMLDivElement>(null);
+  const width = usePlacedWidth(gridRef);
+  // place() inputs double as the priority source: the same call the flat
+  // skeleton makes, so live tiles and shimmer agree at every width.
+  const inputs = useMemo(
     () =>
       widgets.map((w, i) => {
         const cfg = w.config as Record<string, unknown>;
-        const pref =
-          (PREFERRED_SIZES as Record<string, { cols: number | null; rows: number; resizable: boolean; priority: number; zone: 'main' | 'sidebar'; preferredWidth: number | null; preferredHeight: number | null }>)[w.type] ??
-          { cols: null, rows: 1, resizable: true, priority: 5, zone: 'main' as const, preferredWidth: null, preferredHeight: null };
-        return {
-          id: widgetIds[i],
-          priority: typeof cfg.priority === 'number' ? cfg.priority : pref.priority,
-          span: typeof cfg.span === 'number' ? cfg.span : (pref.cols ?? 1),
-          zone: (cfg.zone as 'main' | 'sidebar' | undefined) ?? pref.zone,
-          cols: pref.cols,
-          rows: pref.rows,
-          prefW: pref.preferredWidth,
-          prefH: pref.preferredHeight,
-          resizable: pref.resizable,
-        } satisfies BentoTile;
+        return flatPlaceInput(widgetIds[i], {
+          type: w.type,
+          span: typeof cfg.span === 'number' ? cfg.span : undefined,
+          priority: typeof cfg.priority === 'number' ? cfg.priority : undefined,
+          zone: cfg.zone as 'main' | 'sidebar' | undefined,
+          limit: typeof cfg.limit === 'number' ? cfg.limit : undefined,
+        });
       }),
     [widgets, widgetIds],
   );
-  const placements = useMemo(() => composeBento(tiles, gridCols, { rowUnit: rowHeight }), [tiles, gridCols, rowHeight]);
-  const byId = useMemo(() => new Map(placements.map((p) => [p.id, p])), [placements]);
-  const tileById = useMemo(() => new Map(tiles.map((t) => [t.id, t])), [tiles]);
+  const placed = useMemo(() => place(inputs, width, { cols: gridCols, rowUnit: rowHeight }), [inputs, width, gridCols, rowHeight]);
+  const byId = useMemo(() => new Map(placed.tiles.map((t) => [t.id, t])), [placed]);
   // mobile 1-col stack via priority: render in priority order so the CSS
   // single-track override (grid-column 1/-1 !important) shows top priority first
   const ordered = useMemo(() => {
-    const idxMap = new Map(tiles.map((t) => [t.id, t]));
+    const prio = new Map(inputs.map((t) => [t.id, t.priority]));
     return widgets
       .map((w, i) => ({ w, id: widgetIds[i] }))
-      .toSorted((a, b) => (idxMap.get(b.id)?.priority ?? 0) - (idxMap.get(a.id)?.priority ?? 0));
-  }, [widgets, tiles, widgetIds]);
+      .toSorted((a, b) => (prio.get(b.id) ?? 0) - (prio.get(a.id) ?? 0));
+  }, [widgets, inputs, widgetIds]);
   return (
     <div
+      ref={gridRef}
       className={styles.bentoGrid}
-      style={{ '--bento-cols': String(gridCols), '--bento-row': `${rowHeight}px` } as React.CSSProperties}
+      style={{ '--bento-cols': String(placed.cols), '--bento-row': `${placed.rowUnit}px` } as React.CSSProperties}
       data-testid="bento-grid"
     >
-      {ordered.map(({ w, id }) => {
-        const pl = byId.get(id);
-        const tile = tileById.get(id);
-        const resizable = tile?.resizable ?? true;
-        return <BentoItem key={id} placement={pl} resizable={resizable} widget={w} />;
-      })}
+      {ordered.map(({ w, id }) => (
+        <BentoItem key={id} placement={byId.get(id)} resizable={tileResizable(w.type)} widget={w} />
+      ))}
     </div>
   );
 }
@@ -484,70 +547,36 @@ export function PageView({
   page?: Page & { slug: string };
 }) {
   const { data, error } = usePageData(slug);
-  const columnsRef = useRef<HTMLDivElement>(null);
-  const tilingForMeasure = getTilingProps(data?.tiling, data?.minColumnWidth);
-  const resolvedForPrefs = data as unknown as { columns?: { size: string; widgets: { type: string }[]; span?: number }[]; tiling?: string } | undefined;
-  // Single source of truth for collage sizing: per-widget prefs grouped by
-  // column (a column with 3 widgets contributes 3 width prefs to the
-  // chooser). `tiles` flattens for the column-count chooser;
-  // `tilePrefsForHook` reduces each group to one pref, aligned with the
-  // container's direct children (the column wrappers) for the measure hook.
-  const tileGroups = useMemo(() => {
-    if (!resolvedForPrefs?.columns) return [];
-    return resolvedForPrefs.columns.map((col) =>
-      col.widgets.map((w) => {
-        const pref = (
-          PREFERRED_SIZES as Record<
-            string,
-            { preferredWidth: number | null; preferredHeight: number | null; resizable: boolean }
-          >
-        )[w.type] ?? { preferredWidth: null, preferredHeight: null, resizable: true };
-        return { prefW: pref.preferredWidth, prefH: pref.preferredHeight, span: col.span ?? 1, resizable: pref.resizable };
-      }),
+  const gridRef = useRef<HTMLDivElement>(null);
+  const width = usePlacedWidth(gridRef);
+  // Collage geometry from place() — the same call the skeleton makes, so
+  // tiles == skeletons at every width. Above the early returns: hooks stay
+  // unconditional across loading / error / ready states.
+  const flatLive = (data as unknown as { widgets?: WidgetPayload[] } | undefined)?.widgets;
+  const isCollage = data?.tiling === 'collage' && !flatLive;
+  const placedById = useMemo(() => {
+    if (!isCollage || !data) return null;
+    let inferred: number[] | undefined;
+    try {
+      inferred = resolveSpan(data.columns.map((c) => ({ size: c.size, widgets: [], span: c.span })));
+    } catch {
+      inferred = undefined;
+    }
+    const placed = place(
+      columnPlaceInputs(
+        data.columns.map((c) => ({
+          span: c.span,
+          widgets: c.widgets.map((w) => ({
+            type: w.type,
+            limit: typeof w.config.limit === 'number' ? w.config.limit : undefined,
+          })),
+        })),
+        inferred,
+      ),
+      width,
     );
-  }, [resolvedForPrefs?.columns]);
-  const tiles = tileGroups.flat();
-  const tilePrefsForHook = useMemo(() => {
-    if (tileGroups.length === 0) return undefined;
-    return tileGroups.map((group) => {
-      const heights: number[] = [];
-      for (const t of group) if (!t.resizable && t.prefH != null) heights.push(t.prefH);
-      if (heights.length === 0) return { prefH: null as number | null, resizable: true };
-      return { prefH: Math.max(...heights), resizable: false };
-    });
-  }, [tileGroups]);
-  // Collage measure pass: re-runs when the payload settles/refreshes. The
-  // ref is only attached in collage mode (tilingProps.measure), so the hook
-  // no-ops for every other tiling. PrefH path uses pref when !resizable.
-  useCollageTiling(columnsRef, tilingForMeasure.measure && data ? [data] : [], tilePrefsForHook);
-  const isCollageLikeForChooser = data?.tiling === 'collage' || data?.tiling === 'auto';
-  const chooserMinW = (data as { minColumnWidth?: number } | undefined)?.minColumnWidth;
-  const tilesRef = useRef(tiles);
-  useEffect(() => {
-    tilesRef.current = tiles;
-  }, [tiles]);
-  useEffect(() => {
-    if (!isCollageLikeForChooser) return;
-    const container = columnsRef.current;
-    if (!container) return;
-    const gap = 23;
-    const minW = chooserMinW ?? 300;
-    const maxCols = MAX_TILING_COLS;
-    // clamp grid tracks to content-derived limit and to actual container width; MAX_TILING_COLS is the grid cap (not PageSchema max 3)
-    const compute = () => {
-      const W = container.clientWidth || container.getBoundingClientRect().width || 0;
-      if (!(W > 0)) return;
-      const nStar = chooseColumnCount(W, gap, minW, maxCols, tilesRef.current);
-      const actualW = (W - (nStar - 1) * gap) / nStar;
-      container.style.setProperty('--min-column-width', `${actualW}px`);
-      container.style.gridTemplateColumns = `repeat(${nStar}, 1fr)`;
-    };
-    compute();
-    if (typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(compute);
-    ro.observe(container);
-    return () => ro.disconnect();
-  }, [isCollageLikeForChooser, chooserMinW]);
+    return { placed, spans: data.columns.map((c, i) => c.span ?? inferred?.[i] ?? 1) };
+  }, [data, isCollage, width]);
   if (!data && !error) {
     if (page)
       return (
@@ -607,10 +636,23 @@ export function PageView({
             rowHeight={(resolved as unknown as { gridRowHeight?: number }).gridRowHeight ?? 96}
           />
         ) : (
-          <div ref={tilingProps.measure || resolved.tiling === 'auto' ? columnsRef : null} className={tilingProps.className} style={tilingProps.style}>
+          <div
+            ref={gridRef}
+            className={tilingProps.className}
+            style={
+              placedById
+                ? ({
+                    ...tilingProps.style,
+                    gridTemplateColumns: `repeat(${placedById.placed.cols}, minmax(0, 1fr))`,
+                    '--tile-row': `${placedById.placed.rowUnit}px`,
+                  } as CSSProperties)
+                : tilingProps.style
+            }
+          >
             {(() => {
-              // Columns-mode spans: explicit config span wins; otherwise size
-              // maps to a 12-col footprint via resolveSpan (Social 4/8 etc).
+              // Spans mirror the skeleton: collage tiles use their placed
+              // footprint from place(); other modes derive spans the same
+              // way (explicit span, else size-based resolveSpan).
               let inferred: number[] | undefined;
               if (resolved.tiling !== 'auto' && resolved.tiling !== 'collage') {
                 try {
@@ -622,15 +664,17 @@ export function PageView({
                 }
               }
               const colCounts = new Map<string, number>();
+              const byId = new Map((placedById?.placed.tiles ?? []).map((p) => [p.id, p]));
               return resolved.columns.map((col, i) => {
-                const span = col.span ?? inferred?.[i] ?? 1;
+                const tile = byId.get(`column-${i}`);
+                const span = tile?.w ?? col.span ?? inferred?.[i] ?? 1;
                 return (
               <MobileColumn
                 key={columnKey(col, i, colCounts)}
                 label={columnLabel(col, i)}
                 small={col.size === 'small'}
                 span={span}
-                style={spanStyle(span)}
+                rowSpan={tile?.h}
               >
                 <div className={styles.columnWidgets}>
                   {(() => {

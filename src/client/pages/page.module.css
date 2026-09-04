@@ -80,20 +80,17 @@
   align-content: start;
 }
 
-/* tiling: collage — bento grid. Dense flow + JS-measured row spans
-   (useCollageTiling sets --tile-row and inline grid-row: span N). Without
-   JS this degrades to the auto look: dense grid, auto rows. align-content:
-   start prevents a short rightmost tile from stretching the grid and leaving
-   a huge phantom gap below it (Social) while keeping Home's bottom padding
-   uniform at var(--widget-gap). */
+/* tiling: collage — place()-driven bento grid. Track count and row unit
+   arrive inline from place() (repeat(cols) + --tile-row); tiles span their
+   placed w/h and dense flow backfills holes. minmax rows let tall content
+   grow instead of clipping when an estimate runs short. Without JS the grid
+   degrades to 12 explicit tracks with auto rows. align-content: start keeps
+   the page's bottom padding (var(--widget-gap)) the only footer gap. */
 .collageTiling {
   display: grid;
-  grid-template-columns: repeat(
-    auto-fit,
-    minmax(min(var(--min-column-width, 300px), 100%), 1fr)
-  );
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   grid-auto-flow: dense;
-  grid-auto-rows: var(--tile-row, auto);
+  grid-auto-rows: minmax(var(--tile-row, 96px), auto);
   align-items: stretch; /* tiles fill their spanned cell */
   align-content: start;
 }
@@ -116,49 +113,38 @@
   flex-shrink: 1;
 }
 
-/* per-column span hint (config `span`, 1-4); span 1 is the default track.
-   Applies to both auto and collage — collage keeps span as the minimum
-   column footprint. */
-.autoTiling [data-span='2'],
-.collageTiling [data-span='2'] {
+/* Auto-mode span hints. Small spans take auto-fit tracks; large spans are
+   12-col units in a ~300px-track grid, so they go full width instead of
+   forcing implicit tracks. (Columns/collage footprints ride --col-span and
+   inline grid-row from place() — no rules needed.) */
+.autoTiling [data-span='2'] {
   grid-column: span 2;
 }
-.autoTiling [data-span='3'],
-.collageTiling [data-span='3'] {
+.autoTiling [data-span='3'] {
   grid-column: span 3;
 }
-.autoTiling [data-span='4'],
-.collageTiling [data-span='4'] {
+.autoTiling [data-span='4'] {
   grid-column: span 4;
 }
-
-/* Skeleton estimated row spans (config-only heuristics; see PageSkeleton).
-   The live hook overwrites these with measured inline spans on hydrate. */
-.collageTiling [data-row-span='2'] {
-  grid-row: span 2;
-}
-.collageTiling [data-row-span='3'] {
-  grid-row: span 3;
-}
-.collageTiling [data-row-span='4'] {
-  grid-row: span 4;
-}
-.collageTiling [data-row-span='5'] {
-  grid-row: span 5;
-}
-.collageTiling [data-row-span='6'] {
-  grid-row: span 6;
-}
-.collageTiling [data-row-span='7'] {
-  grid-row: span 7;
-}
-.collageTiling [data-row-span='8'] {
-  grid-row: span 8;
+.autoTiling [data-span='5'],
+.autoTiling [data-span='6'],
+.autoTiling [data-span='7'],
+.autoTiling [data-span='8'],
+.autoTiling [data-span='9'],
+.autoTiling [data-span='10'],
+.autoTiling [data-span='11'],
+.autoTiling [data-span='12'] {
+  grid-column: 1 / -1;
 }
 
 .column {
   grid-column: span var(--col-span, 12);
   min-width: 0;
+  /* Tile query container: widget interiors adapt to their allocated tile
+   * width (stack vs row, font scale). Page layout — tracks, spans — stays
+   * in place() plus media queries; never query the page container here. */
+  container-type: inline-size;
+  container-name: tile;
 }
 
 .fullColumn {
@@ -215,6 +201,15 @@
   grid-template-columns: 1fr 1fr;
   gap: var(--widget-gap);
   align-items: start;
+}
+
+/* Narrow tile: stack split columns by container width, not viewport — the
+   same side-by-side content reflows when dropped in a sidebar tile. The
+   ≤600px media rule below stays as the no-container-query fallback. */
+@container tile (max-width: 560px) {
+  .splitColumn {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .groupStack {
@@ -285,27 +280,28 @@
   min-width: 0;
 }
 
-/* Tablet landscape — keep 12, slightly tighter gap */
-@media (min-width: 900px) and (max-width: 1199px) and (orientation: landscape) {
+/* Tablet (at or below 900px) — 6 tracks so place() geometry (cols capped
+   at 6) and CSS agree; spans above 6 collapse to 6, interiors reflow via
+   container queries. Desktop above 900px keeps the full 12. */
+@media (max-width: 900px) {
   .columns {
-    gap: clamp(14px, 1.4vw, 20px);
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .columns [data-span='7'],
+  .columns [data-span='8'],
+  .columns [data-span='9'],
+  .columns [data-span='10'],
+  .columns [data-span='11'],
+  .columns [data-span='12'] {
+    --col-span: 6 !important;
   }
 }
 
-/* Tablet portrait — 8 cols, remap 12→8 so rows still fit */
-@media (min-width: 600px) and (max-width: 899px) and (orientation: portrait) {
+/* Mobile (at or below 600px) — single track, all spans to 1, rows auto. */
+@media (max-width: 600px) {
   .columns {
-    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
-  [data-span='12'] { --col-span: 8 !important; }
-  [data-span='9'] { --col-span: 5 !important; }
-  [data-span='8'] { --col-span: 5 !important; }
-  [data-span='6'] { --col-span: 4 !important; }
-  [data-span='4'] { --col-span: 3 !important; }
-  [data-span='3'] { --col-span: 2 !important; }
-}
-
-@media (max-width: 599px) {
   .columns .column {
     grid-column: 1 / -1;
   }
@@ -368,6 +364,8 @@
   min-width: 0;
   grid-column: var(--bento-x, auto) / span var(--bento-w, 1);
   grid-row: var(--bento-y, auto) / span var(--bento-h, 1);
+  container-type: inline-size;
+  container-name: tile;
 }
 
 .bentoItem[data-resizable='true'] {

@@ -43,6 +43,9 @@
   --widget-content-vertical: 15px;
   --widget-content-horizontal: 17px;
   --widget-gap: 23px;
+  /* Single tiling row unit (px): place() ROW_UNIT, collage --tile-row, and
+     bento --bento-row all resolve here. One token, three consumers. */
+  --tile-row: 96px;
   --widget-content-vertical-padding: 15px;
   --widget-content-horizontal-padding: 17px;
   --widget-content-padding: 15px 17px;

@@ -1,5 +1,5 @@
 # Glimpse — curated demo (4 pages, hide-headers, Singapore).
-# Tiling: Home/Dev/Lab = columns (small stays 300px), Social = collage bento (340px).
+# Tiling: Home/Dev/Lab = columns (12-col spans), Social = collage (place()-driven bento).
 # New widgets: server-stats / dns-stats / docker-containers (all homelab, on Lab).
 pages:
   - name: Home
@@ -185,6 +185,7 @@ pages:
   - name: Social
     slug: social
     hide-headers: true
+    tiling: collage
     columns:
       - span: 4
         widgets:
