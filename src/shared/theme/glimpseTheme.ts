@@ -100,41 +100,6 @@ export function sourceFromBase16(
   };
 }
 
-/** Glance documented fallbacks (docs/configuration.md §Theme). */
-const DEFAULT_PRIMARY: Hsl = { h: 43, s: 50, l: 70 };
-const DEFAULT_NEGATIVE: Hsl = { h: 0, s: 70, l: 70 };
-const DEFAULT_WARNING: Hsl = { h: 45, s: 100, l: 70 };
-const DEFAULT_SUCCESS: Hsl = { h: 135, s: 94, l: 66 };
-const DEFAULT_INFO: Hsl = { h: 191, s: 97, l: 77 };
-const DEFAULT_MAGENTA: Hsl = { h: 326, s: 100, l: 74 };
-const DEFAULT_ORANGE: Hsl = { h: 24, s: 100, l: 65 };
-
-export function sourceFromHslBlock(
-  id: string,
-  name: string,
-  bg: Hsl,
-  primary: Hsl = DEFAULT_PRIMARY,
-  negative: Hsl = DEFAULT_NEGATIVE,
-  positive?: Hsl,
-  variant: 'dark' | 'light' = 'dark',
-): ThemeSource {
-  const pos = positive ?? DEFAULT_SUCCESS;
-  return {
-    id,
-    name,
-    variant,
-    bg,
-    primary,
-    negative,
-    positive: pos,
-    warning: DEFAULT_WARNING,
-    success: pos,
-    info: DEFAULT_INFO,
-    magenta: DEFAULT_MAGENTA,
-    orange: DEFAULT_ORANGE,
-  };
-}
-
 /** Dark side from preset.dark; light side from preset.light when the family
  * ships one, else derive light via luminance inversion so light mode is
  * actually light for dark-only presets (dracula etc). */

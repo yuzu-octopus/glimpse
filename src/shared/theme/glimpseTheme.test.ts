@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { hexToRgb, hslToHex } from './base16';
 import { glanceRamp, type Hsl } from './glanceRamp';
+import { hslBlockToColors } from './glanceHsl';
 import {
   buildGlimpseTheme,
   sourceFromBase16,
-  sourceFromHslBlock,
   sourcePairFromPreset,
 } from './glimpseTheme';
 import { presetById } from './presets';
@@ -98,22 +98,32 @@ describe('sources', () => {
     expect(s.negative).not.toEqual(s.primary);
   });
 
-  it('sourceFromHslBlock applies glance defaults for omitted colors', () => {
-    const s = sourceFromHslBlock('t', 'T', DEFAULT_BG);
-    expect(s.primary).toEqual({ h: 43, s: 50, l: 70 });
-    expect(s.negative).toEqual({ h: 0, s: 70, l: 70 });
-    expect(s.positive).toEqual({ h: 135, s: 94, l: 66 });
-    expect(s.success).toEqual(s.positive);
-    expect(s.warning).toEqual({ h: 45, s: 100, l: 70 });
+  it('HSL blocks flow through the single seed→colors→ramp path with glance defaults for omitted colors', () => {
+    const colors = hslBlockToColors({});
+    expect(colors.base00).toBe(hslToHex(240, 8, 9)); // background-color default
+    expect(colors.base0D).toBe(hslToHex(43, 50, 55)); // primary-color default at ramp level
+    expect(colors.base0B).toBe(colors.base0D); // positive defaults to primary
+    const s = sourceFromBase16('t', 'T', colors, 'dark');
     expect(s.variant).toBe('dark');
+    expect(s.positive).toEqual(s.success);
+    expect(s.positive).toEqual(s.primary);
+    expect(s.negative.h).toBeCloseTo(0, 0);
+    expect(s.bg.l).toBeLessThan(50);
   });
 
-  it('sourceFromHslBlock accepts explicit accents and variant', () => {
-    const s = sourceFromHslBlock('t', 'T', DEFAULT_BG, { h: 1, s: 2, l: 3 }, { h: 4, s: 5, l: 6 }, { h: 7, s: 8, l: 9 }, 'light');
+  it('HSL blocks with explicit accents keep them distinct through the colors path', () => {
+    const colors = hslBlockToColors({
+      'background-color': '240 8 9',
+      'primary-color': '43 50 70',
+      'negative-color': '0 70 70',
+      'positive-color': '135 94 66',
+    });
+    const s = sourceFromBase16('t', 'T', colors, 'light');
     expect(s.variant).toBe('light');
-    expect(s.primary).toEqual({ h: 1, s: 2, l: 3 });
-    expect(s.negative).toEqual({ h: 4, s: 5, l: 6 });
-    expect(s.positive).toEqual({ h: 7, s: 8, l: 9 });
+    expect(s.primary.h).toBeCloseTo(43, 0);
+    expect(s.negative.h).toBeCloseTo(0, 0);
+    expect(s.positive.h).toBeCloseTo(135, 0);
+    expect(s.positive).not.toEqual(s.primary);
   });
 
   it('sourcePairFromPreset derives both modes', () => {
@@ -137,10 +147,17 @@ describe('sources', () => {
 
 describe('buildGlimpseTheme', () => {
   const mocha = buildGlimpseTheme(sourcePairFromPreset(presetById('catppuccin-mocha')));
-  // same seeds on both sides → exact expectations for the ramp tuples
+  // same seeds on both sides → exact expectations for the ramp tuples.
+  // Seeds round-trip through base16 hex (sourceFromBase16), hence the decimals.
+  const defaultBlock = {
+    'background-color': '240 8 9',
+    'primary-color': '43 50 70',
+    'negative-color': '0 70 70',
+    'positive-color': '135 94 66',
+  };
   const defaultPair = {
-    dark: sourceFromHslBlock('default', 'Default', DEFAULT_BG, DEFAULT_PRIMARY, DEFAULT_NEGATIVE, undefined, 'dark'),
-    light: sourceFromHslBlock('default', 'Default', DEFAULT_BG, DEFAULT_PRIMARY, DEFAULT_NEGATIVE, undefined, 'light'),
+    dark: sourceFromBase16('default', 'Default', hslBlockToColors(defaultBlock), 'dark'),
+    light: sourceFromBase16('default', 'Default', hslBlockToColors({ light: true, ...defaultBlock }), 'light'),
   };
   const def = buildGlimpseTheme(defaultPair);
 
@@ -164,15 +181,15 @@ describe('buildGlimpseTheme', () => {
 
   it('emits the glance ramp vars as light-dark tuples', () => {
     const t = def.tokens;
-    expect(t['--color-background']).toBe(ld('hsl(240 8% 9%)', 'hsl(240 8% 9%)'));
-    expect(t['--color-widget-background']).toBe(ld('hsl(240 8% 10%)', 'hsl(240 8% 10%)'));
-    expect(t['--color-widget-content-border']).toBe(ld('hsl(240 8% 5%)', 'hsl(240 8% 13%)'));
-    expect(t['--color-text-highlight']).toBe(ld('hsl(240 8% 15%)', 'hsl(240 8% 85%)'));
-    expect(t['--color-primary']).toBe(ld('hsl(43 50% 70%)', 'hsl(43 50% 70%)'));
-    expect(t['--color-positive']).toBe(ld('hsl(135 94% 66%)', 'hsl(135 94% 66%)'));
+    expect(t['--color-background']).toBe(ld('hsl(240 8.7% 9.02%)', 'hsl(240 8.7% 9.02%)'));
+    expect(t['--color-widget-background']).toBe(ld('hsl(240 8.7% 10.02%)', 'hsl(240 8.7% 10.02%)'));
+    expect(t['--color-widget-content-border']).toBe(ld('hsl(240 8.7% 5.02%)', 'hsl(240 8.7% 13.02%)'));
+    expect(t['--color-text-highlight']).toBe(ld('hsl(240 8.7% 15%)', 'hsl(240 8.7% 85%)'));
+    expect(t['--color-primary']).toBe(ld('hsl(42.78 50.22% 55.1%)', 'hsl(42.78 50.22% 55.1%)'));
+    expect(t['--color-positive']).toBe(ld('hsl(135 93.91% 54.9%)', 'hsl(135 93.91% 54.9%)'));
     expect(t['--color-positive']).not.toBe(t['--color-primary']);
     expect(t['--color-separator']).toBe(t['--color-widget-content-border']);
-    expect(t['--color-negative']).toBe(ld('hsl(0 70% 70%)', 'hsl(0 70% 70%)'));
+    expect(t['--color-negative']).toBe(ld('hsl(0 69.61% 60%)', 'hsl(0 69.61% 60%)'));
   });
 
   it('maps glance roles onto astryx semantic tokens', () => {

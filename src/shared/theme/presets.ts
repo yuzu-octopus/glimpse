@@ -1,5 +1,6 @@
 import type { Base16Colors, Base16Key } from './base16';
 import { hslToHex, invertLuminance } from './base16';
+import { hslSeedToColors } from './glanceHsl';
 import { generatedSchemes } from './schemes.generated';
 
 export interface Preset {
@@ -84,38 +85,22 @@ function hsl(hs: string, l: number): string {
   return hslToHex(h, s, l);
 }
 
-function bgLightness(spec: GlanceClassicSpec): number {
-  return Number(spec.bg.split(' ')[2]);
+function hslTriple(hs: string): { h: number; s: number; l: number } {
+  const [h, s, l] = hs.split(/\s+/).map(Number);
+  return { h, s, l };
 }
 
-/** Expand a glance theme block into a full base16 palette. Surfaces sit
- * above the page bg (lighten for dark themes, darken for light ones); text
- * derives from the theme's light/dark polarity; accents pass through. */
+/** Expand a glance theme block into a full base16 palette via the shared
+ * HSL-seed core. Specs that omit a color keep the classic literal-hex
+ * fallbacks (not the config-block documented defaults). */
 function glanceClassicToColors(spec: GlanceClassicSpec): Base16Colors {
-  const isLight = spec.light === true;
-  const step = isLight ? -5 : 5;
-  const base = bgLightness(spec);
-  const lift = (offset: number) => Math.max(4, Math.min(96, base + offset));
-  const textL = isLight ? 12 : 88;
-  const mutedL = isLight ? 35 : 65;
-  return {
-    base00: hsl(spec.bg, base),
-    base01: hsl(spec.bg, lift(step)),
-    base02: hsl(spec.bg, lift(step * 2)),
-    base03: hsl(spec.bg, lift(step * 3)),
-    base04: hsl(spec.bg, mutedL),
-    base05: hsl(spec.bg, textL),
-    base06: hsl(spec.bg, isLight ? 75 : 80),
-    base07: isLight ? '#ffffff' : '#000000',
-    base08: spec.negative ? hsl(spec.negative, 60) : '#d64958',
-    base09: '#d98b3d',
-    base0A: '#d9b23d',
-    base0B: spec.positive ? hsl(spec.positive, 55) : '#5a9e6f',
-    base0C: '#4f9e9e',
-    base0D: hsl(spec.primary, 55),
-    base0E: '#8a6fc0',
-    base0F: '#9e7b5a',
-  };
+  return hslSeedToColors({
+    bg: hslTriple(spec.bg),
+    primary: hslTriple(spec.primary),
+    positiveHex: spec.positive ? hsl(spec.positive, 55) : '#5a9e6f',
+    negativeHex: spec.negative ? hsl(spec.negative, 60) : '#d64958',
+    light: spec.light,
+  });
 }
 
 const glanceClassics: Preset[] = GLANCE_CLASSICS.map((spec) => {
