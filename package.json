@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "start": "bun run src/server/index.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check-config": "bun scripts/check-config.ts",
+    "new-widget": "bun scripts/new-widget.ts"
   },
   "dependencies": {
     "@astryxdesign/core": "^0.3.0",

@@ -106,6 +106,8 @@ export interface LoadResult {
   ok: boolean;
   config?: ResolvedConfig;
   errors?: string[];
+  /** Non-fatal notes, e.g. ignored keys in $included files. */
+  warnings?: string[];
   /** Absolute paths of all files that were read (main + includes). */
   files: string[];
 }
@@ -119,9 +121,11 @@ function slugify(name: string): string {
 }
 
 /**
- * Recursively substitute ${ENV_VAR} in every string value. Missing vars are
- * recorded as errors (glance errors out on missing env vars too). The
- * ${secret:name} Docker-secrets syntax is intentionally unsupported.
+ * Recursively substitute ${VAR} and ${VAR:-fallback} (also ${VAR-fallback})
+ * in every string value. `:-` falls back when unset or empty, `-` only when
+ * unset; a missing var without fallback is an error (glance errors out on
+ * missing env vars too). The ${secret:name} Docker-secrets syntax is
+ * intentionally unsupported.
  */
 function interpolateEnv(
   value: unknown,
@@ -129,14 +133,19 @@ function interpolateEnv(
   path: string,
 ): unknown {
   if (typeof value === 'string') {
-    return value.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (_m, name: string) => {
-      const v = process.env[name];
-      if (v === undefined) {
-        errors.push(`${path}: environment variable ${name} is not set`);
-        return '';
-      }
-      return v;
-    });
+    return value.replace(
+      /\$\{([A-Za-z_][A-Za-z0-9_]*)(?::?-(.*?))?\}/g,
+      (_m, name: string, fallback: string | undefined) => {
+        const v = process.env[name];
+        if (v !== undefined && v !== '') return v;
+        if (fallback !== undefined) return fallback;
+        if (v === undefined) {
+          errors.push(`${path}: environment variable ${name} is not set`);
+          return '';
+        }
+        return v;
+      },
+    );
   }
   if (Array.isArray(value)) {
     return value.map((v, i) => interpolateEnv(v, errors, `${path}[${i}]`));
@@ -159,6 +168,7 @@ function interpolateEnv(
 function loadYamlTree(
   filePath: string,
   errors: string[],
+  warnings: string[],
   files: Set<string>,
   seen: Set<string>,
 ): Record<string, unknown> | null {
@@ -206,13 +216,20 @@ function loadYamlTree(
         }
         const incAbs = isAbsolute(inc) ? inc : resolve(dirname(abs), inc);
         if (files.has(incAbs) && !seen.has(incAbs)) continue;
-        const sub = loadYamlTree(incAbs, errors, files, seen);
+        const sub = loadYamlTree(incAbs, errors, warnings, files, seen);
         if (!sub) continue;
         const parentPages = Array.isArray(merged.pages) ? merged.pages : [];
         const subPages = Array.isArray(sub.pages) ? sub.pages : [];
         merged.pages = [...parentPages, ...subPages];
         if (sub.theme !== undefined) {
           merged.theme = { ...(isRecord(merged.theme) ? merged.theme : {}), ...(isRecord(sub.theme) ? sub.theme : {}) };
+        }
+        for (const k of Object.keys(sub)) {
+          if (k !== 'pages' && k !== 'theme') {
+            warnings.push(
+              `$include ${incAbs}: ignoring unsupported top-level key "${k}" (only pages and theme merge)`,
+            );
+          }
         }
       }
     }
@@ -288,17 +305,18 @@ function deriveSlugs(raw: unknown, errors: string[]): unknown {
 /** Load + validate a config file. Pure with respect to the filesystem. */
 export function loadConfig(configPath: string): LoadResult {
   const errors: string[] = [];
+  const warnings: string[] = [];
   const fileSet = new Set<string>();
-  const doc = loadYamlTree(configPath, errors, fileSet, new Set());
+  const doc = loadYamlTree(configPath, errors, warnings, fileSet, new Set());
   const files = [...fileSet];
-  if (!doc) return { ok: false, errors, files };
+  if (!doc) return { ok: false, errors, warnings, files };
 
   const interpolated = interpolateEnv(doc, errors, 'config') as Record<string, unknown>;
 
   validateColumns(interpolated.pages, errors);
   validateNesting(interpolated.pages, errors, 'config.pages');
   const withSlugs = deriveSlugs(interpolated.pages, errors);
-  if (errors.length > 0) return { ok: false, errors, files };
+  if (errors.length > 0) return { ok: false, errors, warnings, files };
 
   const parsed = ConfigSchema.safeParse({ ...interpolated, pages: withSlugs });
   if (!parsed.success) {
@@ -306,10 +324,13 @@ export function loadConfig(configPath: string): LoadResult {
       const path = issue.path.length ? `config.${issue.path.join('.')}` : 'config';
       errors.push(`${path}: ${issue.message}`);
     }
-    return { ok: false, errors, files };
+    return { ok: false, errors, warnings, files };
   }
-  return { ok: true, config: parsed.data as ResolvedConfig, files };
+  return { ok: true, config: parsed.data as ResolvedConfig, warnings, files };
 }
+
+/** Test-only access to both YAML parsers for the conformance suite. */
+export const __yamlParsersForTests = { primary: parseYaml, fallback: fallbackYamlParse };
 
 // ---------------------------------------------------------------------------
 // Auto-reload state (glance docs §Auto reload: reload on save, keep last-good

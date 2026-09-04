@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import type { ResolvedConfig } from '../../shared/config';
 
-type ConfigState =
+export type ConfigState =
   | { status: 'loading' }
   | { status: 'ready'; config: ResolvedConfig }
-  | { status: 'error'; error: string };
+  | { status: 'error'; error: string; errors?: string[] };
 
 let cached: Promise<{ config: ResolvedConfig }> | null = null;
 
@@ -23,7 +23,17 @@ export function useConfig(): ConfigState {
           const body = (await res.json().catch(() => ({}))) as {
             errors?: string[];
           };
-          throw new Error(body.errors?.join('; ') ?? `HTTP ${res.status}`);
+          // Surface the first error as the snippet so config failures point
+          // at the real line instead of a joined wall of text.
+          const errors = Array.isArray(body.errors)
+            ? body.errors.filter((e): e is string => typeof e === 'string')
+            : [];
+          const first = errors[0] ?? `HTTP ${res.status}`;
+          const error = (
+            errors.length > 1 ? new Error(`${first} (+${errors.length - 1} more)`) : new Error(first)
+          ) as Error & { errors?: string[] };
+          if (errors.length > 0) error.errors = errors;
+          throw error;
         }
         return (await res.json()) as { config: ResolvedConfig };
       })
@@ -37,9 +47,12 @@ export function useConfig(): ConfigState {
       })
       .catch((e: unknown) => {
         if (!cancelled) {
+          const errors =
+            e instanceof Error ? (e as Error & { errors?: string[] }).errors : undefined;
           setState({
             status: 'error',
             error: e instanceof Error ? e.message : String(e),
+            ...(errors?.length ? { errors } : {}),
           });
         }
       });
