@@ -22,6 +22,15 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,woff2,svg}'],
         navigateFallbackDenylist: [/^\/api\//],
+        // TTL tiers (single table — keep in sync):
+        //   client poll  (usePageData STALE_MS)      30s  — live widgets revalidate; unchanged polls skip render
+        //   server live  (shared/live LIVE_TTL_MS)    60s  — clock/weather/markets/monitor/server-stats/system-stats
+        //   server static (shared/live STATIC_TTL_MS)  1h  — everything else
+        //   SW api-pages (below)                    300s  — outer offline/stale bound only
+        // NetworkFirst + 3s timeout = stale-while-revalidate: the SW never
+        // masks a fresh network response, and the client never double-fetches
+        // on a stale boundary (a slow network resolves from SW cache while
+        // the live fetch still refreshes it in place).
         runtimeCaching: [
           {
             // Boot-critical: serve the cached config when the network stalls

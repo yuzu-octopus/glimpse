@@ -81,10 +81,13 @@ export function __preloadWidgetsForTests(): Promise<void> {
   return preloadWidgets();
 }
 
-/** After first paint, warm all chunks in the background so page navigation stays instant. */
-export function scheduleWidgetPreload(): void {
+/** Idle-preload one page's widget chunks (deduped via ensureWidgetLoaded).
+ * Scoped to the visible page — no global preload-all, so off-page chunks
+ * stay code-split and load on demand. No-op for empty/unknown types. */
+export function scheduleWidgetPreload(types: string[] = []): void {
+  if (types.length === 0) return;
   const kick = () => {
-    void preloadWidgets();
+    for (const t of types) void ensureWidgetLoaded(t);
   };
   const g = globalThis as unknown as {
     requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;

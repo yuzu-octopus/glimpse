@@ -144,7 +144,9 @@ function serveDist(pathname: string): Response {
   ) {
     headers['cache-control'] = 'no-cache'; // unhashed root files: revalidate every load
   } else if (rel.endsWith('.woff2')) {
-    headers['cache-control'] = 'public, max-age=86400'; // unhashed font, short cache
+    // Fonts ship with the build — immutable for a year so repeat views skip
+    // revalidation entirely (304s disappear; a new deploy URL-busts via hashed assets).
+    headers['cache-control'] = 'public, max-age=31536000, immutable';
   }
   // Bun.file enables sendfile(2) zero-copy when served via Bun.serve
   return new Response(Bun.file(filePath), { headers });

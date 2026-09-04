@@ -1,4 +1,4 @@
-import { useContext, useRef, useState, type ReactNode } from 'react';
+import { memo, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Banner, Card, Link, Skeleton } from '@astryxdesign/core';
 import { ChevronRight } from 'lucide-react';
 import { HideHeadersContext } from './HideHeadersContext';
@@ -20,8 +20,9 @@ interface WidgetChromeProps {
   children?: ReactNode;
 }
 
-/** Shared card chrome for every widget: header, loading, error, collapse. */
-export function WidgetChrome({
+/** Shared card chrome for every widget: header, loading, error, collapse.
+ * Memo'd — polls that leave a widget's props untouched skip re-render. */
+export const WidgetChrome = memo(function WidgetChrome({
   title,
   titleUrl,
   hideHeader,
@@ -49,7 +50,12 @@ export function WidgetChrome({
   const list = items ?? (children === undefined ? [] : [children]);
   const n = collapseAfter ?? 0;
   const has = typeof collapseAfter === 'number' && n >= 0 && list.length > n;
-  const visible = has && !expanded ? list.slice(0, n) : list;
+  // Stable slice identity across renders so the memo wrapper (and row
+  // reconcilers downstream) isn't defeated by a fresh array each pass.
+  const visible = useMemo(
+    () => (has && !expanded ? list.slice(0, n) : list),
+    [has, expanded, list, n],
+  );
 
   const collapse = () => {
     setExpanded(false);
@@ -143,4 +149,4 @@ export function WidgetChrome({
       </Card>
     </div>
   );
-}
+});

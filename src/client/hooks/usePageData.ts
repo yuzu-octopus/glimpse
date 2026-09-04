@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import type { PagePayload, WidgetPayload } from '../../shared/api';
 import { LIVE_POLL_MS, LIVE_TYPES } from '../../shared/live';
+import { scheduleWidgetPreload } from '../widgets';
 
 export type PageDataResult = {
   data: PagePayload | null;
@@ -9,6 +10,21 @@ export type PageDataResult = {
   validate: () => Promise<void>;
   reload: (force?: boolean) => Promise<void>;
 };
+
+/** Every widget type rendered by a payload (head, columns, flat, nested containers). */
+function collectWidgetTypes(payload: PagePayload): string[] {
+  const out = new Set<string>();
+  const check = (widgets: WidgetPayload[]): void => {
+    for (const w of widgets) {
+      if (w.widgets) check(w.widgets);
+      if (w.type !== 'group' && w.type !== 'split-column') out.add(w.type);
+    }
+  };
+  if (payload.headWidgets) check(payload.headWidgets);
+  for (const col of payload.columns) check(col.widgets);
+  if (payload.widgets) check(payload.widgets);
+  return [...out];
+}
 
 function getLiveKey(payload: PagePayload): 'none' | 'live' | 'homelab' {
   let hasLive = false;
@@ -251,6 +267,10 @@ export function usePageData(slug: string): PageDataResult {
   const dataRef = useRef<PagePayload | null>(data);
   const abortRef = useRef<AbortController | null>(null);
   const validatingCountRef = useRef(0);
+  // Render-skip: last emitted payload serialized — polls that change nothing
+  // (the common 30s/1s tick) skip setData so memo'd WidgetSlots don't re-render.
+  const lastJsonRef = useRef<string | null>(data ? JSON.stringify(data) : null);
+  const preloadedRef = useRef<string | null>(null);
 
   useEffect(() => {
     dataRef.current = data;
@@ -262,18 +282,33 @@ export function usePageData(slug: string): PageDataResult {
       validatingCountRef.current += 1;
       setIsValidatingRaw(true);
       try {
-        const onProgress = (progress: PagePayload) => {
-          if (signal.aborted) return;
+        // Render-skip + visible-page preload. Returns true when emitted.
+        const emit = (progress: PagePayload): boolean => {
+          if (signal.aborted) return false;
+          if (preloadedRef.current !== slug) {
+            preloadedRef.current = slug;
+            scheduleWidgetPreload(collectWidgetTypes(progress));
+          }
+          let json: string | null = null;
+          try {
+            json = JSON.stringify(progress);
+          } catch {
+            json = null;
+          }
+          if (json !== null && json === lastJsonRef.current) return false;
+          lastJsonRef.current = json;
           dataRef.current = progress;
           setData(progress);
           setError(null);
+          return true;
+        };
+        const onProgress = (progress: PagePayload) => {
+          emit(progress);
         };
         const next = await fetchPage(slug, signal, onProgress, force);
         if (signal.aborted) return;
         startTransition(() => {
-          dataRef.current = next;
-          setData(next);
-          setError(null);
+          emit(next);
         });
       } catch (e) {
         if ((e instanceof Error && e.name === 'AbortError') || signal.aborted) return;
@@ -293,6 +328,7 @@ export function usePageData(slug: string): PageDataResult {
     async (force = false) => {
       if (force) {
         dataRef.current = null;
+        lastJsonRef.current = null;
         setData(null);
         setError(null);
       }
@@ -312,11 +348,17 @@ export function usePageData(slug: string): PageDataResult {
     const cached = getCached(slug);
     if (cached) {
       dataRef.current = cached;
+      try {
+        lastJsonRef.current = JSON.stringify(cached);
+      } catch {
+        lastJsonRef.current = null;
+      }
       setData(cached);
       setError(null);
       setIsValidatingRaw(isStale(slug));
     } else {
       dataRef.current = null;
+      lastJsonRef.current = null;
       setData(null);
       setError(null);
       setIsValidatingRaw(true);

@@ -4,10 +4,10 @@ import { BrowserRouter } from 'react-router-dom';
 import '@astryxdesign/core/reset.css';
 import '@astryxdesign/core/astryx.css';
 import './index.css';
-import { scheduleWidgetPreload } from './client/widgets';
 import App from './App';
 
-scheduleWidgetPreload();
+// No global idle preload: usePageData idle-preloads the visible page's
+// chunks; everything else loads on demand via ensureWidgetLoaded.
 import { GlimpseThemeProvider } from './client/theme/GlimpseThemeProvider';
 
 createRoot(document.getElementById('root')!).render(
