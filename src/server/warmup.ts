@@ -25,6 +25,7 @@ export async function warmCache(ctx: WidgetFetchContext): Promise<void> {
     async () => {
       while (next < pages.length) {
         const page = pages[next++];
+        // eslint-disable-next-line react-doctor/async-await-in-loop -- worker-pool fan-in: 6 workers share one cursor, sequential await per worker IS the concurrency cap
         await buildPagePayload(page as Page & { slug: string }, ctx).catch(() => {});
       }
     },

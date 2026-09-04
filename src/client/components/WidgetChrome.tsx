@@ -47,7 +47,10 @@ export const WidgetChrome = memo(function WidgetChrome({
   const effectiveHide = hideHeader || globalHide;
   const [expanded, setExpanded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
-  const list = items ?? (children === undefined ? [] : [children]);
+  const list = useMemo(
+    () => items ?? (children === undefined ? [] : [children]),
+    [items, children],
+  );
   const n = collapseAfter ?? 0;
   const has = typeof collapseAfter === 'number' && n >= 0 && list.length > n;
   // Stable slice identity across renders so the memo wrapper (and row
