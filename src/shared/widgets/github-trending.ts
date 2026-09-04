@@ -1,8 +1,10 @@
 import { z } from 'zod';
-import { sharedWidgetFields, type Pref } from './shared';
+import { sharedWidgetFields, type Pref, type SkeletonShape } from './shared';
 
 export const TRENDING_DEFAULTS = { limit: 10, since: 'daily' as const };
 export const TRENDING_PREF: Pref = { cols: 3, rows: 3, resizable: true, priority: 7, zone: 'main', preferredWidth: 340, preferredHeight: 360 };
+
+export const TRENDING_SKELETON: SkeletonShape = 'list';
 
 export const githubTrendingSchema = z
   .object({

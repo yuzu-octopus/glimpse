@@ -1,9 +1,10 @@
 import { z } from 'zod';
-import { sharedWidgetFields, type Pref } from './shared';
+import { sharedWidgetFields, type Pref, type SkeletonShape } from './shared';
 
 // ── per-widget defaults (file header owns DEFAULTS + Schema + PREF) ──
 export const SERVER_STATS_DEFAULTS = { servers: [{ type: 'local' as const }] } as const;
 export const SERVER_STATS_PREF: Pref = { cols: 6, rows: 2, resizable: false, priority: 7, zone: 'main', preferredWidth: 340, preferredHeight: 240 };
+export const SERVER_STATS_SKELETON: SkeletonShape = 'stat';
 
 /** One monitored server: the local machine, or a remote Glimpse instance
  * exposing `/api/server-stats`. */

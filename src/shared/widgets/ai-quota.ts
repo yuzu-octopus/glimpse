@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { sharedWidgetFields, type Pref } from './shared';
+import { sharedWidgetFields, type Pref, type SkeletonShape } from './shared';
 import { KNOWN_PROVIDERS } from './quota-types';
 
 // Re-export for doc + refine usage
@@ -15,6 +15,8 @@ export const AI_QUOTA_PREF: Pref = {
   preferredWidth: 340,
   preferredHeight: 180,
 };
+
+export const AI_QUOTA_SKELETON: SkeletonShape = 'stat';
 
 export const aiQuotaSchema = z
   .object({

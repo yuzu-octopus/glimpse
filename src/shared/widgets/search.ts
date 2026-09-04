@@ -1,9 +1,10 @@
 import { z } from 'zod';
-import { sharedWidgetFields, type Pref } from './shared';
+import { sharedWidgetFields, type Pref, type SkeletonShape } from './shared';
 
 // ── per-widget defaults (file header owns DEFAULTS + Schema + PREF) ──
 export const SEARCH_DEFAULTS = { bangs: [], 'new-tab': true } as const;
 export const SEARCH_PREF: Pref = { cols: 4, rows: 1, resizable: false, priority: 9, zone: 'main', preferredWidth: 300, preferredHeight: 90 };
+export const SEARCH_SKELETON: SkeletonShape = 'rows';
 
 export const searchSchema = z.object({
   type: z.literal('search'),

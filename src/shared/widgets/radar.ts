@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { sharedWidgetFields, type Pref } from './shared';
+import { sharedWidgetFields, type Pref, type SkeletonShape } from './shared';
 
 export const RADAR_DEFAULTS = { zoom: 7 } as const;
 export const RADAR_PREF: Pref = {
@@ -11,6 +11,8 @@ export const RADAR_PREF: Pref = {
   preferredWidth: 320,
   preferredHeight: 320,
 };
+
+export const RADAR_SKELETON: SkeletonShape = 'rows';
 
 export const radarSchema = z.object({
   type: z.literal('weather-radar'),

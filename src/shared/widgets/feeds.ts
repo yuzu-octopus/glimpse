@@ -1,18 +1,23 @@
 import { z } from 'zod';
-import { sharedWidgetFields, type Pref } from './shared';
+import { sharedWidgetFields, type Pref, type SkeletonShape } from './shared';
 
 // ── per-widget defaults (file header owns DEFAULTS + Schema + PREF) ──
 export const RSS_DEFAULTS = { limit: 5 } as const;
 export const RSS_PREF: Pref = { cols: null, rows: 3, resizable: true, priority: 10, zone: 'main', preferredWidth: null, preferredHeight: null };
+export const RSS_SKELETON: SkeletonShape = 'list';
 
 export const HACKER_NEWS_DEFAULTS = { limit: 5 } as const;
 export const HACKER_NEWS_PREF: Pref = { cols: 4, rows: 3, resizable: false, priority: 8, zone: 'main', preferredWidth: null, preferredHeight: null };
+export const HACKER_NEWS_SKELETON: SkeletonShape = 'list';
 export const REDDIT_DEFAULTS = { limit: 5 } as const;
 export const REDDIT_PREF: Pref = { cols: 4, rows: 3, resizable: false, priority: 7, zone: 'main', preferredWidth: null, preferredHeight: null };
+export const REDDIT_SKELETON: SkeletonShape = 'list';
 export const RELEASES_DEFAULTS = { limit: 5 } as const;
 export const RELEASES_PREF: Pref = { cols: 4, rows: 2, resizable: false, priority: 6, zone: 'main', preferredWidth: 360, preferredHeight: 260 };
+export const RELEASES_SKELETON: SkeletonShape = 'list';
 export const WEATHER_DEFAULTS = {} as const;
 export const WEATHER_PREF: Pref = { cols: 3, rows: 2, resizable: false, priority: 9, zone: 'sidebar', preferredWidth: 300, preferredHeight: 280 };
+export const WEATHER_SKELETON: SkeletonShape = 'stat';
 
 const feedSchema = z.object({
   url: z.string(),

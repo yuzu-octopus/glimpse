@@ -28,3 +28,7 @@ export type Pref = {
   preferredWidth: number | null;
   preferredHeight: number | null;
 };
+
+/** Loading silhouette per widget (WidgetChrome skeleton). Co-located with
+ * each schema as `<NAME>_SKELETON`; aggregated by the registry in index.ts. */
+export type SkeletonShape = 'list' | 'stat' | 'chart' | 'rows';

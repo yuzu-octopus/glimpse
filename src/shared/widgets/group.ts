@@ -1,9 +1,10 @@
 import { z } from 'zod';
-import { sharedWidgetFields, type Pref } from './shared';
+import { sharedWidgetFields, type Pref, type SkeletonShape } from './shared';
 
 // ── per-widget defaults (file header owns DEFAULTS + Schema + PREF) ──
 export const GROUP_DEFAULTS = {} as const;
 export const GROUP_PREF: Pref = { cols: 4, rows: 3, resizable: false, priority: 5, zone: 'main', preferredWidth: 340, preferredHeight: 320 };
+export const GROUP_SKELETON: SkeletonShape = 'rows';
 
 /**
  * Container widgets. The child union (WidgetSchema in index.ts) is wired in
@@ -38,3 +39,4 @@ export const splitColumnSchema = z.object({
 export type SplitColumnConfig = z.infer<typeof splitColumnSchema>;
 
 export const SPLIT_COLUMN_PREF: Pref = { cols: null, rows: 3, resizable: true, priority: 5, zone: 'main', preferredWidth: null, preferredHeight: 320 };
+export const SPLIT_COLUMN_SKELETON: SkeletonShape = 'rows';

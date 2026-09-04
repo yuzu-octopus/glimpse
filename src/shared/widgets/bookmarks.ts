@@ -1,9 +1,10 @@
 import { z } from 'zod';
-import { sharedWidgetFields, type Pref } from './shared';
+import { sharedWidgetFields, type Pref, type SkeletonShape } from './shared';
 
 // ── per-widget defaults (file header owns DEFAULTS + Schema + PREF) ──
 export const BOOKMARKS_DEFAULTS = { groups: [] } as const;
 export const BOOKMARKS_PREF: Pref = { cols: 3, rows: 2, resizable: false, priority: 5, zone: 'sidebar', preferredWidth: 300, preferredHeight: 240 };
+export const BOOKMARKS_SKELETON: SkeletonShape = 'rows';
 
 export const bookmarksSchema = z.object({
   type: z.literal('bookmarks'),
