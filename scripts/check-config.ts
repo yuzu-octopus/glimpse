@@ -73,11 +73,35 @@ try {
 
 const result = loadConfig(configPath);
 
-// Did-you-mean: scan the raw source for `type:` values that are not widgets.
+// Did-you-mean: flag unknown `type:` only inside widgets lists — other
+// `type:` keys (server-stats `servers:`, monitor `sites:`) are not widgets.
+const srcLines = raw.split('\n');
+const indentOf = (s: string): number => s.match(/^ */)?.[0].length ?? 0;
+function insideWidgetsList(idx: number): boolean {
+  let indent = indentOf(srcLines[idx]);
+  for (let j = idx - 1; j >= 0; j--) {
+    const t = srcLines[j];
+    if (/^\s*(#|$)/.test(t)) continue;
+    const ind = indentOf(t);
+    if (ind >= indent) continue;
+    const km = /^\s*-?\s*([\w$-]+)\s*:/.exec(t);
+    if (!km) {
+      indent = ind;
+      continue;
+    }
+    if (km[1] === 'widgets' || km[1] === 'head-widgets') return true;
+    if (km[1] === 'pages' || km[1] === 'columns') {
+      indent = ind;
+      continue;
+    }
+    return false;
+  }
+  return false;
+}
 const unknownTypes: Array<{ line: number; value: string; guess: string | null }> = [];
-raw.split('\n').forEach((text, i) => {
+srcLines.forEach((text, i) => {
   const m = /type\s*:\s*['"]?([\w-]+)['"]?/.exec(text);
-  if (m && !knownTypes.includes(m[1])) {
+  if (m && !knownTypes.includes(m[1]) && insideWidgetsList(i)) {
     unknownTypes.push({ line: i + 1, value: m[1], guess: suggest(m[1]) });
   }
 });

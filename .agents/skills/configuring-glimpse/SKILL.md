@@ -43,7 +43,7 @@ Max 3 columns/page, columns require `size` or `span` (span explicit on all or no
 | `twitch-channels` | `channels[]` (required logins), `sort-by` viewers\|live, collapse-after (5); needs `TWITCH_CLIENT_ID` + `TWITCH_CLIENT_SECRET` |
 | `twitch-top-games` | `limit` ≤25 (10), collapse-after (5), `exclude[]` slugs; needs `TWITCH_CLIENT_ID` + `TWITCH_CLIENT_SECRET` |
 | `markets` | `markets[]`: {symbol (`SPY`, `BTC-USD`), name?, symbol-link?, chart-link?}, sort-by |
-| `monitor` | `sites[]`: url, check-url, error-url, timeout (`3s`), alt-status-codes, basic-auth, same-tab |
+| `monitor` | `sites[]`: url, check-url, error-url, timeout (`3s`), alt-status-codes, basic-auth, same-tab; optional `kuma-url` + `kuma-slug`, `healthchecks-key`/`healthchecks-url`/`healthchecks-tags` sources |
 | `custom-api` | `url`, method, headers/body, `options[]` JSONPath mappings |
 | `weather` | `location`, units metric\|imperial, hide-location |
 | `weather-radar` | `location` (required), `zoom` 3–10 (7) |
@@ -51,6 +51,10 @@ Max 3 columns/page, columns require `size` or `span` (span explicit on all or no
 | `contribution-graph` | `username` (required), `token`, `limit` weeks 1–104 (52) |
 | `network` | `ping-target`, `public-ip` |
 | `events-calendar` | `urls[]` / `ics-url` (one required), `days` (14), `limit` (20) |
+| `change-detection` | `urls[]` (required, ≤10), `selector` tag/`#id`/`.class` |
+| `immich` | `url` (required), `api-key` or `IMMICH_API_KEY`, `limit` (10) |
+| `jellyfin` | `url` (required), `api-key` or `JELLYFIN_API_KEY`, `limit` (10) |
+| `qbittorrent` / `transmission` | `url` (required), `username`/`password` or env, `limit` (10) |
 | `server-stats` | `servers[]`: {name?, type: local(default) \| remote, url?} |
 | `system-stats` | none required (host machine) |
 | `dns-stats` | `service`: pihole \| adguard \| technitium, `url`, credentials |
@@ -69,7 +73,7 @@ Max 3 columns/page, columns require `size` or `span` (span explicit on all or no
 Authoritative shapes: `src/shared/widgets/*.ts` (schema per widget) and working examples in `config.example.yml`.
 
 ## Variables & includes
-- `${VAR}` interpolates from process env into any string; **missing var is a validation error** at startup. `${secret:…}` is NOT supported.
+- `${VAR}` interpolates from process env into any string; **missing var is a validation error** at startup (`${VAR:-fallback}` supplies a default). `${secret:…}` is NOT supported. Validate offline first: `bun run check-config [path]` (line numbers + did-you-mean widget types).
 - `$include: ./more.yml` (string or list; absolute paths OK) — relative to the including file, recursive with no depth limit; pages append (parent first, then includes in order), theme keys merge with the include winning; non-string entries are validation errors; diamonds are included once, true cycles rejected with `circular $include detected`.
 - Config auto-reloads on save; watch out: cache keys reset on reload.
 

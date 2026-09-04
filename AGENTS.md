@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Overview
-Glimpse is a glance-inspired self-hosted dashboard — **Bun + Vite + React 19 + Astryx** SPA with server-side fetching. 32 widget types (feeds, keyed feeds, homelab, calendars, radar, trending, containers) rendered into a **12-col bento grid** (`pages → columns → widgets` from YAML). 48 base16 presets (+ glance HSL overrides), PWA shell (`vite-plugin-pwa`, network-first API). Config lives in `config.yml` (`$include`, `${ENV}` interpolation, `GLIMPSE_CONFIG` override); secrets stay server-side.
+Glimpse is a glance-inspired self-hosted dashboard — **Bun + Vite + React 19 + Astryx** SPA with server-side fetching. 39 widget types (feeds, keyed feeds, homelab, media, twitch, calendars, radar, trending, containers) rendered into a **12-col bento grid** (`pages → columns → widgets` from YAML, plus `tiling: collage` via a single `place()` module). 48 base16 presets (+ glance HSL overrides), PWA shell (`vite-plugin-pwa`, network-first API). Config lives in `config.yml` (`$include`, `${ENV}` interpolation, `GLIMPSE_CONFIG` override); secrets stay server-side.
 
 ## Architecture & Data Flow
 ```
@@ -39,6 +39,8 @@ bun run build        # tsc --noEmit && vite build -> dist/ (PWA precache ~1MB)
 bun run start        # bun serves dist/ + API (:3000; GLIMPSE_PORT, GLIMPSE_CONFIG or argv[1])
 bun run test         # vitest run (jsdom, globals)
 bun run test:watch   # vitest watch
+bun run new-widget <kebab-name>  # scaffold schema + fetcher + renderer + tests
+bun run check-config [path]      # validate config (line numbers + did-you-mean)
 npx react-doctor@latest  # full scan gate; glance/** ignored via doctor.config.json
 ```
 Env: `GLIMPSE_CONFIG` (CLI arg wins > env > ./config.yml), `GLIMPSE_PORT=3000`, `GITHUB_TOKEN`/`GH_TOKEN` (GitHub widgets; falls back to `gh auth token` via `server/github-token.ts`, then unauthenticated 60 req/h), `${VAR}` interpolation in YAML. No `.env` loader (`.env*` gitignored).
@@ -47,17 +49,18 @@ Env: `GLIMPSE_CONFIG` (CLI arg wins > env > ./config.yml), `GLIMPSE_PORT=3000`, 
 - **Strict TS:** `strict`, `verbatimModuleSyntax`, `ES2024/bundler`, `noEmit`, noUnusedLocals/Parameters. No `ReturnType` aliases, no inline casts (except CSSProperties custom-var objects), unconditional hooks.
 - **Zod v4:** `.loose()`, `z.record()` 2 args, `.default(()=>...)`. Validate at trust boundaries; fetchers re-validate their config slice per fetch (intentional defense-in-depth — keep it). Schema defaults supply `limit`; fetchers must not re-default.
 - **Naming:** kebab-case widget types, PascalCase components, `*.module.css`. `PREFERRED_SIZES[type] = {span, resizable, cols, rows}` drives bento sizing.
-- **Registries:** server `registerWidget(type, fn)` / client `registerWidgetComponent(type, comp)`; client barrel is lazy (`widgetLoaders` dynamic imports, `ensureWidgetLoaded`, idle `scheduleWidgetPreload()` from `main.tsx`). iframe/html share one chunk.
+- **Registries:** server `registerWidget(type, fn)` / client `registerWidgetComponent(type, comp)`; client barrel is lazy (`widgetLoaders` dynamic imports, `ensureWidgetLoaded`, per-slug idle `scheduleWidgetPreload(types)` triggered from `usePageData`). iframe/html share one chunk. A `registry-coverage` test fails listing any `WidgetType` missing a server import or client loader — silent absence is impossible.
 - **Async:** `fetchWithRetry` (backoff+jitter, retryable statuses) for all remote calls; `Promise.allSettled` fan-out for feed lists; `sanitizeUrl()` in EVERY thrown fetch error so query-string secrets never reach `payload.error`.
 - **Memo invariants (load-bearing):** streaming replaces whole widget object refs (`applyChunk` never mutates rendered payloads) — this is why `memo` on WidgetSlot/MobileColumn/BentoItem is safe; `spanStyle(span)` returns cached style objects so memoized columns never see fresh refs. Don't break either.
-- **Grid:** column footprint = `--col-span` CSS var; tile footprint hint = `data-span` attribute (emitted when span>1); mobile media queries remap with `!important` (12→8, 9→5, 8→5, 6→4, 4→3, 3→2).
+- **Grid:** explicit 12-track desktop / 6-track ≤900px / single-column ≤600px with `grid-auto-flow: dense`; one pure `place(tiles, width)` module (`tiling.ts`) drives tiles + skeletons + samples so they can never disagree. Container queries own widget interiors.
 - **WidgetChrome:** `collapseAfter >= 0` truncates behind Show more; `-1` (any negative) never collapses; `items` renders rows, `children` otherwise.
 - **State:** no global store; `useConfig` (cached Promise, failures retried) + `usePageData(slug)`; `localStorage` only for theme (`glimpse.theme.v1`, paint snapshot `glimpse.paint.v1`), todo (`glimpse.todo.<id>`), timer (`glimpse.timer.<id>` + `.notes`), notepad (`glimpse.notepad.<id>`), and ai-quota has no client persistence.
 - **Astryx warning:** ONLY valid API reference is `node_modules/@astryxdesign/core/dist/**/*.d.ts` (`defineTheme`, `<Theme theme mode>`, Card/Banner/Text/TabList/Skeleton/SelectableCard/Dialog/Link). The `skill://astryx` documents an INVENTED API (ThemeProvider/createTheme/swizzle) — never "fix" code toward it.
 - **Deliberate ignores:** react-doctor off-rules (iframe-sandbox, no-multi-comp, no-fetch-in-effect, dangerous-html-sink, set-state-after-await-in-effect, unused-export, low-supply-chain-score) are intentional; don't re-enable or code around them silently.
 
 ### Adding a widget (checklist)
-1. Schema + DEFAULTS + PREF + SKELETON in `src/shared/widgets/<group>.ts` (feeds.ts / keyed.ts / calendar.ts / contribution.ts / radar.ts / github-trending.ts / network.ts / clock.ts / …); add to `schemaEntries` in `src/shared/widgets/index.ts`.
+0. Prefer the generator: `bun run new-widget <kebab-name>` scaffolds schema + fetcher + renderer + tests + registry lines (verify with `bun run check-config`).
+1. Schema + DEFAULTS + PREF + SKELETON in `src/shared/widgets/<group>.ts` (feeds.ts / keyed.ts / calendar.ts / contribution.ts / radar.ts / github-trending.ts / network.ts / twitch.ts / media.ts / clock.ts / …); add to `schemaEntries` in `src/shared/widgets/index.ts`.
 2. Registry row in `widgetMeta` (`src/shared/widgets/index.ts`) pairing schema + pref + skeleton — `PREFERRED_SIZES` / `SKELETON_SHAPE` derive from it (derivation test fails if a union member has no row; never edit `preferredSizes.ts` by hand).
 3. Data widgets: fetcher in `src/server/widgets/<name>.ts` (`registerWidget`) + import in `src/server/widgets/index.ts`. Config-only widgets (clock, bookmarks, search, todo, calendar, iframe, html, group, split-column): no fetcher — builder yields null data.
 4. Renderer `src/client/widgets/<name>/index.tsx` (`registerWidgetComponent`) + loader entry in `src/client/widgets/index.ts` `widgetLoaders`.
@@ -67,7 +70,7 @@ Env: `GLIMPSE_CONFIG` (CLI arg wins > env > ./config.yml), `GLIMPSE_PORT=3000`, 
 - Entry: `index.html` (FOUC boot script reads `glimpse.paint.v1`) → `src/main.tsx` (scheduleWidgetPreload) → `src/App.tsx`; server `src/server/index.ts`
 - Config contract: `src/shared/config.ts` (WidgetSchema union; PageSchema requires columns OR flat widgets; ≤3 columns; columns require `size` or `span` — when `span` used it must be on all columns or none), `config.example.yml` (Home/Dev/Social/Lab)
 - Data contract: `src/shared/api.ts` (`PagePayload`, `WidgetPayload` — config carries BOTH kebab+camel aliases for hide-headers), `src/server/api.ts` (build/stream/skeleton + cache-path templates)
-- Grid/layout: `src/client/pages/PageView.tsx`, `page.module.css`, `tiling.ts` (COLLAGE_ROW_SPAN_MIN/MAX shared with skeleton estimators), `src/shared/widgets/preferredSizes.ts`
+- Grid/layout: `src/client/pages/PageView.tsx`, `page.module.css`, `tiling.ts` (single `place()` geometry feeding tiles + skeletons + samples; design rationale in `docs/research/tiling/REPORT.md`), `src/shared/widgets/preferredSizes.ts` (derived maps — never edit by hand)
 - Engine: `src/client/hooks/usePageData.ts` (SWR/streaming/liveKey), `src/server/cache.ts`, `src/server/widgets/runtime.ts` (stale-on-error), `src/shared/live.ts` (single TTL/poll source)
 - Theme: `src/client/theme/GlimpseThemeProvider.tsx`, `src/shared/theme/glimpseTheme.ts` (API warning header), `presets.ts` (48 deduped), `glanceRamp.ts` (cm/tsm accepted-for-compat but intentionally ignored)
 - Tooling: `vite.config.ts` (manualChunks checks react-router BEFORE react — order matters; workbox globPatterns woff2+svg; NetworkFirst 3s for /api/config, /api/page/, /api/theme), `tsconfig.json`, `doctor.config.json`
@@ -76,7 +79,7 @@ Env: `GLIMPSE_CONFIG` (CLI arg wins > env > ./config.yml), `GLIMPSE_PORT=3000`, 
 - **Runtime:** Bun ≥1.3 (`Bun.serve`, `Bun.file`, `Bun.YAML`, `Bun.XML`, `bun --watch`). Node never runs the server; plain-node YAML fallback exists only for vitest.
 - **Package manager:** `bun` / `bunx` (never npm/npx/node/pip). `bun.lock` is the lockfile; `trustedDependencies` covers @astryxdesign postinstall scripts.
 - **Build:** Vite 6 + `@vitejs/plugin-react`, `vite-plugin-pwa` (autoUpdate, `navigateFallbackDenylist [/^\/api\//]`), lazy widget chunks + manualChunks react/astryx/icons/react-router-dom. `/api/config` sends no-store while the SW caches it — intentional offline layering, documented in vite.config.ts.
-- **Constraints:** headless shared Chromium available for browser smoke tests; `glance/**` ignored everywhere; unported glance widgets are tracked in README → Known deviations (`change-detection`, `extension`, `calendar-legacy`, `twitch-channels`, `twitch-top-games`; no auth/lockout).
+- **Constraints:** headless shared Chromium available for browser smoke tests; `glance/**` ignored everywhere; unported glance widgets are tracked in README → Known deviations (`extension`, `calendar-legacy`; no auth/lockout).
 
 ## Testing & QA
 - **Stack:** Vitest 4 + jsdom + `@testing-library/react` + `jest-dom`, `globals:true`, `setupFiles: ./src/test/setup.ts` (localStorage polyfill, dialog shims, Bun global).

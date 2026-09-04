@@ -26,9 +26,9 @@ Built with **Bun**, **TypeScript**, **Vite**, **React 19** and the **Astryx** de
 
 ## Features
 
-- **32 widget types** — feeds, homelab monitoring, containers, AI quota, timer, notepad, calendars, radar, trending — see [Widgets](#widgets)
+- **39 widget types** — feeds, homelab monitoring, containers, AI quota, media, twitch, timers, calendars, radar, trending — see [Widgets](#widgets)
 - **48 theme presets** — curated base16 schemes + 6 glance classics, system / light / dark picker, glance-format HSL custom themes, custom CSS
-- **12-column bento layout** — `pages` → `columns` (`span` tracks on a 12-col grid; legacy `size: small/full` still works), responsive remap on tablet/mobile, optional `head-widgets`
+- **12-column bento layout** — `pages` → `columns` (`span` tracks on a 12-col grid; legacy `size: small/full` still works) plus a `tiling: collage` mode driven by one pure `place()` module, responsive 12/6/1 tracks on desktop/tablet/mobile, optional `head-widgets`
 - **Progressive loading** — the server streams widgets as their data settles over a skeleton-first NDJSON stream; widget components are lazy chunks preloaded after first paint. Fast (cached/config-only) widgets paint instantly while slow API widgets show type-shaped skeletons and fill in as responses arrive; the server pre-warms its widget cache at boot and on config changes so the first visitor never waits on upstreams. Skeleton grid mirrors real column spans so layout never shifts.
 - **Server-side fetching** — secrets configured once in the server environment; live SWR updates (1s poll for homelab pages, 30s otherwise) without losing stale content mid-refresh. GitHub-backed widgets (releases, repository) automatically use `GITHUB_TOKEN`/`GH_TOKEN` or a logged-in `gh` CLI token when available, lifting the API rate limit from 60 to 5,000 req/h
 - **PWA** — installable app shell, offline precache, network-first API
@@ -165,7 +165,9 @@ Feed widgets respect the `cache` prop; unauthenticated GitHub/Reddit requests ar
            │  tokens never reach the browser
            ▼
   RSS/Atom · Hacker News · Reddit · GitHub · GitLab · Codeberg
-  Docker Hub · open-meteo · Yahoo Finance · YouTube RSS · lobste.rs
+  Docker Hub · open-meteo · RainViewer · Yahoo Finance · YouTube RSS · lobste.rs
+  Twitch Helix · Immich · Jellyfin · qBittorrent · Transmission
+  Uptime Kuma · Healthchecks · ICS feeds · watched URLs
   Pi-hole / Technitium · Docker Engine socket · any custom-api endpoint
 ```
 
@@ -176,7 +178,7 @@ Feed widgets respect the `cache` prop; unauthenticated GitHub/Reddit requests ar
 - `custom-api` maps fields via JSONPath, not Go `html/template`.
 - `todo` persists in browser localStorage only (per-browser, not shared).
 - Authentication and brute-force lockout are not implemented.
-- Not ported: `change-detection`, `extension`, `calendar-legacy`.
+- Not ported: `extension`, `calendar-legacy`.
 - `${secret:}` Docker-secrets syntax is unsupported.
 
 ## Development
@@ -186,6 +188,8 @@ bun run test        # vitest (jsdom); schema + fetcher + component tests per wid
 bun run test:watch
 bunx tsc --noEmit   # strict typecheck gate
 npx react-doctor@latest   # React quality scan (full scan is the gate)
+bun run new-widget <kebab-name>   # scaffold schema + fetcher + renderer + tests
+bun run check-config [path]       # validate config with line numbers + did-you-mean
 ```
 
 Each widget ships three files — a shared zod schema, a server fetcher (data widgets), and a client component — joined by typed registries. Layout: `src/client/` (SPA), `src/server/` (Bun API), `src/shared/` (contracts used by both).

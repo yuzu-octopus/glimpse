@@ -1,6 +1,6 @@
 ---
 name: adding-widgets
-description: Use when adding a new widget type to Glimpse, creating a server fetcher or client renderer for a widget, wiring a widget into the registries or loaders map, or when assertAllWidgetsCovered / missing-loader test failures appear after adding a type
+description: Use when adding a new widget type to Glimpse, creating a server fetcher or client renderer for a widget, wiring a widget into the registries or loaders map, or when widgetMeta derivation / registry-coverage test failures appear after adding a type
 ---
 
 # Adding a Glimpse Widget
@@ -9,6 +9,7 @@ description: Use when adding a new widget type to Glimpse, creating a server fet
 One widget type = touches exactly 6 places across 3 layers. Miss any registry/aggregation entry and tests fail with a list naming the gap. Copy an existing sibling widget of the same kind (feed vs config-only) as your template.
 
 ## Checklist (in order)
+0. Prefer the generator — `bun run new-widget <kebab-name>` scaffolds steps 1–6 below (schema + fetcher + renderer + tests + registry lines); verify the result with `bun run check-config`.
 1. **Schema** — new `src/shared/widgets/<group>.ts` (group by kind: feeds.ts, keyed.ts, calendar.ts, or a single-widget file like todo.ts / timer.ts / radar.ts / github-trending.ts / network.ts / contribution.ts — dns/docker/system-stats/server-stats schemas live in their own files). Export `<name>Schema` (zod v4: `.loose()` where extras allowed, `z.record(z, z)` two args, `.default(() => …)` for limit) spreading `...sharedWidgetFields` so shared props exist; `NAME_DEFAULTS`; co-located `NAME_PREF` copied from `RSS_PREF` — the real Pref shape is `{cols, rows, resizable, priority, zone, preferredWidth, preferredHeight}` (`span` is a sharedWidgetFields config option, NOT a Pref field); and co-located `NAME_SKELETON` (`'list'` | `'stat'` | `'chart'` | `'rows'`). Add schema to `schemaEntries[]` in `src/shared/widgets/index.ts` (this creates the `WidgetType` union member).
 2. **Registry row** — add `<name>: { schema, pref, skeleton }` to `widgetMeta` in `src/shared/widgets/index.ts`. `PREFERRED_SIZES` / `SKELETON_SHAPE` (`preferredSizes.ts`) derive from this table — never edit that file by hand. The derivation test fails listing union members with no row here.
 3. **Payload types** — `src/shared/widgets/payloads.ts`: `interface <Name>Data { … }` (pure types only, no runtime imports).
