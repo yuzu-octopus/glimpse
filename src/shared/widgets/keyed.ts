@@ -68,30 +68,72 @@ export const marketsSchema = z.object({
 });
 export type MarketsConfig = z.infer<typeof marketsSchema>;
 
-export const monitorSchema = z.object({
-  type: z.literal('monitor'),
-  ...sharedWidgetFields,
-  sites: z
-    .array(
-      z.object({
-        url: z.string(),
-        title: z.string().optional(),
-        'check-url': z.string().optional(),
-        'error-url': z.string().optional(),
-        timeout: z.string().optional(),
-        'allow-insecure': z.boolean().optional(),
-        'same-tab': z.boolean().optional(),
-        'alt-status-codes': z.array(z.number().int().positive()).optional(),
-        'basic-auth': z
-          .object({ username: z.string(), password: z.string() })
-          .optional(),
-        'expected-status-code': z.number().int().positive().optional(), // glimpse extension
-      }),
-    )
-    .min(1),
-  'show-failing-only': z.boolean().optional(),
-  style: z.enum(['compact']).optional(),
-});
+export const monitorSchema = z
+  .object({
+    type: z.literal('monitor'),
+    ...sharedWidgetFields,
+    sites: z
+      .array(
+        z.object({
+          url: z.string(),
+          title: z.string().optional(),
+          'check-url': z.string().optional(),
+          'error-url': z.string().optional(),
+          timeout: z.string().optional(),
+          'allow-insecure': z.boolean().optional(),
+          'same-tab': z.boolean().optional(),
+          'alt-status-codes': z.array(z.number().int().positive()).optional(),
+          'basic-auth': z
+            .object({ username: z.string(), password: z.string() })
+            .optional(),
+          'expected-status-code': z.number().int().positive().optional(), // glimpse extension
+        }),
+      )
+      .optional(),
+    // Uptime Kuma pull source: public status-page API, no auth needed.
+    'kuma-url': z.string().optional(),
+    'kuma-slug': z.string().optional(),
+    // Healthchecks push source: Management API v3 list-checks (a read-only
+    // project key is enough; pass it via ${HC_API_KEY} interpolation).
+    'healthchecks-url': z.string().optional(),
+    'healthchecks-key': z.string().optional(),
+    'healthchecks-tags': z.array(z.string()).optional(),
+    // Allows http:// source URLs (kuma/healthchecks); per-site checks keep
+    // their own flag.
+    'allow-insecure': z.boolean().optional(),
+    'show-failing-only': z.boolean().optional(),
+    style: z.enum(['compact']).optional(),
+  })
+  .superRefine((v, ctx) => {
+    const hasSites = (v.sites?.length ?? 0) > 0;
+    const hasKuma = v['kuma-url'] !== undefined || v['kuma-slug'] !== undefined;
+    const hasHc =
+      v['healthchecks-url'] !== undefined ||
+      v['healthchecks-key'] !== undefined ||
+      (v['healthchecks-tags']?.length ?? 0) > 0;
+    if (!hasSites && !hasKuma && !hasHc) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'monitor: set sites, kuma-url/kuma-slug, or healthchecks-key',
+      });
+    }
+    if (hasKuma && (v['kuma-url'] === undefined || v['kuma-slug'] === undefined)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'monitor: kuma-url and kuma-slug must be set together',
+      });
+    }
+    if (
+      v['healthchecks-tags'] !== undefined &&
+      v['healthchecks-key'] === undefined &&
+      v['healthchecks-url'] === undefined
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'monitor: healthchecks-tags needs healthchecks-key (or healthchecks-url)',
+      });
+    }
+  });
 export type MonitorConfig = z.infer<typeof monitorSchema>;
 
 export const customApiSchema = z.object({

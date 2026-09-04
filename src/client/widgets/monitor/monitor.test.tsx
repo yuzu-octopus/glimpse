@@ -67,6 +67,26 @@ describe('monitor widget', () => {
     expect(screen.getByRole('link', { name: 'Up site' })).toHaveAttribute('target', '_blank');
   });
 
+  it('renders kuma/healthchecks source rows through the same renderer', () => {
+    // Source-mapped payloads use the MonitorSite shape with null status/ms;
+    // no client change needed — this pins the reuse contract.
+    render(
+      <Monitor
+        config={{ type: 'monitor', title: 'Uptime', 'kuma-url': 'https://kuma.lab', 'kuma-slug': 'homelab' }}
+        data={{
+          sites: [
+            { url: 'https://grafana.lab', title: 'Grafana', ok: true, status: 200, ms: 42, errorUrl: null, sameTab: false },
+            { url: 'https://healthchecks.io', title: 'Cron sync', ok: false, status: null, ms: null, errorUrl: null, sameTab: false },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText('Grafana')).toBeInTheDocument();
+    expect(screen.getByText('42 ms')).toBeInTheDocument();
+    expect(screen.getByText('Cron sync')).toBeInTheDocument();
+    expect(screen.getByText('—')).toBeInTheDocument();
+  });
+
   it('surfaces a fetch error via the widget chrome', () => {
     render(
       <Monitor config={{ type: 'monitor', title: 'Uptime', sites: [{ url: 'https://example.com' }] }} data={null} error="monitor fetch failed" />,

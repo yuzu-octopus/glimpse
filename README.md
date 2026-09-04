@@ -110,7 +110,7 @@ All optional; read from the process environment (no `.env` loader).
 | `weather` | Conditions + 7-day forecast | [open-meteo](https://open-meteo.com); no API key |
 | `videos` | Latest videos from channels / playlists | YouTube RSS (`channel_id`, `@handle`, playlist); Shorts filtered unless `include-shorts` |
 | `markets` | Quotes + sparklines | Yahoo Finance |
-| `monitor` | HTTP health checks | Per-site `check-url`, `error-url`, timeouts, basic auth, alt status codes |
+| `monitor` | HTTP health checks | Per-site `check-url`, `error-url`, timeouts, basic auth, alt status codes; optional Uptime Kuma (`kuma-url` + `kuma-slug`) and Healthchecks (`healthchecks-key`, `healthchecks-tags`) sources merged into the same list |
 | `custom-api` | Items mapped from any JSON endpoint | JSONPath field mapping |
 | `repository` | Repo stats + open PRs / issues | GitHub REST API |
 | `lobsters` | lobste.rs stories | Configurable instance |

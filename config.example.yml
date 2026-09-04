@@ -284,6 +284,16 @@ pages:
               - "@NetworkChuck"
           - type: monitor
             title: Homelab — health
+            # External sources merge into the same site list (client unchanged):
+            # Uptime Kuma pull source (public status page, no auth) and/or
+            # Healthchecks push source (Management API v3; read-only key is
+            # enough — pass it via ${HC_API_KEY} interpolation, optional
+            # healthchecks-url defaults to https://healthchecks.io,
+            # healthchecks-tags filters with repeated ?tag= params).
+            # kuma-url: https://kuma.lab
+            # kuma-slug: homelab
+            # healthchecks-key: ${HC_API_KEY}
+            # healthchecks-tags: [prod]
             sites:
               - url: https://grafana.lab
                 title: Grafana

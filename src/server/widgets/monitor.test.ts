@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
+import { monitorSchema } from '../../shared/widgets/keyed';
 import './monitor';
 import type { MonitorSite } from '../../shared/widgets/payloads';
 
@@ -148,5 +149,173 @@ describe('monitor fetcher', () => {
       sites: [{ url: 'http://example.com', 'allow-insecure': true }],
     });
     expect((allowed as { sites: MonitorSite[] }).sites[0].ok).toBe(true);
+  });
+});
+
+const kumaPage = {
+  config: { slug: 'homelab', title: 'Homelab' },
+  publicGroupList: [
+    {
+      id: 1,
+      name: 'Services',
+      monitorList: [
+        { id: 1, name: 'Grafana', sendUrl: 'https://grafana.lab' },
+        { id: 2, name: 'Dead box', sendUrl: 'https://dead.lab' },
+      ],
+    },
+  ],
+  heartbeatList: {
+    '1': [{ status: 1, time: '2026-09-04T00:00:00Z', msg: 'OK', ping: 42 }],
+    '2': [{ status: 0, time: '2026-09-04T00:00:00Z', msg: 'connect ECONNREFUSED', ping: null }],
+  },
+};
+
+const hcList = {
+  checks: [
+    { name: 'Nightly backup', slug: 'nightly-backup', status: 'up' },
+    { name: 'Cron sync', slug: 'cron-sync', status: 'down' },
+    { name: 'Heartbeat', slug: 'heartbeat', status: 'grace' },
+  ],
+};
+
+function sourceCtx(opts?: { kumaDown?: boolean; hcDown?: boolean }) {
+  return makeCtx(async (url) => {
+    if (url.includes('/api/status-page/')) {
+      if (opts?.kumaDown) throw new Error('kuma unreachable');
+      return Response.json(kumaPage);
+    }
+    if (url.includes('/api/v3/checks/')) {
+      if (opts?.hcDown) return new Response('unauthorized', { status: 401 });
+      return Response.json(hcList);
+    }
+    return new Response('ok', { status: 200 });
+  });
+}
+
+async function fetchSites(ctx: WidgetFetchContext, config: Record<string, unknown>): Promise<MonitorSite[]> {
+  const data: unknown = await monitorFetcher()(ctx, config);
+  if (data && typeof data === 'object' && 'sites' in data && Array.isArray(data.sites)) {
+    const sites = data.sites as MonitorSite[]; // fetcher contract: { sites: MonitorSite[] }
+    return sites;
+  }
+  throw new Error('monitor fetcher returned no sites array');
+}
+
+describe('monitor external sources', () => {
+  it('maps kuma status-page monitors to site rows', async () => {
+    const { ctx, fetchMock } = sourceCtx();
+    const sites = await fetchSites(ctx, {
+      type: 'monitor',
+      'kuma-url': 'https://kuma.lab',
+      'kuma-slug': 'homelab',
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://kuma.lab/api/status-page/homelab',
+      expect.anything(),
+    );
+    expect(sites).toEqual([
+      {
+        url: 'https://grafana.lab',
+        title: 'Grafana',
+        ok: true,
+        status: 200,
+        ms: 42,
+        errorUrl: null,
+        sameTab: false,
+      },
+      {
+        url: 'https://dead.lab',
+        title: 'Dead box',
+        ok: false,
+        status: null,
+        ms: null,
+        errorUrl: null,
+        sameTab: false,
+      },
+    ]);
+  });
+
+  it('maps healthchecks list-checks to site rows and sends the api key', async () => {
+    const { ctx, fetchMock } = sourceCtx();
+    const sites = await fetchSites(ctx, {
+      type: 'monitor',
+      'healthchecks-key': 'read-key',
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://healthchecks.io/api/v3/checks/',
+      expect.objectContaining({ headers: { 'X-Api-Key': 'read-key' } }),
+    );
+    expect(sites).toEqual([
+      { url: 'https://healthchecks.io', title: 'Nightly backup', ok: true, status: null, ms: null, errorUrl: null, sameTab: false },
+      { url: 'https://healthchecks.io', title: 'Cron sync', ok: false, status: null, ms: null, errorUrl: null, sameTab: false },
+      { url: 'https://healthchecks.io', title: 'Heartbeat', ok: true, status: null, ms: null, errorUrl: null, sameTab: false },
+    ]);
+  });
+
+  it('passes healthchecks tag filters as query params', async () => {
+    const { ctx, fetchMock } = sourceCtx();
+    await monitorFetcher()(ctx, {
+      type: 'monitor',
+      'healthchecks-key': 'read-key',
+      'healthchecks-tags': ['prod', 'db'],
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://healthchecks.io/api/v3/checks/?tag=prod&tag=db',
+      expect.anything(),
+    );
+  });
+
+  it('merges direct sites with both sources and filters failing-only across them', async () => {
+    const { ctx } = sourceCtx();
+    const sites = await fetchSites(ctx, {
+      type: 'monitor',
+      sites: [{ url: 'https://example.com/up' }],
+      'kuma-url': 'https://kuma.lab',
+      'kuma-slug': 'homelab',
+      'healthchecks-key': 'read-key',
+      'show-failing-only': true,
+    });
+    expect(sites.map((s) => s.title).sort()).toEqual(['Cron sync', 'Dead box']);
+  });
+
+  it('degrades a dead source to no rows while direct checks still report', async () => {
+    const { ctx } = sourceCtx({ kumaDown: true, hcDown: true });
+    const sites = await fetchSites(ctx, {
+      type: 'monitor',
+      sites: [{ url: 'https://example.com' }],
+      'kuma-url': 'https://kuma.lab',
+      'kuma-slug': 'homelab',
+      'healthchecks-key': 'bad-key',
+    });
+    expect(sites).toHaveLength(1);
+    expect(sites[0]).toMatchObject({ url: 'https://example.com', ok: true });
+  });
+
+  it('refuses http source urls without allow-insecure', async () => {
+    const { ctx } = sourceCtx();
+    await expect(
+      monitorFetcher()(ctx, {
+        type: 'monitor',
+        'kuma-url': 'http://kuma.lab',
+        'kuma-slug': 'homelab',
+      }),
+    ).rejects.toThrow(/allow-insecure/);
+  });
+
+  it('requires at least one source and pairs kuma fields', () => {
+    expect(monitorSchema.safeParse({ type: 'monitor' }).success).toBe(false);
+    expect(
+      monitorSchema.safeParse({ type: 'monitor', 'kuma-url': 'https://kuma.lab' }).success,
+    ).toBe(false);
+    expect(
+      monitorSchema.safeParse({
+        type: 'monitor',
+        'kuma-url': 'https://kuma.lab',
+        'kuma-slug': 'homelab',
+      }).success,
+    ).toBe(true);
+    expect(
+      monitorSchema.safeParse({ type: 'monitor', 'healthchecks-key': 'k' }).success,
+    ).toBe(true);
   });
 });
