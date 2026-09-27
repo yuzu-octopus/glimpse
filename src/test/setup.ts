@@ -1,3 +1,5 @@
+import { spawnSync } from 'node:child_process';
+
 import '@testing-library/jest-dom/vitest';
 
 // Node 22+ exposes an experimental `localStorage` global that is undefined
@@ -52,11 +54,21 @@ if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.sho
   };
 }
 
-// Vitest workers run on Node, so `Bun.YAML`/`Bun.XML` are absent there. Reuse
-// the real Bun runtime when available so server code takes its fast path and
-// the minimal fallbacks in config.ts/rss.ts stay dormant.
-if (typeof Bun !== 'undefined') globalThis.Bun = Bun;
+// Vitest workers run on Node, so `Bun.YAML` is absent there — but the server is
+// Bun-only and `Bun.YAML` is its one and only YAML parser. Install the real
+// parser behind `__bunYamlParse` (a Bun subprocess, ~8ms per document) so tests
+// parse YAML exactly the way production does, instead of a hand-rolled
+// stand-in that can silently diverge. Deliberately not a fake `globalThis.Bun`:
+// server code feature-detects `Bun` for `.file`/`.spawn`/`.XML`, and a partial
+// fake would flip those paths on.
+const PARSE_YAML =
+  'try{process.stdout.write(JSON.stringify(Bun.YAML.parse(await Bun.stdin.text())))}catch(e){process.stderr.write(String(e));process.exit(1)}';
+const g = globalThis as { __bunYamlParse?: (text: string) => unknown };
+g.__bunYamlParse ??= (text: string): unknown => {
+  const r = spawnSync('bun', ['-e', PARSE_YAML], { input: text, encoding: 'utf8' });
+  if (r.status !== 0) throw new Error(r.stderr.trim() || r.error?.message || 'bun YAML parse failed');
+  return JSON.parse(r.stdout) as unknown;
+};
 
-// Widget lazy chunks: suites that need synchronous registration can
-// `await import('../client/widgets').then(m => m.preloadWidgets())` or
-// `await __preloadWidgetsForTests()`. Default is lazy + Suspense fallback.
+// Widget chunks stay lazy behind the Suspense fallback. Component tests import
+// the widget module directly, which registers it — no global preload needed.
