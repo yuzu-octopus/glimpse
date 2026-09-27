@@ -58,7 +58,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: var(--font-size-base);
 }
 
 .badge {
@@ -91,6 +91,6 @@
 }
 
 .placeholder {
-  font-size: 13px;
+  font-size: var(--font-size-base);
   opacity: 0.65;
 }
