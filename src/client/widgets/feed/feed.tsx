@@ -1,12 +1,13 @@
-import { Link } from '@astryxdesign/core';
+import type { ReactNode } from 'react';
+import { Badge, Grid, HStack, Link, Stack, Text, type BadgeVariant } from '@astryxdesign/core';
 import styles from './feed.module.css';
 import { tagAccent, type TagAccent } from './tag-accent';
 
 /**
  * Generic flat feed module — deep module, small interface.
  * One row per item, consistent flat glance styling:
- * - hover: text-highlight (title -> primary), row backdrop
- * - meta subdued, tags take a hue hashed from the tag text, image thumbnail
+ * - hover: the kit's overlay dim on the row, title -> primary
+ * - meta subdued, tags take the accent hashed from the tag text, image thumbnail
  *
  * Callers map their domain payload to FeedItem; Feed owns layout/colour/hover.
  */
@@ -29,17 +30,23 @@ export type FeedLayout = 'list' | 'grid' | 'row';
 
 export interface FeedProps {
   items: FeedItem[];
-  /** layout: list (vertical), grid (auto-fill 220), row (horizontal scroll) */
+  /** layout: list (vertical), grid (min 220 per column), row (horizontal scroll) */
   layout?: FeedLayout;
-  /** when true titles truncate single line; else 2-line clamp (rss single-line-titles) */
+  /** when true titles truncate to one line; else they clamp to two (rss single-line-titles) */
   singleLine?: boolean;
 }
 
-const ACCENT_CLASS: Record<TagAccent, string> = {
-  green: styles.chipAccentGreen,
-  cyan: styles.chipAccentCyan,
-  pink: styles.chipAccentPink,
-  orange: styles.chipAccentOrange,
+/** Title clamp: two lines by default, one when the feed asks for single-line titles. */
+const TITLE_LINES_DEFAULT = 2;
+const TITLE_LINES_SINGLE = 1;
+const DESCRIPTION_LINES = 2;
+
+/** A tag is a Badge, and yellow is the tag hue — the default the cycle falls back to. */
+const ACCENT_VARIANT: Record<TagAccent, BadgeVariant> = {
+  green: 'green',
+  cyan: 'cyan',
+  pink: 'pink',
+  orange: 'orange',
 };
 
 function chipsFor(item: FeedItem): string[] {
@@ -48,16 +55,19 @@ function chipsFor(item: FeedItem): string[] {
   return [];
 }
 
+function Shell({ layout, children }: { layout: FeedLayout; children: ReactNode }) {
+  if (layout === 'grid') return <Grid columns={{ minWidth: 220 }} gap={6}>{children}</Grid>;
+  if (layout === 'row') return <HStack gap={6} className={styles.rail}>{children}</HStack>;
+  return <Stack gap={0}>{children}</Stack>;
+}
+
 export function Feed({ items, layout = 'list', singleLine }: FeedProps) {
   if (items.length === 0) return null;
   return (
-    <div className={styles[layout]}>
+    <Shell layout={layout}>
       {items.map((item) => {
         const chips = chipsFor(item);
         const key = item.url || item.title;
-        const titleClass = [styles.title, singleLine ? styles.titleSingle : styles.titleClamp]
-          .filter(Boolean)
-          .join(' ');
         return (
           <div key={key} className={styles.item}>
             {item.image ? (
@@ -65,26 +75,41 @@ export function Feed({ items, layout = 'list', singleLine }: FeedProps) {
                 <img src={item.image} alt="" loading="lazy" className={styles.thumb} />
               </div>
             ) : null}
-            <div className={styles.content}>
-              <Link href={item.url} target="_blank" className={titleClass} hasUnderline={false}>
+            <Stack gap={0.5} className={styles.content}>
+              <Link
+                href={item.url}
+                target="_blank"
+                type="body"
+                weight="medium"
+                display="block"
+                maxLines={singleLine ? TITLE_LINES_SINGLE : TITLE_LINES_DEFAULT}
+                hasUnderline={false}
+              >
                 {item.title}
               </Link>
-              {item.meta ? <div className={styles.meta}>{item.meta}</div> : null}
-              {item.description ? <div className={styles.desc}>{item.description}</div> : null}
-              {chips.length > 0 ? (
-                <div className={styles.chips}>
-                  {chips.map((c) => (
-                    <span key={c} className={`${styles.chip} ${ACCENT_CLASS[tagAccent(c)]}`}>
-                      {c}
-                    </span>
-                  ))}
-                </div>
+              {item.meta ? <Text type="supporting" as="div">{item.meta}</Text> : null}
+              {item.description ? (
+                <Text type="body" as="div" maxLines={DESCRIPTION_LINES}>
+                  {item.description}
+                </Text>
               ) : null}
-            </div>
+              {chips.length > 0 ? (
+                <HStack gap={1.5} wrap="wrap" align="start">
+                  {chips.map((c) => (
+                    <Badge
+                      key={c}
+                      variant={ACCENT_VARIANT[tagAccent(c)]}
+                      label={c}
+                      className={styles.chip}
+                    />
+                  ))}
+                </HStack>
+              ) : null}
+            </Stack>
           </div>
         );
       })}
-    </div>
+    </Shell>
   );
 }
 
