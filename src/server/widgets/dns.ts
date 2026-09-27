@@ -367,10 +367,23 @@ registerWidget('dns-stats', async (ctx, config) => {
   if (password) {
     try {
       return await fetchPiholeV6(ctx, base, password, hideGraph, hideTopDomains);
-    } catch (e) {
+    } catch (v6Error) {
       // Fallback to v5 when token available; else propagate v6 error
-      if (token) return fetchPiholeV5(ctx, base, token, hideGraph, hideTopDomains);
-      throw e;
+      if (!token) throw v6Error;
+      try {
+        return await fetchPiholeV5(ctx, base, token, hideGraph, hideTopDomains);
+      } catch (v5Error) {
+        // v5 is the degraded second attempt, so its status is the *later*
+        // fact: reporting it alone leaves the user with no idea the v6 path
+        // broke first. api.ts copies `e.message` and nothing else into
+        // `payload.error`, so the v6 cause has to ride in the message — an
+        // Error `cause` chain would be dropped before the Banner ever sees it.
+        // Both messages are widget-local and already sanitized: the v6 ones
+        // carry only a status, the v5 one a `sanitizeUrl`-ed URL.
+        const v6Why = v6Error instanceof Error ? v6Error.message : String(v6Error);
+        const v5Why = v5Error instanceof Error ? v5Error.message : String(v5Error);
+        throw new Error(`${v6Why}; the v5 fallback failed too: ${v5Why}`, { cause: v6Error });
+      }
     }
   }
   return fetchPiholeV5(ctx, base, token ?? '', hideGraph, hideTopDomains);

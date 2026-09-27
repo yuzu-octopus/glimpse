@@ -28,6 +28,15 @@ function makeCtx(
 
 const fetcher = () => serverWidgets.get('dns-stats')!;
 
+async function messageOf(promise: Promise<unknown>): Promise<string> {
+  try {
+    await promise;
+  } catch (e) {
+    if (e instanceof Error) return e.message;
+  }
+  throw new Error('expected the fetch to reject');
+}
+
 describe('dns-stats fetcher', () => {
   it('fetches AdGuard stats and maps totals, latency, series and top domains', async () => {
     const qs = Array.from({ length: 24 }, (_, i) => 100 + i * 10);
@@ -307,15 +316,6 @@ describe('dns-stats error messages never carry a credential', () => {
     return { ctx, urls };
   }
 
-  async function messageOf(promise: Promise<unknown>): Promise<string> {
-    try {
-      await promise;
-    } catch (e) {
-      if (e instanceof Error) return e.message;
-    }
-    throw new Error('expected the fetch to reject');
-  }
-
   it('Pi-hole v5: status and host survive, the auth token does not', async () => {
     const { ctx } = failingCtx({ PIHOLE_TOKEN });
     const msg = await messageOf(
@@ -360,5 +360,54 @@ describe('dns-stats error messages never carry a credential', () => {
     expect(msg).toContain('401');
     expect(msg).not.toContain(PIHOLE_TOKEN);
     expect(msg).not.toContain(V6_PASSWORD);
+  });
+});
+
+// The v5 fallback is a degraded second attempt, so its status is the *later*
+// fact: reporting only it tells the user nothing about the v6 failure that
+// caused the fallback at all. api.ts copies `e.message` alone into
+// `payload.error`, so both facts have to be in that one string — an Error
+// `cause` chain would be dropped before it ever reached the Banner.
+describe('Pi-hole v6 → v5 fallback keeps the v6 diagnosis', () => {
+  const V6_PASSWORD = 'pihole-pw-2b9f_secret';
+  const PIHOLE_TOKEN = 'pi_9f3c1d7b4e6a02f8_secret';
+  it('names the v6 auth failure and the v5 fallback when both fail', async () => {
+    const ctx = makeCtx(() => ({ __status: 401, __body: { error: 'nope' } }), {
+      PIHOLE_PASSWORD: V6_PASSWORD,
+      PIHOLE_TOKEN,
+    });
+    const msg = await messageOf(
+      fetcher()(ctx, { type: 'dns-stats', service: 'pihole', url: 'http://pihole.local' }),
+    );
+    expect(msg).toContain('Pi-hole v6 auth HTTP 401');
+    expect(msg).toMatch(/fallback/i);
+    expect(msg).toContain('Pi-hole v5 HTTP 401');
+    expect(msg).not.toContain(PIHOLE_TOKEN);
+    expect(msg).not.toContain(V6_PASSWORD);
+  });
+
+  it('names a v6 failure from a later stage, and no session id escapes', async () => {
+    const SESSION_ID = 'sid-2f8b41c9d7_secret';
+    const ctx = makeCtx((url: string) => {
+      if (url.endsWith('/api/auth')) return { session: { sid: SESSION_ID } };
+      if (url.includes('/api/stats/summary')) return { __status: 500, __body: { error: 'boom' } };
+      if (url.includes('/admin/api.php')) return { __status: 500, __body: { error: 'boom' } };
+      return undefined;
+    }, { PIHOLE_PASSWORD: V6_PASSWORD, PIHOLE_TOKEN });
+    const msg = await messageOf(
+      fetcher()(ctx, { type: 'dns-stats', service: 'pihole', url: 'http://pihole.local' }),
+    );
+    expect(msg).toContain('Pi-hole v6 summary HTTP 500');
+    expect(msg).toMatch(/fallback/i);
+    expect(msg).not.toContain(SESSION_ID);
+    expect(msg).not.toContain(PIHOLE_TOKEN);
+  });
+
+  it('surfaces the v5 failure alone when there is no v6 attempt', async () => {
+    const ctx = makeCtx(() => ({ __status: 401, __body: { error: 'nope' } }), { PIHOLE_TOKEN });
+    const msg = await messageOf(
+      fetcher()(ctx, { type: 'dns-stats', service: 'pihole', url: 'http://pihole.local' }),
+    );
+    expect(msg).toBe('Pi-hole v5 HTTP 401 for http://pihole.local/admin/api.php?…');
   });
 });
