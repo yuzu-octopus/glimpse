@@ -46,18 +46,13 @@ export const jellyfinSchema = z.object({
 });
 export type JellyfinConfig = z.infer<typeof jellyfinSchema>;
 
-export const qbittorrentSchema = z
-  .object({
-    type: z.literal('qbittorrent'),
-    ...sharedWidgetFields,
-    /** Base URL of the qBittorrent WebUI, e.g. http://qb.lab:8080 */
-    url: z.string(),
-    /** WebUI credentials; fall back to QBITTORRENT_USERNAME / QBITTORRENT_PASSWORD. */
-    username: z.string().optional(),
-    password: z.string().optional(),
-    limit: z.number().int().min(0).default(QBITTORRENT_DEFAULTS.limit),
-  })
-  .loose();
+export const qbittorrentSchema = z.object({
+  type: z.literal('qbittorrent'),
+  ...sharedWidgetFields,
+  /** Base URL of the qBittorrent WebUI, e.g. http://qb.lab:8080 */
+  url: z.string(),
+  limit: z.number().int().min(0).default(QBITTORRENT_DEFAULTS.limit),
+});
 export type QbittorrentConfig = z.infer<typeof qbittorrentSchema>;
 
 export const transmissionSchema = z

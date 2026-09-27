@@ -25,11 +25,15 @@ describe('media widget schemas', () => {
     expect(JSON.stringify(withKey)).not.toContain('leaked');
   });
 
-  it('qbittorrent requires url, credentials optional (env fallback)', () => {
+  it('qbittorrent requires url, defaults limit, and takes no credentials', () => {
     expect(qbittorrentSchema.safeParse({ type: 'qbittorrent' }).success).toBe(false);
     const cfg = qbittorrentSchema.parse({ type: 'qbittorrent', url: 'http://qb.lab:8080' });
     expect(cfg.limit).toBe(10);
-    expect(cfg.username).toBeUndefined();
+    // QBITTORRENT_USERNAME / QBITTORRENT_PASSWORD carry the credentials now.
+    const withCreds = qbittorrentSchema.parse({ type: 'qbittorrent', url: 'http://qb.lab:8080', username: 'u', password: 'leaked' });
+    expect(withCreds.username).toBeUndefined();
+    expect(withCreds.password).toBeUndefined();
+    expect(JSON.stringify(withCreds)).not.toContain('leaked');
   });
 
   it('transmission requires url, credentials optional (env fallback)', () => {
