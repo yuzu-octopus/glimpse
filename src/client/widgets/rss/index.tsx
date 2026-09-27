@@ -164,7 +164,7 @@ function Rss({ config, data, error, isLoading }: WidgetComponentProps) {
       error={error}
       showErrors={cfg['show-errors']}
     >
-      <Feed items={visible} layout="list" singleLine={singleLine} />
+      <Feed items={visible} layout="list" singleLine={singleLine} emptyText="No feed items" />
       {hasCollapse ? (
         <Button
           variant="ghost"
