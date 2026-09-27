@@ -12,8 +12,8 @@
  * widget renders perfectly, just without the option the user set.
  *
  * A `<WidgetChrome {...spread} />` is exempt — the spread is resolved at
- * runtime and cannot be read statically. `_media/media.tsx` is the one
- * renderer that builds a `chrome` object and spreads it, and it carries all
+ * runtime and cannot be read statically. `_media/factory.tsx` is the one
+ * module that builds a `chrome` object and spreads it, and it carries all
  * four fields on the object.
  */
 import { readdirSync, readFileSync } from 'node:fs';
