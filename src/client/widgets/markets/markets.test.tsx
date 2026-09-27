@@ -144,12 +144,45 @@ describe('markets widget', () => {
     expect(flat.closest('span')).toHaveClass(styles.sparkFlat);
     expect(flat.closest('span')).toHaveStyle({ '--spark-hue': CHART_HUES.muted });
   });
-
   it('draws the flat-series override from the hue variable, never a literal', () => {
     const rule = css.match(/\.sparkFlat rect\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(rule).toContain('fill: var(--spark-hue)');
     expect(rule).not.toMatch(/#[0-9a-fA-F]{3,8}/);
     // no entrance choreography
     expect(css).not.toContain('animation');
+  });
+
+
+  // A four-row card from a five-symbol config reads as complete. The videos
+  // widget already reports a dead source this way; markets dropped the
+  // rejection on the floor and rendered the four that worked.
+  it('reports each symbol that failed alongside the ones that worked', () => {
+    render(
+      <Markets
+        config={{ type: 'markets', markets: [{ symbol: 'AAPL' }, { symbol: 'DEAD' }] }}
+        data={{
+          markets,
+          issues: [{ symbol: 'DEAD', reason: 'HTTP 500' }],
+        }}
+      />,
+    );
+    expect(screen.getByTestId('markets-issues')).toBeInTheDocument();
+    expect(screen.getByTestId('markets-source-dot')).toBeInTheDocument();
+    expect(screen.getByText('DEAD')).toBeInTheDocument();
+    expect(screen.getByText('HTTP 500')).toBeInTheDocument();
+    // The symbols that did answer are still on screen — a status, not a Banner.
+    expect(screen.getByText('AAPL')).toBeInTheDocument();
+    expect(screen.getByText('212.5')).toBeInTheDocument();
+  });
+
+  it('adds no notice chrome when every symbol answered', () => {
+    const { container } = render(
+      <Markets
+        config={{ type: 'markets', markets: [{ symbol: 'AAPL' }, { symbol: 'MSFT' }] }}
+        data={{ markets, issues: [] }}
+      />,
+    );
+    expect(screen.queryByTestId('markets-issues')).toBeNull();
+    expect(container.querySelector('[class*="notice"]')).toBeNull();
   });
 });

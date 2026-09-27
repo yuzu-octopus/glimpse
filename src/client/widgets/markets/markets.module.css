@@ -112,3 +112,19 @@
     width: 40px;
   }
 }
+
+/* Per-symbol failure rows. Kit Stack + StatusDot + Text do the work; the
+   module only has to stop a long reason from pushing the rows off the card.
+   No colour lives here — the dot owns the negative hue, and the symbol and its
+   reason are both metadata, so both wear the `supporting` role. */
+.issues {
+  min-width: 0;
+}
+
+.issueSymbol {
+  min-width: 0;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

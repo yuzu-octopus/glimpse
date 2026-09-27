@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { Link } from '@astryxdesign/core';
+import { Link, Stack, StatusDot, Text } from '@astryxdesign/core';
 import { MARKETS_DEFAULTS, type MarketsConfig } from '../../../shared/widgets/keyed';
 import { CHART_HUES } from '../../kit/chart-hues';
 import { Sparkline } from '../../kit/sparkline';
@@ -7,7 +7,7 @@ import { MetricDelta } from '../../kit/metric-delta';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { fmtNumber } from '../_helpers/fmtNumber';
-import type { Market } from '../../../shared/widgets/payloads';
+import type { Market, MarketSourceIssue } from '../../../shared/widgets/payloads';
 import styles from './markets.module.css';
 void MARKETS_DEFAULTS;
 
@@ -99,10 +99,45 @@ function Row({ market, symbolLink, chartLink }: { market: Market } & RowLinks) {
   );
 }
 
+
+/** A symbol that came back empty is a status, not a widget failure: the other
+ * symbols still render, so this is a StatusDot and the muted symbol beside it
+ * — never a red Banner over content the user can still read. Mirrors the
+ * videos widget's SourceIssues; purple stays tappable-only, so the dot takes
+ * the kit's negative variant. */
+function SourceIssues({ issues }: { issues: MarketSourceIssue[] }) {
+  if (issues.length === 0) return null;
+  return (
+    <Stack gap={1} className={styles.issues} data-testid="markets-issues">
+      {issues.map((issue) => {
+        const label = `${issue.symbol}: ${issue.reason}`;
+        return (
+          <Stack key={label} direction="horizontal" gap={2} vAlign="center">
+            <StatusDot
+              variant="error"
+              label={label}
+              tooltip={label}
+              data-testid="markets-source-dot"
+            />
+            <Text type="supporting" className={styles.issueSymbol}>
+              {issue.symbol}
+            </Text>
+            <Text type="supporting">{issue.reason}</Text>
+          </Stack>
+        );
+      })}
+    </Stack>
+  );
+}
+
 function Markets({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as MarketsConfig;
   const loading = isLoading ?? ((data as unknown) == null && !error);
   const markets = ((data as { markets?: Market[] } | null)?.markets ?? []) as Market[];
+  const issues = ((data as { issues?: MarketSourceIssue[] } | null)?.issues ?? []) as MarketSourceIssue[];
+  // Only a widget with something to report carries a notice, so a healthy
+  // widget's tree is what it was before.
+  const notice = issues.length > 0 ? <SourceIssues issues={issues} /> : undefined;
   const links = new Map<string, RowLinks>(
     cfg.markets.map((m) => [
       m.symbol,
@@ -121,6 +156,7 @@ function Markets({ config, data, error, isLoading }: WidgetComponentProps) {
       error={error}
       showErrors={cfg['show-errors']}
       isLoading={loading}
+      notice={notice}
     >
       <div className={styles.rows}>
         {markets.map((m) => (
