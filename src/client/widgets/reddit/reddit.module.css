@@ -1,216 +1,52 @@
-.row {
-  position: relative;
-  isolation: isolate;
-  display: flex;
-  gap: 8px;
-  min-width: 0;
-  padding-block: 7px;
-  animation: collapsibleItemReveal 0.25s backwards;
-}
+/* Reddit card styles — glance rss-horizontal-cards: a 150px tile holding a
+ * full-bleed thumbnail over a clamped title, with the score · age footer on
+ * the vertical variant.
+ *
+ * The tile itself is a ClickableCard: the kit owns the frame, the real link
+ * and the hover dim. Only the fixed tile width and the inset text block are
+ * local — the text block, not Card padding, because the thumbnail stays
+ * full-bleed exactly like the rss card frame. */
 
-/* glance utils.css .summary::before — hover backdrop larger than the text */
-.row::before {
-  content: '';
-  position: absolute;
-  inset: -4px -10px;
-  border-radius: var(--border-radius);
-  background-color: var(--color-widget-background-highlight);
-  opacity: 0;
-  transition: opacity 0.2s;
-  z-index: -1;
-  pointer-events: none;
-}
-
-.row:hover::before {
-  opacity: 1;
-}
-
-.row + .row {
-  margin-top: 5px;
-  border-top: 1px solid var(--color-separator);
-}
-
-.row:nth-child(2) { animation-delay: 30ms; }
-.row:nth-child(3) { animation-delay: 60ms; }
-.row:nth-child(4) { animation-delay: 90ms; }
-.row:nth-child(5) { animation-delay: 120ms; }
-.row:nth-child(6) { animation-delay: 150ms; }
-.row:nth-child(7) { animation-delay: 180ms; }
-.row:nth-child(8) { animation-delay: 210ms; }
-
-.rowBody {
-  min-width: 0;
-  flex: 1;
-}
-
-/* glance .thumbnail + .thumbnail-container treatment */
-.thumb {
-  width: 56px;
-  height: 42px;
-  object-fit: cover;
-  border-radius: var(--border-radius);
-  border: 1px solid var(--color-separator);
-  flex-shrink: 0;
-  filter: grayscale(0.2) contrast(0.9);
-  opacity: 0.8;
-  transition: filter 0.2s, opacity 0.2s;
-}
-
-.row:hover .thumb {
-  opacity: 1;
-  filter: none;
-}
-
-/* glance .color-primary-if-not-visited: unvisited links are primary */
-.title {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  font-size: var(--font-size-base);
-  color: var(--color-text-base);
-  text-decoration: none;
-}
-
-.title:not(:visited) {
-  color: var(--color-primary);
-}
-
-.title:hover {
-  color: var(--color-primary);
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
-  text-underline-offset: 2px;
-}
-
-/* glance .list-horizontal-text: •-separated, bullets subdued — score green (positive/success) unified with lobsters/hn */
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  font-size: var(--font-size-h5);
-  color: var(--color-text-base-muted);
-  margin-top: 2px;
-  min-width: 0;
-}
-
-.score {
-  color: var(--color-tag-green);
-  font-weight: 600;
-}
-
-.sep {
-  color: var(--color-text-base-muted);
-  margin: 0 4px;
-}
-
-.metaLink {
-  color: var(--color-tag-cyan);
-  text-decoration: none;
-}
-
-.metaLink:hover {
-  color: var(--color-text-highlight);
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--color-tag-cyan) 35%, transparent);
-  text-underline-offset: 2px;
-}
-
-.flair {
-  background: color-mix(in srgb, var(--color-tag-cyan) 22%, transparent);
-  color: var(--color-tag-cyan);
-  border: 1px solid color-mix(in srgb, var(--color-tag-cyan) 30%, transparent);
-  border-radius: var(--border-radius);
-  padding: 1px 5px;
-  font-size: var(--font-size-h6);
-}
-
-.row:nth-child(5n+2) .flair {
-  background: color-mix(in srgb, var(--color-tag-yellow) 22%, transparent);
-  color: var(--color-tag-yellow);
-  border-color: color-mix(in srgb, var(--color-tag-yellow) 30%, transparent);
-}
-
-.row:nth-child(5n+3) .flair {
-  background: color-mix(in srgb, var(--color-tag-green) 22%, transparent);
-  color: var(--color-tag-green);
-  border-color: color-mix(in srgb, var(--color-tag-green) 30%, transparent);
-}
-
-.row:nth-child(5n+4) .flair {
-  background: color-mix(in srgb, var(--color-tag-pink) 22%, transparent);
-  color: var(--color-tag-pink);
-  border-color: color-mix(in srgb, var(--color-tag-pink) 30%, transparent);
-}
-
-.row:nth-child(5n+5) .flair {
-  background: color-mix(in srgb, var(--color-tag-orange) 22%, transparent);
-  color: var(--color-tag-orange);
-  border-color: color-mix(in srgb, var(--color-tag-orange) 30%, transparent);
-}
-
-.cardRow {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
+.cards {
   padding-bottom: 4px;
-  animation: collapsibleItemReveal 0.25s backwards;
 }
 
-.cardCol {
-  display: grid;
-  gap: 10px;
-  animation: collapsibleItemReveal 0.25s backwards;
+.rail {
+  overflow-x: auto;
 }
 
 .card {
   flex: 0 0 150px;
-  scroll-snap-align: start;
-  display: grid;
-  gap: 4px;
-  text-decoration: none;
   min-width: 0;
+  /* Card rounds its own corners but does not clip them. */
+  overflow: hidden;
 }
 
-.cardThumb,
-.cardThumbPlaceholder {
+/* glance .thumbnail — desaturated at rest, full colour on hover. */
+.cardThumb {
+  display: block;
   width: 100%;
   height: 80px;
   object-fit: cover;
-  border-radius: var(--border-radius);
-  background: var(--color-widget-background-highlight);
   filter: grayscale(0.2) contrast(0.9);
   opacity: 0.8;
   transition: filter 0.2s, opacity 0.2s;
 }
 
 .card:hover .cardThumb {
-  opacity: 1;
   filter: none;
+  opacity: 1;
 }
 
-.cardTitle {
-  font-size: var(--font-size-h5);
-  line-height: 1.3;
-  color: var(--color-text-base);
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
+.cardThumbPlaceholder {
+  height: 80px;
+  background: var(--color-widget-background-highlight);
 }
 
-.card:not(:visited) .cardTitle {
-  color: var(--color-primary);
-}
-
-.card:hover .cardTitle {
-  color: var(--color-text-highlight);
-}
-
-.cardMeta {
+.cardBody {
   display: flex;
-  align-items: center;
-  font-size: var(--font-size-h6);
-  color: var(--color-text-base-muted);
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 10px 10px;
+  min-width: 0;
 }
