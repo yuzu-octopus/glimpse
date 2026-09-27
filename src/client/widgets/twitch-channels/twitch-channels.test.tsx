@@ -18,16 +18,39 @@ const streams: TwitchChannelsData = [
 
 describe('twitch-channels widget', () => {
   it('renders live stream with thumbnail + viewer count', () => {
-    render(<TwitchChannels config={{ type: 'twitch-channels' }} data={streams} />);
+    const { container } = render(<TwitchChannels config={{ type: 'twitch-channels' }} data={streams} />);
     expect(screen.getByText('Variety day')).toBeInTheDocument();
     expect(screen.getByText(/42k watching/)).toBeInTheDocument();
     expect(screen.getByText('Just Chatting')).toBeInTheDocument();
-    const img = screen.getByAltText('');
     // LIVE is a positive/in-progress state, so it must not wear the negative
     // hue — the kit's StatusDot owns the shape, the name and the pulse.
     const live = screen.getByRole('img', { name: 'Live' });
     expect(live).toHaveAttribute('data-variant', 'success');
-    expect(img).toHaveAttribute('src', 'https://img/live-320x180.jpg');
+    const thumb = container.querySelector('img[src="https://img/live-320x180.jpg"]');
+    expect(thumb).not.toBeNull();
+  });
+
+  it('shows the channel avatar on live and offline rows alike', () => {
+    render(<TwitchChannels config={{ type: 'twitch-channels' }} data={streams} />);
+    // profile_image_url arrives for every channel; an offline row used to
+    // have no mark at all.
+    const avatars = screen.getAllByTestId('twitch-avatar');
+    expect(avatars).toHaveLength(2);
+    // Decorative: the channel name is the row's own link right beside it.
+    expect(avatars[0]!).toHaveAttribute('role', 'presentation');
+    const srcs = avatars.map((a) => a.querySelector('img')?.getAttribute('src'));
+    expect(srcs).toEqual(['https://img/xqc.png', 'https://img/shroud.png']);
+  });
+
+  it('renders a channel with no avatar rather than a broken one', () => {
+    render(
+      <TwitchChannels
+        config={{ type: 'twitch-channels' }}
+        data={[{ ...streams[1]!, login: 'ghost', displayName: 'Ghost', profileImageUrl: null }]}
+      />,
+    );
+    expect(screen.queryByTestId('twitch-avatar')).toBeNull();
+    expect(screen.getByText('Ghost')).toBeInTheDocument();
   });
 
   it('marks offline channels', () => {
