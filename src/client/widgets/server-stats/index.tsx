@@ -74,12 +74,84 @@ function Row({
   );
 }
 
-function ServerCard({ server }: { server: ServerInfo }) {
+/** The identity line: reachability, name, platform, uptime. Its own component
+ *  so the reachability ternaries live with the header they colour. */
+function ServerHeader({ server }: { server: ServerInfo }) {
   const age = useAge(server.bootTime || null);
+  return (
+    <Stack direction="horizontal" gap={2} vAlign="center" as="header">
+      <Server size={15} className={server.isReachable ? styles.serverIconUp : styles.serverIconDown} aria-hidden />
+      <Text as="h3" size="lg" weight="semibold" maxLines={1} className={styles.serverName}>
+        <span title={server.hostname || server.name}>{server.hostname || server.name}</span>
+      </Text>
+      {/* The fetcher populates platform (os.distro || os.platform) for every
+          server and the header showed only the hostname — so two boxes both
+          called "nas" were indistinguishable. */}
+      {server.platform ? (
+        <Text type="supporting" maxLines={1} className={styles.platform}>
+          {server.platform}
+        </Text>
+      ) : null}
+      {age ? <Text type="supporting" hasTabularNumbers className={styles.uptime}>{age}</Text> : null}
+    </Stack>
+  );
+}
+
+/** The per-server readings. Every "is there a GPU / a mount / a temp" test
+ *  is a property of the reading, not of the card, so it lives here. */
+function ServerMetrics({ server }: { server: ServerInfo }) {
   const memPct = server.memory.isAvailable ? pct(server.memory.used, server.memory.total) : 0;
   const disk = server.mountpoints[0] ?? null;
   const diskPct = disk ? pct(disk.used, disk.total) : 0;
   const gpu = server.gpu?.[0] ?? null;
+  return (
+    <Stack gap={2}>
+      <Row
+        icon={Cpu}
+        label="CPU"
+        detail={server.cpu.name ?? null}
+        temp={server.cpu.temp ?? null}
+        percent={Math.round(server.cpu.load * 100)}
+        value={`${Math.round(server.cpu.load * 100)}%`}
+        available={server.cpu.loadIsAvailable}
+      />
+      <Row
+        icon={Monitor}
+        label="GPU"
+        detail={gpu?.model ?? null}
+        temp={gpu?.temp ?? null}
+        percent={gpu?.temp != null ? Math.min(100, Math.round(gpu.temp)) : 0}
+        value={gpu?.temp != null ? `${Math.round(gpu.temp)}°C` : gpu?.model ? '—' : 'n/a'}
+        available={!!gpu}
+      />
+      <Row
+        icon={MemoryStick}
+        label="RAM"
+        percent={memPct}
+        value={server.memory.isAvailable ? `${fmtBytes(server.memory.used)} / ${fmtBytes(server.memory.total)}` : 'n/a'}
+        available={server.memory.isAvailable}
+      />
+      <Row
+        icon={HardDrive}
+        label="DISK"
+        percent={diskPct}
+        value={disk ? `${fmtBytes(disk.used)} / ${fmtBytes(disk.total)}` : 'n/a'}
+        available={!!disk}
+      />
+      {server.temp?.isAvailable ? (
+        <Row
+          icon={Thermometer}
+          label="TEMP"
+          percent={Math.min(100, Math.round(server.temp.main!))}
+          value={`${Math.round(server.temp.main!)}°C`}
+          available={true}
+        />
+      ) : null}
+    </Stack>
+  );
+}
+
+function ServerCard({ server }: { server: ServerInfo }) {
   return (
     <Stack
       as="section"
@@ -87,65 +159,9 @@ function ServerCard({ server }: { server: ServerInfo }) {
       className={`${styles.server} ${server.isReachable ? '' : styles.serverDown}`}
       data-testid="server-card"
     >
-      <Stack direction="horizontal" gap={2} vAlign="center" as="header">
-        <Server size={15} className={server.isReachable ? styles.serverIconUp : styles.serverIconDown} aria-hidden />
-        <Text as="h3" size="lg" weight="semibold" maxLines={1} className={styles.serverName}>
-          <span title={server.hostname || server.name}>{server.hostname || server.name}</span>
-        </Text>
-        {/* The fetcher populates platform (os.distro || os.platform) for every
-            server and the header showed only the hostname — so two boxes both
-            called "nas" were indistinguishable. */}
-        {server.platform ? (
-          <Text type="supporting" maxLines={1} className={styles.platform}>
-            {server.platform}
-          </Text>
-        ) : null}
-        {age ? <Text type="supporting" hasTabularNumbers className={styles.uptime}>{age}</Text> : null}
-      </Stack>
+      <ServerHeader server={server} />
       {server.isReachable ? (
-        <Stack gap={2}>
-          <Row
-            icon={Cpu}
-            label="CPU"
-            detail={server.cpu.name ?? null}
-            temp={server.cpu.temp ?? null}
-            percent={Math.round(server.cpu.load * 100)}
-            value={`${Math.round(server.cpu.load * 100)}%`}
-            available={server.cpu.loadIsAvailable}
-          />
-          <Row
-            icon={Monitor}
-            label="GPU"
-            detail={gpu?.model ?? null}
-            temp={gpu?.temp ?? null}
-            percent={gpu?.temp != null ? Math.min(100, Math.round(gpu.temp)) : 0}
-            value={gpu?.temp != null ? `${Math.round(gpu.temp)}°C` : gpu?.model ? '—' : 'n/a'}
-            available={!!gpu}
-          />
-          <Row
-            icon={MemoryStick}
-            label="RAM"
-            percent={memPct}
-            value={server.memory.isAvailable ? `${fmtBytes(server.memory.used)} / ${fmtBytes(server.memory.total)}` : 'n/a'}
-            available={server.memory.isAvailable}
-          />
-          <Row
-            icon={HardDrive}
-            label="DISK"
-            percent={diskPct}
-            value={disk ? `${fmtBytes(disk.used)} / ${fmtBytes(disk.total)}` : 'n/a'}
-            available={!!disk}
-          />
-          {server.temp?.isAvailable ? (
-            <Row
-              icon={Thermometer}
-              label="TEMP"
-              percent={Math.min(100, Math.round(server.temp.main!))}
-              value={`${Math.round(server.temp.main!)}°C`}
-              available={true}
-            />
-          ) : null}
-        </Stack>
+        <ServerMetrics server={server} />
       ) : (
         <Text as="p" type="body" className={styles.unreachable}>Unreachable</Text>
       )}
