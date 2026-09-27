@@ -36,9 +36,14 @@ describe('media widget schemas', () => {
     expect(JSON.stringify(withCreds)).not.toContain('leaked');
   });
 
-  it('transmission requires url, credentials optional (env fallback)', () => {
+  it('transmission requires url, defaults limit, and takes no credentials', () => {
     expect(transmissionSchema.safeParse({ type: 'transmission' }).success).toBe(false);
     const cfg = transmissionSchema.parse({ type: 'transmission', url: 'http://tr.lab:9091' });
     expect(cfg.limit).toBe(10);
+    // TRANSMISSION_USERNAME / TRANSMISSION_PASSWORD carry the credentials now.
+    const withCreds = transmissionSchema.parse({ type: 'transmission', url: 'http://tr.lab:9091', username: 'u', password: 'leaked' });
+    expect(withCreds.username).toBeUndefined();
+    expect(withCreds.password).toBeUndefined();
+    expect(JSON.stringify(withCreds)).not.toContain('leaked');
   });
 });
