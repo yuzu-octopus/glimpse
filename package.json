@@ -17,6 +17,7 @@
   "dependencies": {
     "@astryxdesign/core": "^0.3.0",
     "@astryxdesign/theme-neutral": "^0.3.0",
+    "astryx-dracula": "^0.2.1",
     "jsonpath-plus": "^10.4.0",
     "lucide-react": "^1.33.0",
     "react": "^19.2.8",
