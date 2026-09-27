@@ -2,9 +2,9 @@ import { TWITCH_CHANNELS_DEFAULTS, type TwitchChannelsConfig } from '../../../sh
 import type { TwitchChannelsData } from '../../../shared/widgets/payloads';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import { StatusDot } from '@astryxdesign/core';
+import { Button, StatusDot } from '@astryxdesign/core';
+import { ChevronRight } from 'lucide-react';
 import { useState } from 'react';
-import chromeStyles from '../../components/widget-chrome.module.css';
 import styles from './twitch-channels.module.css';
 
 function formatViewers(n: number): string {
@@ -68,15 +68,13 @@ function TwitchChannels({ config, data, error, isLoading }: WidgetComponentProps
         ))}
       </ul>
       {hasCollapse ? (
-        expanded ? (
-          <button type="button" className={`${chromeStyles.more} ${chromeStyles.moreExpanded}`} onClick={() => setExpanded(false)}>
-            Show less
-          </button>
-        ) : (
-          <button type="button" className={chromeStyles.more} onClick={() => setExpanded(true)}>
-            {`Show more (${streams.length - collapseAfter})`}
-          </button>
-        )
+        <Button
+          variant="ghost"
+          size="sm"
+          label={expanded ? 'Show less' : `Show more (${streams.length - (collapseAfter as number)})`}
+          endContent={<ChevronRight size={12} />}
+          onClick={() => setExpanded(!expanded)}
+        />
       ) : null}
     </WidgetChrome>
   );
