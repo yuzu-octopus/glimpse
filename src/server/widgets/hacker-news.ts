@@ -1,8 +1,7 @@
-import { HACKER_NEWS_DEFAULTS, hackerNewsSchema } from '../../shared/widgets/feeds';
+import { hackerNewsSchema } from '../../shared/widgets/feeds';
 import { registerWidget } from './registry';
 import { fetchJson, retryOptionsFrom } from './http';
 import { compareEngagement } from './engagement';
-import { widgetLimit } from './runtime';
 import type { HnPost } from '../../shared/widgets/payloads';
 
 interface HnItem {
@@ -40,7 +39,6 @@ registerWidget('hacker-news', async (ctx, config) => {
   const cfg = hackerNewsSchema.parse(config);
   const retry = retryOptionsFrom(cfg);
   const sort = cfg['sort-by'] ?? 'top';
-  const limit = widgetLimit(cfg, HACKER_NEWS_DEFAULTS.limit);
 
   const ids = await fetchJson<number[]>(
     ctx,
@@ -48,7 +46,7 @@ registerWidget('hacker-news', async (ctx, config) => {
     {},
     retry,
   );
-  const wanted = Math.min(ids.length, Math.max(limit * 2, 30));
+  const wanted = Math.min(ids.length, Math.max(cfg.limit * 2, 30));
   const limit6 = pLimit(6);
   const settled = await Promise.allSettled(
     ids.slice(0, wanted).map((id) =>
@@ -83,5 +81,5 @@ registerWidget('hacker-news', async (ctx, config) => {
   if (cfg['extra-sort-by'] === 'engagement') {
     posts.sort(compareEngagement);
   }
-  return { posts: posts.slice(0, limit) };
+  return { posts: posts.slice(0, cfg.limit) };
 });
