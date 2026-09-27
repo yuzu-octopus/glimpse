@@ -1,7 +1,4 @@
-import {
-  CONTRIBUTION_GRAPH_DEFAULTS,
-  contributionGraphSchema,
-} from '../../shared/widgets/contribution';
+import { contributionGraphSchema } from '../../shared/widgets/contribution';
 import type { ContributionDay, ContributionGraphData } from '../../shared/widgets/payloads';
 import { fetchText, retryOptionsFrom } from './http';
 import { registerWidget } from './registry';
@@ -44,6 +41,5 @@ registerWidget('contribution-graph', async (ctx, config): Promise<ContributionGr
   if (days.length === 0) {
     throw new Error(`No contribution data for ${cfg.username} (profile may be private or missing calendar)`);
   }
-  const weeks = cfg.limit ?? CONTRIBUTION_GRAPH_DEFAULTS.limit;
-  return { username: cfg.username, days: days.slice(-weeks * 7) };
+  return { username: cfg.username, days: days.slice(-cfg.limit * 7) };
 });
