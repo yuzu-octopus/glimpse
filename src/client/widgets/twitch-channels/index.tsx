@@ -2,7 +2,7 @@ import { TWITCH_CHANNELS_DEFAULTS, type TwitchChannelsConfig } from '../../../sh
 import type { TwitchChannelsData } from '../../../shared/widgets/payloads';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import { Button, StatusDot } from '@astryxdesign/core';
+import { Avatar, Button, StatusDot } from '@astryxdesign/core';
 import { ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import styles from './twitch-channels.module.css';
@@ -48,6 +48,13 @@ function TwitchChannels({ config, data, error, isLoading }: WidgetComponentProps
       <ul className={styles.list}>
         {visible.map((s) => (
           <li key={s.login} className={`${styles.row} ${s.live ? '' : styles.offline}`}>
+            {/* profile_image_url is fetched for every channel, live or not,
+                and nothing rendered it — so an offline row had no mark at all.
+                glance leads every channel with the avatar. Decorative: the
+                channel name is the row's own link right beside it. */}
+            {s.profileImageUrl ? (
+              <Avatar src={s.profileImageUrl} alt="" tooltip={false} size="sm" data-testid="twitch-avatar" />
+            ) : null}
             {s.live && s.thumbnailUrl ? (
               <img src={s.thumbnailUrl} alt="" className={styles.thumb} loading="lazy" />
             ) : null}
