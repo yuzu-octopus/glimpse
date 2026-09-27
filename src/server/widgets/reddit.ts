@@ -44,7 +44,8 @@ function redditTokenKey(id: string, secret: string): string {
   return `reddit:token:${id}:${hashSecret(secret)}`;
 }
 
-/** Reddit app-only OAuth: token cached for ~1h (Reddit tokens live 24h). */
+/** Reddit app-only OAuth: token cached for ~1h (Reddit tokens live 24h).
+ * The client id/secret come from the environment, never the config. */
 async function getAccessToken(
   ctx: WidgetFetchContext,
   appAuth: { id: string; secret: string },
@@ -101,8 +102,11 @@ registerWidget('reddit', async (ctx, config) => {
     );
   }
 
-  const isAuthed = !!cfg['app-auth'];
-  const host = isAuthed ? 'https://oauth.reddit.com' : 'https://www.reddit.com';
+  const appAuth =
+    ctx.env.REDDIT_CLIENT_ID && ctx.env.REDDIT_CLIENT_SECRET
+      ? { id: ctx.env.REDDIT_CLIENT_ID, secret: ctx.env.REDDIT_CLIENT_SECRET }
+      : undefined;
+  const host = appAuth ? 'https://oauth.reddit.com' : 'https://www.reddit.com';
   let url = cfg.search
     ? `${host}/search.json?q=${encodeURIComponent(cfg.search)}&sort=${sort}&t=${period}&limit=${limit}`
     : `${host}/r/${encodeURIComponent(cfg.subreddit)}/${sort}.json?limit=${limit}&t=${period}`;
@@ -111,8 +115,8 @@ registerWidget('reddit', async (ctx, config) => {
   }
 
   const headers: Record<string, string> = { 'User-Agent': USER_AGENT };
-  if (cfg['app-auth']) {
-    headers.Authorization = `Bearer ${await getAccessToken(ctx, cfg['app-auth'], retry)}`;
+  if (appAuth) {
+    headers.Authorization = `Bearer ${await getAccessToken(ctx, appAuth, retry)}`;
   }
 
   let res: Response;
@@ -129,8 +133,8 @@ registerWidget('reddit', async (ctx, config) => {
     );
   } catch (err) {
     const msg = String((err as Error).message);
-    if (msg.includes('403') && !cfg['app-auth']) {
-      throw new Error(`${msg} — anonymous Reddit JSON is now blocked (403); add reddit.app-auth id/secret or proxy/request-url-template to fetch via OAuth`);
+    if (msg.includes('403') && !appAuth) {
+      throw new Error(`${msg} — anonymous Reddit JSON is now blocked (403); set REDDIT_CLIENT_ID + REDDIT_CLIENT_SECRET, or use proxy/request-url-template to fetch via OAuth`);
     }
     throw err;
   }
