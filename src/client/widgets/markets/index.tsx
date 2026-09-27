@@ -126,6 +126,7 @@ function Markets({ config, data, error, isLoading }: WidgetComponentProps) {
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
       error={error}
+      showErrors={cfg['show-errors']}
       isLoading={loading}
     >
       <div className={styles.rows}>

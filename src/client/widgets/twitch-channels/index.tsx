@@ -28,6 +28,7 @@ function TwitchChannels({ config, data, error, isLoading }: WidgetComponentProps
         cssClass={cfg['css-class']}
         isLoading
         error={error}
+        showErrors={cfg['show-errors']}
       />
     );
   }
@@ -40,6 +41,7 @@ function TwitchChannels({ config, data, error, isLoading }: WidgetComponentProps
       cssClass={cfg['css-class']}
       isLoading={loading}
       error={error}
+      showErrors={cfg['show-errors']}
     >
       {streams.length === 0 && !loading ? <div className={styles.empty}>No channels tracked</div> : null}
       <ul className={styles.list}>

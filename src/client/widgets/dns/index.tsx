@@ -36,6 +36,7 @@ export function DnsStatsWidget({ config, data, error, isLoading }: WidgetCompone
         hideHeader={cfg['hide-header']}
         cssClass={cfg['css-class']}
         error={error}
+        showErrors={cfg['show-errors']}
       />
     );
   }

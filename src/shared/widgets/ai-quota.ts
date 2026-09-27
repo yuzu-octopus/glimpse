@@ -37,3 +37,5 @@ export const aiQuotaSchema = z
       ctx.addIssue({ code: 'custom', message: `unknown provider '${c.provider}' — known: ${KNOWN_PROVIDERS.slice(0, 5).join(', ')}…` });
     }
   });
+
+export type AiQuotaConfig = z.infer<typeof aiQuotaSchema>;

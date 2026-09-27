@@ -36,6 +36,7 @@ function Monitor({ config, data, error, isLoading }: WidgetComponentProps) {
       hideHeader={cfg['hide-header']}
       cssClass={[cfg['css-class'], cfg.style === 'compact' ? styles.compact : undefined].filter(Boolean).join(' ') || undefined}
       error={error}
+      showErrors={cfg['show-errors']}
       isLoading={loading}
       items={visible.map((s) => <SiteRow key={s.url} site={s} />)}
     />

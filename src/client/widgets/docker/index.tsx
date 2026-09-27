@@ -82,6 +82,7 @@ function DockerContainers({ config, data, error, isLoading }: WidgetComponentPro
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
       error={error}
+      showErrors={cfg['show-errors']}
       isLoading={loading}
       collapseAfter={8}
       items={containers.map((c) => (

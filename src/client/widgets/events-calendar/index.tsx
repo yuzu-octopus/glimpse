@@ -61,6 +61,7 @@ function EventsCalendar({ config, data, error, isLoading }: WidgetComponentProps
       cssClass={cfg['css-class']}
       isLoading={loading}
       error={error}
+      showErrors={cfg['show-errors']}
     >
       <div className={styles.events}>
         {groups.length === 0 ? <div className={styles.empty}>No upcoming events</div> : null}

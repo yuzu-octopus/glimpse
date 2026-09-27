@@ -43,6 +43,7 @@ function Repository({ config, data, error, isLoading }: WidgetComponentProps) {
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
       error={error}
+      showErrors={cfg['show-errors']}
       isLoading={loading}
       items={[
         <div key="header" className={styles.header}>

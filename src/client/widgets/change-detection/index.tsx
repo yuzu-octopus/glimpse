@@ -19,7 +19,7 @@ function ChangeDetection({ config, data, error, isLoading }: WidgetComponentProp
   const items = (data as ChangeDetectionData | null) ?? [];
   const loading = isLoading ?? ((data as unknown) == null && !error);
   if (error) {
-    return <WidgetChrome title={cfg.title ?? 'Changes'} error={String(error)} />;
+    return <WidgetChrome title={cfg.title ?? 'Changes'} error={String(error)} showErrors={cfg['show-errors']} />;
   }
   return (
     <WidgetChrome title={cfg.title ?? 'Changes'} isLoading={!!loading}>

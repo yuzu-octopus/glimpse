@@ -35,6 +35,7 @@ export function SystemStats({ config, data, error, isLoading }: WidgetComponentP
         cssClass={cfg['css-class']}
         isLoading
         error={error}
+        showErrors={cfg['show-errors']}
       />
     );
   }
@@ -48,6 +49,7 @@ export function SystemStats({ config, data, error, isLoading }: WidgetComponentP
         hideHeader={cfg['hide-header']}
         cssClass={cfg['css-class']}
         error={error}
+        showErrors={cfg['show-errors']}
       >
         <div className={styles.placeholder}>No data — not running on homelab host</div>
       </WidgetChrome>
@@ -101,6 +103,7 @@ export function SystemStats({ config, data, error, isLoading }: WidgetComponentP
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
       error={error}
+      showErrors={cfg['show-errors']}
       items={rows}
     />
   );

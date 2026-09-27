@@ -331,6 +331,7 @@ function WidgetSlotContent({ widget }: { widget: WidgetPayload }) {
         title={widgetTitle(widget)}
         hideHeader={widget.config['hide-header'] === true}
         error={widget.error}
+        showErrors={widget.config['show-errors'] !== false}
       >
         <Text type="supporting">Widget "{widget.type}" is not implemented yet.</Text>
       </WidgetChrome>

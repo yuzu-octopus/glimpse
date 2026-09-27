@@ -64,12 +64,12 @@ export function Weather({ config, data, error, isLoading }: WidgetComponentProps
   const w = data as WeatherData | null;
   if (loading) {
     return (
-      <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']} isLoading error={error} />
+      <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']} isLoading error={error} showErrors={cfg['show-errors']} />
     );
   }
   if (!w) {
     return (
-      <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']} error={error}>
+      <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']} error={error} showErrors={cfg['show-errors']}>
         <div className={styles.empty}>No weather data.</div>
       </WidgetChrome>
     );

@@ -36,6 +36,7 @@ function ContributionGraph({ config, data, error, isLoading }: WidgetComponentPr
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
       error={error}
+      showErrors={cfg['show-errors']}
       isLoading={loading}
       items={[
         <div key="graph" className={styles.wrap}>

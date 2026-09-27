@@ -1,15 +1,17 @@
 import type { TrendingData } from '../../../shared/widgets/payloads';
+import type { GithubTrendingConfig } from '../../../shared/widgets/github-trending';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import styles from './github-trending.module.css';
 
 function Trending({ config, data, error, isLoading }: WidgetComponentProps) {
+  const cfg = config as unknown as GithubTrendingConfig;
   const d = data as TrendingData | null;
   const items = d ?? [];
   const loading = isLoading ?? (data == null && !error);
-  if (error) return <WidgetChrome title={(config.title as string) ?? 'Trending'} error={String(error)} />;
+  if (error) return <WidgetChrome title={cfg.title ?? 'Trending'} error={String(error)} showErrors={cfg['show-errors']} />;
   return (
-    <WidgetChrome title={(config.title as string) ?? 'Trending'} isLoading={!!loading}>
+    <WidgetChrome title={cfg.title ?? 'Trending'} isLoading={!!loading}>
       {items.length === 0 && !loading ? <div className={styles.empty}>No trending repos</div> : null}
       <ul className={styles.list}>
         {items.map((r) => (

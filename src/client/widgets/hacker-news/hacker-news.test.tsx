@@ -73,4 +73,31 @@ describe('hacker-news widget', () => {
     );
     expect(screen.queryByText('Hacker News')).toBeNull();
   });
+
+  it('renders quietly when show-errors is false, and loudly by default', () => {
+    const { unmount } = render(
+      <HackerNews
+        config={{ type: 'hacker-news', title: 'Hacker News', 'show-errors': false }}
+        data={{ posts }}
+        error="upstream exploded"
+      />,
+    );
+    expect(screen.queryByText('upstream exploded')).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+    // still reported, never invisible
+    expect(screen.getByTestId('widget-error-dot')).toBeInTheDocument();
+    // stale content stays put
+    expect(screen.getByText('HN story one')).toBeInTheDocument();
+    unmount();
+
+    const loud = render(
+      <HackerNews config={{ type: 'hacker-news', 'show-errors': true }} data={{ posts }} error="upstream exploded" />,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('upstream exploded');
+    expect(screen.queryByText('HN story one')).toBeNull();
+    loud.unmount();
+
+    render(<HackerNews config={{ type: 'hacker-news' }} data={{ posts }} error="upstream exploded" />);
+    expect(screen.getByRole('alert')).toHaveTextContent('upstream exploded');
+  });
 });
