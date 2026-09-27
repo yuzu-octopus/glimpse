@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Link } from '@astryxdesign/core';
 import type { BookmarksConfig } from '../../../shared/widgets/bookmarks';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { tagAccent, type TagAccent } from '../feed/tag-accent';
+import { resolveIcon } from './icon';
 import styles from './bookmarks.module.css';
 
 const ICON_ACCENT_CLASS: Record<TagAccent, string> = {
@@ -21,6 +23,25 @@ const TITLE_ACCENT_CLASS: Record<NonNullable<BookmarksConfig['groups'][number]['
   pink: styles.titleAccentPink,
 };
 
+// A bad or unreachable icon URL must cost the icon, not the row: the tile is
+// dropped whole so the link keeps its text and the page never paints a
+// broken-image glyph.
+function BookmarkIcon({ icon, accent }: { icon: string; accent: TagAccent }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  const { src, autoInvert } = resolveIcon(icon);
+  return (
+    <span className={`${styles.iconContainer} ${ICON_ACCENT_CLASS[accent]}`}>
+      <img
+        src={src}
+        alt=""
+        loading="lazy"
+        onError={() => setFailed(true)}
+        className={autoInvert ? `${styles.icon} ${styles.iconAutoInvert}` : styles.icon}
+      />
+    </span>
+  );
+}
 function Bookmarks({ config }: WidgetComponentProps) {
   const cfg = config as unknown as BookmarksConfig;
   const groups = cfg.groups ?? [];
@@ -53,9 +74,7 @@ function Bookmarks({ config }: WidgetComponentProps) {
                     hasUnderline={false}
                   >
                     {link.icon ? (
-                      <span className={`${styles.iconContainer} ${ICON_ACCENT_CLASS[tagAccent(link.url)]}`}>
-                        <img src={link.icon} alt="" loading="lazy" className={styles.icon} />
-                      </span>
+                      <BookmarkIcon icon={link.icon} accent={tagAccent(link.url)} />
                     ) : null}
                     <span className={styles.linkTitle}>{link.title}</span>
                   </Link>

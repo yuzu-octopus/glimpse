@@ -1,7 +1,8 @@
 /* Shared poster cards (immich/jellyfin) + torrent rows (qbittorrent/transmission).
    The kit now owns the grid, the clickable card, the bar and the badge, so
-   what is left is only what a prop cannot express: the poster's 2:3 crop and
-   the two token-backed surfaces behind it. No raw rgb survives here. */
+   what is left is only what a prop cannot express: the poster's 2:3 crop, the
+   token-backed surface behind it, the badge radius and the cyan data fill.
+   No raw rgb survives here. */
 
 .card {
   min-width: 0;
@@ -29,9 +30,17 @@
   min-width: 0;
 }
 
-/* Torrent download progress is data, not tappable: the kit's accent variant
-   paints purple, so repoint the fill at the same cyan data token the
-   hand-rolled bar used. */
-.fill:global(.astryx-progressbar) [role='progressbar'] > div {
+/* The kit's Badge ships `--radius-full`, i.e. a pill. The brand is flat and
+   crisp — no pills except dots and avatars — so pin it to the element radius.
+   The kit still owns the wash, the type and the semantics. */
+.badge {
+  border-radius: var(--radius-element);
+}
+
+/* Torrent download progress is data, not tappable, and the kit's accent
+   variant paints purple. Repoint that one fill at the same cyan data token the
+   hand-rolled bar used; scoping to `.accent` leaves any future semantic
+   variant on the kit's own colour. */
+.fill [data-variant='accent'] {
   background: var(--color-data-categorical-cyan);
 }
