@@ -37,7 +37,13 @@ function Trending({ config, data, error, isLoading }: WidgetComponentProps) {
             {r.description ? <div className={styles.desc}>{r.description}</div> : null}
             <div className={styles.meta}>
               {r.language ? <span className={styles.lang}>{r.language}</span> : null}
-              <span>{r.stars.toLocaleString()} ★</span>
+              {/* `stars` is scraped, not validated: a GitHub markup change
+                  that leaves the count unreadable must cost the count, not
+                  the card. `starsToday` and `language` were already guarded
+                  and this was the one numeric access that was not. */}
+              {typeof r.stars === 'number' && !Number.isNaN(r.stars) ? (
+                <span>{r.stars.toLocaleString()} ★</span>
+              ) : null}
               {r.starsToday ? <span className={styles.today}>+{r.starsToday} today</span> : null}
             </div>
           </li>
