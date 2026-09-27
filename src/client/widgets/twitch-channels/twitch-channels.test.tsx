@@ -23,6 +23,10 @@ describe('twitch-channels widget', () => {
     expect(screen.getByText(/42k watching/)).toBeInTheDocument();
     expect(screen.getByText('Just Chatting')).toBeInTheDocument();
     const img = screen.getByAltText('');
+    // LIVE is a positive/in-progress state, so it must not wear the negative
+    // hue — the kit's StatusDot owns the shape, the name and the pulse.
+    const live = screen.getByRole('img', { name: 'Live' });
+    expect(live).toHaveAttribute('data-variant', 'success');
     expect(img).toHaveAttribute('src', 'https://img/live-320x180.jpg');
   });
 
