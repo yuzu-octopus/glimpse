@@ -3,6 +3,7 @@ import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './transmission';
 import type { TorrentData } from '../../shared/widgets/payloads';
+import { transmissionSchema } from '../../shared/widgets/media';
 
 const RPC_FIXTURE = {
   result: 'success',
@@ -14,10 +15,13 @@ const RPC_FIXTURE = {
   },
 };
 
-function makeCtx(fetchImpl: (url: string, init?: RequestInit) => Promise<Response>): WidgetFetchContext {
+function makeCtx(
+  fetchImpl: (url: string, init?: RequestInit) => Promise<Response>,
+  env: Record<string, string | undefined> = {},
+): WidgetFetchContext {
   return {
     fetch: vi.fn(fetchImpl) as unknown as typeof fetch,
-    env: {},
+    env,
     cache: new TtlCache(),
     singleflight: new Singleflight(),
   };
@@ -62,5 +66,28 @@ describe('transmission fetcher', () => {
     const data = (await fetcher()(ctx, { type: 'transmission', url: 'http://tr.lab:9091/', limit: 1 })) as TorrentData;
     expect(calls).toBe(1);
     expect(data.torrents).toHaveLength(1);
+  });
+
+  it('authorizes with the env credentials and ignores ones left in the config', async () => {
+    const seen: Array<Record<string, string>> = [];
+    const ctx = makeCtx(async (_url, init) => {
+      seen.push({ ...(init?.headers as Record<string, string>) });
+      return new Response(JSON.stringify(RPC_FIXTURE), { status: 200 });
+    }, { TRANSMISSION_USERNAME: 'envuser', TRANSMISSION_PASSWORD: 'envpass' });
+    await fetcher()(ctx, {
+      type: 'transmission',
+      url: 'http://tr.lab:9091',
+      username: 'leaked',
+      password: 'leaked',
+    });
+    expect(seen[0].authorization).toBe(`Basic ${btoa('envuser:envpass')}`);
+    expect(seen[0].authorization).not.toContain('leaked');
+    const parsed = transmissionSchema.parse({
+      type: 'transmission',
+      url: 'http://tr.lab:9091',
+      username: 'leaked',
+      password: 'leaked',
+    });
+    expect(JSON.stringify(parsed)).not.toContain('leaked');
   });
 });

@@ -42,8 +42,8 @@ function toItem(t: TransmissionTorrent): TorrentItem {
 registerWidget('transmission', async (ctx, config): Promise<TorrentData> => {
   const cfg = transmissionSchema.parse(config);
   const base = cfg.url.replace(/\/+$/, '');
-  const username = cfg.username ?? ctx.env.TRANSMISSION_USERNAME;
-  const password = cfg.password ?? ctx.env.TRANSMISSION_PASSWORD;
+  const username = ctx.env.TRANSMISSION_USERNAME;
+  const password = ctx.env.TRANSMISSION_PASSWORD;
   const headers: Record<string, string> = { 'content-type': 'application/json', accept: 'application/json' };
   if (username) headers.authorization = `Basic ${btoa(`${username}:${password ?? ''}`)}`;
   const payload = JSON.stringify({
