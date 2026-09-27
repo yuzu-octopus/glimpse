@@ -14,10 +14,6 @@ const DOT_VARIANT: Record<'online' | 'offline', StatusDotVariant> = {
   offline: 'neutral',
 };
 
-function dotLabel(d: TailscaleDevice): string {
-  return `${d.name} is ${d.online ? 'online' : 'offline'}`;
-}
-
 /** "seen 3h ago", ageing on the shared 60s tick. Tailscale sends `lastSeen`
  * only while a node is disconnected, so this is the offline row's whole
  * supporting line. */
@@ -46,7 +42,7 @@ function DeviceRow({ device }: { device: TailscaleDevice }) {
     >
       <StatusDot
         variant={DOT_VARIANT[state]}
-        label={dotLabel(device)}
+        label={`${device.name} is ${state}`}
         data-testid={`ts-dot-${state}`}
       />
       <Stack gap={0.5} className={styles.body}>
