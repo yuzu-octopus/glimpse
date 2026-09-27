@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import type { NotepadConfig } from '../../../shared/widgets/notepad';
+import { localStateKey } from '../../../shared/widgets/local-state';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import styles from './notepad.module.css';
 
 export function Notepad({ config }: WidgetComponentProps) {
   const cfg = config as unknown as NotepadConfig;
-  const key = `glimpse.notepad.${cfg.id ?? 'default'}`;
+  const key = localStateKey('notepad', cfg.id);
   const [text, setText] = useState(() => {
     try {
       return localStorage.getItem(key) ?? '';

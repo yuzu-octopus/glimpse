@@ -6,6 +6,7 @@ import {
   type ResolvedConfig,
 } from '../shared/config';
 import { isRecord } from '../shared/is-record';
+import { hasLocalState } from '../shared/widgets/local-state';
 
 // `__bunYamlParse` is a test seam: Bun's own YAML parser, installed by
 // src/test/setup.ts because vitest's Node workers have no Bun global. A
@@ -216,6 +217,55 @@ function deriveSlugs(raw: unknown, errors: string[]): unknown {
   });
 }
 
+/** Per-instance identity for the widgets that keep their state in the browser.
+ *
+ * notepad, todo and timer key their localStorage on `glimpse.<type>.<id>`,
+ * and every one of them allowed `id` to be omitted. Two bare notepads — on one
+ * page or on two — then both resolved to `glimpse.notepad.default` and shared
+ * a single blob, so typing in either silently overwrote the other. The schema
+ * cannot make `id` required without refusing to load every existing config
+ * that omits it, so identity is derived here, next to the slugs that already
+ * give a page its name.
+ *
+ * The first instance of a type on a page is deliberately left alone: it has
+ * always owned `default`, and re-keying it would orphan every note, task and
+ * in-flight timer in every existing install. Only the instances that would
+ * actually collide are given a new key.
+ */
+function deriveWidgetIds(pages: unknown): unknown {
+  if (!Array.isArray(pages)) return pages;
+  return pages.map((page) => {
+    if (!isRecord(page) || typeof page.slug !== 'string') return page;
+    const counts: Record<string, number> = {};
+    const claim = (widget: unknown): unknown => {
+      if (!isRecord(widget) || typeof widget.type !== 'string') return widget;
+      if (typeof widget.id === 'string' && widget.id) return widget;
+      if (!hasLocalState(widget.type)) return widget;
+      const n = (counts[widget.type] ?? 0) + 1;
+      counts[widget.type] = n;
+      return n === 1 ? widget : { ...widget, id: `${page.slug}.${widget.type}.${n}` };
+    };
+    const walk = (widgets: unknown): unknown => {
+      if (!Array.isArray(widgets)) return widgets;
+      return widgets.map((w) => {
+        const claimed = claim(w);
+        return isRecord(claimed) && Array.isArray(claimed.widgets)
+          ? { ...claimed, widgets: walk(claimed.widgets) }
+          : claimed;
+      });
+    };
+    return {
+      ...page,
+      'head-widgets': walk(page['head-widgets']),
+      columns: Array.isArray(page.columns)
+        ? (page.columns as unknown[]).map((col) =>
+            isRecord(col) ? { ...col, widgets: walk(col.widgets) } : col,
+          )
+        : page.columns,
+    };
+  });
+}
+
 /** Load + validate a config file. Pure with respect to the filesystem. */
 export function loadConfig(configPath: string): LoadResult {
   const errors: string[] = [];
@@ -229,10 +279,10 @@ export function loadConfig(configPath: string): LoadResult {
 
   validateColumns(interpolated.pages, errors);
   validateNesting(interpolated.pages, errors, 'config.pages');
-  const withSlugs = deriveSlugs(interpolated.pages, errors);
+  const identified = deriveWidgetIds(deriveSlugs(interpolated.pages, errors)) as unknown[];
   if (errors.length > 0) return { ok: false, errors, warnings, files };
 
-  const parsed = ConfigSchema.safeParse({ ...interpolated, pages: withSlugs });
+  const parsed = ConfigSchema.safeParse({ ...interpolated, pages: identified });
   if (!parsed.success) {
     for (const issue of parsed.error.issues) {
       const path = issue.path.length ? `config.${issue.path.join('.')}` : 'config';
