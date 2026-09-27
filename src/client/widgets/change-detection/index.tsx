@@ -19,10 +19,25 @@ function ChangeDetection({ config, data, error, isLoading }: WidgetComponentProp
   const items = (data as ChangeDetectionData | null) ?? [];
   const loading = isLoading ?? ((data as unknown) == null && !error);
   if (error) {
-    return <WidgetChrome title={cfg.title ?? 'Changes'} error={String(error)} showErrors={cfg['show-errors']} />;
+    return (
+      <WidgetChrome
+        title={cfg.title ?? 'Changes'}
+        titleUrl={cfg['title-url']}
+        hideHeader={cfg['hide-header']}
+        cssClass={cfg['css-class']}
+        error={String(error)}
+        showErrors={cfg['show-errors']}
+      />
+    );
   }
   return (
-    <WidgetChrome title={cfg.title ?? 'Changes'} isLoading={!!loading}>
+    <WidgetChrome
+      title={cfg.title ?? 'Changes'}
+      titleUrl={cfg['title-url']}
+      hideHeader={cfg['hide-header']}
+      cssClass={cfg['css-class']}
+      isLoading={!!loading}
+    >
       {items.length === 0 && !loading ? <div className={styles.empty}>No watched URLs</div> : null}
       <ul className={styles.list}>
         {items.map((item) => (
