@@ -56,30 +56,45 @@
   appearance: none;
   margin: 0;
   flex-shrink: 0;
-  width: 14px;
-  height: 14px;
-  border: 1.5px solid var(--color-text-subdue);
-  border-radius: 3px;
+  /* The element is the WCAG 2.2 AA 24px hit target (measured 14x14). The
+   * visible box is painted by ::before so the tick stays at glance's 14px —
+   * the target grows, the control does not look bigger. */
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius);
   cursor: pointer;
   position: relative;
+}
+
+.checkbox::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 1.5px solid var(--color-text-subdue);
+  border-radius: 3px;
+  background: transparent;
   transition: border-color 0.2s, background-color 0.2s;
 }
 
-.checkbox:hover {
+.checkbox:hover::before {
   border-color: var(--color-primary);
 }
 
 .checkbox::after {
   content: '';
   position: absolute;
-  inset: 3px;
+  /* The old tick was a 5px square inset 3px inside the 14px box's 1.5px
+   * border. Same square, carried to the 24px element: 5 + 1.5 + 3 = 9.5. */
+  inset: 9.5px;
   border-radius: 1px;
   background: var(--color-success);
   opacity: 0;
   transition: opacity 0.2s;
 }
 
-.checkbox:checked {
+.checkbox:checked::before {
   border-color: var(--color-success);
   background-color: color-mix(in srgb, var(--color-success) 22%, transparent);
 }
@@ -90,8 +105,6 @@
 
 .checkbox:focus-visible {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .itemText {
@@ -114,7 +127,12 @@
 
 .iconBtn {
   display: inline-flex;
-  padding: 2px;
+  align-items: center;
+  justify-content: center;
+  /* 24px AA hit target around the unchanged 13px glyph (measured 17x17). */
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
   border: none;
   background: transparent;
   color: var(--color-text-base-muted);
