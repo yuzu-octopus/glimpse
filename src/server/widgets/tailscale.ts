@@ -53,8 +53,8 @@ function byReachability(a: TailscaleDevice, b: TailscaleDevice): number {
 
 registerWidget('tailscale', async (ctx, config): Promise<TailscaleData> => {
   const cfg = tailscaleSchema.parse(config);
-  const key = cfg['api-key'] ?? ctx.env.TS_API_KEY;
-  if (!key) throw new Error('tailscale: missing api-key (set api-key or TS_API_KEY)');
+  const key = ctx.env.TS_API_KEY;
+  if (!key) throw new Error('tailscale: missing TS_API_KEY (needs the devices:core:read scope)');
   const retry = retryOptionsFrom(cfg);
 
   // `fields=all` is the only query param the official client sends, and it is

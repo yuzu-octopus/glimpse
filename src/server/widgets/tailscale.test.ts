@@ -3,6 +3,7 @@ import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './tailscale';
 import type { TailscaleData } from '../../shared/widgets/payloads';
+import { tailscaleSchema } from '../../shared/widgets/tailscale';
 
 /** Shaped off tailscale-client-go-v2's Device struct: there is no `online`
  *  field, connectivity is `connectedToControl`, and `lastSeen` is null while
@@ -52,9 +53,12 @@ const DEVICES_FIXTURE = {
   ],
 };
 
+/** The widget's only credential source — TS_API_KEY, never the config. */
+const KEY_ENV = { TS_API_KEY: 'tskey-env' };
+
 function makeCtx(
   fetchImpl: (url: string, init?: RequestInit) => Promise<Response>,
-  env: Record<string, string | undefined> = {},
+  env: Record<string, string | undefined> = KEY_ENV,
 ): WidgetFetchContext {
   return {
     fetch: vi.fn(fetchImpl) as unknown as typeof fetch,
@@ -82,9 +86,9 @@ describe('tailscale fetcher', () => {
   it('calls the devices endpoint with a Bearer token and fields=all', async () => {
     const seen: string[] = [];
     const inits: RequestInit[] = [];
-    const ctx = makeCtx(recorder(seen, inits));
+    const ctx = makeCtx(recorder(seen, inits), { TS_API_KEY: 'tskey-secret' });
 
-    await fetcher()(ctx, { type: 'tailscale', 'api-key': 'tskey-secret' });
+    await fetcher()(ctx, { type: 'tailscale' });
 
     expect(seen).toHaveLength(1);
     // Pinned exactly: `fields=all` is the one query param the official
@@ -94,7 +98,7 @@ describe('tailscale fetcher', () => {
     expect((inits[0].headers as Record<string, string>).Authorization).toBe('Bearer tskey-secret');
   });
 
-  it('reads the TS_API_KEY env var when the config carries no key', async () => {
+  it('reads the TS_API_KEY env var', async () => {
     const inits: RequestInit[] = [];
     const ctx = makeCtx(recorder([], inits), { TS_API_KEY: 'tskey-env' });
 
@@ -103,25 +107,27 @@ describe('tailscale fetcher', () => {
     expect((inits[0].headers as Record<string, string>).Authorization).toBe('Bearer tskey-env');
   });
 
-  it('prefers the config key over the environment', async () => {
+  it('ignores an api-key left in the config — the schema strips it', async () => {
     const inits: RequestInit[] = [];
     const ctx = makeCtx(recorder([], inits), { TS_API_KEY: 'tskey-env' });
 
     await fetcher()(ctx, { type: 'tailscale', 'api-key': 'tskey-config' });
 
-    expect((inits[0].headers as Record<string, string>).Authorization).toBe('Bearer tskey-config');
+    expect((inits[0].headers as Record<string, string>).Authorization).toBe('Bearer tskey-env');
+    expect('api-key' in tailscaleSchema.parse({ type: 'tailscale', 'api-key': 'leaked' })).toBe(false);
   });
+
 
   it('URL-encodes an explicit tailnet name', async () => {
     const seen: string[] = [];
     const ctx = makeCtx(recorder(seen));
-    await fetcher()(ctx, { type: 'tailscale', 'api-key': 'k', tailnet: 'example.com' });
+    await fetcher()(ctx, { type: 'tailscale', tailnet: 'example.com' });
     expect(seen[0]).toContain('/api/v2/tailnet/example.com/devices');
   });
 
   it('derives online from connectedToControl, never an "online" field', async () => {
     const ctx = makeCtx(recorder());
-    const data = (await fetcher()(ctx, { type: 'tailscale', 'api-key': 'k' })) as TailscaleData;
+    const data = (await fetcher()(ctx, { type: 'tailscale' })) as TailscaleData;
     const nas = data.devices.find((d) => d.name === 'nas.home.arpa')!;
     const laptop = data.devices.find((d) => d.name === 'laptop.home.arpa')!;
     expect(nas.online).toBe(true);
@@ -132,7 +138,7 @@ describe('tailscale fetcher', () => {
 
   it('keeps the 100.x address and drops the fd7a: IPv6', async () => {
     const ctx = makeCtx(recorder());
-    const data = (await fetcher()(ctx, { type: 'tailscale', 'api-key': 'k' })) as TailscaleData;
+    const data = (await fetcher()(ctx, { type: 'tailscale' })) as TailscaleData;
     expect(data.devices.find((d) => d.name === 'nas.home.arpa')!.address).toBe('100.101.102.103');
     // A node with no 100.x entry must not fall back to the ULA address.
     expect(data.devices.find((d) => d.name === 'guest')!.address).toBeNull();
@@ -140,7 +146,7 @@ describe('tailscale fetcher', () => {
 
   it('prefers nodeId over the legacy numeric id', async () => {
     const ctx = makeCtx(recorder());
-    const data = (await fetcher()(ctx, { type: 'tailscale', 'api-key': 'k' })) as TailscaleData;
+    const data = (await fetcher()(ctx, { type: 'tailscale' })) as TailscaleData;
     expect(data.devices.find((d) => d.name === 'nas.home.arpa')!.id).toBe('nAAAA');
     // `guest` has no nodeId at all, so the legacy id is the fallback key.
     expect(data.devices.find((d) => d.name === 'guest')!.id).toBe('99999');
@@ -148,7 +154,7 @@ describe('tailscale fetcher', () => {
 
   it('marks the exit node from enabledRoutes', async () => {
     const ctx = makeCtx(recorder());
-    const data = (await fetcher()(ctx, { type: 'tailscale', 'api-key': 'k' })) as TailscaleData;
+    const data = (await fetcher()(ctx, { type: 'tailscale' })) as TailscaleData;
     expect(data.devices.find((d) => d.name === 'nas.home.arpa')!.exitNode).toBe(true);
     expect(data.devices.find((d) => d.name === 'laptop.home.arpa')!.exitNode).toBe(false);
   });
@@ -161,7 +167,7 @@ describe('tailscale fetcher', () => {
         body([{ name: 'offer', connectedToControl: true, enabledRoutes: [], advertisedRoutes: ['0.0.0.0/0'] }]),
       ),
     );
-    const data = (await fetcher()(ctx, { type: 'tailscale', 'api-key': 'k' })) as TailscaleData;
+    const data = (await fetcher()(ctx, { type: 'tailscale' })) as TailscaleData;
     expect(data.devices[0].exitNode).toBe(false);
   });
 
@@ -177,7 +183,7 @@ describe('tailscale fetcher', () => {
         ]),
       ),
     );
-    const data = (await fetcher()(ctx, { type: 'tailscale', 'api-key': 'k' })) as TailscaleData;
+    const data = (await fetcher()(ctx, { type: 'tailscale' })) as TailscaleData;
     expect(data.devices.map((d) => d.name)).toEqual(['a-online', 'b-online', 'z-offline']);
   });
 
@@ -193,13 +199,13 @@ describe('tailscale fetcher', () => {
         ]),
       ),
     );
-    const data = (await fetcher()(ctx, { type: 'tailscale', 'api-key': 'k', limit: 2 })) as TailscaleData;
+    const data = (await fetcher()(ctx, { type: 'tailscale', limit: 2 })) as TailscaleData;
     expect(data.devices.map((d) => d.name)).toEqual(['on-1', 'on-2']);
   });
 
   it('ignores device fields the widget does not render, and keeps a node with no address', async () => {
     const ctx = makeCtx(recorder());
-    const data = (await fetcher()(ctx, { type: 'tailscale', 'api-key': 'k' })) as TailscaleData;
+    const data = (await fetcher()(ctx, { type: 'tailscale' })) as TailscaleData;
     const guest = data.devices.find((d) => d.name === 'guest')!;
     // The API sends user/tags/authorized; none of them reach the payload.
     expect(guest).toEqual({
@@ -216,18 +222,18 @@ describe('tailscale fetcher', () => {
 
   it('tolerates a response with no devices key', async () => {
     const ctx = makeCtx(recorder([], [], {}));
-    await expect(fetcher()(ctx, { type: 'tailscale', 'api-key': 'k' })).resolves.toEqual({
+    await expect(fetcher()(ctx, { type: 'tailscale' })).resolves.toEqual({
       devices: [],
     });
   });
 
-  it('throws without an api key, naming both routes to supply one', async () => {
-    const ctx = makeCtx(recorder());
-    await expect(fetcher()(ctx, { type: 'tailscale' })).rejects.toThrow(/api-key.*TS_API_KEY/i);
+  it('throws when TS_API_KEY is unset, naming the env var to set', async () => {
+    const ctx = makeCtx(recorder(), {});
+    await expect(fetcher()(ctx, { type: 'tailscale' })).rejects.toThrow(/TS_API_KEY/);
   });
 
   it('surfaces an upstream failure instead of rendering an empty tailnet', async () => {
     const ctx = makeCtx(async () => new Response('unauthorized', { status: 401 }));
-    await expect(fetcher()(ctx, { type: 'tailscale', 'api-key': 'k' })).rejects.toThrow();
+    await expect(fetcher()(ctx, { type: 'tailscale' })).rejects.toThrow();
   });
 });

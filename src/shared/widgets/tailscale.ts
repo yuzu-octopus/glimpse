@@ -19,20 +19,15 @@ export const TAILSCALE_PREF: Pref = {
 };
 export const TAILSCALE_SKELETON: SkeletonShape = 'rows';
 
-export const tailscaleSchema = z
-  .object({
-    type: z.literal('tailscale'),
-    ...sharedWidgetFields,
-    /** Tailscale API access key (`tskey-…`). Interpolation happens server-side
-     *  at config load, so the usual `api-key: ${TS_API_KEY}` keeps the secret
-     *  out of the file. Left unset, the fetcher falls back to the TS_API_KEY
-     *  environment variable. Needs the `devices:core:read` scope. */
-    'api-key': z.string().optional(),
-    /** Tailnet id or `-` for the tailnet owning the key. */
-    tailnet: z.string().default(TAILSCALE_DEFAULTS.tailnet),
-    /** Online devices are listed first, so this is the visible head count. */
-    limit: z.number().int().min(1).max(200).default(TAILSCALE_DEFAULTS.limit),
-  })
-  .loose();
+// No credential field: the config is served to the browser verbatim, so a key
+// in the YAML is a key in the page. TS_API_KEY is the only source.
+export const tailscaleSchema = z.object({
+  type: z.literal('tailscale'),
+  ...sharedWidgetFields,
+  /** Tailnet id or `-` for the tailnet owning the key. */
+  tailnet: z.string().default(TAILSCALE_DEFAULTS.tailnet),
+  /** Online devices are listed first, so this is the visible head count. */
+  limit: z.number().int().min(1).max(200).default(TAILSCALE_DEFAULTS.limit),
+});
 
 export type TailscaleConfig = z.infer<typeof tailscaleSchema>;
