@@ -426,6 +426,10 @@ pages:
             show-thumbnails: true
             source-header: true
           - type: bookmarks
+            # `icon:` takes an image URL, or a glance shorthand into a public
+            # icon library: `si:` Simple Icons, `sh:` selfh.st, `di:`
+            # Dashboard Icons, `mdi:` Material Design — `si:grafana` below. A
+            # URL that fails to load drops the icon tile, never the link.
             groups:
               - title: Homelab
                 links:
