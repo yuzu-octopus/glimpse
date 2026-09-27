@@ -13,7 +13,13 @@ export const bookmarksSchema = z.object({
     .array(
       z.object({
         title: z.string().optional(),
-        color: z.string().optional(),
+        /**
+         * Named tag accents only. This was a free-form string painted straight
+         * onto the title, so `color: purple` made purple decoration — and
+         * purple is the tappable hue. The kit's sixth tag accent, blue, is
+         * #BD93F9 in this theme, i.e. that same purple, so it is excluded too.
+         */
+        color: z.enum(['green', 'cyan', 'yellow', 'orange', 'pink']).optional(),
         links: z
           .array(
             z.object({
