@@ -1,6 +1,7 @@
-# Glimpse — curated demo (4 pages, hide-headers, Singapore).
-# Tiling: Home/Dev/Lab = columns (12-col spans), Social = collage (place()-driven bento).
-# New widgets: server-stats / dns-stats / docker-containers (all homelab, on Lab).
+# Glimpse — curated demo (5 pages, hide-headers, Singapore).
+# Tiling: Home/Dev/Lab/Media = columns (12-col spans), Social = collage (place()-driven bento).
+# New widgets: server-stats / dns-stats / docker-containers (all homelab, on
+# Lab) and the media stack immich / jellyfin / qbittorrent / transmission (Media).
 #
 # Theme: astryx-dracula, dark only — there is no `theme:` block, and a config
 # that still has one fails to load with a message saying so. To append your
@@ -153,23 +154,31 @@ pages:
               path: $.stargazers_count
               title: Stargazers
               description: github.com/glanceapp/glance
-          # No top-level `url` needed when you want several endpoints in one
-          # list: subrequests fan out in parallel and become a synthetic root
-          # keyed by name, so the path reaches them as $.<name>.<field>
-          # (glance's .Subrequest equivalent). With a top-level `url` set,
-          # that payload is the root and subrequests are not merged in.
-          # - type: custom-api
-          #   subrequests:
-          #     uptime: { url: https://status.example.com/api/v2/summary.json }
-          #     billing: { url: https://billing.example.com/api/plan }
-          #   options:
-          #     path: $.uptime.components[*]
-          #     title: $.name          # a leading $ or @ is JSONPath, else literal
-          #     description: $.status
+          # No top-level `url` when you want several endpoints in one widget:
+          # subrequests fan out in parallel and become a synthetic root keyed
+          # by name, so `path` reaches them as $.<name>.<field> (glance's
+          # .Subrequest equivalent). With a top-level `url` set, that payload is
+          # the root and subrequests are not merged in. Every other option is
+          # resolved against whatever `path` selected, so two endpoints in one
+          # list means one `path` that spans them.
+          - type: custom-api
+            title: Watched repos
+            subrequests:
+              glance: { url: https://api.github.com/repos/glanceapp/glance }
+              bat: { url: https://api.github.com/repos/sharkdp/bat }
+            options:
+              path: $.*                 # one entry per subrequest
+              title: $.name             # a leading $ or @ is JSONPath, else literal
+              url: $.html_url
+              value: $.stargazers_count
+              icon: $.owner.avatar_url
           - type: repository
             repository: glanceapp/glance
             pull-requests-limit: 5
             issues-limit: 5
+            # Latest commits on the default branch. -1 is the default and means
+            # "show none", which also skips the extra /commits request.
+            commits-limit: 5
           - type: github-trending
             title: Trending
             language: typescript
@@ -200,15 +209,38 @@ pages:
               - type: iframe
                 source: https://example.com
                 height: 360
+          - type: ai-quota
+            title: Codex quota
+            # One widget per provider. Credentials never live in this file —
+            # the server hands the whole config to the browser, so a token
+            # here would leak. Export the provider's env var instead, or set
+            # `tokenFile` to a mounted credential path.
+            provider: codex
+            cache: 2m
+          - type: model-endpoints
+            title: Model endpoints
+            # Which OpenRouter slugs this dashboard actually depends on — the
+            # catalogue is 458, so the list IS the filter. `provider` narrows
+            # every listed model to one tag, `unhealthy-only` is the "is a
+            # model I rely on degraded?" view. No key: the API is public.
+            models:
+              - anthropic/claude-sonnet-4.5
+              - openai/gpt-5
+              - google/gemini-2.5-pro
+            limit: 6
           - type: split-column
-            # N children laid out one per grid track, at most `max-columns`
-            # per row (>= 2, default 2). Add a third child and bump this to 3.
-            max-columns: 2
+            # N children laid out one per grid track, `max-columns` per row
+            # (>= 2, default 2). The third child here would wrap onto a second
+            # row at the default; the cap below is what keeps all three level.
+            max-columns: 3
             widgets:
               - type: todo
                 id: dev-split-todo
               - type: html
                 source: "<p>Side notes render here.</p>"
+              - type: notepad
+                id: dev-split-notes
+                placeholder: Scratch…
 
   - name: Social
     slug: social
@@ -284,6 +316,25 @@ pages:
             url: http://pihole.lab
             hide-graph: false
             hide-top-domains: false
+          # Both widgets below need a credential and fall back to an env var
+          # when it is not in the config (TS_API_KEY, HA_TOKEN), so they
+          # report the fetch error until you set one — same as the media stack
+          # on the Media page.
+          - type: home-assistant
+            title: Home Assistant
+            url: http://home.lab:8123
+            # One GET /api/states serves the whole list, filtered server-side.
+            # An entry is a bare entity id, or `entity` + the `label` to show.
+            entities:
+              - light.hallway
+              - entity: switch.living_room_fan
+                label: Fan
+              - sensor.living_room_temperature
+          - type: tailscale
+            title: Tailnet
+            # `tailnet: -` means "whichever tailnet owns this key"; the key
+            # needs the devices:core:read scope. Online devices sort first.
+            limit: 12
           - type: docker-containers
             title: Containers
             sock-path: /var/run/docker.sock
@@ -316,30 +367,8 @@ pages:
             exclude:
               - just-chatting
               - music
-          # Media stack — uncomment against live instances. Secrets stay
-          # server-side via env interpolation (missing var = config error).
-          # - type: immich
-          #   title: Recent photos
-          #   url: https://immich.lab
-          #   api-key: ${IMMICH_API_KEY}
-          #   limit: 10
-          # - type: jellyfin
-          #   title: Recently added
-          #   url: https://jellyfin.lab
-          #   api-key: ${JELLYFIN_API_KEY}
-          #   limit: 10
-          # - type: qbittorrent
-          #   title: Downloads
-          #   url: http://qb.lab:8080
-          #   username: ${QBITTORRENT_USERNAME}
-          #   password: ${QBITTORRENT_PASSWORD}
-          #   limit: 10
-          # - type: transmission
-          #   title: Torrents
-          #   url: http://transmission.lab:9091
-          #   username: ${TRANSMISSION_USERNAME}
-          #   password: ${TRANSMISSION_PASSWORD}
-          #   limit: 10
+          # The media stack lives on the Media page, against the same .lab
+          # hosts — immich / jellyfin / qbittorrent / transmission.
           - type: todo
             id: lab-todo
           - type: weather
@@ -370,27 +399,41 @@ pages:
             # kuma-slug: homelab
             # healthchecks-key: ${HC_API_KEY}
             # healthchecks-tags: [prod]
+            # Per-site `icon:` takes an image URL or the same shorthand into a
+            # public icon library as bookmarks: `si:` Simple Icons, `sh:`
+            # selfh.st, `di:` Dashboard Icons, `mdi:` Material Design. A name
+            # or URL that fails to load drops the icon, never the row.
             sites:
               - url: https://grafana.lab
                 title: Grafana
+                icon: si:grafana
               - url: https://immich.lab
                 title: Immich
+                icon: sh:immich
               - url: https://jellyfin.lab
                 title: Jellyfin
+                icon: si:jellyfin
               - url: https://home.lab
                 title: Home Assistant
+                icon: di:home-assistant
               - url: https://pihole.lab
                 title: Pi-hole
+                icon: si:pihole
               - url: https://portainer.lab
                 title: Portainer
+                icon: di:portainer
               - url: https://proxmox.lab
                 title: Proxmox
+                icon: si:proxmox
               - url: https://truenas.lab
                 title: TrueNAS
+                icon: mdi:nas
               - url: https://auth.lab
                 title: Authentik
+                icon: si:authentik
               - url: https://code.lab
                 title: Gitea
+                icon: si:gitea
           - type: rss
             title: Self-hosted blogs
             limit: 10
@@ -407,6 +450,15 @@ pages:
                 title: Home Assistant
               - url: https://blog.cloudflare.com/rss/
                 title: Cloudflare Blog
+              # `item-link-prefix` is per feed, and it is prepended verbatim to
+              # every item link this feed emits — the fix for a feed that
+              # publishes bare paths and leaves Glimpse to guess the origin.
+              # It REPLACES the link, so never set it on a feed that already
+              # publishes absolute ones. A dead feed only drops itself: the
+              # widget still renders everything that did load.
+              - url: http://miniflux.lab/feeds/unread.atom.xml
+                title: Miniflux
+                item-link-prefix: http://miniflux.lab/
           - type: hacker-news
             # A background feed: one attempt, and a rate-limit response must
             # not paint a red banner over the page. `show-errors: false` keeps
@@ -472,87 +524,80 @@ pages:
             repository: home-assistant/core
             pull-requests-limit: 5
             issues-limit: 5
+            commits-limit: 5
           - type: iframe
             title: Grafana
             source: https://grafana.lab/d/000000001/homelab?orgId=1&kiosk
             height: 420
 
-# AI quota (CodexBar port, 70 providers) — subscription % + reset countdowns
-# Secrets stay server-side; use env interpolation or mounted token file.
-# Full id list: KNOWN_PROVIDERS in src/shared/widgets/quota-types.ts
-# (codex, claude, openai, anthropic, copilot, gemini, cursor, kimi, opencode, ollama, …).
-# - type: ai-quota
-#   provider: codex        # token or tokenFile required
-#   token: ${CODEX_TOKEN}  # or tokenFile: /run/secrets/codex.json (mount ~/.codex/auth.json)
-#   cache: 2m
-# - type: ai-quota
-#   provider: claude
-#   token: ${ANTHROPIC_API_KEY}  # or tokenFile: ~/.claude/.credentials.json
-#   cache: 2m
-# - type: ai-quota
-#   provider: openai
-#   token: ${OPENAI_ADMIN_KEY}
-#   projectId: my-project
-#   cache: 2m
-# - type: ai-quota
-#   provider: copilot
-#   token: ${GITHUB_TOKEN}  # device-flow OAuth token
-#   cache: 2m
-# - type: ai-quota
-#   provider: cursor
-#   token: ${CURSOR_TOKEN}
-#   cache: 2m
-# - type: ai-quota
-#   provider: kimi
-#   token: ${KIMI_API_KEY}
-#   cache: 2m
-# - type: ai-quota
-#   provider: opencode
-#   token: ${OPENCODE_TOKEN}  # or tokenFile: ~/.local/share/opencode/auth.json
-#   cache: 2m
-# - type: ai-quota
-#   provider: jetbrains
-#   tokenFile: /run/secrets/jetbrains/AIAssistantQuotaManager2.xml  # JetBrains AIAssistantQuotaManager2.xml
-#   cache: 5m
-# - type: ai-quota
-#   provider: zed
-#   token: ${ZED_TOKEN}  # or tokenFile: /run/secrets/zed.json (cloud.zed.dev credentials)
-#   cache: 2m
-# - type: ai-quota
-#   provider: gemini
-#   token: ${GEMINI_API_KEY}  # or gcloud ADC via Bun.spawn(['gcloud','auth','print-access-token'])
-#   quotaUrl: https://generativelanguage.googleapis.com
-#   cache: 2m
-# - type: ai-quota
-#   provider: vertex
-#   token: ${GOOGLE_OAUTH_TOKEN}  # or gcloud ADC
-#   projectId: my-gcp-project
-#   quotaUrl: https://monitoring.googleapis.com
-#   cache: 5m
-# - type: ai-quota
-#   provider: grok
-#   token: ${XAI_API_KEY}  # or tokenFile: ~/.grok/auth.json ; fallback grok agent stdio
-#   quotaUrl: https://api.x.ai
-#   cache: 2m
-# - type: ai-quota
-#   provider: amp
-#   tokenFile: ~/.config/amp/auth.json  # or amp usage CLI probe (10s timeout)
-#   cache: 5m
-# - type: ai-quota
-#   provider: kiro
-#   tokenFile: ~/.config/kiro/auth.json  # kiro-cli chat --no-interactive "/usage" (10s timeout)
-#   cache: 2m
-# - type: ai-quota
-#   provider: antigravity
-#   quotaUrl: https://localhost:8765  # agy HTTPS localhost LSP RetrieveUserQuotaSummary
-#   token: ${ANTIGRAVITY_TOKEN}
-#   cache: 2m
-# - type: ai-quota
-#   provider: ollama
-#   quotaUrl: http://localhost:11434  # local Ollama host, no token needed
-#   cache: 1m
-# - type: ai-quota
-#   provider: bedrock
-#   token: ${AWS_BEDROCK_TOKEN}
-#   quotaUrl: https://bedrock-runtime.amazonaws.com
-#   cache: 2m
+  - name: Media
+    slug: media
+    hide-headers: true
+    # Media stack — every widget below points at a `.lab` host, so each one
+    # renders an error banner until you point it at a real instance. The
+    # credentials are left out on purpose: each widget falls back to its env
+    # var (IMMICH_API_KEY, JELLYFIN_API_KEY, QBITTORRENT_USERNAME/PASSWORD,
+    # TRANSMISSION_USERNAME/PASSWORD), so the file stays loadable with nothing
+    # in the environment and secrets never sit in the config.
+    columns:
+      - span: 6
+        widgets:
+          - type: immich
+            title: Recent photos
+            url: https://immich.lab
+            limit: 12
+          - type: jellyfin
+            title: Recently added
+            url: https://jellyfin.lab
+            # `user-id` is optional — /Items/Latest resolves the first user.
+            limit: 12
+      - span: 3
+        widgets:
+          - type: qbittorrent
+            title: Downloads
+            url: http://qb.lab:8080
+            limit: 8
+          - type: transmission
+            title: Torrents
+            url: http://transmission.lab:9091
+            limit: 8
+      - span: 3
+        widgets:
+          - type: bookmarks
+            # `hide-arrow` and `target` are group- or link-level and the link
+            # wins: `target` overrides `same-tab` and takes any target string,
+            # so `_self` keeps a shortcut in the dashboard tab.
+            groups:
+              - title: Servers
+                hide-arrow: true
+                target: _self
+                links:
+                  - title: Immich
+                    url: https://immich.lab
+                    icon: si:immich
+                  - title: Jellyfin
+                    url: https://jellyfin.lab
+                    icon: si:jellyfin
+              - title: Torrents
+                links:
+                  - title: qBittorrent
+                    url: http://qb.lab:8080
+                    icon: si:qbittorrent
+                  - title: Transmission
+                    url: http://transmission.lab:9091
+                    icon: si:transmission
+          - type: todo
+            id: media-todo
+
+# ai-quota (CodexBar port, 70 providers) — subscription % and reset countdowns.
+# One live widget is on the Dev page; the id list is KNOWN_PROVIDERS in
+# src/shared/widgets/quota-types.ts. Beyond `provider` and one of `token` /
+# `tokenFile`, only a few take more:
+#   projectId   openai, vertex — the console project that owns the quota
+#   quotaUrl    gemini, vertex, grok, ollama, bedrock, antigravity — a
+#               non-default or self-hosted endpoint (`ollama` is just
+#               http://localhost:11434, `vertex` reads monitoring.googleapis.com)
+#   tokenFile   jetbrains (AIAssistantQuotaManager2.xml), amp, kiro, grok,
+#               opencode, zed — mount the CLI's own auth file rather than
+#               copying a token out of it
+# Give anything that shells out to a CLI (amp, kiro) a longer `cache`, 5m.
