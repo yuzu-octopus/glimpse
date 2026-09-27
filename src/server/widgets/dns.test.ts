@@ -285,3 +285,80 @@ describe('dns-stats fetcher', () => {
     expect(JSON.stringify(parsed)).not.toContain('leaked');
   });
 });
+
+// The widget's `url:` is the one place a user can still put a secret, and the
+// API tokens travel in the query string. Every `throw` under test is a
+// widget-local error: api.ts copies `e.message` verbatim into the NDJSON
+// stream, the service worker caches it on disk, and WidgetChrome renders it —
+// so a token in these strings is a token on the dashboard.
+describe('dns-stats error messages never carry a credential', () => {
+  const PIHOLE_TOKEN = 'pi_9f3c1d7b4e6a02f8_secret';
+  const TECHNITIUM_TOKEN = 'tcn_5a8e0c3f_secret';
+  const ADGUARD_PASSWORD = 'adguard-pw-7c1e_secret';
+  const V6_PASSWORD = 'pihole-pw-2b9f_secret';
+
+  /** Records every requested URL and answers each one with a non-ok body. */
+  function failingCtx(env: Record<string, string | undefined>, status = 401) {
+    const urls: string[] = [];
+    const ctx = makeCtx((url: string) => {
+      urls.push(url);
+      return { __status: status, __body: { error: 'nope' } };
+    }, env);
+    return { ctx, urls };
+  }
+
+  async function messageOf(promise: Promise<unknown>): Promise<string> {
+    try {
+      await promise;
+    } catch (e) {
+      if (e instanceof Error) return e.message;
+    }
+    throw new Error('expected the fetch to reject');
+  }
+
+  it('Pi-hole v5: status and host survive, the auth token does not', async () => {
+    const { ctx } = failingCtx({ PIHOLE_TOKEN });
+    const msg = await messageOf(
+      fetcher()(ctx, { type: 'dns-stats', service: 'pihole', url: 'http://pihole.local' }),
+    );
+    expect(msg).toContain('401');
+    expect(msg).toContain('pihole.local');
+    expect(msg).not.toContain(PIHOLE_TOKEN);
+  });
+
+  it('Technitium: status and host survive, the API token does not', async () => {
+    const { ctx } = failingCtx({ TECHNITIUM_TOKEN });
+    const msg = await messageOf(
+      fetcher()(ctx, { type: 'dns-stats', service: 'technitium', url: 'http://tech.local' }),
+    );
+    expect(msg).toContain('401');
+    expect(msg).toContain('tech.local');
+    expect(msg).not.toContain(TECHNITIUM_TOKEN);
+  });
+
+  it('AdGuard: userinfo in the base URL is dropped from the error', async () => {
+    const { ctx } = failingCtx({ ADGUARD_USERNAME: 'admin', ADGUARD_PASSWORD });
+    const msg = await messageOf(
+      fetcher()(ctx, {
+        type: 'dns-stats',
+        service: 'adguard',
+        url: `http://admin:${ADGUARD_PASSWORD}@adguard.local`,
+      }),
+    );
+    expect(msg).toContain('401');
+    expect(msg).toContain('adguard.local');
+    expect(msg).not.toContain(ADGUARD_PASSWORD);
+  });
+
+  it('Pi-hole v6 → v5 fallback: the v5 error is sanitized too', async () => {
+    const { ctx, urls } = failingCtx({ PIHOLE_PASSWORD: V6_PASSWORD, PIHOLE_TOKEN });
+    const msg = await messageOf(
+      fetcher()(ctx, { type: 'dns-stats', service: 'pihole', url: 'http://pihole.local' }),
+    );
+    expect(urls[0]).toContain('/api/auth');
+    expect(urls.at(-1)).toContain('/admin/api.php');
+    expect(msg).toContain('401');
+    expect(msg).not.toContain(PIHOLE_TOKEN);
+    expect(msg).not.toContain(V6_PASSWORD);
+  });
+});

@@ -1,6 +1,13 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { Singleflight, TtlCache } from '../cache';
-import { fetchWithRetry, fetchJson, fetchText, retryOptionsFrom, DEFAULT_RETRIES } from './http';
+import {
+  fetchWithRetry,
+  fetchJson,
+  fetchText,
+  retryOptionsFrom,
+  sanitizeUrl,
+  DEFAULT_RETRIES,
+} from './http';
 import type { WidgetFetchContext } from './registry';
 
 function makeCtx(fetchMock: ReturnType<typeof vi.fn>): WidgetFetchContext {
@@ -160,5 +167,34 @@ describe('retryOptionsFrom', () => {
       fetchJson(ctx, 'https://example.com/json', {}, retryOptionsFrom({ retries: 0 })),
     ).rejects.toThrow('HTTP 500');
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('sanitizeUrl', () => {
+  it('drops the query string but keeps the host, port and path', () => {
+    expect(sanitizeUrl('https://api.example.com:8443/v1/items?token=secret123&page=2')).toBe(
+      'https://api.example.com:8443/v1/items?…',
+    );
+  });
+
+  it('drops userinfo credentials', () => {
+    expect(sanitizeUrl('http://admin:hunter2@dns.local:3000/control/stats?auth=tok')).toBe(
+      'http://dns.local:3000/control/stats?…',
+    );
+  });
+
+  it('leaves a secret-free URL intact', () => {
+    expect(sanitizeUrl('https://api.github.com/repos/astryx/glimpse/commits')).toBe(
+      'https://api.github.com/repos/astryx/glimpse/commits',
+    );
+  });
+
+  it('still strips credentials and query from an unparseable URL', () => {
+    expect(sanitizeUrl('admin:hunter2@dns.local/api?token=secret123')).toBe('dns.local/api?…');
+    expect(sanitizeUrl('not a url at all')).toBe('not a url at all');
+  });
+
+  it('never returns a null origin', () => {
+    expect(sanitizeUrl('file:///etc/hosts')).not.toContain('null');
   });
 });

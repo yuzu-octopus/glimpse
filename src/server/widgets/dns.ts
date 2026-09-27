@@ -1,6 +1,7 @@
 import { dnsStatsSchema } from '../../shared/widgets/dns';
 import type { DnsStats } from '../../shared/widgets/payloads';
 import { registerWidget } from './registry';
+import { sanitizeUrl } from './http';
 
 const BARS = 8;
 const HOURS_SPAN = 24;
@@ -69,7 +70,7 @@ async function fetchAdguard(
   const headers: Record<string, string> = {};
   if (username || password) headers.Authorization = `Basic ${btoa(`${username}:${password}`)}`;
   const res = await ctx.fetch(url, { headers, signal: AbortSignal.timeout(15_000) });
-  if (!res.ok) throw new Error(`AdGuard stats HTTP ${res.status} for ${url}`);
+  if (!res.ok) throw new Error(`AdGuard stats HTTP ${res.status} for ${sanitizeUrl(url)}`);
   const j = (await res.json()) as {
     num_dns_queries: number;
     dns_queries: number[];
@@ -113,7 +114,7 @@ async function fetchPiholeV5(
   if (!token) throw new Error('missing API token for Pi-hole v5');
   const url = `${trimRight(base, '/')}/admin/api.php?summaryRaw&topItems&overTimeData10mins&auth=${encodeURIComponent(token)}`;
   const res = await ctx.fetch(url, { signal: AbortSignal.timeout(15_000) });
-  if (!res.ok) throw new Error(`Pi-hole v5 HTTP ${res.status} for ${url}`);
+  if (!res.ok) throw new Error(`Pi-hole v5 HTTP ${res.status} for ${sanitizeUrl(url)}`);
   const j = (await res.json()) as {
     dns_queries_today: number;
     ads_blocked_today: number;
@@ -277,7 +278,7 @@ async function fetchTechnitium(
   if (!token) throw new Error('missing API token for Technitium');
   const url = `${trimRight(base, '/')}/api/dashboard/stats/get?token=${encodeURIComponent(token)}&type=LastDay`;
   const res = await ctx.fetch(url, { signal: AbortSignal.timeout(15_000) });
-  if (!res.ok) throw new Error(`Technitium HTTP ${res.status} for ${url}`);
+  if (!res.ok) throw new Error(`Technitium HTTP ${res.status} for ${sanitizeUrl(url)}`);
   const j = (await res.json()) as {
     response: {
       stats: { totalQueries: number; blockedQueries: number; blockedZones?: number; blockListZones?: number };
