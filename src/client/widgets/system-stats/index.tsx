@@ -53,6 +53,60 @@ function Row({
   );
 }
 
+/** One pass over a live homelab reading produces the row list, in display
+ *  order, with the same keys the chrome reconciles by. Kept out of the
+ *  component so the component only chooses a chrome state. `cpu` travels
+ *  beside the payload because a null one is the "not on homelab host" case
+ *  the caller already screened out. */
+function buildRows(
+  d: SystemStatsData,
+  cpu: NonNullable<SystemStatsData['cpu']>,
+): React.ReactNode[] {
+  const rows: React.ReactNode[] = [];
+
+  // CPU
+  rows.push(
+    <Row
+      key="cpu"
+      label="CPU"
+      value={`${cpu.cores} cores${cpu.speed ? ` @ ${cpu.speed} GHz` : ''}`}
+      sub={cpu.load != null ? `${Math.round(cpu.load)}%` : undefined}
+      percent={cpu.load}
+    />,
+  );
+
+  // MEM
+  if (d.mem) {
+    const pct = d.mem.total ? Math.round((d.mem.used / d.mem.total) * 100) : 0;
+    rows.push(
+      <Row
+        key="mem"
+        label="MEM"
+        value={`${fmtBytes(d.mem.used)} / ${fmtBytes(d.mem.total)}`}
+        sub={`${pct}%`}
+        percent={pct}
+      />,
+    );
+  }
+
+  // FS
+  for (const f of d.fs) {
+    rows.push(<Row key={`fs-${f.mount}`} label="DISK" value={`${f.mount} ${fmtBytes(f.used)} / ${fmtBytes(f.size)}`} sub={`${f.use}%`} percent={f.use} />);
+  }
+
+  // TEMP
+  if (d.temp != null) {
+    rows.push(<Row key="temp" label="TEMP" value={`${d.temp}°C`} percent={d.temp} />);
+  }
+
+  // GPU
+  for (const g of d.gpu) {
+    rows.push(<Row key={`gpu-${g.model}-${g.temp ?? 'na'}`} label="GPU" value={g.model} sub={g.temp != null ? `${g.temp}°C` : undefined} percent={g.temp} />);
+  }
+
+  return rows;
+}
+
 export function SystemStats({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as SystemStatsConfig;
   const loading = isLoading ?? ((data as unknown) == null && !error);
@@ -88,47 +142,7 @@ export function SystemStats({ config, data, error, isLoading }: WidgetComponentP
     );
   }
 
-  const rows: React.ReactNode[] = [];
-
-  // CPU
-  rows.push(
-    <Row
-      key="cpu"
-      label="CPU"
-      value={`${d.cpu.cores} cores${d.cpu.speed ? ` @ ${d.cpu.speed} GHz` : ''}`}
-      sub={d.cpu.load != null ? `${Math.round(d.cpu.load)}%` : undefined}
-      percent={d.cpu.load}
-    />,
-  );
-
-  // MEM
-  if (d.mem) {
-    const pct = d.mem.total ? Math.round((d.mem.used / d.mem.total) * 100) : 0;
-    rows.push(
-      <Row
-        key="mem"
-        label="MEM"
-        value={`${fmtBytes(d.mem.used)} / ${fmtBytes(d.mem.total)}`}
-        sub={`${pct}%`}
-        percent={pct}
-      />,
-    );
-  }
-
-  // FS
-  for (const f of d.fs) {
-    rows.push(<Row key={`fs-${f.mount}`} label="DISK" value={`${f.mount} ${fmtBytes(f.used)} / ${fmtBytes(f.size)}`} sub={`${f.use}%`} percent={f.use} />);
-  }
-
-  // TEMP
-  if (d.temp != null) {
-    rows.push(<Row key="temp" label="TEMP" value={`${d.temp}°C`} percent={d.temp} />);
-  }
-
-  // GPU
-  for (const g of d.gpu) {
-    rows.push(<Row key={`gpu-${g.model}-${g.temp ?? 'na'}`} label="GPU" value={g.model} sub={g.temp != null ? `${g.temp}°C` : undefined} percent={g.temp} />);
-  }
+  const rows = buildRows(d, d.cpu);
 
   return (
     <WidgetChrome
