@@ -30,6 +30,10 @@ interface WidgetChromeProps {
   collapseAfter?: number;
   /** List rows (collapse-aware). When absent, `children` renders as-is. */
   items?: ReactNode[];
+  /** Rendered above the body, outside the scroll rail or grid the body may be.
+   * For per-item status a widget still wants on screen — a dead source among
+   * live ones. Nothing renders when absent, so a healthy widget is untouched. */
+  notice?: ReactNode;
   children?: ReactNode;
 }
 
@@ -46,6 +50,7 @@ export const WidgetChrome = memo(function WidgetChrome({
   skeletonShape,
   collapseAfter,
   items,
+  notice,
   children,
 }: WidgetChromeProps) {
   const shape = skeletonShape ?? 'rows';
@@ -133,6 +138,11 @@ export const WidgetChrome = memo(function WidgetChrome({
         </div>
       ) : null}
       <Card ref={cardRef} className={cssClass} padding={4}>
+        {/* The notice sits outside the body: a body its widget turned into a
+            grid or a horizontal rail must not absorb a status row as one more
+            cell. A widget-level error owns the whole body, so the notice
+            stands down rather than competing with the Banner. */}
+        {notice && !loud ? <div className={styles.notice}>{notice}</div> : null}
         <div className={styles.body} data-testid="widget-body">
           {isLoading ? (
             <div className={`${styles.skeleton} ${shapeClass}`} data-testid="widget-loading">

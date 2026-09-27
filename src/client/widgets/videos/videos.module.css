@@ -139,6 +139,22 @@
   color: var(--color-text-base-muted);
 }
 
+/* Per-source failure rows. Kit Stack + StatusDot + Text do the work; the
+ * module only has to stop a long @handle from pushing its reason off the
+ * card. No colour lives here — the dot owns the negative hue, and the source
+ * and its reason are both metadata, so both wear the `supporting` role. */
+.issues {
+  min-width: 0;
+}
+
+.issueSource {
+  min-width: 0;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .placeholder {
   padding: 12px 0;
   font-size: var(--font-size-h5);

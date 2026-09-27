@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './videos';
-import type { Video } from '../../shared/widgets/payloads';
+import type { Video, VideosData } from '../../shared/widgets/payloads';
 
 const FEED = `<?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">
@@ -156,5 +156,57 @@ describe('videos fetcher', () => {
     };
     await videosFetcher()(trackingCtx, { type: 'videos', channels: ['UC1234567890123456789012'] });
     expect(ua).toMatch(/Mozilla\/5\.0/);
+  });
+
+  // A source that fails used to contribute zero videos and leave the widget
+  // looking merely quiet — the failure had nowhere to go. The payload now
+  // names the source and the reason, and a healthy source stays silent.
+  it('reports a dead source by name and reason instead of vanishing', async () => {
+    const ctx = makeCtx(async (url) =>
+      url.includes('channel_id=UCdead') ? new Response('', { status: 404 }) : new Response(FEED, { status: 200 }),
+    );
+    const data = (await videosFetcher()(ctx, {
+      type: 'videos',
+      channels: ['UC1234567890123456789012', 'UCdead'],
+    })) as VideosData;
+
+    expect(data.videos).toHaveLength(2);
+    expect(data.issues).toEqual([{ source: 'UCdead', reason: 'HTTP 404' }]);
+  });
+
+  it('says so when a source answers but has nothing to show', async () => {
+    const empty = `<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><title>Empty</title></feed>`;
+    const ctx = makeCtx(async (url) =>
+      url.includes('UC1234567890123456789012') ? new Response(empty, { status: 200 }) : new Response(FEED, { status: 200 }),
+    );
+    const data = (await videosFetcher()(ctx, {
+      type: 'videos',
+      channels: ['UC1234567890123456789012'],
+    })) as VideosData;
+
+    expect(data.videos).toEqual([]);
+    expect(data.issues).toEqual([{ source: 'UC1234567890123456789012', reason: 'no videos found' }]);
+  });
+
+  it('a healthy source reports nothing at all', async () => {
+    const ctx = makeCtx(async () => new Response(FEED, { status: 200 }));
+    const data = (await videosFetcher()(ctx, {
+      type: 'videos',
+      channels: ['UC1234567890123456789012'],
+      playlists: ['PLabc'],
+    })) as VideosData;
+
+    expect(data.videos).toHaveLength(2);
+    expect(data.issues).toEqual([]);
+  });
+
+  it('one dot per problem, not per duplicate config line', async () => {
+    const ctx = makeCtx(async () => new Response('', { status: 404 }));
+    const data = (await videosFetcher()(ctx, {
+      type: 'videos',
+      channels: ['UCdead', 'UCdead'],
+    })) as VideosData;
+
+    expect(data.issues).toEqual([{ source: 'UCdead', reason: 'HTTP 404' }]);
   });
 });
