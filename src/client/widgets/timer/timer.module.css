@@ -26,12 +26,16 @@
   transition: color 0.15s, background-color 0.15s;
 }
 
-.modeTab:hover {
+/* Real <button role="tab">, so :focus-visible is the keyboard's tab through
+   the same pair. The active selector carries .modeTab as well: the rule above
+   is one class deeper once :is() counts, and a bare .modeTabActive would lose
+   its wash the moment the selected tab was hovered. */
+.modeTab:is(:hover, :focus-visible) {
   color: var(--color-text-highlight);
 }
 
-.modeTabActive,
-.modeTabActive:hover {
+.modeTab.modeTabActive,
+.modeTab.modeTabActive:is(:hover, :focus-visible) {
   background: var(--color-widget-background-highlight);
   color: var(--color-text-highlight);
 }
