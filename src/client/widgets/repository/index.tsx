@@ -1,23 +1,47 @@
 import type { ReactNode } from 'react';
 import { fmtNumber } from '../_helpers/fmtNumber';
-import { Link } from '@astryxdesign/core';
+import { Link, Text } from '@astryxdesign/core';
 import { CircleDot, GitCommitHorizontal, GitPullRequest, Star } from 'lucide-react';
 import type { RepositoryConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import type { RepoCommit, RepoPull, RepositoryData } from '../../../shared/widgets/payloads';
+import { useAge } from '../_hooks/useAge';
 import styles from './repository.module.css';
 
 /** A row is a lead, a title and a destination — glance lays pull requests,
- * issues and commits out identically, differing only in the lead (#N, sha). */
+ * issues and commits out identically, differing only in the lead (#N, sha).
+ * `meta` is the second line a commit carries and the other two do not. */
 interface Row {
   lead: string;
   title: string;
   url: string;
+  meta?: ReactNode;
 }
 
 const asRow = (p: RepoPull): Row => ({ lead: `#${p.number}`, title: p.title, url: p.url });
-const asCommitRow = (c: RepoCommit): Row => ({ lead: c.sha, title: c.message, url: c.url });
+
+/** glance repository.html puts the commit's author in a `title` and the age
+ * beside the message; a tooltip is unreachable on a dashboard, so both become
+ * a real supporting line. The age comes from the shared 60s ticker, so a
+ * widget left open keeps counting. */
+function CommitMeta({ author, date }: { author: string; date: string | null }) {
+  const age = useAge(date);
+  const parts = [author.trim(), age ? `${age} ago` : null].filter(Boolean);
+  if (parts.length === 0) return null;
+  return (
+    <Text type="supporting" hasTabularNumbers className={styles.subMeta}>
+      {parts.join(' · ')}
+    </Text>
+  );
+}
+
+const asCommitRow = (c: RepoCommit): Row => ({
+  lead: c.sha,
+  title: c.message,
+  url: c.url,
+  meta: <CommitMeta author={c.author} date={c.date} />,
+});
 
 function SubList({ icon, label, rows }: { icon: ReactNode; label: string; rows: Row[] }) {
   if (rows.length === 0) return null;
@@ -31,6 +55,7 @@ function SubList({ icon, label, rows }: { icon: ReactNode; label: string; rows: 
         <Link key={`${r.lead}::${r.url}`} href={r.url} target="_blank" className={styles.subRow} hasUnderline={false}>
           <span className={styles.subNumber}>{r.lead} </span>
           <span className={styles.subTitle}>{r.title}</span>
+          {r.meta}
         </Link>
       ))}
     </div>

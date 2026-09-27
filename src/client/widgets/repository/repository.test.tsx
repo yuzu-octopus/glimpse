@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import Repository from './index';
+import styles from './repository.module.css';
 
 const repo = {
   name: 'glimpse',
@@ -69,6 +70,24 @@ describe('repository widget', () => {
       'href',
       'https://github.com/user/glimpse/commit/a1b2c3d',
     );
+    // The commit's own author and age, not just the sha and subject
+    expect(screen.getByText(/Robin · \d+[smhd] ago/)).toBeInTheDocument();
+  });
+
+  it('renders a commit with no author and no date as the message alone', () => {
+    render(
+      <Repository
+        config={{ type: 'repository', repository: 'user/glimpse' }}
+        data={{
+          ...repo,
+          commits: [
+            { sha: 'deadbee', message: 'Anonymous', author: '', date: null, url: 'https://github.com/user/glimpse/commit/deadbee' },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText('Anonymous')).toBeInTheDocument();
+    expect(document.querySelector(`.${styles.subMeta}`)).toBeNull();
   });
 
   it('shows no commits section when the payload carries none', () => {

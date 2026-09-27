@@ -83,13 +83,23 @@
    max-content width of the nowrap title, so the row ran 400-780px past a
    300px card and .subTitle's ellipsis clamp — inline inside the wrapper —
    never fired. Constrain the wrapper and let it carry the number/title
-   baseline the row was written for. */
+   baseline the row was written for. It is a grid, not a flex line, so a
+   commit's author and age can take a second row under the title. */
 .subRow > * {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: baseline;
-  gap: 6px;
+  column-gap: 6px;
   flex: 1;
   min-width: 0;
+}
+
+.subMeta {
+  grid-column: 2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .subNumber {
