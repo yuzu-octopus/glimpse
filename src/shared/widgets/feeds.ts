@@ -24,6 +24,10 @@ const feedSchema = z.object({
   title: z.string().optional(),
   limit: z.number().int().min(0).optional(),
   headers: z.record(z.string(), z.string()).optional(),
+  /** Prepended verbatim to every item link in this feed (glance
+   * widget-rss.go: ItemLinkPrefix). Feeds that emit bare paths get their
+   * origin back instead of a dead relative link. */
+  'item-link-prefix': z.string().optional(),
   'hide-categories': z.boolean().optional(),
   'hide-description': z.boolean().optional(),
 });

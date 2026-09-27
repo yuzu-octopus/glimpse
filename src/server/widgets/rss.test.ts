@@ -88,4 +88,29 @@ describe('rss fetcher', () => {
     expect(data.items[1].categories).toEqual([]);
     expect(data.items[1].description).toBeNull();
   });
+
+  it('prepends item-link-prefix to a feed that emits bare paths', async () => {
+    // The escape hatch exists for feeds whose <link> is a path, not a URL.
+    const relative = `<?xml version="1.0"?><rss version="2.0"><channel>
+      <title>Bare</title>
+      <item><title>One</title><link>posts/1</link></item>
+      <item><title>Two</title><link>posts/2</link></item>
+    </channel></rss>`;
+    const ctx = makeCtx(async (url) => new Response(url.includes('bare') ? relative : RSS_FIXTURE, { status: 200 }));
+    const data = (await rssFetcher()(ctx, {
+      type: 'rss',
+      feeds: [
+        { url: 'https://bare.example/feed', 'item-link-prefix': 'https://proxy.example/' },
+        { url: 'https://other.example/feed' },
+      ],
+    })) as { items: RssItem[] };
+    const urls = data.items.map((i) => i.url).sort();
+    expect(urls).toEqual([
+      'https://example.com/1',
+      'https://example.com/2',
+      'https://proxy.example/posts/1',
+      'https://proxy.example/posts/2',
+    ]);
+  });
+
 });

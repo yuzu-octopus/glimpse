@@ -126,11 +126,14 @@ registerWidget('rss', async (ctx, config) => {
     cfg.feeds.map(async (feed) => {
       const raw = await fetchText(ctx, feed.url, { headers: feed.headers }, retryOptionsFrom(cfg));
       const parsed = parseFeed(raw);
+      // glance widget-rss.go:253 — a configured prefix replaces the link
+      // outright, which is the escape hatch for feeds that emit bare paths.
+      const linkPrefix = feed['item-link-prefix'];
       const perFeedLimit = feed.limit ?? widgetLimit(cfg, RSS_DEFAULTS.limit);
       const slice = parsed.items.slice(0, perFeedLimit);
       return slice.map((item) => ({
         title: itemTitle(item),
-        url: itemLink(item),
+        url: linkPrefix ? linkPrefix + itemLink(item) : itemLink(item),
         published: itemPublished(item),
         source: feed.title ?? parsed.title ?? '',
         thumbnail: extractThumbnail(item),
