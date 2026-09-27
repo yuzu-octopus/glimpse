@@ -1,63 +1,24 @@
-/* the plan is a tag, not a link and not a value: yellow owns chips.
- * 14% wash + 22% border is the chip pattern feed/bookmarks use. */
-.plan {
-  display: inline-block;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-tag-yellow);
-  background: color-mix(in srgb, var(--color-tag-yellow) 14%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-tag-yellow) 22%, transparent);
-  border-radius: 999px;
-  padding: 2px 8px;
-  margin-bottom: 8px;
-}
+/* ai-quota is now Badge + ProgressBar + Text. Two things stay in the module:
+   the cyan data fill (the kit's ProgressBar has no cyan variant, and the
+   chart-hue guard forbids a bespoke hex — so it points at the same
+   --color-data-categorical-cyan token the hand-rolled bar used), and the
+   separator/edge rhythm the Stack props do not express. */
 
-.row {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.plan {
+  align-self: flex-start;
 }
 
 .row + .row {
-  margin-top: 10px;
+  margin-top: 2px;
 }
 
-.label {
-  font-size: 12px;
-  color: var(--color-text-base-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.bar {
-  height: 8px;
-  background: var(--color-widget-background-highlight);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-/* the bar encodes quota consumption, which is data — cyan, not purple.
- * .fillWarning / .fillNegative below escalate on the fixed status
- * vocabulary (yellow attention, red negative) and are unchanged. */
-.fill {
-  height: 100%;
+/* The bar encodes quota consumption, which is data — cyan, not purple. The
+   kit's warning (yellow) and error (red) variants cover the escalation, so
+   only the healthy-state accent variant is repointed at the data token. */
+.fill:global(.astryx-progressbar) [role='progressbar'] > div {
   background: var(--color-data-categorical-cyan);
-  border-radius: 4px;
-  transition: width 0.2s ease;
-}
-
-.fillWarning {
-  background: var(--color-warning);
-}
-
-.fillNegative {
-  background: var(--color-negative);
 }
 
 .balance {
-  margin-top: 10px;
-  font-size: 12px;
-  color: var(--color-text-base-muted);
-  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
 }
