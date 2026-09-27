@@ -73,12 +73,15 @@ function widgetKeysFor(list: WidgetLike[]): string[] {
   return list.map((w, i) => widgetKey(w, i, counts));
 }
 
-/** Column label from the first widget's title. */
+/** Column label for the mobile section toggle. The column's own `title` is
+ * the one label that describes the whole stack; the first widget's title is a
+ * decent guess when the column is unnamed, and "Column N" is the last resort.
+ * Mixing all three in one list is the readability bug this avoids. */
 function columnLabel(
-  col: { size?: 'small' | 'full'; widgets: WidgetLike[] },
+  col: { size?: 'small' | 'full'; title?: string; widgets: WidgetLike[] },
   i: number,
 ): string {
-  return widgetTitle(col.widgets[0]) ?? `Column ${i + 1}`;
+  return col.title ?? widgetTitle(col.widgets[0]) ?? `Column ${i + 1}`;
 }
 
 /** Stable key for a column slot (first widget's key, else index). Supports per-render dedup via counts. */

@@ -392,6 +392,27 @@ describe('PageView', () => {
     expect(document.querySelectorAll('[class*="mobileToggle"]')).toHaveLength(2);
   });
 
+  // The mobile toggle used to read the first widget's title, so a page whose
+  // columns were named unevenly listed "Column 1" / "Homelab — recent" /
+  // "Column 3" as one stack of headers. A column's own `title` leads now, and
+  // the fallbacks only fire in that order.
+  it('labels the mobile column toggle column title, then first widget, then Column N', async () => {
+    renderPage(
+      payload({
+        columns: [
+          { size: 'full', title: 'Homelab', widgets: [{ type: 'clock', config: { type: 'clock' }, data: null }] },
+          { size: 'full', widgets: [{ type: 'clock', config: { type: 'clock', title: 'Servers' }, data: null }] },
+          { size: 'full', widgets: [{ type: 'clock', config: { type: 'clock' }, data: null }] },
+        ],
+      }),
+    );
+    await screen.findAllByTestId('clock-widget');
+    const labels = Array.from(document.querySelectorAll('[class*="mobileToggle"]')).map((t) =>
+      t.textContent?.trim(),
+    );
+    expect(labels).toEqual(['Homelab', 'Servers', 'Column 3']);
+  });
+
   it('renders the collage tiling class with place() tracks and row unit', async () => {
     renderPage(
       payload({

@@ -8,6 +8,9 @@ export const PAGE_WIDTHS = { default: 1600, slim: 1100, wide: 1920 } as const;
 export const ColumnSchema = z
   .object({
     size: z.enum(['small', 'full']).optional(),
+    /** Names the column itself — the mobile section header. Without it the
+     * header falls back to the first widget's title, then "Column N". */
+    title: z.string().min(1).optional(),
     widgets: z.array(WidgetSchemaInput),
     span: z.number().int().min(1).max(12).optional(),
   })

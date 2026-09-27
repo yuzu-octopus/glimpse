@@ -64,6 +64,7 @@ pages:
   - name: Home
     columns:
       - span: 3              # span tracks on 12-col grid (size: small/full still accepted)
+        title: Clock           # optional: names the column itself (mobile section header)
         widgets:
           - type: clock
       - span: 9
@@ -78,6 +79,7 @@ pages:
 ```
 
 - Shared widget props: `title`, `title-url`, `hide-header`, `css-class`, `retries` (extra fetch attempts, 0–10, default 3), `show-errors` (default true; `false` mutes the error banner, and the header status dot still reports the failure).
+- A column takes an optional `title`, which names the whole stack and is what the mobile section header reads. Unlabelled, the header falls back to the column's first widget title, then to `Column N` — name your columns if you want the mobile headers to say what they are.
 - `cache` accepts glance's duration syntax (`45s`, `12h`, `1d`). With no `cache` set the default TTL comes from the widget kind: 1s for `server-stats` / `system-stats`, 10m for `weather-radar`, 60s for the live types (`clock`, `weather`, `markets`, `monitor`, `server-stats`, `system-stats`), 1h for everything else.
 - `${ENV_VAR}` references in any string value are interpolated at load time (missing variable = validation error). The `${secret:name}` Docker-secrets syntax is not supported.
 - `$include: <path>` merges another config file (relative to the including file; pages append, `custom-css-file` takes the last include's value).
@@ -123,6 +125,7 @@ Widgets also read their own credentials from the environment — `TWITCH_CLIENT_
 | `dns-stats` | DNS server query stats | Pi-hole (v6 session auth, v5 token fallback) or Technitium |
 | `docker-containers` | Container status | Docker Engine API over unix socket |
 | `ai-quota` | AI provider quota and balance | 70 known provider ids (46 with fetchers), ported from [CodexBar](https://github.com/steipete/CodexBar): Codex / Claude / OpenAI / Copilot / OpenCode / Gemini / Vertex / Grok and the table-driven rows. `token` or `tokenFile` is required; shows `used%`, reset countdown, plan and balance |
+| `model-endpoints` | Whether the models you depend on are still being served | OpenRouter per-model endpoints, free and keyless: `models[]` (required `vendor/model` slugs, 1–12), `provider` tag, `limit` rows (8), `unhealthy-only`. Worst-status-first, grouped by model, with 5m / 30m / 1d uptime. Availability, not quota — `ai-quota` covers the quota windows |
 | `events-calendar` | Upcoming events from ICS feeds | `urls[]` / `ics-url` (at least one required); `days` (14), `limit` (20) |
 | `weather-radar` | Animated precipitation radar | RainViewer tiles centered on `location`; `zoom` 3–10 (7) |
 | `github-trending` | Trending GitHub repositories | `language`, `since` daily / weekly / monthly, `limit` ≤ 25 (10) |

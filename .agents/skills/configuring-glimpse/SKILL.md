@@ -15,12 +15,15 @@ pages:
     width: default        # default | slim | wide
     columns:              # OR flat `widgets:` (pure bento) — never both
       - span: 3           # span tracks on 12-col grid; legacy size: small/full still accepted
+        title: Clock         # optional: names the column itself; the mobile section header reads it
         widgets:
           - type: clock
     head-widgets:         # optional row above columns
       - type: search
 ```
 Max 3 columns/page, columns require `size` or `span` (span explicit on all or none); when using `size`, exactly 1–2 `full`. Groups cannot nest `group`/`split-column`.
+
+An optional column `title` names the whole stack and is what the mobile section header shows. Without one the header falls back to the column's first widget title, then `Column N`.
 
 ## Shared widget props
 Every widget accepts all of these — no widget-specific opt-in needed.
