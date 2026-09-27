@@ -28,11 +28,18 @@
   flex-direction: column;
 }
 
-/* row: icon left, title inline, gap 10px */
+/* row: icon left, title inline, gap 10px
+ *
+ * WCAG 2.5.8: without an icon the row collapses to the 20px body line box,
+ * and the links stack at 0 gap, so every 24px circle centred on a title is
+ * blocked by the sibling above and below it. The min-height is the whole
+ * fix — the anchor box clears 24 on its own, no spacing exception needed.
+ * Icon rows are already taller than that, so they keep their height. */
 .linkCard {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-height: 24px;
   text-decoration: none;
   min-width: 0;
 }
