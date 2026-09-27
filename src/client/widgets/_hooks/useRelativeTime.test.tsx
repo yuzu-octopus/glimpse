@@ -1,4 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
+import { startTransition, StrictMode, Suspense, use, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { formatAge, useRelativeTime } from './useRelativeTime';
 
@@ -111,5 +112,75 @@ describe('useRelativeTime', () => {
     expect(vi.getTimerCount()).toBe(1);
     third.unmount();
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('re-anchors a caller that re-measures, without carrying the old elapsed', () => {
+    // The per-render-measuring caller has already counted those five minutes,
+    // so its new reading renders on its own — not stacked on the previous
+    // anchor's elapsed time.
+    vi.useFakeTimers();
+    vi.setSystemTime(T0);
+    const { result, rerender, unmount } = renderHook(({ base }: { base: number }) => useRelativeTime(base), {
+      initialProps: { base: 100 },
+    });
+    expect(result.current).toBe('1m');
+    act(() => vi.advanceTimersByTime(300_000));
+    expect(result.current).toBe('6m');
+    rerender({ base: 30 });
+    expect(result.current).toBe('30s');
+    act(() => vi.advanceTimersByTime(60_000));
+    expect(result.current).toBe('1m');
+    act(() => vi.advanceTimersByTime(60_000));
+    expect(result.current).toBe('2m');
+    unmount();
+  });
+
+  it('ignores an anchor written by a render React throws away', async () => {
+    // A transition that suspends is rendered off-screen and then discarded.
+    // The hook still ran in that abandoned render, and it shares the ref with
+    // the tree on screen, so an anchor stamped during render would land there
+    // — the next real render would re-anchor off a base the user never saw and
+    // the live age would walk backwards. The charge has to survive it.
+    vi.useFakeTimers();
+    vi.setSystemTime(T0);
+    let suspend = false;
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const Suspender = () => {
+      if (suspend) use(gate);
+      return null;
+    };
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <StrictMode>
+        <Suspense fallback={null}>
+          {children}
+          <Suspender />
+        </Suspense>
+      </StrictMode>
+    );
+    const { result, rerender, unmount } = renderHook(({ base }: { base: number }) => useRelativeTime(base), {
+      initialProps: { base: 100 },
+      wrapper,
+    });
+    expect(result.current).toBe('1m');
+    act(() => vi.advanceTimersByTime(60_000));
+    expect(result.current).toBe('2m');
+
+    suspend = true;
+    startTransition(() => rerender({ base: 50 }));
+    await act(async () => {});
+    // That abandoned render saw base 50; the tree on screen is still base 100.
+    expect(result.current).toBe('2m');
+    act(() => vi.advanceTimersByTime(60_000));
+    expect(result.current).toBe('3m');
+
+    suspend = false;
+    await act(async () => {
+      release();
+    });
+    expect(result.current).toBe('3m');
+    unmount();
   });
 });
