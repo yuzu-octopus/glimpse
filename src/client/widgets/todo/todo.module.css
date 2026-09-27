@@ -9,6 +9,19 @@
   margin-bottom: 12px;
 }
 
+/* The kit TextInput is width="100%", so in a narrow card it claims the whole
+   row and pushes the Add button past the viewport — clipped, not scrollable,
+   in the 2-column band. Same fix as .itemText: let the text field shrink and
+   wrap, keep the action at its natural width. */
+.form > :first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.form > :last-child {
+  flex: none;
+}
+
 .item {
   padding-block: 5px;
 }
