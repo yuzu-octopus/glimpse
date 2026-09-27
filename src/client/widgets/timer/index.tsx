@@ -67,14 +67,17 @@ function idle(mode: Mode, defaultSeconds: number): TimerState {
   return { seconds: mode === 'timer' ? defaultSeconds : 0, running: false, mode, startedAt: null };
 }
 
-/** Drift-free tick: seconds are always derived from `startedAt`, so a late
- *  interval costs no accuracy. A countdown that hits zero stops itself. */
+/** Drift-free tick: each pass charges only the time since the last one, so a
+ *  late interval costs no accuracy. `startedAt` is rebased to now every
+ *  pass — it marks the last accounted moment, not the start of the run, so
+ *  Pause folds in only the final partial interval. A countdown that hits
+ *  zero stops itself. */
 function advance(prev: TimerState): TimerState {
   if (prev.startedAt === null) return prev;
   const elapsed = (Date.now() - prev.startedAt) / 1000;
   if (prev.mode === 'timer') {
     const next = Math.max(0, prev.seconds - elapsed);
-    return next <= 0 ? { ...prev, seconds: 0, running: false, startedAt: null } : { ...prev, seconds: next };
+    return next <= 0 ? { ...prev, seconds: 0, running: false, startedAt: null } : { ...prev, seconds: next, startedAt: Date.now() };
   }
   return { ...prev, seconds: prev.seconds + elapsed, startedAt: Date.now() };
 }

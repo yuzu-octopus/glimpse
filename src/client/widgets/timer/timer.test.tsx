@@ -100,4 +100,35 @@ describe('timer widget', () => {
     // no entrance choreography
     expect(css).not.toContain('animation');
   });
+
+  it('counts down at wall-clock rate, not faster', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+    try {
+      renderTimer({ duration: '25m' });
+      fireEvent.click(screen.getByTestId('timer-toggle'));
+      expect(screen.getByTestId('timer-display')).toHaveTextContent('25:00');
+      // 250ms of ticks, then 10s of wall clock: a tick that re-charges
+      // cumulative elapsed every pass drains ~290s instead of 10s.
+      act(() => { vi.advanceTimersByTime(10_000); });
+      expect(screen.getByTestId('timer-display')).toHaveTextContent('24:50');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('never renders a loading skeleton — the timer is config-only and has nothing to fetch', () => {
+    // PageView derives `isLoading` from `data == null && !error`, and a
+    // config-only widget's payload is permanently `data: null`. A renderer
+    // that forwards that flag shows a skeleton forever.
+    render(
+      <Timer
+        config={{ type: 'timer', id: 'timer-loading-probe' } as Record<string, unknown>}
+        data={null}
+        isLoading
+      />,
+    );
+    expect(screen.queryByTestId('widget-loading')).toBeNull();
+    expect(screen.getByTestId('timer-display')).toHaveTextContent('25:00');
+  });
 });
