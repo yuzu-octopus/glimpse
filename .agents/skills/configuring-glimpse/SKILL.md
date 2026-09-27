@@ -1,6 +1,6 @@
 ---
 name: configuring-glimpse
-description: Use when writing or editing a Glimpse config.yml — adding pages, columns, widgets, head-widgets, environment variable interpolation, $include merges, theme blocks, or diagnosing zod validation errors from bad YAML
+description: Use when writing or editing a Glimpse config.yml — adding pages, columns, widgets, head-widgets, environment variable interpolation, $include merges, custom-css-file, or diagnosing zod validation errors from bad YAML
 ---
 
 # Configuring Glimpse
@@ -74,22 +74,27 @@ Authoritative shapes: `src/shared/widgets/*.ts` (schema per widget) and working 
 
 ## Variables & includes
 - `${VAR}` interpolates from process env into any string; **missing var is a validation error** at startup (`${VAR:-fallback}` supplies a default). `${secret:…}` is NOT supported. Validate offline first: `bun run check-config [path]` (line numbers + did-you-mean widget types).
-- `$include: ./more.yml` (string or list; absolute paths OK) — relative to the including file, recursive with no depth limit; pages append (parent first, then includes in order), theme keys merge with the include winning; non-string entries are validation errors; diamonds are included once, true cycles rejected with `circular $include detected`.
+- `$include: ./more.yml` (string or list; absolute paths OK) — relative to the including file, recursive with no depth limit; pages append (parent first, then includes in order), `custom-css-file` merges with the last include winning; non-string entries are validation errors; diamonds are included once, true cycles rejected with `circular $include detected`.
 - Config auto-reloads on save; watch out: cache keys reset on reload.
 
-## Theming (quick form)
+## Theming
+There is no `theme:` block. Glimpse has a single dark theme ([astryx-dracula](https://github.com/yuzu-octopus/astryx-dracula)); the only theme-adjacent key left is a top-level custom stylesheet:
 ```yaml
-theme:
-  background-color: 256 22 10   # glance format: "H S L" space-separated ints (% optional)
-  primary-color: 262 83 58
-  positive-color: 142 60 45
-  negative-color: 0 70 55
-  custom-css-file: ./custom.css # relative to config.yml's directory
+custom-css-file: ./custom.css # TOP-LEVEL key, relative to config.yml's directory
 ```
-Preset ids live in `src/shared/theme/presets.ts` (e.g. `catppuccin-mocha` is the default dark). Preset choice and light/dark mode are picked in the nav settings panel (persisted per-browser) — NOT settable in config.yml; `theme.light` only chooses which side of a preset pair receives the color overrides. `contrast-multiplier`/`text-saturation-multiplier` parse but do nothing.
+The valid top-level surface is exactly `pages` (required) + `custom-css-file` (optional).
+
+## A `theme:` key is an error
+Any `theme:` block — including the old HSL colors, `light`, `presets`, or a nested `custom-css-file` — is rejected with ONE issue at path `config.theme`:
+```
+config.theme: block removed — Glimpse now uses the astryx-dracula theme; delete the theme block from your config (if you set a custom stylesheet, move it to a top-level `custom-css-file:` key)
+```
+On auto-reload the last good config stays active, so a dashboard can look like it "ignored" the edit. Delete the block, hoist `custom-css-file` to the top level if you had one, then run `bun run check-config` — it prints the numbered YAML, every error with a hint, and did-you-mean suggestions for typo'd widget types, exiting 1 on failure.
+
+`bun run check-config [path]` is the offline gate for every config edit, not just theme edits.
 
 ## Common mistakes
-- Commas in HSL (`262, 83, 58`) → validation error. Space-separated only: `262 83 58` (percent signs are optional).
+- Leaving a `theme:` block behind after upgrading → `config.theme` error, last good config stays active. Delete it.
 - Mixing explicit spans on some columns only → error (all-or-none).
 - Putting `group` inside `group` → error.
 - Expecting `.env` loading — there is none; export vars or use your process manager.
