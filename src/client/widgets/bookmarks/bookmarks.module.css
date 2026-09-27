@@ -70,7 +70,8 @@
   display: contents !important;
 }
 
-.linkCard:hover .linkTitle {
+/* The card is the anchor, so the title's accent follows the card's focus. */
+.linkCard:is(:hover, :focus-visible) .linkTitle {
   color: var(--color-primary);
 }
 
