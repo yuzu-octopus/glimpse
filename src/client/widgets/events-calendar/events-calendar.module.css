@@ -14,16 +14,17 @@
   margin-top: 0;
 }
 
+/* An event chip is a div of two Texts: no link, no button, nothing to focus
+   and nothing to activate. The hover tint therefore had no focus channel to
+   borrow — it said only "a pointer is over this row", and on touch it never
+   fired at all. Events are static per the doctrine, so the tint is gone
+   rather than mirrored onto a node that can never receive focus. */
 .event {
   display: flex;
   flex-direction: column;
   gap: 1px;
   padding: 6px 8px;
   border-radius: 6px;
-}
-
-.event:hover {
-  background: var(--color-widget-background-highlight);
 }
 
 .top {
