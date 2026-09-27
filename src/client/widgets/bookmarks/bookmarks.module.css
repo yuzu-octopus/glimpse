@@ -46,53 +46,37 @@
   color: var(--color-primary);
 }
 
-/* muted chip base — dracula tints cycle per item for subtle vibrancy */
+/* Icon tile. Its hue is hashed from the link's identity rather than its
+ * position in the list, so a bookmark keeps one accent wherever it is
+ * reordered. Yellow is the tag hue and the default, carried by .iconContainer
+ * itself. The accent set omits --color-tag-blue, which is #BD93F9 in this
+ * kit — the tappable purple. */
 .iconContainer {
+  --icon-hue: var(--color-tag-yellow);
   margin-block: 1px;
-  background-color: var(--color-widget-background-highlight);
-  border: 1px solid transparent;
+  background-color: color-mix(in srgb, var(--icon-hue) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--icon-hue) 20%, transparent);
+  color: var(--icon-hue);
   border-radius: var(--border-radius);
   padding: 5px;
   flex-shrink: 0;
-  color: var(--color-text-base-muted);
   transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 }
 
-.linkItem:nth-child(6n+1) .iconContainer {
-  background-color: color-mix(in srgb, var(--color-tag-blue) 13%, transparent);
-  border-color: color-mix(in srgb, var(--color-tag-blue) 20%, transparent);
-  color: var(--color-tag-blue);
-}
+.iconAccentGreen { --icon-hue: var(--color-tag-green); }
+.iconAccentCyan { --icon-hue: var(--color-tag-cyan); }
+.iconAccentPink { --icon-hue: var(--color-tag-pink); }
+.iconAccentOrange { --icon-hue: var(--color-tag-orange); }
 
-.linkItem:nth-child(6n+2) .iconContainer {
-  background-color: color-mix(in srgb, var(--color-tag-green) 13%, transparent);
-  border-color: color-mix(in srgb, var(--color-tag-green) 20%, transparent);
-  color: var(--color-tag-green);
-}
-
-.linkItem:nth-child(6n+3) .iconContainer {
-  background-color: color-mix(in srgb, var(--color-tag-yellow) 13%, transparent);
-  border-color: color-mix(in srgb, var(--color-tag-yellow) 20%, transparent);
-  color: var(--color-tag-yellow);
-}
-
-.linkItem:nth-child(6n+4) .iconContainer {
-  background-color: color-mix(in srgb, var(--color-tag-cyan) 13%, transparent);
-  border-color: color-mix(in srgb, var(--color-tag-cyan) 20%, transparent);
-  color: var(--color-tag-cyan);
-}
-
-.linkItem:nth-child(6n+5) .iconContainer {
-  background-color: color-mix(in srgb, var(--color-tag-orange) 13%, transparent);
-  border-color: color-mix(in srgb, var(--color-tag-orange) 20%, transparent);
-  color: var(--color-tag-orange);
-}
-
-.linkItem:nth-child(6n+6) .iconContainer {
-  background-color: color-mix(in srgb, var(--color-tag-pink) 13%, transparent);
-  border-color: color-mix(in srgb, var(--color-tag-pink) 20%, transparent);
-  color: var(--color-tag-pink);
-}
+/* Group title accents: the schema admits only these six names, so the hue is
+ * a class from the kit's tag vocabulary rather than an arbitrary CSS colour
+ * string. The title keeps --color-primary as its default (a title is a
+ * tappable-ish surface), and an explicit accent overrides it. */
+.titleAccentGreen { color: var(--color-tag-green); }
+.titleAccentCyan { color: var(--color-tag-cyan); }
+.titleAccentYellow { color: var(--color-tag-yellow); }
+.titleAccentOrange { color: var(--color-tag-orange); }
+.titleAccentPink { color: var(--color-tag-pink); }
 
 .icon {
   display: block;

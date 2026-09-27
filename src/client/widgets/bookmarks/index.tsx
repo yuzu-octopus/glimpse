@@ -2,7 +2,24 @@ import { Link } from '@astryxdesign/core';
 import type { BookmarksConfig } from '../../../shared/widgets/bookmarks';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
+import { tagAccent, type TagAccent } from '../feed/tag-accent';
 import styles from './bookmarks.module.css';
+
+const ICON_ACCENT_CLASS: Record<TagAccent, string> = {
+  green: styles.iconAccentGreen,
+  cyan: styles.iconAccentCyan,
+  pink: styles.iconAccentPink,
+  orange: styles.iconAccentOrange,
+};
+
+// The schema admits only these five names, so the mapping is total.
+const TITLE_ACCENT_CLASS: Record<NonNullable<BookmarksConfig['groups'][number]['color']>, string> = {
+  green: styles.titleAccentGreen,
+  cyan: styles.titleAccentCyan,
+  yellow: styles.titleAccentYellow,
+  orange: styles.titleAccentOrange,
+  pink: styles.titleAccentPink,
+};
 
 function Bookmarks({ config }: WidgetComponentProps) {
   const cfg = config as unknown as BookmarksConfig;
@@ -22,7 +39,7 @@ function Bookmarks({ config }: WidgetComponentProps) {
         return (
           <div key={`${group.title ?? ''}::${links[0]?.url ?? ''}::${links.length}`} className={styles.group}>
             {group.title ? (
-              <div className={styles.groupTitle} style={group.color ? { color: group.color } : undefined}>
+              <div className={`${styles.groupTitle} ${group.color ? TITLE_ACCENT_CLASS[group.color] : ''}`}>
                 {group.title}
               </div>
             ) : null}
@@ -36,7 +53,7 @@ function Bookmarks({ config }: WidgetComponentProps) {
                     hasUnderline={false}
                   >
                     {link.icon ? (
-                      <span className={styles.iconContainer}>
+                      <span className={`${styles.iconContainer} ${ICON_ACCENT_CLASS[tagAccent(link.url)]}`}>
                         <img src={link.icon} alt="" loading="lazy" className={styles.icon} />
                       </span>
                     ) : null}
