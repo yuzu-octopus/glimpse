@@ -196,7 +196,9 @@ export const repositorySchema = z.object({
   type: z.literal('repository'),
   ...sharedWidgetFields,
   repository: z.string(),
-  token: z.string().optional(),
+  // No `token`: the config is served to the browser verbatim. GITHUB_TOKEN
+  // (or GH_TOKEN) in the environment is the only source; unset means the
+  // public API's anonymous rate limit.
   'pull-requests-limit': z.number().int().positive().default(REPOSITORY_DEFAULTS['pull-requests-limit']),
   'issues-limit': z.number().int().positive().default(REPOSITORY_DEFAULTS['issues-limit']),
   /** Latest commits from the default branch. -1 is glance's default and means

@@ -110,8 +110,9 @@ export const releasesSchema = z.object({
   ...sharedWidgetFields,
   repositories: z.array(releaseRepoSchema).min(1),
   'show-source-icon': z.boolean().optional(),
-  token: z.string().optional(),
-  'gitlab-token': z.string().optional(),
+  // No `token` / `gitlab-token`: the config is served to the browser verbatim.
+  // GITHUB_TOKEN (or GH_TOKEN) and GITLAB_TOKEN in the environment are the
+  // only sources; without them these endpoints are read anonymously.
   limit: z.number().int().min(0).default(RELEASES_DEFAULTS.limit),
   'collapse-after': z.number().int().min(-1).optional(),
 });

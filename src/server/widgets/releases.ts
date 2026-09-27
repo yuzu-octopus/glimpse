@@ -185,13 +185,12 @@ registerWidget('releases', async (ctx, config) => {
   const cfg = releasesSchema.parse(config);
   const limit = cfg.limit ?? RELEASES_DEFAULTS.limit;
   const retry = retryOptionsFrom(cfg);
-  const githubToken = cfg.token ?? (await getGitHubToken(ctx.env));
+  const githubToken = await getGitHubToken(ctx.env);
 
   const settled = await Promise.allSettled(
     cfg.repositories.map((repo) => {
       const req = parseRepo(repo);
-      const token =
-        req.source === 'github' ? githubToken : cfg['gitlab-token'];
+      const token = req.source === 'github' ? githubToken : ctx.env.GITLAB_TOKEN;
       return fetchReleases(ctx, req, limit, token, retry);
     }),
   );

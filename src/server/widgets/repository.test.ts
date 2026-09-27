@@ -3,6 +3,7 @@ import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './repository';
 import type { RepositoryData } from '../../shared/widgets/payloads';
+import { repositorySchema } from '../../shared/widgets/keyed';
 
 const REPO = {
   full_name: 'acme/widget',
@@ -131,5 +132,20 @@ describe('repository fetcher', () => {
     await expect(
       repositoryFetcher()(ctx, { type: 'repository', repository: 'acme/missing' }),
     ).rejects.toThrow();
+  });
+
+  it('takes no token — the config value is stripped, GITHUB_TOKEN wins', async () => {
+    const { ctx, fetchMock } = makeCtx(
+      { [REPO_URL]: REPO, [PULLS_URL]: PULLS, [ISSUES_URL]: ISSUES },
+      { GITHUB_TOKEN: 'env-token' },
+    );
+    await repositoryFetcher()(ctx, { type: 'repository', repository: 'acme/widget', token: 'leaked' });
+    for (const call of fetchMock.mock.calls) {
+      expect(JSON.stringify(call[1]?.headers)).toContain('Bearer env-token');
+      expect(JSON.stringify(call[1]?.headers)).not.toContain('leaked');
+    }
+    const parsed = repositorySchema.parse({ type: 'repository', repository: 'acme/widget', token: 'leaked' });
+    expect('token' in parsed).toBe(false);
+    expect(JSON.stringify(parsed)).not.toContain('leaked');
   });
 });
