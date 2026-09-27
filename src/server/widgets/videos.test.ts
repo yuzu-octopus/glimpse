@@ -214,6 +214,24 @@ describe('videos fetcher', () => {
     expect(data.issues).toEqual([{ source: 'UC1234567890123456789012', reason: 'no videos found' }]);
   });
 
+  // The rescue is a second look, not a second retry ladder: the feed has
+  // already spent the configured budget, and a dead source should not cost
+  // twice the backoff before the widget can fall back to cache.
+  it('the page fallback gets one look, not a second retry budget', async () => {
+    const hits: string[] = [];
+    const ctx = makeCtx(async (url) => {
+      hits.push(url);
+      return new Response('', { status: 503 });
+    });
+    await videosFetcher()(ctx, { type: 'videos', channels: ['UC1234567890123456789012'], retries: 2 });
+
+    const feed = hits.filter((u) => u.includes('feeds/videos.xml'));
+    const page = hits.filter((u) => u.includes('/channel/UC1234567890123456789012/videos'));
+    // retries: 2 → 1 initial attempt + 2 retries on the feed, once on the page
+    expect(feed).toHaveLength(3);
+    expect(page).toHaveLength(1);
+  });
+
   it('a healthy source reports nothing at all', async () => {
     const ctx = makeCtx(async () => new Response(FEED, { status: 200 }));
     const data = (await videosFetcher()(ctx, {
