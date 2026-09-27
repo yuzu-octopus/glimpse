@@ -23,12 +23,20 @@ pages:
 Max 3 columns/page, columns require `size` or `span` (span explicit on all or none); when using `size`, exactly 1–2 `full`. Groups cannot nest `group`/`split-column`.
 
 ## Shared widget props
-| Prop | Notes |
-|---|---|
-| `title`, `title-url` | header text + click target |
-| `hide-header: true` | page-level `hide-headers: true` forces it everywhere |
-| `cache` | `\d+[smhd]` e.g. `12h`; default 5m |
-| `css-class` | extra class on the card |
+Every widget accepts all of these — no widget-specific opt-in needed.
+| Prop | Default | Notes |
+|---|---|---|
+| `title`, `title-url` | — | header text + click target |
+| `hide-header: true` | — | page-level `hide-headers: true` forces it everywhere |
+| `cache` | `5m` | `\d+[smhd]` e.g. `12h` |
+| `css-class` | — | extra class on the card |
+| `retries` | `3` | extra fetch attempts **after** the first, 0–10. `0` = try once, never retry. Raise it for flaky upstreams; lower it so a dead endpoint fails fast instead of stalling the poll. |
+| `show-errors` | `true` | `false` renders a failed widget quietly — no error banner, no red chrome, just the card and whatever content it still has. The status dot beside the title keeps reporting the failure, so quiet is never invisible. |
+
+Also inherited: `priority`, `span`, `zone` — pure bento hints, used when a page lists `widgets:` flat and ignored in `columns:` mode.
+
+### Glance type aliases
+`to-do` loads as `todo` and `stocks` as `markets`, at any nesting depth including inside `group` / `split-column`. Canonical names in docs, error messages, and every registry stay `todo` and `markets`. `bun run check-config` accepts both spellings.
 
 ## Widget options cheat sheet
 | Widget | Key options |
@@ -44,7 +52,7 @@ Max 3 columns/page, columns require `size` or `span` (span explicit on all or no
 | `twitch-top-games` | `limit` ≤25 (10), collapse-after (5), `exclude[]` slugs; needs `TWITCH_CLIENT_ID` + `TWITCH_CLIENT_SECRET` |
 | `markets` | `markets[]`: {symbol (`SPY`, `BTC-USD`), name?, symbol-link?, chart-link?}, sort-by |
 | `monitor` | `sites[]`: url, check-url, error-url, timeout (`3s`), alt-status-codes, basic-auth, same-tab; optional `kuma-url` + `kuma-slug`, `healthchecks-key`/`healthchecks-url`/`healthchecks-tags` sources |
-| `custom-api` | `url`, method, headers/body, `options[]` JSONPath mappings |
+| `custom-api` | `url` **or** at least one `subrequests` entry (at least one is required). Request fields: `method` (GET/POST/PUT/PATCH/DELETE/OPTIONS/HEAD), `headers`, `body`, `body-type` (json\|string), `parameters`, `allow-insecure`, `skip-json-validation`, plus `frameless` and `limit`. `subrequests: {<name>: {url, …same request fields}}` fetches several endpoints in parallel and makes them a synthetic root keyed by name, so `options.path` reaches them as `$.<name>.<field>`. When a top-level `url` **is** set it is the root and subrequests are not merged in. `options` is a single mapping object, not a list: `path` (JSONPath, default `$`), `title`, `url`, `description`, `icon`, `subtitle`, `value`, `image`, `timestamp`; a value starting `$`/`@` is evaluated as JSONPath against the item, anything else is a literal. |
 | `weather` | `location`, units metric\|imperial, hide-location |
 | `weather-radar` | `location` (required), `zoom` 3–10 (7) |
 | `github-trending` | `language`, `since` daily\|weekly\|monthly, limit ≤25 |
@@ -66,11 +74,45 @@ Max 3 columns/page, columns require `size` or `span` (span explicit on all or no
 | `timer` | `id`, `duration: 25m` / `mm:ss` (user-editable), `notes: true` |
 | `notepad` | `id`, `placeholder` |
 | `group` | tabbed container; `widgets[]` (≥1; cannot nest `group`/`split-column`) |
-| `split-column` | side-by-side container; `widgets[]` (exactly 2; cannot nest `group`/`split-column`) |
+| `split-column` | side-by-side container; `widgets[]` (≥2) laid out in a grid of at most `max-columns` tracks per row (`max-columns` ≥ 2, default 2, clamped to the child count) — N children, one column each, wrapping past the cap. Cannot nest `group`/`split-column`. |
 | `todo` / `iframe` / `html` | id / source+height / raw content |
 | `ai-quota` | `provider` (70 ids: codex/claude/openai/anthropic/copilot/gemini/cursor/kimi/opencode/vertex/jetbrains/zed/grok/amp/kiro/antigravity/ollama/bedrock/stepfun/… — `KNOWN_PROVIDERS` in `src/shared/widgets/quota-types.ts`), `token` (env `${VAR}`) or `tokenFile` (mounted path: JetBrains `AIAssistantQuotaManager2.xml`, Kiro `kiro-cli` auth file, Grok `~/.grok/auth.json`, Zed `~/.config/zed/credentials`, Amp `~/.config/amp/auth.json`), `quotaUrl` override (e.g. `Z_AI_API_HOST`, Ollama `http://localhost:11434`, Antigravity `https://localhost:8765`), `projectId` (OpenAI/Vertex/GCP), `baseUrl`, `cache` (`2m` default, `5m` for file/CLI) |
 
 Authoritative shapes: `src/shared/widgets/*.ts` (schema per widget) and working examples in `config.example.yml`.
+
+## Worked examples
+```yaml
+- type: monitor            # a flaky upstream: 6 attempts, 10m cache
+  title: Services
+  cache: 10m
+  retries: 6
+  sites:
+    - url: https://grafana.lab
+      title: Grafana
+
+- type: hacker-news        # a background widget: fail fast and fail quiet
+  retries: 1
+  show-errors: false
+  limit: 8
+
+- type: split-column       # three panes across, one row
+  max-columns: 3
+  widgets:
+    - type: todo
+      id: sc-todo
+    - type: clock
+    - type: notepad
+      id: sc-notes
+
+- type: custom-api        # no top-level url: subrequests become the root
+  subrequests:
+    uptime: { url: https://status.example.com/api/v2/summary.json }
+    billing: { url: https://billing.example.com/api/plan }
+  options:
+    path: $.uptime.components[*]
+    title: $.name
+    description: $.status
+```
 
 ## Variables & includes
 - `${VAR}` interpolates from process env into any string; **missing var is a validation error** at startup (`${VAR:-fallback}` supplies a default). `${secret:…}` is NOT supported. Validate offline first: `bun run check-config [path]` (line numbers + did-you-mean widget types).
@@ -98,3 +140,7 @@ On auto-reload the last good config stays active, so a dashboard can look like i
 - Mixing explicit spans on some columns only → error (all-or-none).
 - Putting `group` inside `group` → error.
 - Expecting `.env` loading — there is none; export vars or use your process manager.
+- Setting `show-errors: false` and then wondering why a dead widget looks fine — the status dot is the only remaining signal; check it.
+- Setting `retries: 0` expecting "unlimited" — it means one attempt, no retry.
+- Giving `custom-api` neither `url` nor a `subrequests` entry → validation error; giving it both is legal but the subrequests are then unreachable.
+- Writing `max-columns` on a `group` (tabs, not tracks) or expecting it to add children.

@@ -37,17 +37,39 @@ Auto-reload failure keeps the last good config active. Fix: delete the whole `th
 8. Motion answers action: hover dims, press dims more, focus rings accent. No entrance choreography, no card hover lifts.
 
 ## Tokens
-`astryx-dracula/tokens.css` (62 `:root` vars) + `astryx-dracula/theme.css` (270 vars, lands in the `astryx-theme` CSS layer) are the source of truth. Chart widgets consume the 55 `--color-data-*` tokens: 10 categorical slots (`--color-data-categorical-{blue,orange,purple,green,pink,cyan,red,teal,brown,indigo}`) plus 9 sequential families (`blue`, `gray`, `orange`, `pink`, `purple`, `red`, `shamrock`, `teal`, `yellow`) at levels 1–5.
+`astryx-dracula/tokens.css` (62 unlayered `:root` vars — the pre-`<Theme>` paint fallback) + `astryx-dracula/theme.css` (270 unique vars inside `@layer reset` / `@layer astryx-theme`, `@scope`d to `[data-astryx-theme]`) are the source of truth. Never write a hex; consume `var(--color-*)`, `var(--space-*)`, `var(--radius-*)`, `var(--font-size-*)`, or the 20 `--dracula-*` primitives in `tokens.css`.
 
-App-local `:root` values are limited to what the kit does not ship: `--tile-row`, `--mobile-navigation-height`, the `--widget-content-*-padding` aliases, and the flair aliases (`--color-magenta`, `--color-orange` → kit tags). No colors. Scrollbars and form-control chrome come from the kit's `tokens.css`.
+**Charts have two vocabularies, on purpose.**
+- *Categorical series* → the vendored `CHART_HUES` in `src/client/kit/chart-hues.ts` (`cyan`, `orange`, `green`, `pink`, `muted`). Five slots, purple-free by construction, because purple means tappable and must never encode data. Hand-rolling a per-template hue list is a defect.
+- *Sequential ramps* → the 55 `--color-data-*` tokens: 10 categorical slots (`--color-data-categorical-{blue,orange,purple,green,pink,cyan,red,teal,brown,indigo}`) plus 9 sequential families (`blue`, `gray`, `orange`, `pink`, `purple`, `red`, `shamrock`, `teal`, `yellow`) at levels 1–5. Use a ramp when the value is an *amount* (a contribution heatmap), never for identity.
+
+## The app's own layer: `src/client/kit/`
+Five files vendored verbatim from `astryx-dracula@0.2.1` `shared/` (MIT). They are the app's brand primitives, not app code: re-sync them on any kit version bump rather than editing them.
+
+| File | What it owns |
+|---|---|
+| `icons.ts` | side-effecting `registerIcons(draculaIconRegistry)`; imported **first** in `src/main.tsx` so every Astryx component resolves brand icons |
+| `chart-hues.ts` | `CHART_HUES` — the categorical series palette above |
+| `sparkline.tsx` | `Sparkline` — `mode: 'max'` (dashboard tiles) / `'range'` (market rows); requires a unique `label` per instance |
+| `chart-labels.tsx` | `ChartLabel` — the 13px mono floor every hand-drawn axis label goes through |
+| `metric-delta.tsx` | `MetricDelta` — the one KPI-delta pattern (sign + arrow carry direction, tone only reinforces) |
+
+App-local `:root` values in `src/index.css` are limited to what the kit does not ship, and declare no colours: `color-scheme: dark`, `--tile-row`, `--mobile-navigation-height`, the glance padding aliases (`--widget-content-vertical-padding`, `--widget-content-horizontal-padding`, `--widget-content-padding`, `--content-bounds-padding` — all `var()` aliases of kit tokens, never a second set of numbers), and the flair aliases (`--color-magenta` / `--color-tag-magenta` → `--color-tag-pink`, `--color-orange` → `--color-tag-orange`). Scrollbars and form-control chrome come from the kit's `tokens.css`.
+
+## Colour follows identity, not position
+Tag and bookmark chips take their accent from `tagAccent()` (`src/client/widgets/feed/tag-accent.ts`), an FNV-style hash of the tag text or bookmark URL over `['green', 'cyan', 'pink', 'orange']`. `--color-tag-blue` is deliberately excluded: in this kit it is literally the tappable purple, so cycling through it would paint purple under another name. Yellow is the default and lives on the base chip class. `:nth-child` colour cycling was removed — colour assigned by DOM position is decoration, and it made the same tag a different colour on every row. Any new coloured identity hashes the same way.
 
 ## Changing the look
-1. **Never** override `--color-*` in the app's `:root` — kit rules forbid it, and stale overrides are the #1 "wrong colors" cause.
-2. **Never** invent hexes. A brand change is a change to the kit's `astryx-theme.ts`, released as a version bump, then `bun install`.
-3. Per-instance tweaks: Astryx component props first, then `css-class` on a widget plus a rule in `custom-css-file`.
+1. **Never** override `--color-*` in the app's `:root` — app CSS is unlayered and imported last, so it silently outranks the kit, and stale overrides are the #1 "wrong colors" cause.
+2. **Never** invent hexes. A brand change is a change to the kit's `astryx-theme.ts`, released as a version bump, then `bun install`; re-sync `src/client/kit/` on the same bump.
+3. Per-instance tweaks: Astryx component props first, then `css-class` on a widget plus a rule in `custom-css-file`. A rule there needs more specificity than the app's own unlayered CSS, or it loses.
 
 ## Common mistakes
 - Writing hex or `H S L` triplets in `config.yml` — there is no theme block; those keys are gone.
 - Looking for a picker or appearance controls in Settings, or expecting `prefers-color-scheme` to do anything.
 - Overriding `--color-*` in `src/index.css` to "fix" a color instead of fixing the kit version.
 - Skipping `bun run check-config` after deleting `theme:` and assuming the reload picked it up.
+- Picking a chart series colour by hand instead of `CHART_HUES`, or using a `--color-data-*` ramp for identity instead of for magnitude.
+- Assigning a chip or row colour by `:nth-child` — hash the identity with `tagAccent()`.
+- Editing a file in `src/client/kit/` instead of bumping the kit and re-syncing; the files are vendored, MIT, and version-stamped.
+- Expecting `color-scheme: dark` to be a brand decision you can flip — it is a constant, and the brand has no light tier.

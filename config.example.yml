@@ -6,6 +6,13 @@
 # that still has one fails to load with a message saying so. To append your
 # own CSS on top of the brand theme, name a file next to this config:
 # custom-css-file: custom.css
+#
+# Shared widget props work on every widget: title / title-url / hide-header /
+# cache / css-class, plus `retries` (extra fetch attempts after the first,
+# 0-10, default 3) and `show-errors` (false = fail quietly, keeping only the
+# status dot by the title). Examples of both appear on the Lab page below.
+#
+# Glance type names still load: `to-do` is `todo`, `stocks` is `markets`.
 pages:
   - name: Home
     slug: home
@@ -146,6 +153,19 @@ pages:
               path: $.stargazers_count
               title: Stargazers
               description: github.com/glanceapp/glance
+          # No top-level `url` needed when you want several endpoints in one
+          # list: subrequests fan out in parallel and become a synthetic root
+          # keyed by name, so the path reaches them as $.<name>.<field>
+          # (glance's .Subrequest equivalent). With a top-level `url` set,
+          # that payload is the root and subrequests are not merged in.
+          # - type: custom-api
+          #   subrequests:
+          #     uptime: { url: https://status.example.com/api/v2/summary.json }
+          #     billing: { url: https://billing.example.com/api/plan }
+          #   options:
+          #     path: $.uptime.components[*]
+          #     title: $.name          # a leading $ or @ is JSONPath, else literal
+          #     description: $.status
           - type: repository
             repository: glanceapp/glance
             pull-requests-limit: 5
@@ -181,6 +201,9 @@ pages:
                 source: https://example.com
                 height: 360
           - type: split-column
+            # N children laid out one per grid track, at most `max-columns`
+            # per row (>= 2, default 2). Add a third child and bump this to 3.
+            max-columns: 2
             widgets:
               - type: todo
                 id: dev-split-todo
@@ -334,6 +357,9 @@ pages:
               - "@NetworkChuck"
           - type: monitor
             title: Homelab — health
+            # `retries` = extra fetch attempts after the first (0-10, default 3).
+            # Self-hosted services behind a VPN are the canonical flaky case.
+            retries: 4
             # External sources merge into the same site list (client unchanged):
             # Uptime Kuma pull source (public status page, no auth) and/or
             # Healthchecks push source (Management API v3; read-only key is
@@ -382,6 +408,11 @@ pages:
               - url: https://blog.cloudflare.com/rss/
                 title: Cloudflare Blog
           - type: hacker-news
+            # A background feed: one attempt, and a rate-limit response must
+            # not paint a red banner over the page. `show-errors: false` keeps
+            # only the status dot by the title — quiet, never invisible.
+            retries: 1
+            show-errors: false
             limit: 8
             sort-by: top
             collapse-after: 5

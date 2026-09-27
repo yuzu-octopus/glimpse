@@ -27,7 +27,7 @@ Built with **Bun**, **TypeScript**, **Vite**, **React 19**, the **Astryx** desig
 ## Features
 
 - **39 widget types** — feeds, homelab monitoring, containers, AI quota, media, twitch, timers, calendars, radar, trending — see [Widgets](#widgets)
-- **One theme — [astryx-dracula](https://github.com/yuzu-octopus/astryx-dracula)** — the pure Dracula brand for Astryx, dark-only by design: 200+ brand tokens, JetBrains Mono for body/heading/code, a fixed status vocabulary, and 55 `--color-data-*` chart tokens. No presets, no light mode, no picker; `custom-css-file:` is the only override
+- **One theme — [astryx-dracula](https://github.com/yuzu-octopus/astryx-dracula)** — the pure Dracula brand for Astryx, dark-only by design: 330 brand tokens, JetBrains Mono for body/heading/code, a fixed status vocabulary, and a shared chart layer (5 purple-free categorical hues plus 55 `--color-data-*` ramp tokens). No presets, no light mode, no picker; `custom-css-file:` is the only override
 - **12-column bento layout** — `pages` → `columns` (`span` tracks on a 12-col grid; legacy `size: small/full` still works) plus a `tiling: collage` mode driven by one pure `place()` module, responsive 12/6/1 tracks on desktop/tablet/mobile, optional `head-widgets`
 - **Progressive loading** — the server streams widgets as their data settles over a skeleton-first NDJSON stream; widget components are lazy chunks preloaded after first paint. Fast (cached/config-only) widgets paint instantly while slow API widgets show type-shaped skeletons and fill in as responses arrive; the server pre-warms its widget cache at boot and on config changes so the first visitor never waits on upstreams. Skeleton grid mirrors real column spans so layout never shifts.
 - **Server-side fetching** — secrets configured once in the server environment; live SWR updates (1s poll for homelab pages, 30s otherwise) without losing stale content mid-refresh. GitHub-backed widgets (releases, repository) automatically use `GITHUB_TOKEN`/`GH_TOKEN` or a logged-in `gh` CLI token when available, lifting the API rate limit from 60 to 5,000 req/h
@@ -77,11 +77,12 @@ pages:
                 title: selfh.st
 ```
 
-- Shared widget props: `title`, `title-url`, `hide-header`, `cache` (e.g. `12h`, `1d`; default 5m), `css-class`.
+- Shared widget props: `title`, `title-url`, `hide-header`, `cache` (e.g. `12h`, `1d`; default 5m), `css-class`, `retries` (extra fetch attempts, 0–10, default 3), `show-errors` (`false` mutes the error banner; the header status dot still reports the failure).
 - `${ENV_VAR}` references in any string value are interpolated at load time (missing variable = validation error). The `${secret:name}` Docker-secrets syntax is not supported.
 - `$include: <path>` merges another config file (relative to the including file; pages append, `custom-css-file` takes the last include's value).
 - The config file is watched and auto-reloaded on save; last good config stays active on validation errors.
 - All configs are zod-validated, including glance's structural rules (1–3 columns per page, columns require `size` or `span` — `span` explicit on all or none; when using `size`, exactly 1–2 `full` columns, no nested groups, unique slugs).
+- Glance's `to-do` and `stocks` type names load as aliases for `todo` and `markets` — at any nesting depth, including inside `group` / `split-column` — and fold to the canonical name at validation time.
 
 See [`config.example.yml`](config.example.yml) for a working four-page starting point.
 
@@ -99,7 +100,7 @@ All optional; read from the process environment (no `.env` loader).
 
 **Config-only** (no network): `bookmarks` · `search` (with bangs) · `clock` · `calendar` · `todo` · `notepad` · `timer` · `iframe` · `html`
 
-**Containers**: `group` (tabbed) · `split-column` (side by side)
+**Containers**: `group` (tabbed) · `split-column` (2 or more children side by side, `max-columns` to cap the row)
 
 | Data widget | What it does | Source / notes |
 | --- | --- | --- |
@@ -111,7 +112,7 @@ All optional; read from the process environment (no `.env` loader).
 | `videos` | Latest videos from channels / playlists | YouTube RSS (`channel_id`, `@handle`, playlist); Shorts filtered unless `include-shorts` |
 | `markets` | Quotes + sparklines | Yahoo Finance |
 | `monitor` | HTTP health checks | Per-site `check-url`, `error-url`, timeouts, basic auth, alt status codes; optional Uptime Kuma (`kuma-url` + `kuma-slug`) and Healthchecks (`healthchecks-key`, `healthchecks-tags`) sources merged into the same list |
-| `custom-api` | Items mapped from any JSON endpoint | JSONPath field mapping |
+| `custom-api` | Items mapped from any JSON endpoint | JSONPath field mapping; `subrequests: {name: {url, …}}` fans several endpoints into one list (reached as `$.<name>.<field>` when no top-level `url` is set) |
 | `repository` | Repo stats + open PRs / issues | GitHub REST API |
 | `lobsters` | lobste.rs stories | Configurable instance |
 | `server-stats` | Health of configured local services | `systeminformation` probes |
