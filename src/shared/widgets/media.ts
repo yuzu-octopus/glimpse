@@ -35,19 +35,15 @@ export const immichSchema = z.object({
 });
 export type ImmichConfig = z.infer<typeof immichSchema>;
 
-export const jellyfinSchema = z
-  .object({
-    type: z.literal('jellyfin'),
-    ...sharedWidgetFields,
-    /** Base URL of the Jellyfin instance, e.g. https://jellyfin.lab */
-    url: z.string(),
-    /** API key; falls back to JELLYFIN_API_KEY when omitted. */
-    'api-key': z.string().optional(),
-    /** Jellyfin user id for /Items/Latest; auto-resolved to the first user when omitted. */
-    'user-id': z.string().optional(),
-    limit: z.number().int().min(0).default(JELLYFIN_DEFAULTS.limit),
-  })
-  .loose();
+export const jellyfinSchema = z.object({
+  type: z.literal('jellyfin'),
+  ...sharedWidgetFields,
+  /** Base URL of the Jellyfin instance, e.g. https://jellyfin.lab */
+  url: z.string(),
+  /** Jellyfin user id for /Items/Latest; auto-resolved to the first user when omitted. */
+  'user-id': z.string().optional(),
+  limit: z.number().int().min(0).default(JELLYFIN_DEFAULTS.limit),
+});
 export type JellyfinConfig = z.infer<typeof jellyfinSchema>;
 
 export const qbittorrentSchema = z

@@ -40,8 +40,8 @@ function toItem(base: string, item: JellyfinItem): MediaItem {
 registerWidget('jellyfin', async (ctx, config): Promise<MediaData> => {
   const cfg = jellyfinSchema.parse(config);
   const retry = retryOptionsFrom(cfg);
-  const key = cfg['api-key'] ?? ctx.env.JELLYFIN_API_KEY;
-  if (!key) throw new Error('jellyfin: missing api-key (set api-key or JELLYFIN_API_KEY)');
+  const key = ctx.env.JELLYFIN_API_KEY;
+  if (!key) throw new Error('jellyfin: missing JELLYFIN_API_KEY');
   const base = cfg.url.replace(/\/+$/, '');
   const headers = { 'X-Emby-Token': key, accept: 'application/json' };
   let userId = cfg['user-id'];

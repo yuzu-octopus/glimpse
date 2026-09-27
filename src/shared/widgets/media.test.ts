@@ -13,11 +13,16 @@ describe('media widget schemas', () => {
     expect(JSON.stringify(withKey)).not.toContain('k');
   });
 
-  it('jellyfin requires url, defaults limit, user-id optional', () => {
+  it('jellyfin requires url, defaults limit, keeps user-id, takes no api-key', () => {
     expect(jellyfinSchema.safeParse({ type: 'jellyfin' }).success).toBe(false);
     const cfg = jellyfinSchema.parse({ type: 'jellyfin', url: 'https://jellyfin.lab' });
     expect(cfg.limit).toBe(10);
     expect(cfg['user-id']).toBeUndefined();
+    expect(jellyfinSchema.parse({ type: 'jellyfin', url: 'https://jellyfin.lab', 'user-id': 'u9' })['user-id']).toBe('u9');
+    // A user id is not a secret; an api key is, and the config goes to the browser.
+    const withKey = jellyfinSchema.parse({ type: 'jellyfin', url: 'https://jellyfin.lab', 'api-key': 'leaked' });
+    expect(withKey['api-key']).toBeUndefined();
+    expect(JSON.stringify(withKey)).not.toContain('leaked');
   });
 
   it('qbittorrent requires url, credentials optional (env fallback)', () => {
