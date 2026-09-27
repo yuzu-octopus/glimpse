@@ -18,6 +18,7 @@ beforeEach(() => {
 
 afterEach(() => {
   rmSync(dir, { recursive: true, force: true });
+  for (const k of ['GLIMPSE_DX_UNSET', 'GLIMPSE_DX_SET', 'GLIMPSE_DX_EMPTY']) delete process.env[k];
 });
 
 function write(name: string, content: string): string {
@@ -244,5 +245,58 @@ pages:
     for (const name of ['glance.yml', 'left.yml', 'right.yml', 'common.yml']) {
       expect(r.files).toContain(join(dir, name));
     }
+  });
+});
+
+describe('config dx', () => {
+  const page = (url: string): string => `pages:
+  - name: Home
+    columns:
+      - size: full
+        widgets:
+          - type: rss
+            feeds:
+              - url: ${url}
+`;
+
+  it('uses the ${VAR:-fallback} default when the var is missing', () => {
+    const r = loadConfig(write('c.yml', page('https://example.com/${GLIMPSE_DX_UNSET:-fb}/x.xml')));
+    expect(r.ok).toBe(true);
+    expect(JSON.stringify(r.config)).toContain('https://example.com/fb/x.xml');
+  });
+
+  it('prefers a set var over the fallback', () => {
+    process.env.GLIMPSE_DX_SET = 'real';
+    const r = loadConfig(write('c.yml', page('https://example.com/${GLIMPSE_DX_SET:-fb}/x.xml')));
+    expect(r.ok).toBe(true);
+    expect(JSON.stringify(r.config)).toContain('https://example.com/real/x.xml');
+  });
+
+  it('supports the ${VAR-fallback} form and empty fallbacks', () => {
+    const r = loadConfig(write('c.yml', page('https://example.com/${GLIMPSE_DX_UNSET-fb}/x.xml')));
+    expect(r.ok).toBe(true);
+    expect(JSON.stringify(r.config)).toContain('https://example.com/fb/x.xml');
+    process.env.GLIMPSE_DX_EMPTY = '';
+    const r2 = loadConfig(write('c2.yml', page('https://example.com/${GLIMPSE_DX_EMPTY:-fb}/x.xml')));
+    expect(r2.ok).toBe(true);
+    expect(JSON.stringify(r2.config)).toContain('https://example.com/fb/x.xml');
+  });
+
+  it('leaves ${secret:...} untouched', () => {
+    const r = loadConfig(write('c.yml', page('https://example.com/${secret:tok}/x.xml')));
+    expect(r.ok).toBe(true);
+    expect(JSON.stringify(r.config)).toContain('${secret:tok}');
+  });
+
+  it('warns instead of dropping unsupported $include keys', () => {
+    write(
+      'extra.yml',
+      'server: { port: 1234 }\npages:\n  - name: Extra\n    columns:\n      - size: full\n        widgets: [{ type: clock }]\n',
+    );
+    const main = write('main.yml', '$include: extra.yml\npages:\n  - name: Home\n    columns:\n      - size: full\n        widgets: [{ type: clock }]\n');
+    const r = loadConfig(main);
+    expect(r.ok).toBe(true);
+    expect(r.config?.pages.map((p) => p.name)).toEqual(['Home', 'Extra']);
+    expect(r.warnings?.some((w) => w.includes('"server"'))).toBe(true);
   });
 });
