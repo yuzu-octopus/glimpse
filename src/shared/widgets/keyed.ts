@@ -77,6 +77,10 @@ export const monitorSchema = z
         z.object({
           url: z.string(),
           title: z.string().optional(),
+          /** Resolved by the client with the shared customIconField port
+           * (glance widget-monitor.go: Icon), so `si:`/`sh:`/`auto-invert`
+           * shorthands work exactly as they do in bookmarks. */
+          icon: z.string().optional(),
           'check-url': z.string().optional(),
           'error-url': z.string().optional(),
           timeout: z.string().optional(),
