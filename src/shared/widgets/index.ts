@@ -93,6 +93,7 @@ import {
   TRANSMISSION_SKELETON,
 } from './media';
 import type { Pref, SkeletonShape } from './shared';
+import { withTypeAliases } from './aliases';
 
 const schemaEntries = [
   notepadSchema,
@@ -188,5 +189,8 @@ export type WidgetType = (typeof schemaEntries)[number]['shape']['type']['value'
 export const WidgetSchema = z.discriminatedUnion('type', schemaEntries);
 export type WidgetConfig = z.infer<typeof WidgetSchema>;
 
-// Wire the recursive container reference now that the union exists.
-setWidgetSchemaRef(WidgetSchema);
+// Wire the recursive container reference now that the union exists. Children
+// resolve to the alias-aware union too, so a glance type nested in a group or
+// split-column folds to its canonical name on the way in.
+export const WidgetSchemaInput = withTypeAliases(WidgetSchema);
+setWidgetSchemaRef(WidgetSchemaInput);

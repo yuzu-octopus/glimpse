@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { WidgetSchema } from './widgets';
+import { WidgetSchemaInput } from './widgets';
 
 export type { WidgetConfig, WidgetType } from './widgets';
 
@@ -8,7 +8,7 @@ export const PAGE_WIDTHS = { default: 1600, slim: 1100, wide: 1920 } as const;
 export const ColumnSchema = z
   .object({
     size: z.enum(['small', 'full']).optional(),
-    widgets: z.array(WidgetSchema),
+    widgets: z.array(WidgetSchemaInput),
     span: z.number().int().min(1).max(12).optional(),
   })
   .refine((c) => c.size !== undefined || c.span !== undefined, {
@@ -48,14 +48,14 @@ export const PageSchema = z
     'hide-desktop-navigation': z.boolean().optional(),
     'show-mobile-header': z.boolean().optional(),
     'hide-headers': z.boolean().optional(),
-    'head-widgets': z.array(WidgetSchema).optional(),
+    'head-widgets': z.array(WidgetSchemaInput).optional(),
     tiling: z.enum(['columns', 'auto', 'collage']).optional(),
     'min-column-width': z.number().int().min(1).optional(),
     // pure bento
     'grid-columns': z.number().int().min(2).max(12).optional(),
     'grid-row-height': z.number().int().min(32).max(200).optional(),
     columns: z.array(ColumnSchema).min(1).max(3).optional(),
-    widgets: z.array(WidgetSchema).optional(),
+    widgets: z.array(WidgetSchemaInput).optional(),
   })
   .superRefine((p, ctx) => {
     if (!p.columns && !p.widgets) {
