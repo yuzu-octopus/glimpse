@@ -220,7 +220,6 @@ function ModelEndpoints({ config, data, error, isLoading }: WidgetComponentProps
       error={error}
       showErrors={cfg['show-errors']}
       isLoading={loading}
-      skeletonShape="rows"
     >
       <Stack gap={2} className={styles.body}>
         {payload ? <SummaryLine payload={payload} hidden={hidden} /> : null}
