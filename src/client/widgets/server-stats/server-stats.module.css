@@ -1,28 +1,15 @@
-/* Server stats — glance server-stats.html modernized: per-server card with
- * tinted icon header (size-h3 name) and three flex stat bars. Distinct from
- * system-stats' compact label/value rows: bigger type, --progress bar fills,
- * hover details popover. */
-
-.server {
-  padding-block: calc(var(--widget-content-vertical) / 2);
-  animation: collapsibleItemReveal 0.25s backwards;
-}
+/* Server stats — per-server card with a tinted icon header and a flex stat bar
+   per row. Stack owns the layout and Text owns the type roles, so what is left
+   is only the reachability tint, the two icon hues, the truncation columns and
+   the severity bar. The bento 2x2 grid, the detail popover and the .stat*
+   family were all unreferenced and are gone. */
 
 .server + .server {
   border-top: 1px solid var(--color-separator);
 }
 
-.serverDown .serverName,
-.serverDown .uptime {
+.serverDown .serverName {
   color: var(--color-text-base-muted);
-}
-
-.serverHeader {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  margin-bottom: 10px;
 }
 
 .serverIconUp {
@@ -36,77 +23,47 @@
 }
 
 .serverName {
-  font-size: var(--font-size-h3);
-  font-weight: 600;
-  color: var(--color-text-base);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.serverHost {
-  font-size: var(--font-size-h6);
-  color: var(--color-text-base-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.uptime {
-  margin-left: auto;
-  flex-shrink: 0;
-  font-size: var(--font-size-h6);
-  font-variant-numeric: tabular-nums;
-  color: var(--color-text-base-muted);
-}
-
-.stat {
   flex: 1;
   min-width: 0;
 }
 
-.statHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 6px;
-  margin-bottom: 4px;
-}
-
-.statLabel {
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-text-base-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.statValue {
-  font-size: var(--font-size-h6);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-text-base);
+.uptime {
   flex-shrink: 0;
 }
 
-.statSub {
-  color: var(--color-text-base-muted);
-  font-weight: 400;
-}
-
-.statUnavailable {
+.rowIcon {
+  flex-shrink: 0;
   color: var(--color-text-base-muted);
 }
 
+.rowLabel {
+  flex-shrink: 0;
+}
+
+.rowDetail {
+  flex: 1;
+  min-width: 0;
+}
+
+.rowValue,
+.rowTemp {
+  flex-shrink: 0;
+  color: var(--color-text-base);
+}
+
+.rowTemp {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Flat and crisp, not a pill: 2px reads as a bar on a 5px track where 999px
+   reads as a lozenge. */
 .bar {
   display: block;
   width: 100%;
   height: 5px;
   border: none;
-  /* Flat and crisp, not a pill: 2px reads as a bar on a 5px track where 999px
-   * reads as a lozenge. */
   border-radius: 2px;
   background: var(--color-track, var(--color-widget-background-highlight));
   overflow: hidden;
@@ -134,133 +91,5 @@
 }
 
 .unreachable {
-  font-size: var(--font-size-h6);
   color: var(--color-negative);
-}
-
-/* Hover details popover content */
-.details {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px 12px;
-  min-width: 220px;
-  max-width: 320px;
-}
-
-.detailRow {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  font-size: var(--font-size-h6);
-  color: var(--color-text-base);
-}
-
-.detailRow + .detailRow {
-  border-top: 1px solid var(--color-separator);
-  padding-top: 6px;
-}
-
-.detailLabel {
-  color: var(--color-text-base-muted);
-}
-
-/* Bento health card — 2×2 + temp row. Coherent grouping: compute vs storage vs thermal.
-   Icons use lucide, colors via --color-positive/warning/negative theme tokens. */
-.bento {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 10px;
-}
-
-.cell {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  min-width: 0;
-  padding: 10px 12px;
-  background: var(--color-widget-background-highlight);
-  border: 1px solid var(--color-separator);
-  border-radius: var(--border-radius);
-}
-
-.cellIcon {
-  flex-shrink: 0;
-  margin-top: 2px;
-  color: var(--color-text-base-muted);
-}
-
-.cellBody {
-  flex: 1;
-  min-width: 0;
-}
-
-.cellLabel {
-  font-size: var(--font-size-h6);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-text-base-muted);
-  margin-bottom: 6px;
-}
-
-.tempCell {
-  grid-column: 1 / -1;
-  background: color-mix(in srgb, var(--color-warning) 8%, var(--color-widget-background-highlight));
-  border-color: color-mix(in srgb, var(--color-warning) 20%, var(--color-separator));
-}
-
-.tempValue {
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--color-text-highlight);
-}
-
-/* Tailored list rows — icon · name · temp badge, bar, value below */
-.row {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-.rowHead {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-.rowIcon {
-  flex-shrink: 0;
-  color: var(--color-text-base-muted);
-}
-.rowLabel {
-  flex-shrink: 0;
-}
-.rowDetail {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--color-text-base-muted);
-  font-weight: 400;
-  flex-shrink: 1;
-}
-.rowSpacer {
-  flex: 1;
-}
-.rowTemp {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-  font-size: var(--font-size-h6);
-  font-variant-numeric: tabular-nums;
-  color: var(--color-text-base);
-}
-.rowValue {
-  flex-shrink: 0;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-text-base);
 }
