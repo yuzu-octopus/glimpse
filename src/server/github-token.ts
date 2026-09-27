@@ -44,10 +44,3 @@ export async function getGitHubToken(
   pending = null;
   return result;
 }
-
-/** Synchronous check for callers that cannot await (returns env only). */
-export function getGitHubTokenSync(
-  env: Record<string, string | undefined>,
-): string | undefined {
-  return env.GITHUB_TOKEN ?? env.GH_TOKEN;
-}
