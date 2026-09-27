@@ -5,6 +5,24 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   plugins: [
+    // Declare the layer order Astryx core expects (see the header of its
+    // reset.css): reset, then component styles in astryx-base (astryx.css),
+    // then theme overrides in astryx-theme. Any layer left out of this
+    // statement is appended after the declared ones, which would let core
+    // base styles beat the theme. Our own tokens (src/index.css) stay
+    // unlayered, so they beat every Astryx layer with zero !important.
+    {
+      name: 'astryx-css-layer-order',
+      transformIndexHtml() {
+        return [
+          {
+            tag: 'style',
+            children: '@layer reset, astryx-base, astryx-theme;',
+            injectTo: 'head-prepend',
+          },
+        ];
+      },
+    },
     react(),
     VitePWA({
       registerType: 'autoUpdate',
