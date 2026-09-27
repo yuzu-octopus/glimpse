@@ -1,112 +1,46 @@
 /* Glimpse global styles — glance-compatible surface (main.css + site.css port).
- * The :root block holds literal fallbacks for the default dark ramp
- * (dracula #282a36 via glanceRamp) so isolated renders and pre-theme
- * paint have real values; the Theme provider overrides them at runtime
- * via documentElement light-dark() tokens (glimpseTheme.ts).
  *
- * Semantic mapping (mirrors src/shared/theme/glimpseTheme.ts):
- *  purple (#bd93f9) primary/tag-blue/accent = links & titles (unvisited; visited→text-base, hover→primary)
- *  green  (#50fa7b) positive/success/tag-green = positive (monitor up, market up, scores)
- *  red    (#ff5555) negative/error           = negative (monitor down, market down)
- *  orange (#ffb86c) tag-orange               = warning/attention (secondary — now scores unified to green)
- *  yellow (#f1fa8c) warning/tag-yellow       = tags/chips cycle
- *  cyan   (#8be9fd) info/tag-cyan            = info / secondary links (metaLink)
- *  pink   (#ff79c6) tag-pink/magenta         = accent/flair
- *  subdue (#4c5067) text-subdue/separator   = metadata & separators (glanceRamp 35% on dracula bg)
+ * Every brand token (surfaces, text, accents, spacing, radii, type scale,
+ * scrollbars, fonts) comes from the astryx-dracula kit, imported in
+ * src/main.tsx: `tokens.css` is unlayered :root so the first paint is
+ * Dracula before <Theme> mounts, and `theme.css` is @scope'd to
+ * [data-astryx-theme="astryx-dracula"], which <Theme> puts on <html> so
+ * portals and toast viewports resolve the same values.
+ *
+ * This file therefore declares no colours of its own. New colour need goes
+ * through the kit's astryx-theme.ts (`bun run theme:build` in
+ * ../astryx-dracula), never through a :root override here — an override
+ * silently outranks the kit because app CSS is unlayered and imported last.
+ *
+ * What stays below: the app-layout tokens the kit does not ship, and
+ * aliases for the glance names our stylesheets still consume.
  */
 
-@font-face {
-  font-family: 'JetBrains Mono';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('/fonts/JetBrainsMono-Regular.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'JetBrains Mono';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('/fonts/JetBrainsMono-SemiBold.woff2') format('woff2');
-}
-
 :root {
-  /* light-dark() resolution switch — provider sets the concrete value
-     (light/dark) inline on documentElement; this declares the property so
-     themed vars resolve even before the provider mounts. */
-  color-scheme: light dark;
+  /* Single dark theme — matches the kit's tokens.css so the UA paints
+     Dracula form controls and scrollbars even before <Theme> mounts. */
+  color-scheme: dark;
 
-  /* dimensions — canonical (StyleX defineTheme) + aliases */
-  /* astryx-dracula spacing canon — layout on 8s, small elements on the 4px
-     half-step (spacing.md). 23/17/15 had no defender. */
-  --space-gap: 24px;
-  --space-viewport: 16px;
-  --widget-content-vertical: 16px;
-  --widget-content-horizontal: 16px;
-  --widget-gap: 24px;
   /* Single tiling row unit (px): place() ROW_UNIT, collage --tile-row, and
      bento --bento-row all resolve here. One token, three consumers. */
   --tile-row: 96px;
-  --widget-content-vertical-padding: 16px;
-  --widget-content-horizontal-padding: 16px;
-  --widget-content-padding: 16px;
-  --content-bounds-padding: var(--widget-gap);
-  --border-radius: 5px;
-  --mobile-navigation-height: 50px;
-  --font-size-h1: 17px;
-  --font-size-h2: 16px;
-  --font-size-h3: 15px;
-  --font-size-h4: 14px;
-  --font-size-base: 14px;
-  --font-size-h5: 12px;
-  --font-size-h6: 11px;
 
-  /* default dark ramp — dracula (#282a36) via glanceRamp (src/shared/theme/glanceRamp.ts)
-     + dracula accents for pre-theme paint (matches src/shared/theme/glimpseTheme.ts sourceFromBase16):
-     purple #bd93f9 / green #50fa7b / red #ff5555 / yellow #f1fa8c /
-     cyan #8be9fd / pink #ff79c6 / orange #ffb86c.
-     Light/dark tuples are injected at runtime via GlimpseThemeProvider (glanceColorVars → documentElement).
-     --color-background is the page bg (glanceRamp background); aliases below are the dark-side hsl() ramp. */
-  --color-background: #282a36;
-  --color-widget-background: #2a2c39;
-  --color-widget-content-border: #313342;
-  --color-widget-background-highlight: #313342;
-  --color-separator: #313342;
-  --color-popover-background: #2d3040;
-  --color-popover-border: #424559;
-  --color-progress-border: #3e4153;
-  --color-progress-value: #606582;
-  --color-vertical-progress-value: #656a88;
-  --color-graph-gridlines: #353848;
-  --color-widget-shadow: #272935;
-  --color-text-highlight: #d3d5de;
-  --color-text-paragraph: #b0b3c4;
-  --color-text-base: #8489a4;
-  --color-text-base-muted: #727897;
-  --color-text-subdue: #4c5067;
-  --color-primary: #bd93f9;
-  --color-positive: #50fa7b;
-  --color-negative: #ff5555;
-  --color-success: #50fa7b;
-  --color-warning: #f1fa8c;
-  --color-info: #8be9fd;
-  --color-tag-orange: #ffb86c;
-  --color-tag-yellow: #f1fa8c;
-  --color-tag-green: #50fa7b;
-  --color-tag-cyan: #8be9fd;
-  --color-tag-blue: #bd93f9;
-  --color-tag-pink: #ff79c6;
-  --color-tag-magenta: #ff79c6;
-  --color-orange: #ffb86c;
-  --color-magenta: #ff79c6;
-  --color-accent: #bd93f9;
-  --color-accent-muted: #8be9fd;
-  --color-error: #ff5555;
-  --color-on-accent: #000000;
-  --color-on-success: #000000;
-  --color-on-warning: #000000;
-  --color-on-error: #ffffff;
+  /* Glance padding aliases. The kit ships the canonical
+     --widget-content-{vertical,horizontal}; the -padding-suffixed names and
+     the content-bounds gutter are the app's spelling of the same job, so
+     they alias instead of pinning a second set of numbers. */
+  --widget-content-vertical-padding: var(--widget-content-vertical);
+  --widget-content-horizontal-padding: var(--widget-content-horizontal);
+  --widget-content-padding: var(--widget-content-vertical);
+  --content-bounds-padding: var(--space-gap);
+
+  --mobile-navigation-height: 50px;
+
+  /* Flair aliases. The kit ships --color-tag-pink / --color-tag-orange as
+     the pink and orange of the Dracula palette under shorter names. */
+  --color-magenta: var(--color-tag-pink);
+  --color-tag-magenta: var(--color-tag-pink);
+  --color-orange: var(--color-tag-orange);
 }
 
 * {
@@ -114,15 +48,17 @@
 }
 
 html {
-  scrollbar-color: var(--color-text-subdue) transparent;
+  /* Scrollbar colour/width are the kit's (tokens.css sets them on :root,
+     which outranks this element selector anyway) — Selection thumb on a
+     transparent track, Current Line on hover. */
   scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 14px;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-base);
   line-height: 1.6;
   font-variant-ligatures: none;
   color: var(--color-text-base);
@@ -143,17 +79,6 @@ a {
 ::selection {
   background-color: var(--color-widget-content-border);
   color: var(--color-text-highlight);
-}
-
-::-webkit-scrollbar {
-  background: var(--color-background);
-  height: 5px;
-  width: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--color-text-subdue);
-  border-radius: var(--border-radius);
 }
 
 *:focus-visible {
