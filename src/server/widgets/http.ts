@@ -13,13 +13,30 @@ export interface HttpOptions extends Omit<RequestInit, 'signal'> {
   signal?: AbortSignal;
 }
 
-function sanitizeUrl(url: string): string {
+/** A leading `user:pass@`, with or without the scheme in front of it. */
+const USERINFO = /^(?:[a-z][a-z\d+.-]*:\/\/)?[^/@]*@/i;
+
+/** Strip credentials and query values so a URL is safe to embed in a thrown
+ * error — those messages reach the browser, the page cache and the service
+ * worker's Cache Storage, and are rendered by WidgetChrome (see AGENTS.md).
+ * Keeps what a human needs to diagnose: scheme, host, port, path, plus a `?…`
+ * marker for the query. Exported because widget fetchers that throw their own
+ * errors must sanitize too; fetchWithRetry can only sanitize what it throws
+ * itself.
+ *
+ * `URL.origin` is scheme+host+port only, so it already drops `user:pass@` —
+ * but it is the string "null" for non-special schemes, where the credential
+ * lands in `pathname` instead. USERINFO is applied to the rendered head either
+ * way, so neither shape can print a secret. */
+export function sanitizeUrl(url: string): string {
   try {
     const u = new URL(url);
-    return `${u.origin}${u.pathname}${u.search ? '?…' : ''}`;
+    const head = u.origin === 'null' ? `${u.protocol}//${u.host}${u.pathname}` : `${u.origin}${u.pathname}`;
+    return `${head.replace(USERINFO, '')}${u.search ? '?…' : ''}`;
   } catch {
     const q = url.indexOf('?');
-    return q === -1 ? url : `${url.slice(0, q)}?…`;
+    const head = q === -1 ? url : url.slice(0, q);
+    return `${head.replace(USERINFO, '')}${q === -1 ? '' : '?…'}`;
   }
 }
 
