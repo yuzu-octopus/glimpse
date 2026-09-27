@@ -13,7 +13,8 @@ export const MODEL_ENDPOINTS_PREF: Pref = {
   preferredHeight: 240,
 };
 
-/** A table, not a list — the widget loads into aligned columns. */
+/** A table of thin aligned rows — `rows` is the shape for a stack of single
+ * text lines, and there is no table silhouette to ask for. */
 export const MODEL_ENDPOINTS_SKELETON: SkeletonShape = 'rows';
 
 /** An OpenRouter model slug is `vendor/model`; anything else is a typo worth
