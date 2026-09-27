@@ -3,16 +3,20 @@ import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './qbittorrent';
 import type { TorrentData } from '../../shared/widgets/payloads';
+import { qbittorrentSchema } from '../../shared/widgets/media';
 
 const INFO_FIXTURE = [
   { name: 'ubuntu.iso', progress: 0.42, state: 'downloading', size: 4_000_000_000, dlspeed: 12_000_000, upspeed: 0, eta: 300 },
   { name: 'done.mkv', progress: 1, state: 'uploading', size: 800_000_000, dlspeed: 0, upspeed: 500_000, eta: 8640000 },
 ];
 
-function makeCtx(fetchImpl: (url: string, init?: RequestInit) => Promise<Response>): WidgetFetchContext {
+function makeCtx(
+  fetchImpl: (url: string, init?: RequestInit) => Promise<Response>,
+  env: Record<string, string | undefined> = {},
+): WidgetFetchContext {
   return {
     fetch: vi.fn(fetchImpl) as unknown as typeof fetch,
-    env: {},
+    env,
     cache: new TtlCache(),
     singleflight: new Singleflight(),
   };
@@ -57,5 +61,29 @@ describe('qbittorrent fetcher', () => {
     const ctx = makeCtx(async (url) => okRouter(url));
     const data = (await fetcher()(ctx, { type: 'qbittorrent', url: 'http://qb.lab:8080', limit: 1 })) as TorrentData;
     expect(data.torrents).toHaveLength(1);
+  });
+
+  it('logs in with the env credentials and ignores ones left in the config', async () => {
+    const bodies: string[] = [];
+    const ctx = makeCtx(async (url, init) => {
+      if (url.endsWith('/api/v2/auth/login')) bodies.push(String(init?.body));
+      return okRouter(url);
+    }, { QBITTORRENT_USERNAME: 'envuser', QBITTORRENT_PASSWORD: 'envpass' });
+    await fetcher()(ctx, {
+      type: 'qbittorrent',
+      url: 'http://qb.lab:8080',
+      username: 'leaked',
+      password: 'leaked',
+    });
+    expect(bodies[0]).toContain('envuser');
+    expect(bodies[0]).toContain('envpass');
+    expect(bodies[0]).not.toContain('leaked');
+    const parsed = qbittorrentSchema.parse({
+      type: 'qbittorrent',
+      url: 'http://qb.lab:8080',
+      username: 'leaked',
+      password: 'leaked',
+    });
+    expect(JSON.stringify(parsed)).not.toContain('leaked');
   });
 });

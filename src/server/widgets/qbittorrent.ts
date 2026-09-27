@@ -28,8 +28,8 @@ function toItem(t: QbitTorrent): TorrentItem {
 registerWidget('qbittorrent', async (ctx, config): Promise<TorrentData> => {
   const cfg = qbittorrentSchema.parse(config);
   const base = cfg.url.replace(/\/+$/, '');
-  const username = cfg.username ?? ctx.env.QBITTORRENT_USERNAME ?? '';
-  const password = cfg.password ?? ctx.env.QBITTORRENT_PASSWORD ?? '';
+  const username = ctx.env.QBITTORRENT_USERNAME ?? '';
+  const password = ctx.env.QBITTORRENT_PASSWORD ?? '';
   // qBittorrent WebUI auth is cookie-based; Bun fetch keeps no jar, so the
   // SID cookie is captured from the login response and replayed manually.
   const login = await ctx.fetch(`${base}/api/v2/auth/login`, {
