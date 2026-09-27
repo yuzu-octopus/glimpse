@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { dockerContainersSchema } from '../../shared/widgets/docker';
-import type { DockerContainer, DockerData } from '../../shared/widgets/payloads';
+import { resolveIcon } from '../../shared/widgets/icon';
+import type { DockerContainer, DockerData, DockerIcon } from '../../shared/widgets/payloads';
 import { getDefaultTtl, parseCacheDuration } from '../cache';
 import { registerWidget } from './registry';
 
@@ -16,7 +17,20 @@ const LABEL = {
   id: 'glance.id',
   parent: 'glance.parent',
   category: 'glance.category',
+  icon: 'glance.icon',
 } as const;
+
+/** glance widget-docker-containers.go:180 falls back to `si:docker`. We ship
+ *  that mark ourselves as a static asset instead of a CDN round-trip, and the
+ *  bundled SVG is a black currentColor path — so it asks to be inverted, which
+ *  is exactly what `autoInvert` is for on a dark-only theme. */
+const DEFAULT_ICON = 'auto-invert /dockerhub.svg';
+
+/** The payload spells the source `url`; the shared resolver spells it `src`. */
+function resolveDockerIcon(raw: string): DockerIcon {
+  const { src, autoInvert } = resolveIcon(raw);
+  return { url: src, autoInvert };
+}
 
 /** Lower sorts first — problems surface at the top (glance parity). */
 const STATE_PRIORITY: Record<DockerContainer['stateIcon'], number> = {
@@ -159,7 +173,10 @@ export async function fetchDockerContainers(
       url: label(c, LABEL.url) || undefined,
       sameTab: sameTabLabel === 'true' || sameTabLabel === '1',
       description: label(c, LABEL.description) || undefined,
-      icon: { url: '/dockerhub.svg', autoInvert: false },
+      // glance widget-docker-containers.go:180 resolves the `glance.icon`
+      // label through the app-wide customIconField, so the invert flag is
+      // decided where the label is read, not in the renderer.
+      icon: resolveDockerIcon(label(c, LABEL.icon) || DEFAULT_ICON),
       children: children.length > 0 ? children : undefined,
     };
 

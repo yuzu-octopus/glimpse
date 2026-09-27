@@ -4,7 +4,7 @@ import type { BookmarksConfig } from '../../../shared/widgets/bookmarks';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { tagAccent, type TagAccent } from '../feed/tag-accent';
-import { resolveIcon } from './icon';
+import { resolveIcon } from '../../../shared/widgets/icon';
 import styles from './bookmarks.module.css';
 
 const ICON_ACCENT_CLASS: Record<TagAccent, string> = {

@@ -5,7 +5,7 @@ import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 // One customIconField port for the whole app: the same `icon:` string has the
 // same meaning in bookmarks and in a monitor site, so it is resolved once.
-import { resolveIcon } from '../bookmarks/icon';
+import { resolveIcon } from '../../../shared/widgets/icon';
 import type { MonitorSite } from '../../../shared/widgets/payloads';
 import styles from './monitor.module.css';
 void MONITOR_DEFAULTS;

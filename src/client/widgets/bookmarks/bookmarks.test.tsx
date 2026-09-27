@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import Bookmarks from './index';
-import { resolveIcon } from './icon';
+import { resolveIcon } from '../../../shared/widgets/icon';
 import { bookmarksSchema } from '../../../shared/widgets/bookmarks';
 import styles from './bookmarks.module.css';
 

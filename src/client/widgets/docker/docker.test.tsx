@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import DockerContainers from './index';
 import type { DockerData } from '../../../shared/widgets/payloads';
+import styles from './docker.module.css';
 
 const data: DockerData = [
   {
@@ -10,7 +11,7 @@ const data: DockerData = [
     state: 'exited',
     stateIcon: 'warn',
     stateText: 'exited (1) 2 hours ago',
-    icon: { url: '/dockerhub.svg', autoInvert: false },
+    icon: { url: '/dockerhub.svg', autoInvert: true },
   },
   {
     name: 'stack',
@@ -20,7 +21,7 @@ const data: DockerData = [
     stateText: 'up 5 days',
     url: 'https://stack.lab',
     description: 'Compose stack',
-    icon: { url: '/dockerhub.svg', autoInvert: false },
+    icon: { url: 'https://cdn.example/nginx.png', autoInvert: false },
     children: [
       {
         name: 'nginx',
@@ -68,6 +69,18 @@ describe('docker-containers widget', () => {
     fireEvent.click(screen.getByRole('button', { name: /1 container/ }));
     expect(screen.getByText('nginx')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /1 container/ })).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('inverts a black container icon and leaves a real logo alone', () => {
+    render(<DockerContainers config={{ type: 'docker-containers' }} data={data} />);
+    const icons = screen.getAllByTestId('docker-icon') as HTMLImageElement[];
+    // The bundled mark is a black currentColor path: unfilled, it is nothing
+    // on a dark-only theme, so the fetcher's flag has to reach the class.
+    expect(icons[0]!.getAttribute('src')).toBe('/dockerhub.svg');
+    expect(icons[0]!.className).toContain(styles.iconAutoInvert);
+    // A raster logo from a `glance.icon` label keeps its own colours.
+    expect(icons[1]!.getAttribute('src')).toBe('https://cdn.example/nginx.png');
+    expect(icons[1]!.className).not.toContain(styles.iconAutoInvert);
   });
 
   it('shows loading skeleton while data is null', () => {
