@@ -1,4 +1,4 @@
-import { Link } from '@astryxdesign/core';
+import { Link, Stack, StatusDot, Text } from '@astryxdesign/core';
 import { MONITOR_DEFAULTS, type MonitorConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
@@ -11,16 +11,28 @@ function SiteRow({ site }: { site: MonitorSite }) {
   const href = site.ok || !site.errorUrl ? site.url : site.errorUrl;
   const target = site.sameTab ? undefined : '_blank';
   return (
-    <div className={styles.row}>
-      <span role="img" className={`${styles.dot} ${site.ok ? styles.dotUp : styles.dotDown}`} aria-label={site.ok ? 'up' : 'down'} />
-      <div className={styles.rowBody}>
-        <Link href={href} target={target} className={styles.title} hasUnderline={false}>
+    <Stack direction="horizontal" gap={3} vAlign="center" className={styles.row}>
+      {/* Status goes to StatusDot: the kit owns the 8px mark, the accessible
+          name and the positive/negative vocabulary. */}
+      <StatusDot variant={site.ok ? 'success' : 'error'} label={site.ok ? 'up' : 'down'} />
+      <Stack direction="horizontal" gap={2} className={styles.rowBody}>
+        <Link
+          href={href}
+          target={target}
+          hasUnderline={false}
+          className={styles.title}
+          maxLines={1}
+        >
           {site.title || site.url}
         </Link>
-        <span className={styles.url}>{site.url}</span>
-      </div>
-      <span className={styles.ms}>{site.ms !== null ? `${site.ms} ms` : '—'}</span>
-    </div>
+        <Text type="supporting" maxLines={1} className={styles.url}>
+          {site.url}
+        </Text>
+      </Stack>
+      <Text type="supporting" hasTabularNumbers className={styles.ms}>
+        {site.ms !== null ? `${site.ms} ms` : '—'}
+      </Text>
+    </Stack>
   );
 }
 

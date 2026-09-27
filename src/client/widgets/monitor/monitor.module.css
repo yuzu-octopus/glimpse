@@ -1,9 +1,12 @@
+/* Monitor is now Stack + StatusDot + Link + Text. What the module keeps is
+   only what a prop cannot express: the row rhythm and the separator, the
+   compact variant's tighter padding, the one-hairline dot/baseline alignment
+   the Stack rows need, and the truncation columns. The hand-rolled status dot,
+   the hand-rolled title colour and the 8-rung entrance-delay ladder are gone —
+   the ladder was a brand violation (no entrance choreography), not a lookalike. */
+
 .row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-  animation: collapsibleItemReveal 0.25s backwards;
+  padding-block: 4px;
 }
 
 .row + .row {
@@ -12,16 +15,8 @@
   padding-top: 8px;
 }
 
-.row:nth-child(2) { animation-delay: 30ms; }
-.row:nth-child(3) { animation-delay: 60ms; }
-.row:nth-child(4) { animation-delay: 90ms; }
-.row:nth-child(5) { animation-delay: 120ms; }
-.row:nth-child(6) { animation-delay: 150ms; }
-.row:nth-child(7) { animation-delay: 180ms; }
-.row:nth-child(8) { animation-delay: 210ms; }
-
 .compact .row {
-  padding: 0;
+  padding-block: 0;
 }
 
 .compact .row + .row {
@@ -36,57 +31,28 @@
   font-size: 12px;
 }
 
-/* glance monitor status icon: positive check up / negative warning down */
-.dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.dotUp {
-  background: var(--color-positive);
-}
-
-.dotDown {
-  background: var(--color-negative);
+/* The dot is 8px and the row baseline is the 14px text baseline: nudge the
+   dot so it sits on the text's optical centre rather than the line box top. */
+.row > :first-child {
+  align-self: center;
 }
 
 .rowBody {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
+  flex: 1;
   min-width: 0;
-  overflow: hidden;
+  align-items: baseline;
 }
 
-/* glance monitor.html: site title is size-h3 color-highlight link */
 .title {
-  font-size: var(--font-size-h3);
-  font-weight: 500;
-  color: var(--color-text-base);
-  text-decoration: none;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.title:hover {
-  color: var(--color-text-highlight);
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .url {
-  font-size: 12px;
-  color: var(--color-text-base-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .ms {
-  margin-left: auto;
   flex-shrink: 0;
-  font-size: 12px;
-  color: var(--color-text-base-muted);
-  font-variant-numeric: tabular-nums;
 }
