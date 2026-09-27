@@ -114,7 +114,10 @@ describe('SettingsPanel section sidebar', () => {
 
     expect(await screen.findByText('9.9.9')).toBeInTheDocument();
     expect(screen.getByText('/etc/glimpse/config.yml')).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith('/api/config');
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/config',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
   });
 
   it('falls back to unknown facts when /api/config fails', async () => {
@@ -177,6 +180,24 @@ describe('SettingsPanel About facts', () => {
     expect(within(list as HTMLElement).getByText('Version').tagName).toBe('DT');
     expect(within(list as HTMLElement).getByText('9.9.9').tagName).toBe('DD');
     expect(within(list as HTMLElement).getByText('Config file').tagName).toBe('DT');
+  });
+
+  // The About request is fired from a click, not from an effect, so it can
+  // still be in flight when the panel goes away. The `cancelled` guard is what
+  // stops the late answer being written; the signal is what stops the request.
+  it('tears the in-flight About request down when the panel unmounts', async () => {
+    const { promise } = Promise.withResolvers<Response>();
+    const fetchMock = vi.fn((_url: string, _init?: RequestInit) => promise);
+    vi.stubGlobal('fetch', fetchMock);
+    const { unmount } = render(<SettingsPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+
+    const signal = fetchMock.mock.calls[0][1]?.signal;
+    expect(signal).toBeInstanceOf(AbortSignal);
+    expect(signal?.aborted).toBe(false);
+
+    unmount();
+    expect(signal?.aborted).toBe(true);
   });
 });
 

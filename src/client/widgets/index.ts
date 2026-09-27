@@ -59,8 +59,21 @@ export function ensureWidgetLoaded(type: string): Promise<unknown> | null {
   if (!loader) return null;
   let p = widgetPromises.get(type);
   if (!p) {
-    p = loader().catch(() => {});
+    const loaded = loader();
+    // Callers suspend on this promise and fire-and-forget others; it resolves
+    // to undefined on failure rather than rejecting into a Suspense boundary.
+    p = loaded.catch(() => {});
     widgetPromises.set(type, p);
+    // A chunk that failed once (a stale service-worker chunk name after a
+    // deploy, a storage-pressure eviction) must not be memoized for the
+    // session: a swallowed rejection resolves to undefined, so the entry
+    // would hand every later caller the same "loaded" answer and strand the
+    // widget on its Suspense skeleton even after the network came back.
+    loaded.catch(() => {
+      if (widgetPromises.get(type) === p) widgetPromises.delete(type);
+      if (type === 'iframe' && widgetPromises.get('html') === p) widgetPromises.delete('html');
+      if (type === 'html' && widgetPromises.get('iframe') === p) widgetPromises.delete('iframe');
+    });
     // iframe/html share the same underlying import — warm the alias too
     if (type === 'iframe' && !widgetPromises.has('html')) widgetPromises.set('html', p);
     if (type === 'html' && !widgetPromises.has('iframe')) widgetPromises.set('iframe', p);
