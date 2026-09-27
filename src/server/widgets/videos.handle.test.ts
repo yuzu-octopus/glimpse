@@ -247,6 +247,34 @@ describe('videos: handle resolution chain', () => {
     expect(data.issues).toEqual([]);
   });
 
+  // The report puts the id under `response.`, but every live probe from this
+  // host on 2026-09-27 returned it at the top level, with the same ids its own
+  // table lists. Read one shape only and the primary demotes itself to the
+  // scrape on every single handle.
+  it('reads the browseId from the top-level endpoint too', async () => {
+    const seen: string[] = [];
+    const ctx = makeCtx(async (url) => {
+      seen.push(url);
+      if (url.includes(RESOLVE_PATH)) {
+        return new Response(
+          JSON.stringify({ endpoint: { browseEndpoint: { browseId: 'UCsBjURrPoezykLs9EqgamOA' } } }),
+          { status: 200 },
+        );
+      }
+      if (url.includes('youtube.com/@')) return new Response(PAGE, { status: 200 });
+      return new Response(FEED, { status: 200 });
+    });
+    const data = (await videosFetcher()(ctx, { type: 'videos', channels: ['@Fireship'] })) as {
+      videos: Video[];
+    };
+
+    expect(seen).toEqual([
+      RESOLVE_ENDPOINT,
+      'https://www.youtube.com/feeds/videos.xml?channel_id=UCsBjURrPoezykLs9EqgamOA',
+    ]);
+    expect(data.videos).toHaveLength(1);
+  });
+
   it('the rescue costs one look even when retries are configured', async () => {
     let pageLooked = 0;
     const ctx = makeCtx(async (url) => {
