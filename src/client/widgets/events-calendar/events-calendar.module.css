@@ -23,7 +23,7 @@
 }
 
 .event:hover {
-  background: var(--color-widget-highlight);
+  background: var(--color-widget-background-highlight);
 }
 
 .top {
