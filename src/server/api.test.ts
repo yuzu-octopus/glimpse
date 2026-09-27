@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Column, WidgetConfig } from '../shared/config';
+import type { Column, WidgetConfig, WidgetType } from '../shared/config';
 import {
   buildPagePayload,
   skeletonPagePayload,
@@ -302,6 +302,79 @@ describe('streamPagePayload', () => {
     expect(chunks).toHaveLength(2);
     const failed = chunks.find((c) => c.payload.type === 'rss');
     expect(failed?.payload.error).toBe('upstream exploded');
+  });
+
+  it('carries each failing widget its own error, head / column / nested child alike', async () => {
+    // The invariant behind the client's end-of-stream reconciliation: a widget
+    // that never gets a frame is indistinguishable from a slow one, so *every*
+    // configured widget must get one — and the frame must carry that widget's
+    // own failure, not a neighbour's. `fetchWidget` catches every fetcher
+    // rejection into `payload.error` and the container recursion is
+    // `Promise.all` over `fetchWidget`, so no chunk can legitimately be
+    // dropped. This pins both halves: the frame count and the per-widget
+    // error, at every nesting depth the stream delivers.
+    const errors: Array<[WidgetType, string]> = [
+      ['rss', 'feed upstream returned 503'],
+      ['videos', 'channel lookup timed out'],
+      ['monitor', 'no API key configured'],
+    ];
+    for (const [type, message] of errors) {
+      registerWidget(type, vi.fn(async () => {
+        throw new Error(message);
+      }));
+    }
+    const testPage = {
+      name: 'Home',
+      slug: 'home',
+      'head-widgets': [{ type: 'rss', cache: '1h' }],
+      columns: [
+        { size: 'full', widgets: [{ type: 'videos' }, clockWidget] },
+        {
+          size: 'full',
+          widgets: [
+            { type: 'group', retries: 3, 'show-errors': true, widgets: [{ type: 'monitor' }, { type: 'rss', cache: '1h' }] },
+          ],
+        },
+      ],
+    } as unknown as Parameters<typeof streamPagePayload>[0];
+
+    const chunks: StreamChunk[] = [];
+    for await (const c of streamPagePayload(testPage, makeCtx())) chunks.push(c);
+
+    // one frame per configured top-level widget: head, 2 in col 0, 1 in col 1
+    expect(chunks).toHaveLength(4);
+    expect(chunks.map((c) => c.path).sort()).toEqual([
+      'columns[0].widgets[0]',
+      'columns[0].widgets[1]',
+      'columns[1].widgets[0]',
+      'headWidgets[0]',
+    ]);
+
+    const find = (path: string): StreamChunk => {
+      const hit = chunks.find((c) => c.path === path);
+      expect(hit, `no frame for ${path}`).toBeDefined();
+      return hit!;
+    };
+
+    // each frame carries its own widget's message
+    expect(find('headWidgets[0]').payload.error).toBe('feed upstream returned 503');
+    expect(find('columns[0].widgets[0]').payload.error).toBe('channel lookup timed out');
+    // the config-only widget still gets a frame, and it is not an error
+    expect(find('columns[0].widgets[1]').payload.type).toBe('clock');
+    expect(find('columns[0].widgets[1]').payload.error).toBeUndefined();
+
+    // nested children ride inside the container frame, each with its own error
+    const group = find('columns[1].widgets[0]').payload;
+    expect(group.widgets).toHaveLength(2);
+    expect(group.widgets?.[0].error).toBe('no API key configured');
+    expect(group.widgets?.[1].error).toBe('feed upstream returned 503');
+
+    // a failure is always `data: null` + a reason, never a silent null
+    for (const c of chunks) {
+      for (const w of c.payload.widgets ?? [c.payload]) {
+        if (w.error !== undefined) expect(w.data).toBeNull();
+      }
+    }
   });
 });
 
