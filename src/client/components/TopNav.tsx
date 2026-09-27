@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { prefetchPage } from '../hooks/usePageData';
+import { useLocation } from 'react-router-dom';
+import { Button, TopNavItem } from '@astryxdesign/core';
 import { Menu } from 'lucide-react';
+import { prefetchPage } from '../hooks/usePageData';
 import { useConfig } from '../hooks/useConfig';
 import { PAGE_WIDTHS } from '../../shared/config';
 import { SettingsPanel } from './SettingsPanel';
@@ -19,7 +20,12 @@ function useNavPages() {
 
 /** Desktop header: glance's widget-frame bar (logo + page tabs + settings,
  * height 45px). The nav element carries the content-bounds width so
- * the whole bar constrains like glance's header-container. */
+ * the whole bar constrains like glance's header-container.
+ *
+ * The page links are kit TopNavItems — the current-page state, the hover
+ * wash and the focus ring are theirs, and the router link comes from
+ * GlimpseThemeProvider's LinkProvider. The logo stays a real <a>: it is a
+ * real outbound link, not an action, so it must never become a Button. */
 export function TopNav({ width }: { width?: 'default' | 'slim' | 'wide' }) {
   const { pages, homeSlug, isSelected } = useNavPages();
   return (
@@ -48,20 +54,14 @@ export function TopNav({ width }: { width?: 'default' | 'slim' | 'wide' }) {
       </a>
       <div className={styles.navLinks}>
         {pages.map((p) => (
-          <Link
+          <TopNavItem
             key={p.slug}
-            to={p.slug === homeSlug ? '/' : `/${p.slug}`}
-            className={
-              isSelected(p.slug)
-                ? `${styles.navLink} ${styles.navLinkCurrent}`
-                : styles.navLink
-            }
-            aria-current={isSelected(p.slug) ? 'page' : undefined}
-              onMouseEnter={() => prefetchPage(p.slug)}
-              onFocus={() => prefetchPage(p.slug)}
-          >
-            {p.name}
-          </Link>
+            label={p.name}
+            href={p.slug === homeSlug ? '/' : `/${p.slug}`}
+            isSelected={isSelected(p.slug)}
+            onMouseEnter={() => prefetchPage(p.slug)}
+            onFocus={() => prefetchPage(p.slug)}
+          />
         ))}
       </div>
       <SettingsPanel />
@@ -77,32 +77,26 @@ export function MobileNavigation() {
   return (
     <div className={styles.mobileNav} data-testid="mobile-navigation">
       <div className={styles.mobileNavIcons}>
-        <button
-          type="button"
+        <Button
+          label="Pages"
+          isIconOnly
+          icon={<Menu size={18} aria-hidden="true" />}
+          variant="ghost"
           className={styles.mobileNavToggle}
-          aria-label="Pages"
           aria-expanded={expanded}
           onClick={() => setExpanded((v) => !v)}
-        >
-          <Menu size={18} aria-hidden="true" />
-        </button>
+        />
         <SettingsPanel />
       </div>
       {expanded ? (
         <div className={styles.mobileNavLinks}>
           {pages.map((p) => (
-            <Link
+            <TopNavItem
               key={p.slug}
-              to={p.slug === homeSlug ? '/' : `/${p.slug}`}
-              className={
-                isSelected(p.slug)
-                  ? `${styles.mobileNavLink} ${styles.mobileNavLinkCurrent}`
-                  : styles.mobileNavLink
-              }
-              aria-current={isSelected(p.slug) ? 'page' : undefined}
-            >
-              {p.name}
-            </Link>
+              label={p.name}
+              href={p.slug === homeSlug ? '/' : `/${p.slug}`}
+              isSelected={isSelected(p.slug)}
+            />
           ))}
         </div>
       ) : null}
