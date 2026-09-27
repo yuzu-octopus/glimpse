@@ -1,7 +1,11 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PagePayload } from '../../shared/api';
-import type { usePageData as UsePageDataHook } from './usePageData';
+import type {
+  prefetchPage as PrefetchPage,
+  usePageData as UsePageDataHook,
+  useStaleNotice as UseStaleNoticeHook,
+} from './usePageData';
 
 function makePayload(overrides: Partial<PagePayload> = {}): PagePayload {
   return {
@@ -28,6 +32,8 @@ let usePageData: typeof UsePageDataHook;
 
 /** Reason the stream-end reconciliation stamps on an unanswered widget. */
 let NO_RESPONSE: string;
+let prefetchPage: typeof PrefetchPage;
+let useStaleNotice: typeof UseStaleNoticeHook;
 
 describe('usePageData stale-while-revalidate', () => {
   beforeEach(async () => {
@@ -839,5 +845,436 @@ describe('usePageData stale-while-revalidate', () => {
     expect(result.current.data?.widgets?.[0].error).toBeUndefined();
     expect(result.current.data?.widgets?.[1].error).toBe(NO_RESPONSE);
     expect(result.current.data?.widgets).not.toBe(beforeClose);
+  });
+});
+
+describe('prefetch budget isolation', () => {
+  beforeEach(async () => {
+    vi.useFakeTimers();
+    vi.resetModules();
+    const mod: any = await import('./usePageData');
+    usePageData = mod.usePageData;
+    prefetchPage = mod.prefetchPage;
+    mod.__clearCacheForTests();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  /** One open NDJSON response per fetch call, in call order. */
+  function streamFetch() {
+    const enc = new TextEncoder();
+    const controllers: ReadableStreamDefaultController<Uint8Array>[] = [];
+    const mock = vi.fn(
+      async () =>
+        new Response(
+          new ReadableStream<Uint8Array>({
+            start(c) {
+              controllers.push(c);
+            },
+          }),
+          { headers: { 'content-type': 'application/x-ndjson' } },
+        ),
+    );
+    vi.stubGlobal('fetch', mock);
+    return { mock, controllers, enc };
+  }
+
+  // A hover prefetch runs on its own 10s budget. Clicking the link must not
+  // hand the mounted page that deadline: the page has to stream on its own
+  // signal, and the prefetch's expiry must not decide its fate.
+  it('does not hand a joining page the prefetch budget, and streams it anyway', async () => {
+    const { mock, controllers, enc } = streamFetch();
+    prefetchPage('home');
+
+    const { result } = renderHook(() => usePageData('home'));
+    // The page joined the prefetch: one request for the slug, not two.
+    expect(mock).toHaveBeenCalledTimes(1);
+    expect(controllers).toHaveLength(1);
+
+    // The prefetch's own 10s deadline expires while the page is reading.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
+    });
+
+    const SKELETON: PagePayload = {
+      slug: 'home',
+      name: 'Home',
+      width: 'default',
+      tiling: 'columns',
+      minColumnWidth: 300,
+      headWidgets: [],
+      columns: [
+        {
+          size: 'full',
+          widgets: [{ type: 'clock', config: { type: 'clock', title: 'Clock' }, data: null, error: undefined }],
+        },
+      ],
+    };
+    const W0 = { type: 'clock', config: { type: 'clock', title: 'Clock' }, data: { time: 'live' }, error: undefined };
+
+    controllers[0].enqueue(enc.encode(JSON.stringify({ path: '$skeleton', payload: SKELETON }) + '\n'));
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    // The joining page received the frame the prefetch threw away.
+    expect(result.current.data).not.toBeNull();
+    expect(result.current.error).toBeNull();
+
+    controllers[0].enqueue(enc.encode(JSON.stringify({ path: 'columns[0].widgets[0]', payload: W0 }) + '\n'));
+    controllers[0].close();
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(result.current.error).toBeNull();
+    expect(result.current.data?.columns[0].widgets[0].data).toEqual(W0.data);
+  });
+
+  // The shared request used to be bound to whichever caller created it, so a
+  // revalidation that joined a still-open read inherited an already-aborted
+  // signal: handleLine dropped every frame and the page hard-errored on a
+  // stream the server was still writing.
+  it('gives a revalidation its own request instead of a dead shared one', async () => {
+    const { mock, controllers, enc } = streamFetch();
+    const { result } = renderHook(() => usePageData('home'));
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(mock).toHaveBeenCalledTimes(1);
+
+    // Re-validate while the first read is still open. The first caller walks
+    // away, and a request nobody is left to read is ended — so the new caller
+    // must get its own rather than a corpse carrying the old caller's abort.
+    void result.current.validate();
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(mock).toHaveBeenCalledTimes(2);
+
+    const SKELETON: PagePayload = {
+      slug: 'home',
+      name: 'Home',
+      width: 'default',
+      tiling: 'columns',
+      minColumnWidth: 300,
+      headWidgets: [],
+      columns: [
+        {
+          size: 'full',
+          widgets: [{ type: 'clock', config: { type: 'clock', title: 'Clock' }, data: null, error: undefined }],
+        },
+      ],
+    };
+    const W0 = { type: 'clock', config: { type: 'clock', title: 'Clock' }, data: { time: 'live' }, error: undefined };
+    controllers[1].enqueue(enc.encode(JSON.stringify({ path: '$skeleton', payload: SKELETON }) + '\n'));
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(result.current.data).not.toBeNull();
+
+    controllers[1].enqueue(enc.encode(JSON.stringify({ path: 'columns[0].widgets[0]', payload: W0 }) + '\n'));
+    controllers[1].close();
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(result.current.error).toBeNull();
+    expect(result.current.data?.columns[0].widgets[0].data).toEqual(W0.data);
+  });
+});
+
+describe('aborted streams are not cached', () => {
+  const GOOD: PagePayload = {
+    slug: 'home',
+    name: 'Home',
+    width: 'default',
+    tiling: 'columns',
+    minColumnWidth: 300,
+    headWidgets: [],
+    columns: [
+      {
+        size: 'full',
+        widgets: [{ type: 'clock', config: { type: 'clock', title: 'Clock' }, data: { time: 'first' }, error: undefined }],
+      },
+    ],
+  };
+  const TWO_WIDGET_SKELETON: PagePayload = {
+    ...GOOD,
+    columns: [
+      {
+        size: 'full',
+        widgets: [
+          { type: 'clock', config: { type: 'clock', title: 'Clock' }, data: null, error: undefined },
+          { type: 'rss', config: { type: 'rss', title: 'Feed' }, data: null, error: undefined },
+        ],
+      },
+    ],
+  };
+  const ANSWERED = { type: 'clock', config: { type: 'clock', title: 'Clock' }, data: { time: 'live' }, error: undefined };
+
+  beforeEach(async () => {
+    vi.useFakeTimers();
+    vi.resetModules();
+    const mod: any = await import('./usePageData');
+    usePageData = mod.usePageData;
+    mod.__clearCacheForTests();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('never lets a stream that was cut short become the cached payload', async () => {
+    const enc = new TextEncoder();
+    let controller!: ReadableStreamDefaultController<Uint8Array>;
+    const never = new Promise<Response>(() => {});
+    const fetchMock = vi
+      .fn()
+      // The page declares two widgets, answers one, and is navigated away
+      // from before the second speaks.
+      .mockImplementationOnce(
+        async () =>
+          new Response(
+            new ReadableStream<Uint8Array>({
+              start(c) {
+                controller = c;
+              },
+            }),
+            { headers: { 'content-type': 'application/x-ndjson' } },
+          ),
+      )
+      // The next visit revalidates; keep it pending so its initial read of the
+      // cache is what is under test.
+      .mockImplementation(() => never);
+    vi.stubGlobal('fetch', fetchMock);
+    vi.resetModules();
+    ({ usePageData } = await import('./usePageData'));
+
+    const first = renderHook(() => usePageData('home'));
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    controller.enqueue(enc.encode(JSON.stringify({ path: '$skeleton', payload: TWO_WIDGET_SKELETON }) + '\n'));
+    controller.enqueue(enc.encode(JSON.stringify({ path: 'columns[0].widgets[0]', payload: ANSWERED }) + '\n'));
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(first.result.current.data?.columns[0].widgets).toHaveLength(2);
+
+    // Navigate away mid-stream, then flush hard: the reader cancel and
+    // everything behind it has to settle, because that is the moment the
+    // pre-fix code wrote the truncated payload into the cache.
+    await act(async () => {
+      first.unmount();
+      for (let i = 0; i < 5; i++) {
+        await Promise.resolve();
+        await vi.advanceTimersByTimeAsync(1);
+      }
+    });
+
+    const second = renderHook(() => usePageData('home'));
+    // A widget that never answered must not come back inside the freshness
+    // window as a silent skeleton with no error badge.
+    const widgets = second.result.current.data?.columns[0].widgets ?? [];
+    expect(widgets.filter((w) => w.data == null && w.error == null)).toHaveLength(0);
+  });
+});
+
+describe('offline with a warm cache', () => {
+  beforeEach(async () => {
+    vi.useFakeTimers();
+    vi.resetModules();
+    const mod: any = await import('./usePageData');
+    usePageData = mod.usePageData;
+    useStaleNotice = mod.useStaleNotice;
+    mod.__clearCacheForTests();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('keeps the payload and reports that it is no longer live', async () => {
+    const payload = makePayload();
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(
+        async () =>
+          new Response(JSON.stringify(payload), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }),
+      )
+      .mockImplementation(async () => {
+        throw new TypeError('Failed to fetch');
+      });
+    vi.stubGlobal('fetch', fetchMock);
+    vi.resetModules();
+    const mod: any = await import('./usePageData');
+    usePageData = mod.usePageData;
+    useStaleNotice = mod.useStaleNotice;
+    mod.__clearCacheForTests();
+
+    const { result } = renderHook(() => ({
+      page: usePageData('home'),
+      stale: useStaleNotice(),
+    }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10);
+    });
+    expect(result.current.page.data).not.toBeNull();
+    expect(result.current.stale).toBeNull();
+
+    await act(async () => {
+      await result.current.page.validate();
+    });
+
+    // The reading stays on screen — a dead network is not a failed page — and
+// the shell is told the dashboard has stopped being true.
+    expect(result.current.page.error).toBeNull();
+    expect(result.current.page.data).not.toBeNull();
+    expect(result.current.stale?.reason).toBe('Failed to fetch');
+  });
+
+  it('clears the notice as soon as a refresh succeeds', async () => {
+    const payload = makePayload();
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(
+        async () =>
+          new Response(JSON.stringify(payload), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }),
+      )
+      .mockImplementationOnce(async () => {
+        throw new TypeError('Failed to fetch');
+      })
+      .mockImplementation(
+        async () =>
+          new Response(JSON.stringify(payload), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+    vi.resetModules();
+    const mod: any = await import('./usePageData');
+    usePageData = mod.usePageData;
+    useStaleNotice = mod.useStaleNotice;
+    mod.__clearCacheForTests();
+
+    const { result } = renderHook(() => ({
+      page: usePageData('home'),
+      stale: useStaleNotice(),
+    }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10);
+    });
+    await act(async () => {
+      await result.current.page.validate();
+    });
+    expect(result.current.stale).not.toBeNull();
+
+    await act(async () => {
+      await result.current.page.validate();
+    });
+    expect(result.current.stale).toBeNull();
+  });
+
+  it('still hard-errors a page that never loaded', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('Failed to fetch');
+      }),
+    );
+    vi.resetModules();
+    const mod: any = await import('./usePageData');
+    usePageData = mod.usePageData;
+    useStaleNotice = mod.useStaleNotice;
+    mod.__clearCacheForTests();
+
+    const { result } = renderHook(() => ({
+      page: usePageData('home'),
+      stale: useStaleNotice(),
+    }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10);
+    });
+    expect(result.current.page.error).toBe('Failed to fetch');
+    expect(result.current.stale).toBeNull();
+  });
+});
+
+describe('page cache GC', () => {
+  beforeEach(async () => {
+    vi.useFakeTimers();
+    vi.resetModules();
+    const mod: any = await import('./usePageData');
+    usePageData = mod.usePageData;
+    mod.__clearCacheForTests();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  // Every poll wrote a fresh 5-minute GC timer and threw the handle away, so a
+ // 1s homelab page accumulated hundreds of live timers that all fired at once
+  // to do nothing.
+  it('keeps one pending GC per slug no matter how often the page is written', async () => {
+    const payload = makePayload({
+      columns: [
+        {
+          size: 'full',
+          widgets: [
+            { type: 'server-stats', config: { type: 'server-stats', title: 'Host' }, data: {}, error: undefined },
+          ],
+        },
+      ],
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify(payload), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }),
+      ),
+    );
+    vi.resetModules();
+    ({ usePageData } = await import('./usePageData'));
+
+    renderHook(() => usePageData('home'));
+    // Let the one-shot preload timer fire so the baseline counts only the
+    // poll interval and the pending GC.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
+    });
+    const baseline = vi.getTimerCount();
+
+    // 30 further 1s polls, each of which used to leave another live GC timer
+    // behind — ~300 of them within the five minutes they were scheduled for.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+    });
+
+    expect(vi.getTimerCount()).toBe(baseline);
   });
 });

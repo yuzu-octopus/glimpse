@@ -1,8 +1,10 @@
+import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { Banner } from '@astryxdesign/core';
 import { MobileNavigation, TopNav } from './client/components/TopNav';
 import { useConfig } from './client/hooks/useConfig';
 import { PageView } from './client/pages/PageView';
+import { useStaleNotice } from './client/hooks/usePageData';
 import type { ResolvedConfig } from './shared/config';
 import styles from './app.module.css';
 
@@ -13,8 +15,45 @@ function RoutePage({ page }: { page?: PageConfig }) {
   return <PageView slug={slug ?? ''} page={page} />;
 }
 
+/**
+ * The dashboard is showing its last known data, not a live reading. Rendered
+ * above the page and never in place of it: a warm cache with a dead network
+ * is the one state a glance dashboard cannot be allowed to look normal in.
+ */
+function StaleNotice({ offline }: { offline: boolean }) {
+  const notice = useStaleNotice();
+  if (!notice) return null;
+  return (
+    <Banner
+      status="warning"
+      container="section"
+      data-testid="stale-notice"
+      title={offline ? 'Offline — showing the last known data' : 'Showing the last known data'}
+      description={notice.reason}
+    />
+  );
+}
+
+/** `navigator.onLine` is a hint, not a fact, but it is the only one the
+ * browser offers and it flips the message from "stale" to "offline". */
+function useOnline(): boolean {
+  const [online, setOnline] = useState(() => navigator.onLine !== false);
+  useEffect(() => {
+    const goOnline = () => setOnline(true);
+    const goOffline = () => setOnline(false);
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  }, []);
+  return online;
+}
+
 export default function App() {
   const state = useConfig();
+  const online = useOnline();
   const { pathname } = useLocation();
 
   if (state.status === 'loading') {
@@ -64,6 +103,7 @@ export default function App() {
         <TopNav width={activePage['desktop-navigation-width']} />
       </div>
       <MobileNavigation />
+      <StaleNotice offline={!online} />
       <main>
         <Routes>
           <Route path="/" element={<PageView slug={homeSlug} page={activePage} />} />

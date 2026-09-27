@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Dialog,
   DialogHeader,
@@ -36,22 +36,43 @@ export function SettingsPanel() {
   const [open, setOpen] = useState(false);
   const [section, setSection] = useState<SettingsSection>('about');
   const [about, setAbout] = useState<AboutInfo | null>(null);
+  // The About facts load from outside the dialog and can land after the panel
+  // is gone. `cancelled` is the same guard useConfig and GlimpseThemeProvider
+  // use; the AbortController also stops the request instead of only ignoring
+  // its answer.
+  const cancelledRef = useRef(false);
+  const aboutAbortRef = useRef<AbortController | null>(null);
+  useEffect(() => {
+    cancelledRef.current = false;
+    return () => {
+      cancelledRef.current = true;
+      aboutAbortRef.current?.abort();
+    };
+  }, []);
+
 
   const openAbout = () => {
     setSection('about');
     if (about) return;
-    fetch('/api/config')
+    aboutAbortRef.current?.abort();
+    const ac = new AbortController();
+    aboutAbortRef.current = ac;
+    fetch('/api/config', { signal: ac.signal })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json() as Promise<ConfigResponse>;
       })
-      .then((data) =>
+      .then((data) => {
+        if (cancelledRef.current) return;
         setAbout({
           version: data.version ?? 'unknown',
           configPath: data.configPath ?? 'config.yml',
-        }),
-      )
-      .catch(() => setAbout({ version: 'unknown', configPath: 'config.yml' }));
+        });
+      })
+      .catch(() => {
+        if (cancelledRef.current) return;
+        setAbout({ version: 'unknown', configPath: 'config.yml' });
+      });
   };
 
   return (

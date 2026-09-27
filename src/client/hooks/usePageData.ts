@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, useTransition } from 'react';
 import type { PagePayload, WidgetPayload } from '../../shared/api';
 import { LIVE_POLL_MS, LIVE_TYPES } from '../../shared/live';
 import { CONFIG_ONLY } from '../../shared/widgets';
@@ -50,21 +50,63 @@ function getLiveKey(payload: PagePayload): 'none' | 'live' | 'homelab' {
 }
 
 const pageCache = new Map<string, { data: PagePayload; fetchedAt: number }>();
-const inflight = new Map<string, Promise<PagePayload>>();
-const STALE_MS = 30_000;
 const GC_MS = 5 * 60_000;
+const STALE_MS = 30_000;
 
-export function __clearCacheForTests() {
-  pageCache.clear();
-  inflight.clear();
+/**
+ * A failure that happened while a payload was already on screen. The page is
+ * still readable, so this is not a page error — it is the dashboard telling
+ * the user it has stopped being true. Module-level because it outlives any
+ * one page: the notice belongs to the shell, which is mounted once, while the
+ * fetch that produced it belongs to whichever page is open.
+ */
+export type StaleNotice = { reason: string; at: number };
+
+let staleNotice: StaleNotice | null = null;
+const staleListeners = new Set<() => void>();
+
+function setStaleNotice(next: StaleNotice | null): void {
+  if (staleNotice === next) return;
+  staleNotice = next;
+  for (const l of staleListeners) l();
 }
+
+function subscribeStaleNotice(cb: () => void): () => void {
+  staleListeners.add(cb);
+  return () => {
+    staleListeners.delete(cb);
+  };
+}
+
+const readStaleNotice = (): StaleNotice | null => staleNotice;
+
+/** The last refresh that failed over a rendered payload, or null when the
+ * dashboard is current. The shell renders this as a non-blocking notice. */
+export function useStaleNotice(): StaleNotice | null {
+  return useSyncExternalStore(subscribeStaleNotice, readStaleNotice, readStaleNotice);
+}
+
+/** The GC handle for one slug's cache entry. */
+type GcTimer = ReturnType<typeof setTimeout>;
+
+/**
+ * One pending GC per slug, replaced on every write. A discarded handle per
+ * setCache is ~300 live timers per slug on the 1s homelab poll, all of which
+ * fire at the same moment to do nothing.
+ */
+const gcTimers = new Map<string, GcTimer>();
 
 function setCache(slug: string, data: PagePayload) {
   pageCache.set(slug, { data, fetchedAt: Date.now() });
-  setTimeout(() => {
-    const entry = pageCache.get(slug);
-    if (entry && Date.now() - entry.fetchedAt > GC_MS) pageCache.delete(slug);
-  }, GC_MS + 1000);
+  clearTimeout(gcTimers.get(slug));
+  gcTimers.set(
+    slug,
+    setTimeout(() => {
+      gcTimers.delete(slug);
+      const entry = pageCache.get(slug);
+      if (entry && Date.now() - entry.fetchedAt > GC_MS) pageCache.delete(slug);
+    }, GC_MS + 1000),
+  );
 }
 
 function getCached(slug: string): PagePayload | null {
@@ -201,131 +243,195 @@ function reconcileStreamEnd(
   if (changed) onProgress?.({ ...base });
 }
 
-async function fetchPage(
+/** One caller of a shared in-flight fetch: its own signal, its own progress
+ * callback. A subscriber's abort detaches it; it never ends the request. */
+type Subscriber = {
+  signal: AbortSignal;
+  onProgress?: (p: PagePayload) => void;
+};
+
+/**
+ * A shared request owns its OWN AbortController. The caller's signal is a
+ * subscription, never a budget the request inherits — which is what keeps a
+ * prefetch's 10s deadline from becoming the mounted page's deadline, and what
+ * lets a joining page receive the progressive frames the prefetch discarded.
+ */
+type Inflight = {
+  controller: AbortController;
+  promise: Promise<PagePayload>;
+  subs: Set<Subscriber>;
+};
+
+const inflight = new Map<string, Inflight>();
+
+function attach(entry: Inflight, signal: AbortSignal, onProgress?: (p: PagePayload) => void): void {
+  const sub: Subscriber = { signal, onProgress };
+  entry.subs.add(sub);
+  const detach = (): void => {
+    if (!entry.subs.delete(sub)) return;
+    // Nobody is left to read it: ending the request is then free, and is what
+    // stops an abandoned page's stream from running to completion.
+    if (entry.subs.size === 0) entry.controller.abort();
+  };
+  if (signal.aborted) detach();
+  else signal.addEventListener('abort', detach, { once: true });
+}
+
+async function runPageStream(slug: string, entry: Inflight, force: boolean): Promise<PagePayload> {
+  const { controller, subs } = entry;
+  const signal = controller.signal;
+  const emit = (payload: PagePayload): void => {
+    for (const sub of subs) {
+      if (!sub.signal.aborted) sub.onProgress?.({ ...payload });
+    }
+  };
+  const qs = force ? '?stream&force=1' : '?stream';
+  const res = await fetch(`/api/page/${encodeURIComponent(slug)}${qs}`, { signal });
+  if (!res.ok) {
+    const rawBody: unknown = await res.json().catch(() => ({}));
+    let msg = `HTTP ${res.status}`;
+    if (rawBody !== null && typeof rawBody === 'object' && 'error' in rawBody) {
+      const maybe = rawBody.error;
+      if (typeof maybe === 'string' && maybe) msg = maybe;
+    }
+    throw new Error(msg);
+  }
+  const ct = res.headers.get('content-type') ?? '';
+  const isNdjson = ct.includes('ndjson');
+
+  const cached = force ? null : getCached(slug);
+  const cachedBase = cached ? structuredClone(cached) : null;
+  let base: PagePayload | null = null;
+  const skeletonOf = (chunk: { path?: string; payload?: unknown }): PagePayload | null => {
+    if (chunk.path !== '$skeleton') return null;
+    const candidate = chunk.payload;
+    if (candidate === null || typeof candidate !== 'object') return null;
+    if (!('columns' in candidate)) return null;
+    return candidate as PagePayload;
+  };
+
+  const handleLine = (line: string): void => {
+    if (!line.trim() || signal.aborted) return;
+    let chunk: { path?: string; payload?: unknown };
+    try {
+      chunk = JSON.parse(line);
+    } catch {
+      return;
+    }
+    const skeleton = skeletonOf(chunk);
+    if (skeleton) {
+      if (!base) {
+        base = cachedBase ? reconcileWithCached(skeleton, cachedBase) : skeleton;
+        emit({ ...base });
+      }
+      return;
+    }
+    if (!base) {
+      if (!cachedBase) return;
+      base = cachedBase;
+      emit({ ...base });
+    }
+    if (!chunk.path) return;
+    applyChunk(base!, chunk.path!, chunk.payload);
+    emit({ ...base! });
+  };
+
+  if (!isNdjson) {
+    const text = await res.text();
+    try {
+      const parsed: unknown = JSON.parse(text);
+      if (parsed !== null && typeof parsed === 'object' && 'columns' in parsed) {
+        const payload = parsed as PagePayload;
+        setCache(slug, payload);
+        emit(payload);
+        return payload;
+      }
+    } catch {
+      // fall through to line-split fallback
+    }
+    for (const line of text.split('\n')) handleLine(line);
+    if (!base) throw new Error('empty stream');
+    if (signal.aborted) return base;
+    reconcileStreamEnd(base, signal, emit);
+    setCache(slug, base);
+    return base;
+  }
+
+  if (!res.body) throw new Error('empty stream');
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = '';
+  const onAbort = (): void => {
+    reader.cancel().catch(() => {});
+  };
+  signal.addEventListener('abort', onAbort, { once: true });
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (signal.aborted) {
+        await reader.cancel().catch(() => {});
+        break;
+      }
+      buf += dec.decode(value, { stream: true });
+      let nl: number;
+      while ((nl = buf.indexOf('\n')) >= 0) {
+        handleLine(buf.slice(0, nl));
+        buf = buf.slice(nl + 1);
+      }
+    }
+    buf += dec.decode();
+    handleLine(buf);
+  } finally {
+    signal.removeEventListener('abort', onAbort);
+    if (signal.aborted) {
+      try {
+        await reader.cancel();
+      } catch {}
+    }
+  }
+  if (!base) throw new Error('empty stream');
+  // A stream cut short is not a payload. reconcileStreamEnd already declines
+  // to stamp it; the cache must decline to keep it too, or the next visit
+  // inside STALE_MS reads widgets that never answered as permanent skeletons
+  // with no error badge.
+  if (signal.aborted) return base;
+  reconcileStreamEnd(base, signal, emit);
+  setCache(slug, base);
+  return base;
+}
+
+/**
+ * Join the in-flight request for `slug`, or start one. Concurrent callers for
+ * the same page share a single request, but each keeps its own signal and its
+ * own progress frames — sharing the response, never the budget.
+ */
+function fetchPage(
   slug: string,
   signal: AbortSignal,
   onProgress?: (p: PagePayload) => void,
   force = false,
 ): Promise<PagePayload> {
-  if (!force && inflight.has(slug)) return inflight.get(slug)!;
-  const p = (async () => {
-    const internal = new AbortController();
-    const qs = force ? '?stream&force=1' : '?stream';
-    const res = await fetch(`/api/page/${encodeURIComponent(slug)}${qs}`, { signal: internal.signal });
-    if (!res.ok) {
-      const rawBody: unknown = await res.json().catch(() => ({}));
-      let msg = `HTTP ${res.status}`;
-      if (rawBody !== null && typeof rawBody === 'object' && 'error' in rawBody) {
-        const maybe = rawBody.error;
-        if (typeof maybe === 'string' && maybe) msg = maybe;
-      }
-      throw new Error(msg);
-    }
-    const ct = res.headers.get('content-type') ?? '';
-    const isNdjson = ct.includes('ndjson');
-
-    const cached = force ? null : getCached(slug);
-    const cachedBase = cached ? structuredClone(cached) : null;
-    let base: PagePayload | null = null;
-    const skeletonOf = (chunk: { path?: string; payload?: unknown }): PagePayload | null => {
-      if (chunk.path !== '$skeleton') return null;
-      const candidate = chunk.payload;
-      if (candidate === null || typeof candidate !== 'object') return null;
-      if (!('columns' in candidate)) return null;
-      return candidate as PagePayload;
-    };
-
-    const handleLine = (line: string): void => {
-      if (!line.trim() || signal.aborted) return;
-      let chunk: { path?: string; payload?: unknown };
-      try {
-        chunk = JSON.parse(line);
-      } catch {
-        return;
-      }
-      const skeleton = skeletonOf(chunk);
-      if (skeleton) {
-        if (!base) {
-          base = cachedBase ? reconcileWithCached(skeleton, cachedBase) : skeleton;
-          if (!signal.aborted) onProgress?.({ ...base });
-        }
-        return;
-      }
-      if (!base) {
-        if (!cachedBase) return;
-        base = cachedBase;
-        if (!signal.aborted) onProgress?.({ ...base });
-      }
-      if (!chunk.path) return;
-      applyChunk(base!, chunk.path!, chunk.payload);
-      if (!signal.aborted) onProgress?.({ ...base! });
-    };
-
-    if (!isNdjson) {
-      const text = await res.text();
-      try {
-        const parsed: unknown = JSON.parse(text);
-        if (parsed !== null && typeof parsed === 'object' && 'columns' in parsed) {
-          const payload = parsed as PagePayload;
-          setCache(slug, payload);
-          if (!signal.aborted) onProgress?.(payload);
-          return payload;
-        }
-      } catch {
-        // fall through to line-split fallback
-      }
-      for (const line of text.split('\n')) handleLine(line);
-      if (!base) throw new Error('empty stream');
-      reconcileStreamEnd(base, signal, onProgress);
-      setCache(slug, base);
-      return base;
-    }
-
-    if (!res.body) throw new Error('empty stream');
-    const reader = res.body.getReader();
-    const dec = new TextDecoder();
-    let buf = '';
-    const onAbort = (): void => {
-      reader.cancel().catch(() => {});
-    };
-    signal.addEventListener('abort', onAbort, { once: true });
-    try {
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (signal.aborted) {
-          await reader.cancel().catch(() => {});
-          break;
-        }
-        buf += dec.decode(value, { stream: true });
-        let nl: number;
-        while ((nl = buf.indexOf('\n')) >= 0) {
-          handleLine(buf.slice(0, nl));
-          buf = buf.slice(nl + 1);
-        }
-      }
-      buf += dec.decode();
-      handleLine(buf);
-    } finally {
-      signal.removeEventListener('abort', onAbort);
-      if (signal.aborted) {
-        try {
-          await reader.cancel();
-        } catch {}
-      }
-    }
-    if (!base) throw new Error('empty stream');
-    reconcileStreamEnd(base, signal, onProgress);
-    setCache(slug, base);
-    return base;
-  })();
-  inflight.set(slug, p);
-  try {
-    const result = await p;
-    return result;
-  } finally {
-    if (inflight.get(slug) === p) inflight.delete(slug);
+  // An entry whose last subscriber walked away has already been aborted; it is
+  // a corpse, not a shared response, and joining it would hand the new caller
+  // the previous caller's abort.
+  const existing = force ? undefined : inflight.get(slug);
+  if (existing && !existing.controller.signal.aborted) {
+    attach(existing, signal, onProgress);
+    return existing.promise;
   }
+  const entry: Inflight = {
+    controller: new AbortController(),
+    subs: new Set(),
+    promise: null as unknown as Promise<PagePayload>,
+  };
+  attach(entry, signal, onProgress);
+  const pending = runPageStream(slug, entry, force);
+  entry.promise = pending;
+  inflight.set(slug, entry);
+  return pending.finally(() => {
+    if (inflight.get(slug) === entry) inflight.delete(slug);
+  });
 }
 
 export function prefetchPage(slug: string) {
@@ -386,13 +492,21 @@ export function usePageData(slug: string): PageDataResult {
         };
         const next = await fetchPage(slug, signal, onProgress, force);
         if (signal.aborted) return;
+        // A resolved fetch is proof the network is back, whether or not the
+        // payload changed enough to be worth a re-render.
+        setStaleNotice(null);
         startTransition(() => {
           emit(next);
         });
       } catch (e) {
         if ((e instanceof Error && e.name === 'AbortError') || signal.aborted) return;
-        if (!dataRef.current) {
-          const msg = e instanceof Error ? e.message : String(e);
+        const msg = e instanceof Error ? e.message : String(e);
+        if (dataRef.current) {
+          // A payload is already on screen, so this is not a failed page — it
+          // is a dashboard that has stopped being true. Discarding the error
+          // here is what let a dead network look exactly like a live one.
+          startTransition(() => setStaleNotice({ reason: msg, at: Date.now() }));
+        } else {
           startTransition(() => setError(msg));
         }
       } finally {
@@ -446,13 +560,28 @@ export function usePageData(slug: string): PageDataResult {
     const ac = new AbortController();
     abortRef.current = ac;
     void doFetch(ac.signal, false);
-    const onFocus = () => {
+    // Focus, tab-return, reconnect and service-worker takeover all mean the
+    // same thing to a warm cache: something changed while the page was idle,
+    // so revalidate instead of showing the last reading as current.
+    const revalidate = () => {
       if (isStale(slug)) void validate();
     };
-    window.addEventListener('focus', onFocus);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') revalidate();
+    };
+    const onControllerChange = () => {
+      void validate();
+    };
+    window.addEventListener('focus', revalidate);
+    window.addEventListener('online', revalidate);
+    document.addEventListener('visibilitychange', onVisible);
+    navigator.serviceWorker?.addEventListener('controllerchange', onControllerChange);
     return () => {
       ac.abort();
-      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('focus', revalidate);
+      window.removeEventListener('online', revalidate);
+      document.removeEventListener('visibilitychange', onVisible);
+      navigator.serviceWorker?.removeEventListener('controllerchange', onControllerChange);
     };
   }, [slug, doFetch, validate]);
 
@@ -468,4 +597,13 @@ export function usePageData(slug: string): PageDataResult {
   }, [liveKey, validate]);
 
   return { data, error, isValidating, validate, reload };
+}
+
+export function __clearCacheForTests() {
+  pageCache.clear();
+  inflight.clear();
+  for (const t of gcTimers.values()) clearTimeout(t);
+  gcTimers.clear();
+  staleListeners.clear();
+  staleNotice = null;
 }
