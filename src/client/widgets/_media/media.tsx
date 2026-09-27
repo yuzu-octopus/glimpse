@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Badge, ClickableCard, Grid, ProgressBar, Stack, Text } from '@astryxdesign/core';
+import { ArrowDown, ArrowUp } from 'lucide-react';
 import type { WidgetType } from '../../../shared/config';
 import type { MediaData, MediaItem, TorrentData, TorrentItem } from '../../../shared/widgets/payloads';
 import { WidgetChrome } from '../../components/WidgetChrome';
@@ -81,7 +82,12 @@ export function TorrentList({ torrents }: { torrents: TorrentItem[] }) {
     <Stack gap={2}>
       {torrents.map((t) => {
         const pct = Math.round(t.progress * 100);
-        const meta = [formatBytes(t.size), formatSpeed(t.downloadSpeed), formatEta(t.eta)].filter(Boolean).join(' • ');
+        // The seeder's rate was fetched and dropped: two bare speeds with no
+        // direction read as one, so each carries its arrow.
+        const size = formatBytes(t.size);
+        const down = formatSpeed(t.downloadSpeed);
+        const up = formatSpeed(t.uploadSpeed);
+        const eta = formatEta(t.eta);
         return (
           <Stack key={t.name} gap={1} data-testid="torrent-row">
             <Stack direction="horizontal" gap={2} className={styles.torrentHead}>
@@ -99,11 +105,26 @@ export function TorrentList({ torrents }: { torrents: TorrentItem[] }) {
               isLabelHidden
               className={styles.fill}
             />
-            <Stack direction="horizontal" gap={2} justify="between">
+            <Stack direction="horizontal" gap={2} justify="between" vAlign="center">
               <Text type="supporting" hasTabularNumbers>
                 {pct}%
               </Text>
-              {meta ? <Text type="supporting" maxLines={1}>{meta}</Text> : null}
+              {size || down || up || eta ? (
+                <Stack direction="horizontal" gap={2} vAlign="center" className={styles.torrentMeta}>
+                  {size ? <Text as="span" type="supporting" hasTabularNumbers>{size}</Text> : null}
+                  {down ? (
+                    <Text as="span" type="supporting" hasTabularNumbers>
+                      <ArrowDown size={12} aria-hidden /> {down}
+                    </Text>
+                  ) : null}
+                  {up ? (
+                    <Text as="span" type="supporting" hasTabularNumbers>
+                      <ArrowUp size={12} aria-hidden /> {up}
+                    </Text>
+                  ) : null}
+                  {eta ? <Text as="span" type="supporting" hasTabularNumbers>{eta}</Text> : null}
+                </Stack>
+              ) : null}
             </Stack>
           </Stack>
         );
