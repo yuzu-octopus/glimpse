@@ -45,7 +45,7 @@ describe('Feed (generic)', () => {
     const img = container.querySelector('img[src="https://example.com/img.jpg"]');
     expect(img).toBeInTheDocument();
 
-    // tags / chips (cycled colours via nth-child)
+    // tags / chips, each wearing the accent hashed from its own text
     expect(screen.getByText('News')).toBeInTheDocument();
     expect(screen.getByText('Tech')).toBeInTheDocument();
     expect(screen.getByText('Pinned')).toBeInTheDocument();
@@ -59,6 +59,23 @@ describe('Feed (generic)', () => {
     // CSS module will contain row/title/meta/chips etc
     expect(styles.meta).toBeDefined();
     expect(styles.chip).toBeDefined();
+  });
+
+  it('gives the same tag the same accent no matter which row it is in', () => {
+    const items = [
+      { title: 'a', url: 'https://example.com/a', tags: ['Tech'] },
+      { title: 'b', url: 'https://example.com/b', tags: ['News'] },
+      { title: 'c', url: 'https://example.com/c', tags: ['Tech'] },
+    ];
+    render(<Feed items={items} />);
+    const accentOf = (text: string) =>
+      screen
+        .getAllByText(text)
+        .map((el) => el.className.split(' ').filter((c) => c !== styles.chip))
+        .flat();
+    // the same tag in rows 1 and 3 must resolve to the same accent class
+    expect(accentOf('Tech')).toHaveLength(2);
+    expect(accentOf('Tech')[0]).toBe(accentOf('Tech')[1]);
   });
 
   it('renders gracefully with minimal fields (title + url only)', () => {
