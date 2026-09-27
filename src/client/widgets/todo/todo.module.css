@@ -18,8 +18,6 @@
   font: inherit;
   font-size: var(--font-size-base);
   padding: 6px 10px;
-  outline: none;
-  box-shadow: none;
   transition: border-color 0.2s;
 }
 
@@ -34,9 +32,16 @@
 
 .todoInput:focus,
 .todoInput:focus-visible {
-  outline: none;
   border-color: var(--color-primary);
-  box-shadow: none;
+}
+
+/* Brand focus is a 2px accent ring — the same ring src/index.css puts on
+   every focusable element. The module's own class rule outranks the global
+   `*:focus-visible`, so the ring is restated here rather than left to the
+   cascade. */
+.todoInput:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
 }
 
 
@@ -104,7 +109,8 @@
 }
 
 .checkbox:focus-visible {
-  outline: none;
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
 }
 
 .itemText {
