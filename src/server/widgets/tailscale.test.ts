@@ -87,8 +87,10 @@ describe('tailscale fetcher', () => {
     await fetcher()(ctx, { type: 'tailscale', 'api-key': 'tskey-secret' });
 
     expect(seen).toHaveLength(1);
-    expect(seen[0]).toContain('/api/v2/tailnet/-/devices');
-    expect(seen[0]).toContain('fields=all');
+    // Pinned exactly: `fields=all` is the one query param the official
+    // tailscale-client-go sends on this endpoint. Anything else (a `limit`
+    // we invented, say) risks a 400 from an API that ignores unknown keys.
+    expect(seen[0]).toBe('https://api.tailscale.com/api/v2/tailnet/-/devices?fields=all');
     expect((inits[0].headers as Record<string, string>).Authorization).toBe('Bearer tskey-secret');
   });
 

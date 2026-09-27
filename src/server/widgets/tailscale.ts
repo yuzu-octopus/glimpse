@@ -10,10 +10,6 @@ const API_BASE = 'https://api.tailscale.com';
  * approve it, and an approved-but-`::/0`-less node is IPv4-only. */
 const EXIT_ROUTES: Record<string, true> = { '0.0.0.0/0': true, '::/0': true };
 
-/** `GET /api/v2/tailnet/:tailnet/devices`, capped at the page size the API
- *  documents for this endpoint. */
-const PAGE_SIZE = 100;
-
 interface TailscaleDeviceDto {
   id?: string;
   nodeId?: string;
@@ -61,11 +57,11 @@ registerWidget('tailscale', async (ctx, config): Promise<TailscaleData> => {
   if (!key) throw new Error('tailscale: missing api-key (set api-key or TS_API_KEY)');
   const retry = retryOptionsFrom(cfg);
 
-  // `fields=all` is what carries enabledRoutes, so exit-node badges come out of
-  // this same one call rather than a per-device route fetch.
-  const url =
-    `${API_BASE}/api/v2/tailnet/${encodeURIComponent(cfg.tailnet)}/devices` +
-    `?fields=all&limit=${Math.min(cfg.limit, PAGE_SIZE)}`;
+  // `fields=all` is the only query param the official client sends, and it is
+  // what carries enabledRoutes — so exit-node badges come out of this same
+  // one call rather than a per-device route fetch. `cfg.limit` is applied
+  // below, after sorting, rather than as a query param the API may not accept.
+  const url = `${API_BASE}/api/v2/tailnet/${encodeURIComponent(cfg.tailnet)}/devices?fields=all`;
 
   // Bearer is one of two schemes Tailscale documents for an access token (the
   // other is HTTP basic with the key as username and an empty password, which
