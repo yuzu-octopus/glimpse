@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -10,7 +10,16 @@ import { fileURLToPath } from 'node:url';
 // the control, cards and thumbnails are static — and not any value.
 
 const dir = dirname(fileURLToPath(import.meta.url));
-const read = (rel: string) => readFileSync(join(dir, rel), 'utf8');
+const client = join(dir, '..');
+const read = (rel: string) => readFileSync(join(client, rel), 'utf8');
+
+/** Every stylesheet in the client tree, walked rather than listed: a
+ * hand-maintained list of the files already swept is a list that silently
+ * stops covering the widget that lands next week. */
+const SHEETS = readdirSync(client, { recursive: true, encoding: 'utf8' })
+  .filter((f) => f.endsWith('.css'))
+  .map((f) => f.split('\\').join('/'))
+  .sort();
 
 /** Every rule in the sheet as { selector, body }, unwrapping @media blocks. */
 function rules(sheet: string): Array<{ selector: string; body: string }> {
@@ -52,16 +61,10 @@ function pointerOnly(src: string): string | undefined {
   return undefined;
 }
 
-const REST_DIMMED = ['custom-api/custom-api.module.css', 'rss/rss.module.css', 'reddit/reddit.module.css'];
-const NO_HOVER_ONLY = [
-  ...REST_DIMMED,
-  'monitor/monitor.module.css',
-  'feed/feed.module.css',
-  'dns/dns.module.css',
-];
+const REST_DIMMED = ['widgets/custom-api/custom-api.module.css', 'widgets/rss/rss.module.css', 'widgets/reddit/reddit.module.css'];
 
 describe('hover affordances are not hover-only', () => {
-  it.each(NO_HOVER_ONLY)('%s pairs every :hover with a focus channel', (rel) => {
+  it.each(SHEETS)('%s pairs every :hover with a focus channel', (rel) => {
     const orphans = rules(read(rel))
       .filter((r) => r.selector.includes(':hover') && !r.selector.includes(':focus'))
       .map((r) => r.selector);
@@ -79,7 +82,7 @@ describe('hover affordances are not hover-only', () => {
     expect(ungated).not.toContain('opacity: 0.8');
   });
 
-  it.each(NO_HOVER_ONLY)('%s never lifts on hover', (rel) => {
+  it.each(SHEETS)('%s never lifts on hover', (rel) => {
     const lifts = rules(read(rel))
       .filter((r) => /transform:\s*scale/.test(r.body))
       .map((r) => r.selector);
@@ -90,7 +93,7 @@ describe('hover affordances are not hover-only', () => {
     // `.row:hover .icon` is (0,2,0) and beats a bare `.iconAutoInvert` at
     // (0,1,0), so an un-guarded hover rule un-inverts exactly the simple-icons
     // and mdi glyphs that cannot render without the invert.
-    const src = read('monitor/monitor.module.css');
+    const src = read('widgets/monitor/monitor.module.css');
     const dim = src.indexOf('filter: grayscale(0)');
     const invert = src.indexOf('.row:is(:hover, :focus-within) .iconAutoInvert');
     expect(dim).toBeGreaterThan(-1);
