@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { Button } from '@astryxdesign/core';
+import { Button, CheckboxInput, IconButton, Stack, Text, TextInput } from '@astryxdesign/core';
 import { Pencil, Trash2 } from 'lucide-react';
 import type { TodoConfig } from '../../../shared/widgets/todo';
 import { WidgetChrome } from '../../components/WidgetChrome';
@@ -107,67 +107,81 @@ export function Todo({ config }: WidgetComponentProps) {
 
   return (
     <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
-      <div className={styles.form}>
-        <input
+      <Stack direction="horizontal" gap={2} vAlign="center" className={styles.form}>
+        <TextInput
           ref={inputRef}
-          aria-label="New task"
+          label="New task"
+          isLabelHidden
+          size="sm"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={setText}
           placeholder="Add a task…"
           onKeyDown={handleInputKeyDown}
-          className={styles.todoInput}
+          width="100%"
         />
         <Button label="Add" size="sm" onClick={add} />
-      </div>
+      </Stack>
       {items.length === 0 ? (
-        <div className={styles.empty}>No tasks yet.</div>
+        <Text type="supporting" className={styles.empty}>No tasks yet.</Text>
       ) : (
         items.map((item, i) => (
-          <div key={item.id} className={styles.item}>
-            <input
-              type="checkbox"
-              className={styles.checkbox}
-              checked={item.done}
+          <Stack
+            key={item.id}
+            direction="horizontal"
+            gap={2}
+            vAlign="center"
+            className={`${styles.item} ${i === 0 ? '' : styles.itemDivided}`}
+          >
+            <CheckboxInput
+              label={item.text}
+              isLabelHidden
+              value={item.done}
               onChange={() => toggle(item.id)}
-              aria-label={item.text}
+              size="sm"
             />
             {editingId === item.id ? (
-              <input
-                aria-label="Edit task"
+              <TextInput
+                label="Edit task"
+                isLabelHidden
+                size="sm"
                 value={editText}
-                onChange={(e) => setEditText(e.target.value)}
+                onChange={setEditText}
+                hasAutoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') commitEdit();
                   if (e.key === 'Escape') setEditingId(null);
                 }}
-                autoFocus
-                className={`${styles.todoInput} ${styles.editInput}`}
+                width="100%"
               />
             ) : (
-              <span className={`${styles.itemText} ${item.done ? styles.done : ''}`}>
+              <Text
+                type="body"
+                hasStrikethrough={item.done}
+                color={item.done ? 'secondary' : 'primary'}
+                data-testid="todo-item-text"
+                className={styles.itemText}
+              >
                 {item.text}
-              </span>
+              </Text>
             )}
-            <button
-              type="button"
+            <IconButton
               ref={(el) => {
                 editRefs.current[i] = el;
               }}
-              className={styles.iconBtn}
-              aria-label={`Edit ${item.text}`}
+              label={`Edit ${item.text}`}
+              icon={<Pencil size={13} />}
               onClick={() => (editingId === item.id ? commitEdit() : startEdit(item))}
-            >
-              <Pencil size={13} />
-            </button>
-            <button
-              type="button"
-              className={styles.iconBtn}
-              aria-label={`Delete ${item.text}`}
+              size="sm"
+              variant="ghost"
+            />
+            <IconButton
+              label={`Delete ${item.text}`}
+              icon={<Trash2 size={13} />}
               onClick={() => remove(item.id)}
-            >
-              <Trash2 size={13} />
-            </button>
-          </div>
+              size="sm"
+              variant="ghost"
+            />
+          </Stack>
         ))
       )}
     </WidgetChrome>
