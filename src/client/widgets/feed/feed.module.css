@@ -30,8 +30,9 @@
 
 /* Motion answers action: the kit's overlay dim, straight on the row. The
  * hand-rolled `::before` backdrop that faded its own opacity was a lookalike
- * of this and needed the row to be positioned and isolated for a z-index. */
-.item:hover {
+ * of this and needed the row to be positioned and isolated for a z-index.
+ * :focus-within is the keyboard's equivalent channel. */
+.item:is(:hover, :focus-within) {
   background-color: var(--color-overlay-hover);
 }
 
@@ -56,7 +57,9 @@
   border-top: 1px solid var(--color-separator);
 }
 
-/* image — glance .thumbnail-container / rss-detailed-thumbnail, flat, full colour, hover scale — 16:9 */
+/* image — glance .thumbnail-container / rss-detailed-thumbnail, flat, full
+   colour, 16:9. No hover scale: the doctrine is hover dims, and a card lift
+   is a lookalike of it. */
 .thumbWrap {
   flex-shrink: 0;
   width: 72px;
@@ -73,11 +76,6 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.2s;
-}
-
-.item:hover .thumb {
-  transform: scale(1.02);
 }
 
 /* Core Badge ships a 9999px pill at control-scale padding; brand principle 7
