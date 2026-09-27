@@ -1,5 +1,9 @@
 .header {
   display: grid;
+  /* An implicit `auto` track is sized to its items' max-content, so a long
+   * description grew the column past the card. minmax(0, 1fr) pins the track
+   * to the card's content width and lets the clamp do its job. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 2px;
   min-width: 0;
 }
@@ -43,6 +47,10 @@
 /* glance: hr margin-block-8 between sections */
 .subList {
   display: grid;
+  /* Same containment as .header: without an explicit track the implicit
+   * `auto` column took the max-content width of the nowrap PR titles
+   * (measured overflowing the card by up to 937px). */
+  grid-template-columns: minmax(0, 1fr);
   gap: 2px;
   padding: 8px 0;
   border-top: 1px solid var(--color-separator);
@@ -83,6 +91,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .subRow:hover .subTitle {
