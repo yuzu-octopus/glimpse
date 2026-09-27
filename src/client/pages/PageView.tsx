@@ -1,7 +1,7 @@
 import { Suspense, memo, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { Banner, Card, Tab, TabList, Text } from '@astryxdesign/core';
 import { ChevronDown } from 'lucide-react';
-import type { WidgetPayload } from '../../shared/api';
+import type { PagePayload, WidgetPayload } from '../../shared/api';
 import { resolveSpan } from '../../shared/config';
 import type { Page } from '../../shared/config';
 import type { WidgetType } from '../../shared/config';
@@ -20,8 +20,10 @@ import {
   tileResizable,
   type FlatWidgetLike,
   type PlacedTile,
+  type PlacedPage,
 } from './tiling';
 import { SKELETON_SHAPE } from '../../shared/widgets/preferredSizes';
+import { CONFIG_ONLY } from '../../shared/widgets';
 import styles from './page.module.css';
 
 /** Config-page shape the loading skeleton needs (subset of WidgetConfig). */
@@ -340,7 +342,10 @@ function WidgetSlotContent({ widget }: { widget: WidgetPayload }) {
       </WidgetChrome>
     );
   }
-  const isLoading = widget.data == null && !widget.error;
+  // A config-only widget's payload is `data: null` forever — there is no
+  // chunk coming. Marking it loading is what strands the skeleton, so the
+  // flag is derived from the registry instead of from the payload alone.
+  const isLoading = widget.data == null && !widget.error && CONFIG_ONLY[widget.type] !== true;
   return (
     <Component
       config={widget.config}
@@ -551,6 +556,126 @@ function BentoGrid({ widgets, gridCols, rowHeight }: { widgets: WidgetPayload[];
   );
 }
 
+/** Column spans for the tile grid. Collage tiles take their placed footprint
+ *  from place(); every other mode derives spans the same way the skeleton
+ *  does — explicit `span`, else size-based resolveSpan. */
+function inferredColumnSpans(resolved: PagePayload): number[] | undefined {
+  if (resolved.tiling === 'auto' || resolved.tiling === 'collage') return undefined;
+  try {
+    return resolveSpan(
+      resolved.columns.map((c) => ({ size: c.size, widgets: [], span: c.span })),
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+/** The collage grid geometry place() produced, plus the per-column spans the
+ *  config left implicit. */
+interface CollagePlacement {
+  placed: PlacedPage;
+  /** Per-column span: config first, inferred where the config is silent. */
+  spans: number[];
+}
+
+/** Collage geometry from place() — the same call the skeleton makes, so
+ *  tiles == skeletons at every width. */
+function collagePlacement(
+  data: PagePayload | null | undefined,
+  isCollage: boolean,
+  width: number,
+): CollagePlacement | null {
+  if (!isCollage || !data) return null;
+  // Unconditional here: collage needs a span for every column, and
+  // `inferredColumnSpans` gates on tiling for the ColumnGrid path only.
+  let inferred: number[] | undefined;
+  try {
+    inferred = resolveSpan(data.columns.map((c) => ({ size: c.size, widgets: [], span: c.span })));
+  } catch {
+    inferred = undefined;
+  }
+  const placed = place(
+    columnPlaceInputs(
+      data.columns.map((c) => ({
+        span: c.span,
+        widgets: c.widgets.map((w) => ({
+          type: w.type,
+          limit: typeof w.config.limit === 'number' ? w.config.limit : undefined,
+        })),
+      })),
+      inferred,
+    ),
+    width,
+  );
+  return { placed, spans: data.columns.map((c, i) => c.span ?? inferred?.[i] ?? 1) };
+}
+
+/** The widget slots of one container, keyed the same way everywhere so a
+ *  streamed chunk reconciles onto the row it belongs to. */
+function WidgetList({ widgets }: { widgets: WidgetPayload[] }) {
+  const keys = widgetKeysFor(widgets as unknown as WidgetLike[]);
+  return <>{widgets.map((w, i) => <WidgetSlot key={keys[i]} widget={w} />)}</>;
+}
+
+function HeadWidgets({ widgets }: { widgets: WidgetPayload[] }) {
+  return (
+    <div className={styles.headWidgets}>
+      <WidgetList widgets={widgets} />
+    </div>
+  );
+}
+
+/** The column grid: the track definition comes from place() in collage mode
+ *  and from the config's tiling props otherwise. */
+function ColumnGrid({
+  gridRef,
+  tilingProps,
+  resolved,
+  placedById,
+}: {
+  gridRef: RefObject<HTMLDivElement | null>;
+  tilingProps: { className: string; style?: CSSProperties };
+  resolved: PagePayload;
+  placedById: CollagePlacement | null;
+}) {
+  const inferred = inferredColumnSpans(resolved);
+  const byId = new Map((placedById?.placed.tiles ?? []).map((p) => [p.id, p]));
+  const colCounts = new Map<string, number>();
+  return (
+    <div
+      ref={gridRef}
+      className={tilingProps.className}
+      style={
+        placedById
+          ? ({
+              ...tilingProps.style,
+              gridTemplateColumns: `repeat(${placedById.placed.cols}, minmax(0, 1fr))`,
+              '--tile-row': `${placedById.placed.rowUnit}px`,
+            } as CSSProperties)
+          : tilingProps.style
+      }
+    >
+      {resolved.columns.map((col, i) => {
+        const tile = byId.get(`column-${i}`);
+        const span = tile?.w ?? col.span ?? inferred?.[i] ?? 1;
+        return (
+          <MobileColumn
+            key={columnKey(col, i, colCounts)}
+            label={columnLabel(col, i)}
+            small={col.size === 'small'}
+            span={span}
+            rowSpan={tile?.h}
+          >
+            <div className={styles.columnWidgets}>
+              <WidgetList widgets={col.widgets} />
+            </div>
+          </MobileColumn>
+        );
+      })}
+    </div>
+  );
+}
+
 
 export function PageView({
   slug,
@@ -568,29 +693,10 @@ export function PageView({
   // unconditional across loading / error / ready states.
   const flatLive = (data as unknown as { widgets?: WidgetPayload[] } | undefined)?.widgets;
   const isCollage = data?.tiling === 'collage' && !flatLive;
-  const placedById = useMemo(() => {
-    if (!isCollage || !data) return null;
-    let inferred: number[] | undefined;
-    try {
-      inferred = resolveSpan(data.columns.map((c) => ({ size: c.size, widgets: [], span: c.span })));
-    } catch {
-      inferred = undefined;
-    }
-    const placed = place(
-      columnPlaceInputs(
-        data.columns.map((c) => ({
-          span: c.span,
-          widgets: c.widgets.map((w) => ({
-            type: w.type,
-            limit: typeof w.config.limit === 'number' ? w.config.limit : undefined,
-          })),
-        })),
-        inferred,
-      ),
-      width,
-    );
-    return { placed, spans: data.columns.map((c, i) => c.span ?? inferred?.[i] ?? 1) };
-  }, [data, isCollage, width]);
+  const placedById = useMemo(
+    () => collagePlacement(data, isCollage, width),
+    [data, isCollage, width],
+  );
   if (!data && !error) {
     if (page)
       return (
@@ -634,14 +740,7 @@ export function PageView({
           <div className={styles.mobileHeader}>{resolved.name}</div>
         ) : null}
         {resolved.headWidgets.length > 0 ? (
-          <div className={styles.headWidgets}>
-            {(() => {
-              const wk = widgetKeysFor(resolved.headWidgets as unknown as WidgetLike[]);
-              return resolved.headWidgets.map((w, i) => (
-                <WidgetSlot key={wk[i]} widget={w} />
-              ));
-            })()}
-          </div>
+          <HeadWidgets widgets={resolved.headWidgets} />
         ) : null}
         {(resolved as unknown as { widgets?: WidgetPayload[] }).widgets ? (
           <BentoGrid
@@ -650,59 +749,12 @@ export function PageView({
             rowHeight={(resolved as unknown as { gridRowHeight?: number }).gridRowHeight ?? 96}
           />
         ) : (
-          <div
-            ref={gridRef}
-            className={tilingProps.className}
-            style={
-              placedById
-                ? ({
-                    ...tilingProps.style,
-                    gridTemplateColumns: `repeat(${placedById.placed.cols}, minmax(0, 1fr))`,
-                    '--tile-row': `${placedById.placed.rowUnit}px`,
-                  } as CSSProperties)
-                : tilingProps.style
-            }
-          >
-            {(() => {
-              // Spans mirror the skeleton: collage tiles use their placed
-              // footprint from place(); other modes derive spans the same
-              // way (explicit span, else size-based resolveSpan).
-              let inferred: number[] | undefined;
-              if (resolved.tiling !== 'auto' && resolved.tiling !== 'collage') {
-                try {
-                  inferred = resolveSpan(
-                    resolved.columns.map((c) => ({ size: c.size, widgets: [], span: c.span })),
-                  );
-                } catch {
-                  inferred = undefined;
-                }
-              }
-              const colCounts = new Map<string, number>();
-              const byId = new Map((placedById?.placed.tiles ?? []).map((p) => [p.id, p]));
-              return resolved.columns.map((col, i) => {
-                const tile = byId.get(`column-${i}`);
-                const span = tile?.w ?? col.span ?? inferred?.[i] ?? 1;
-                return (
-              <MobileColumn
-                key={columnKey(col, i, colCounts)}
-                label={columnLabel(col, i)}
-                small={col.size === 'small'}
-                span={span}
-                rowSpan={tile?.h}
-              >
-                <div className={styles.columnWidgets}>
-                  {(() => {
-                    const wk = widgetKeysFor(col.widgets as unknown as WidgetLike[]);
-                    return col.widgets.map((w, j) => (
-                      <WidgetSlot key={wk[j]} widget={w} />
-                    ));
-                  })()}
-                </div>
-              </MobileColumn>
-              );
-            });
-            })()}
-          </div>
+          <ColumnGrid
+            gridRef={gridRef}
+            tilingProps={tilingProps}
+            resolved={resolved}
+            placedById={placedById}
+          />
         )}
       </div>
     </HideHeadersContext.Provider>
