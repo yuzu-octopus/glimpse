@@ -1,7 +1,15 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { RadarData } from '../../../shared/widgets/payloads';
 import { WeatherRadar, tileCoords } from './index';
+import styles from './weather-radar.module.css';
+
+// Vitest serves CSS modules as a class-name proxy, so the token bindings are
+// only observable in the stylesheet source itself.
+const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'weather-radar.module.css'), 'utf8');
 
 const DATA: RadarData = {
   location: 'London',
@@ -89,5 +97,12 @@ describe('weather-radar widget', () => {
     );
     expect(screen.getByText('location not found')).toBeInTheDocument();
     expect(screen.getByTestId('widget-error-dot')).toBeInTheDocument();
+  });
+
+  it('keeps the frame timestamp on the subdue text token', () => {
+    const { container } = render(<WeatherRadar config={{ type: 'weather-radar', location: 'London' }} data={DATA} />);
+    expect(container.querySelector(`.${styles.timestamp}`)).toHaveTextContent('London · 22:23 UTC');
+    const rule = css.match(/\.timestamp\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(rule).toContain('color: var(--color-text-subdue)');
   });
 });

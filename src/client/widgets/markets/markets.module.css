@@ -9,7 +9,6 @@
   align-items: center;
   gap: 15px;
   min-width: 0;
-  animation: collapsibleItemReveal 0.25s backwards;
 }
 
 .row + .row {
@@ -17,14 +16,6 @@
   border-top: 1px solid var(--color-separator);
   padding-top: 10px;
 }
-
-.row:nth-child(2) { animation-delay: 30ms; }
-.row:nth-child(3) { animation-delay: 60ms; }
-.row:nth-child(4) { animation-delay: 90ms; }
-.row:nth-child(5) { animation-delay: 120ms; }
-.row:nth-child(6) { animation-delay: 150ms; }
-.row:nth-child(7) { animation-delay: 180ms; }
-.row:nth-child(8) { animation-delay: 210ms; }
 
 .rowLeft {
   min-width: 0;
@@ -63,6 +54,25 @@
   height: auto;
 }
 
+/* Chart ink: the sparkline line carries the series direction, and the
+   baseline is the chart's grid. A directionless (flat) series has no sign to
+   show, so it takes the sequential ramp instead of a status hue. */
+.sparkUp {
+  stroke: var(--color-data-categorical-green);
+}
+
+.sparkDown {
+  stroke: var(--color-data-categorical-red);
+}
+
+.sparkFlat {
+  stroke: var(--color-data-blue-1);
+}
+
+.sparkGrid {
+  stroke: var(--color-graph-gridlines);
+}
+
 /* glance .market-values: min-width 80px, right-aligned, change stacked over
    price (two inline spans would join into one ~200px line and crush the
    symbol block). */
@@ -99,6 +109,7 @@
   flex: none;
 }
 
+/* Delta text is status, not chart ink: green positive, red negative. */
 .up {
   color: var(--color-positive);
 }

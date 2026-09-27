@@ -1,7 +1,15 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { DnsStatsWidget } from './index';
 import type { DnsStats } from '../../../shared/widgets/payloads';
+import styles from './dns.module.css';
+
+// Vitest serves CSS modules as a class-name proxy, so the token bindings are
+// only observable in the stylesheet source itself.
+const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'dns.module.css'), 'utf8');
 
 function sample(overrides: Partial<DnsStats> = {}): DnsStats {
   const series = Array.from({ length: 8 }, (_, i) => ({
@@ -96,5 +104,29 @@ describe('DnsStats client', () => {
     expect(lines).toHaveLength(5);
     const ys = Array.from(lines).map((l) => l.getAttribute('y1'));
     expect(ys).toEqual(['1', '25', '50', '75', '99']);
+  });
+
+  it('bar segments carry the queries and blocked marks', () => {
+    const { container } = render(<DnsStatsWidget config={baseConfig} data={sample()} />);
+    const bar = container.querySelector('[data-testid="dns-bar"]')!;
+    expect(bar.querySelector(`.${styles.queries}`)).not.toBeNull();
+    expect(bar.querySelector(`.${styles.blocked}`)).not.toBeNull();
+  });
+
+  it('paints the graph grid with the gridline token', () => {
+    const { container } = render(<DnsStatsWidget config={baseConfig} data={sample()} />);
+    expect(container.querySelector('svg g')).toHaveAttribute('stroke', 'var(--color-graph-gridlines)');
+  });
+
+  it('binds bar segments to cyan/orange washes with semantic borders', () => {
+    const rule = (selector: string) => css.match(new RegExp(`${selector}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
+    expect(rule('\\.bar > \\*')).toContain('var(--bar-hue) 10%');
+    expect(rule('\\.bar > \\*')).toContain('border-top: 1px solid var(--bar-hue)');
+    expect(rule('\\.queries')).toContain('--bar-hue: var(--color-data-categorical-cyan)');
+    expect(rule('\\.blocked')).toContain('--bar-hue: var(--color-data-categorical-orange)');
+    // washes replace the old direct fills, and no entrance choreography
+    expect(css).not.toContain('--color-vertical-progress-value');
+    expect(css).not.toContain('--color-negative');
+    expect(css).not.toContain('animation');
   });
 });
