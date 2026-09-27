@@ -37,15 +37,14 @@ function Card({ post, showMeta }: { post: RedditPost; showMeta: boolean }) {
   );
 }
 
-function Reddit({ config, data, error, isLoading }: WidgetComponentProps) {
-  const cfg = config as unknown as RedditConfig;
-  const loading = isLoading ?? ((data as unknown) == null && !error);
-  const posts = ((data as { posts?: RedditPost[] } | null)?.posts ?? []) as RedditPost[];
-  const showThumb = cfg['show-thumbnails'] === true;
-  const showFlair = cfg['show-flairs'] === true;
-  const style = cfg.style ?? 'vertical-list';
-  const title = cfg.title ?? (cfg['source-header'] ? 'Reddit' : undefined);
-  const feedItems: FeedItem[] = posts.map((post) => {
+/** Post → feed row. Domain, score, comments and age read as one meta line;
+ *  thumbnail and flair are opt-in per config. */
+function toFeedItems(
+  posts: RedditPost[],
+  showThumb: boolean,
+  showFlair: boolean,
+): FeedItem[] {
+  return posts.map((post) => {
     const domain = post.url ? new URL(post.url).hostname.replace(/^www\./, '') : null;
     const age = formatAge(post.ageSeconds);
     const parts = [domain, `${post.score} points`, `${post.comments} comments`, age].filter(Boolean) as string[];
@@ -57,11 +56,76 @@ function Reddit({ config, data, error, isLoading }: WidgetComponentProps) {
       tags: showFlair && post.flair ? [post.flair] : undefined,
     };
   });
-  const collapseAfter = cfg['collapse-after'];
+}
+
+/** glance semantics: only a non-negative `collapse-after` truncates, and only
+ *  when there is actually something hidden behind the toggle. `hidden` is the
+ *  count the button promises, so the two never disagree. */
+function collapseSlice<T>(
+  items: T[],
+  after: number | undefined,
+  expanded: boolean,
+): { has: boolean; hidden: number; visible: T[] } {
+  const has = typeof after === 'number' && after >= 0 && items.length > after;
+  return {
+    has,
+    hidden: has ? items.length - (after as number) : 0,
+    visible: has && !expanded ? items.slice(0, after) : items,
+  };
+}
+
+function ShowMore({
+  expanded,
+  hidden,
+  onToggle,
+}: {
+  expanded: boolean;
+  hidden: number;
+  onToggle: () => void;
+}) {
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      label={expanded ? 'Show less' : `Show more (${hidden})`}
+      endContent={<ChevronRight size={12} />}
+      onClick={onToggle}
+    />
+  );
+}
+
+/** Cards style: a wrapped grid, or one horizontal rail. */
+function CardDeck({ posts, style }: { posts: RedditPost[]; style: 'vertical-cards' | 'horizontal-cards' }) {
+  return style === 'vertical-cards' ? (
+    <Grid columns={{ minWidth: 150 }} gap={2} className={styles.cards}>
+      {posts.map((post) => (
+        <Card key={post.url} post={post} showMeta />
+      ))}
+    </Grid>
+  ) : (
+    <HStack gap={2} className={`${styles.cards} ${styles.rail}`}>
+      {posts.map((post) => (
+        <Card key={post.url} post={post} showMeta={false} />
+      ))}
+    </HStack>
+  );
+}
+
+function Reddit({ config, data, error, isLoading }: WidgetComponentProps) {
+  const cfg = config as unknown as RedditConfig;
+  const loading = isLoading ?? ((data as unknown) == null && !error);
+  const posts = ((data as { posts?: RedditPost[] } | null)?.posts ?? []) as RedditPost[];
+  const showThumb = cfg['show-thumbnails'] === true;
+  const showFlair = cfg['show-flairs'] === true;
+  const style = cfg.style ?? 'vertical-list';
+  const title = cfg.title ?? (cfg['source-header'] ? 'Reddit' : undefined);
+  const feedItems = toFeedItems(posts, showThumb, showFlair);
   const [expanded, setExpanded] = useState(false);
-  const hasCollapse =
-    typeof collapseAfter === 'number' && collapseAfter >= 0 && feedItems.length > collapseAfter;
-  const visible = hasCollapse && !expanded ? feedItems.slice(0, collapseAfter) : feedItems;
+  const { has: hasCollapse, hidden, visible } = collapseSlice(
+    feedItems,
+    cfg['collapse-after'],
+    expanded,
+  );
 
   if (loading) {
     return (
@@ -88,19 +152,7 @@ function Reddit({ config, data, error, isLoading }: WidgetComponentProps) {
         showErrors={cfg['show-errors']}
         isLoading={loading}
       >
-        {style === 'vertical-cards' ? (
-          <Grid columns={{ minWidth: 150 }} gap={2} className={styles.cards}>
-            {posts.map((post) => (
-              <Card key={post.url} post={post} showMeta />
-            ))}
-          </Grid>
-        ) : (
-          <HStack gap={2} className={`${styles.cards} ${styles.rail}`}>
-            {posts.map((post) => (
-              <Card key={post.url} post={post} showMeta={false} />
-            ))}
-          </HStack>
-        )}
+        <CardDeck posts={posts} style={style} />
       </WidgetChrome>
     );
   }
@@ -117,12 +169,10 @@ function Reddit({ config, data, error, isLoading }: WidgetComponentProps) {
     >
       <Feed items={visible} layout="list" emptyText="No posts" />
       {hasCollapse ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          label={expanded ? 'Show less' : `Show more (${feedItems.length - (collapseAfter as number)})`}
-          endContent={<ChevronRight size={12} />}
-          onClick={() => setExpanded(!expanded)}
+        <ShowMore
+          expanded={expanded}
+          hidden={hidden}
+          onToggle={() => setExpanded(!expanded)}
         />
       ) : null}
     </WidgetChrome>
