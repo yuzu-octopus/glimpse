@@ -418,7 +418,10 @@ describe('Pi-hole v6 → v5 fallback keeps the v6 diagnosis', () => {
 // own 400 example is a misrouted-endpoint hint naming the fix.
 describe('Pi-hole v6 surfaces the FTL error reason', () => {
   const V6_PASSWORD = 'pihole-pw-2b9f_secret';
-  const v6 = (routes: Parameters<typeof makeCtx>[0], env = { PIHOLE_PASSWORD: V6_PASSWORD }) =>
+  const v6 = (
+    routes: Parameters<typeof makeCtx>[0],
+    env: Record<string, string | undefined> = { PIHOLE_PASSWORD: V6_PASSWORD },
+  ) =>
     messageOf(fetcher()(makeCtx(routes, env), { type: 'dns-stats', service: 'pihole', url: 'http://pihole.local' }));
 
   it('falls back to `message` when the 401 carries no hint', async () => {
