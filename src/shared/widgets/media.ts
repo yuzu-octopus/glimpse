@@ -1,5 +1,13 @@
 import { z } from 'zod';
 import { sharedWidgetFields, type Pref, type SkeletonShape } from './shared';
+// No widget here declares a credential. The config is served to the browser
+// verbatim (`GET /api/config`, `GET /api/page/:slug` put every widget's whole
+// `config` on the wire), so a key in the YAML is a key in the page — and
+// `${VAR}` is substituted before the schema runs, so interpolating one in
+// leaks the value just as surely as writing it literally. Credentials come
+// from the environment instead, read by the fetcher: IMMICH_API_KEY,
+// JELLYFIN_API_KEY, QBITTORRENT_USERNAME/QBITTORRENT_PASSWORD,
+// TRANSMISSION_USERNAME/TRANSMISSION_PASSWORD.
 
 // ── per-widget defaults (file header owns DEFAULTS + Schema + PREF) ──
 export const IMMICH_DEFAULTS = { limit: 10 } as const;
@@ -18,17 +26,13 @@ export const TRANSMISSION_DEFAULTS = { limit: 10 } as const;
 export const TRANSMISSION_PREF: Pref = { cols: 4, rows: 2, resizable: false, priority: 6, zone: 'main', preferredWidth: 360, preferredHeight: 240 };
 export const TRANSMISSION_SKELETON: SkeletonShape = 'rows';
 
-export const immichSchema = z
-  .object({
-    type: z.literal('immich'),
-    ...sharedWidgetFields,
-    /** Base URL of the Immich instance, e.g. https://immich.lab */
-    url: z.string(),
-    /** API key; falls back to IMMICH_API_KEY when omitted. */
-    'api-key': z.string().optional(),
-    limit: z.number().int().min(0).default(IMMICH_DEFAULTS.limit),
-  })
-  .loose();
+export const immichSchema = z.object({
+  type: z.literal('immich'),
+  ...sharedWidgetFields,
+  /** Base URL of the Immich instance, e.g. https://immich.lab */
+  url: z.string(),
+  limit: z.number().int().min(0).default(IMMICH_DEFAULTS.limit),
+});
 export type ImmichConfig = z.infer<typeof immichSchema>;
 
 export const jellyfinSchema = z

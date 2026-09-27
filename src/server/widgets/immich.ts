@@ -28,8 +28,8 @@ function toItem(base: string, a: ImmichAsset): MediaItem {
 registerWidget('immich', async (ctx, config): Promise<MediaData> => {
   const cfg = immichSchema.parse(config);
   const retry = retryOptionsFrom(cfg);
-  const key = cfg['api-key'] ?? ctx.env.IMMICH_API_KEY;
-  if (!key) throw new Error('immich: missing api-key (set api-key or IMMICH_API_KEY)');
+  const key = ctx.env.IMMICH_API_KEY;
+  if (!key) throw new Error('immich: missing IMMICH_API_KEY');
   const base = cfg.url.replace(/\/+$/, '');
   const res = await fetchJson<ImmichSearchResponse>(
     ctx,

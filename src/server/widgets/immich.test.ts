@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './immich';
+import { immichSchema } from '../../shared/widgets/media';
 import type { MediaData } from '../../shared/widgets/payloads';
 
 const SEARCH_FIXTURE = {
@@ -26,8 +27,8 @@ const fetcher = () => serverWidgets.get('immich')!;
 
 describe('immich fetcher', () => {
   it('maps search results to media items with poster + photo links', async () => {
-    const ctx = makeCtx(async () => new Response(JSON.stringify(SEARCH_FIXTURE), { status: 200 }));
-    const data = (await fetcher()(ctx, { type: 'immich', url: 'https://immich.lab', 'api-key': 'k' })) as MediaData;
+    const ctx = makeCtx(async () => new Response(JSON.stringify(SEARCH_FIXTURE), { status: 200 }), { IMMICH_API_KEY: 'k' });
+    const data = (await fetcher()(ctx, { type: 'immich', url: 'https://immich.lab' })) as MediaData;
     expect(data.items).toHaveLength(2);
     expect(data.items[0]).toEqual({
       title: 'IMG_001.jpg',
@@ -39,17 +40,27 @@ describe('immich fetcher', () => {
     expect(data.items[1].title).toBe('IMG_002.jpg');
   });
 
-  it('reads the api key from IMMICH_API_KEY and throws without one', async () => {
-    const ok = makeCtx(async () => new Response(JSON.stringify(SEARCH_FIXTURE), { status: 200 }), { IMMICH_API_KEY: 'env-key' });
-    const data = (await fetcher()(ok, { type: 'immich', url: 'https://immich.lab' })) as MediaData;
-    expect(data.items).toHaveLength(2);
-    const missing = makeCtx(async () => new Response('{}', { status: 200 }));
-    await expect(fetcher()(missing, { type: 'immich', url: 'https://immich.lab' })).rejects.toThrow(/api-key/i);
+  it('sends the IMMICH_API_KEY env value as x-api-key', async () => {
+    const inits: RequestInit[] = [];
+    const ctx = makeCtx(async (_u, init) => {
+      inits.push(init ?? {});
+      return new Response(JSON.stringify(SEARCH_FIXTURE), { status: 200 });
+    }, { IMMICH_API_KEY: 'env-key' });
+    await fetcher()(ctx, { type: 'immich', url: 'https://immich.lab' });
+    expect(inits[0].headers).toMatchObject({ 'x-api-key': 'env-key' });
+  });
+
+  it('never reads a key from the config — the schema strips it', async () => {
+    const ctx = makeCtx(async () => new Response('{}', { status: 200 }), { IMMICH_API_KEY: 'env-key' });
+    await fetcher()(ctx, { type: 'immich', url: 'https://immich.lab', 'api-key': 'leaked' });
+    expect(JSON.stringify(immichSchema.parse({ type: 'immich', url: 'https://immich.lab', 'api-key': 'leaked' }))).not.toContain('leaked');
+    const missing = makeCtx(async () => new Response('{}', { status: 200 }), {});
+    await expect(fetcher()(missing, { type: 'immich', url: 'https://immich.lab' })).rejects.toThrow(/IMMICH_API_KEY/);
   });
 
   it('applies the limit', async () => {
-    const ctx = makeCtx(async () => new Response(JSON.stringify(SEARCH_FIXTURE), { status: 200 }));
-    const data = (await fetcher()(ctx, { type: 'immich', url: 'https://immich.lab/', 'api-key': 'k', limit: 1 })) as MediaData;
+    const ctx = makeCtx(async () => new Response(JSON.stringify(SEARCH_FIXTURE), { status: 200 }), { IMMICH_API_KEY: 'k' });
+    const data = (await fetcher()(ctx, { type: 'immich', url: 'https://immich.lab/', limit: 1 })) as MediaData;
     expect(data.items).toHaveLength(1);
   });
 });

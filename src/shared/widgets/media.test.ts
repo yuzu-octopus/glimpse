@@ -2,12 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { immichSchema, jellyfinSchema, qbittorrentSchema, transmissionSchema } from './media';
 
 describe('media widget schemas', () => {
-  it('immich requires url, defaults limit, api-key optional (env fallback)', () => {
+  it('immich requires url, defaults limit, and takes no api-key', () => {
     expect(immichSchema.safeParse({ type: 'immich' }).success).toBe(false);
     const cfg = immichSchema.parse({ type: 'immich', url: 'https://immich.lab' });
     expect(cfg.limit).toBe(10);
-    expect(cfg['api-key']).toBeUndefined();
-    expect(immichSchema.parse({ type: 'immich', url: 'https://immich.lab', 'api-key': 'k' })['api-key']).toBe('k');
+    // The config reaches the browser verbatim, so a leftover `api-key:` is
+    // stripped rather than passed through to the page payload.
+    const withKey = immichSchema.parse({ type: 'immich', url: 'https://immich.lab', 'api-key': 'k' });
+    expect(withKey['api-key']).toBeUndefined();
+    expect(JSON.stringify(withKey)).not.toContain('k');
   });
 
   it('jellyfin requires url, defaults limit, user-id optional', () => {
