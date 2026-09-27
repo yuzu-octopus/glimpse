@@ -50,7 +50,7 @@
 .icon {
   width: 16px;
   height: 16px;
-  stroke: var(--color-text-subdue);
+  stroke: var(--color-text-base-muted);
 }
 
 @keyframes searchIconHover {

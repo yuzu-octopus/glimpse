@@ -15,7 +15,7 @@
 .label {
   font-size: 12px;
   font-weight: 600;
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   min-width: 48px;
@@ -40,6 +40,6 @@
 
 .placeholder {
   font-size: 12px;
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   padding: 8px 0;
 }

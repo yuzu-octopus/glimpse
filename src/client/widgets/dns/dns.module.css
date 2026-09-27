@@ -26,7 +26,7 @@
 
 .totalsLabel {
   font-size: var(--font-size-h6);
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-top: 2px;
@@ -137,7 +137,7 @@
   transition:
     opacity 0.2s,
     transform 0.2s;
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
 }
 
 .column:nth-child(even) .time {
@@ -189,7 +189,7 @@
 
 .tipLabel {
   font-size: var(--font-size-h6);
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   text-transform: uppercase;
 }
 

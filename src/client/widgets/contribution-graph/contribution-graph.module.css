@@ -6,7 +6,7 @@
 .summary {
   margin-bottom: 8px;
   font-size: 12px;
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
 }
 
 /* one column per week, 7 day-rows; --weeks sizes the label row to the same track grid */

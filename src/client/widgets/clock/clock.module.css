@@ -50,7 +50,7 @@
 /* glance: .color-subdue (time diff, small) */
 .zoneOffset {
   font-size: var(--font-size-h6);
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   cursor: default;
   flex-shrink: 0;
 }

@@ -77,7 +77,7 @@
 
 .url {
   font-size: 12px;
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

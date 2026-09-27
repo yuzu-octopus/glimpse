@@ -21,7 +21,7 @@ function ImageIcon({ className }: { className?: string }) {
       className={className}
       viewBox="0 0 24 24"
       fill="none"
-      stroke="var(--color-text-subdue)"
+      stroke="var(--color-text-base-muted)"
       strokeWidth={1.5}
       aria-hidden="true"
     >

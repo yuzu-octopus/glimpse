@@ -99,10 +99,10 @@ describe('weather-radar widget', () => {
     expect(screen.getByTestId('widget-error-dot')).toBeInTheDocument();
   });
 
-  it('keeps the frame timestamp on the subdue text token', () => {
+  it('keeps the frame timestamp on the muted text token', () => {
     const { container } = render(<WeatherRadar config={{ type: 'weather-radar', location: 'London' }} data={DATA} />);
     expect(container.querySelector(`.${styles.timestamp}`)).toHaveTextContent('London · 22:23 UTC');
     const rule = css.match(/\.timestamp\s*\{([^}]*)\}/)?.[1] ?? '';
-    expect(rule).toContain('color: var(--color-text-subdue)');
+    expect(rule).toContain('color: var(--color-text-base-muted)');
   });
 });
