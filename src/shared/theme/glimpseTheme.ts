@@ -111,26 +111,29 @@ export function sourcePairFromPreset(preset: Preset): ThemeSourcePair {
   return { dark, light };
 }
 
-/** Glance dimension vars — same in both modes, emitted as plain strings. */
+/** Glance dimension vars — same in both modes, emitted as plain strings.
+ *  Spacing canon: astryx-dracula spacing.md — layout on 8s, small elements
+ *  on the 4px half-step. 23/17/15 had no defender; every alias that mirrors
+ *  a canonical value moves with it. --tile-row (index.css) stays 96. */
 const DIMS: Record<string, string> = {
   // canonical spacing — flat uniform, consumed via CSS vars (StyleX: defineTheme tokens → light-dark compile, runtime via :root fallbacks)
-  '--space-gap': '23px',
-  '--space-viewport': '15px',
-  '--widget-content-vertical': '15px',
-  '--widget-content-horizontal': '17px',
+  '--space-gap': '24px',
+  '--space-viewport': '16px',
+  '--widget-content-vertical': '16px',
+  '--widget-content-horizontal': '16px',
   // aliases for backward compat (existing CSS uses --widget-gap etc)
-  '--widget-gap': '23px',
-  '--widget-content-vertical-padding': '15px',
-  '--widget-content-horizontal-padding': '17px',
-  '--widget-content-padding': '15px 17px',
-  '--content-bounds-padding': '15px',
+  '--widget-gap': '24px',
+  '--widget-content-vertical-padding': '16px',
+  '--widget-content-horizontal-padding': '16px',
+  '--widget-content-padding': '16px',
+  '--content-bounds-padding': '16px',
   '--border-radius': '5px',
   '--mobile-navigation-height': '50px',
   '--font-size-h1': '17px',
   '--font-size-h2': '16px',
   '--font-size-h3': '15px',
   '--font-size-h4': '14px',
-  '--font-size-base': '13px',
+  '--font-size-base': '14px',
   '--font-size-h5': '12px',
   '--font-size-h6': '11px',
 };
@@ -272,7 +275,8 @@ export function buildGlimpseTheme(
     extends: neutralTheme,
     tokens,
     typography: {
-      scale: { base: 13, ratio: 1.2 },
+      // astryx-dracula: body/code floor 14, dense but never cramped
+      scale: { base: 14, ratio: 1.2 },
       body: { family: 'JetBrains Mono', fallbacks: 'monospace' },
       heading: { family: 'JetBrains Mono', fallbacks: 'monospace', weight: 'normal' },
       code: { family: 'JetBrains Mono', fallbacks: 'monospace' },

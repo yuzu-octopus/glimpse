@@ -165,18 +165,26 @@ describe('buildGlimpseTheme', () => {
     expect(mocha.name).toBe('catppuccin-mocha');
   });
 
-  it('emits every glance dim', () => {
+  it('emits every glance dim on the astryx-dracula spacing/type canon', () => {
     const t = def.tokens;
-    expect(t['--widget-gap']).toBe('23px');
-    expect(t['--widget-content-vertical-padding']).toBe('15px');
-    expect(t['--widget-content-horizontal-padding']).toBe('17px');
-    expect(t['--widget-content-padding']).toBe('15px 17px');
-    expect(t['--content-bounds-padding']).toBe('15px');
+    // canonical spacing: 24 gap, 16 viewport/content (spacing.md — 8s with a
+    // 4px half-step for small elements; 23/17/15 had no defender)
+    expect(t['--space-gap']).toBe('24px');
+    expect(t['--space-viewport']).toBe('16px');
+    expect(t['--widget-content-vertical']).toBe('16px');
+    expect(t['--widget-content-horizontal']).toBe('16px');
+    // every alias mirrors the canonical value it duplicates
+    expect(t['--widget-gap']).toBe(t['--space-gap']);
+    expect(t['--widget-content-vertical-padding']).toBe(t['--widget-content-vertical']);
+    expect(t['--widget-content-horizontal-padding']).toBe(t['--widget-content-horizontal']);
+    expect(t['--widget-content-padding']).toBe('16px');
+    expect(t['--content-bounds-padding']).toBe('16px');
     expect(t['--border-radius']).toBe('5px');
     expect(t['--mobile-navigation-height']).toBe('50px');
     expect(t['--font-size-h1']).toBe('17px');
     expect(t['--font-size-h6']).toBe('11px');
-    expect(t['--font-size-base']).toBe('13px');
+    // type floor: body and code never below 14
+    expect(t['--font-size-base']).toBe('14px');
   });
 
   it('emits the glance ramp vars as light-dark tuples', () => {

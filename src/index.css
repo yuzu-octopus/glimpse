@@ -38,17 +38,19 @@
   color-scheme: light dark;
 
   /* dimensions — canonical (StyleX defineTheme) + aliases */
-  --space-gap: 23px;
-  --space-viewport: 15px;
-  --widget-content-vertical: 15px;
-  --widget-content-horizontal: 17px;
-  --widget-gap: 23px;
+  /* astryx-dracula spacing canon — layout on 8s, small elements on the 4px
+     half-step (spacing.md). 23/17/15 had no defender. */
+  --space-gap: 24px;
+  --space-viewport: 16px;
+  --widget-content-vertical: 16px;
+  --widget-content-horizontal: 16px;
+  --widget-gap: 24px;
   /* Single tiling row unit (px): place() ROW_UNIT, collage --tile-row, and
      bento --bento-row all resolve here. One token, three consumers. */
   --tile-row: 96px;
-  --widget-content-vertical-padding: 15px;
-  --widget-content-horizontal-padding: 17px;
-  --widget-content-padding: 15px 17px;
+  --widget-content-vertical-padding: 16px;
+  --widget-content-horizontal-padding: 16px;
+  --widget-content-padding: 16px;
   --content-bounds-padding: var(--widget-gap);
   --border-radius: 5px;
   --mobile-navigation-height: 50px;
@@ -56,7 +58,7 @@
   --font-size-h2: 16px;
   --font-size-h3: 15px;
   --font-size-h4: 14px;
-  --font-size-base: 13px;
+  --font-size-base: 14px;
   --font-size-h5: 12px;
   --font-size-h6: 11px;
 
@@ -120,7 +122,7 @@ body {
   margin: 0;
   min-height: 100vh;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
   font-variant-ligatures: none;
   color: var(--color-text-base);
