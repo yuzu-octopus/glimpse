@@ -35,12 +35,6 @@
   --content-bounds-padding: var(--space-gap);
 
   --mobile-navigation-height: 50px;
-
-  /* Flair aliases. The kit ships --color-tag-pink / --color-tag-orange as
-     the pink and orange of the Dracula palette under shorter names. */
-  --color-magenta: var(--color-tag-pink);
-  --color-tag-magenta: var(--color-tag-pink);
-  --color-orange: var(--color-tag-orange);
 }
 
 * {
