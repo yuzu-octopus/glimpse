@@ -3,8 +3,12 @@ import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './dns';
 import type { DnsStats } from '../../shared/widgets/payloads';
+import { dnsStatsSchema } from '../../shared/widgets/dns';
 
-function makeCtx(routes: Record<string, unknown> | ((url: string, init?: RequestInit) => unknown)): WidgetFetchContext {
+function makeCtx(
+  routes: Record<string, unknown> | ((url: string, init?: RequestInit) => unknown),
+  env: Record<string, string | undefined> = {},
+): WidgetFetchContext {
   const fetchImpl = async (url: string, init?: RequestInit) => {
     const hit = typeof routes === 'function' ? (routes as (u: string, i?: RequestInit) => unknown)(url, init) : routes[url];
     if (hit === undefined) return new Response(JSON.stringify({ error: 'not found' }), { status: 404 });
@@ -16,7 +20,7 @@ function makeCtx(routes: Record<string, unknown> | ((url: string, init?: Request
   };
   return {
     fetch: vi.fn(fetchImpl) as unknown as typeof fetch,
-    env: {},
+    env,
     cache: new TtlCache(),
     singleflight: new Singleflight(),
   };
@@ -28,22 +32,23 @@ describe('dns-stats fetcher', () => {
   it('fetches AdGuard stats and maps totals, latency, series and top domains', async () => {
     const qs = Array.from({ length: 24 }, (_, i) => 100 + i * 10);
     const bs = Array.from({ length: 24 }, (_, i) => 10 + i);
-    const ctx = makeCtx({
-      'http://adguard.local/control/stats': {
-        num_dns_queries: 5000,
-        dns_queries: qs,
-        num_blocked_filtering: 1000,
-        blocked_filtering: bs,
-        avg_processing_time: 0.012,
-        top_blocked_domains: [{ 'ads.example': 400 }, { 'tracker.example': 300 }],
+    const ctx = makeCtx(
+      {
+        'http://adguard.local/control/stats': {
+          num_dns_queries: 5000,
+          dns_queries: qs,
+          num_blocked_filtering: 1000,
+          blocked_filtering: bs,
+          avg_processing_time: 0.012,
+          top_blocked_domains: [{ 'ads.example': 400 }, { 'tracker.example': 300 }],
+        },
       },
-    });
+      { ADGUARD_USERNAME: 'admin', ADGUARD_PASSWORD: 'env-secret' },
+    );
     const data = (await fetcher()(ctx, {
       type: 'dns-stats',
       service: 'adguard',
       url: 'http://adguard.local',
-      username: 'admin',
-      password: 'secret',
     })) as DnsStats;
 
     expect(data.totalQueries).toBe(5000);
@@ -75,12 +80,11 @@ describe('dns-stats fetcher', () => {
         ],
       },
     };
-    const ctx = makeCtx(routes);
+    const ctx = makeCtx(routes, { PIHOLE_PASSWORD: 'env-pw' });
     const data = (await fetcher()(ctx, {
       type: 'dns-stats',
       service: 'pihole',
       url: 'http://pihole.local',
-      password: 'pw',
     })) as DnsStats;
 
     expect(data.totalQueries).toBe(2000);
@@ -105,12 +109,11 @@ describe('dns-stats fetcher', () => {
       },
       'http://pihole.local/api/stats/top_domains?blocked=true': { domains: [] },
     };
-    const ctx = makeCtx(routes);
+    const ctx = makeCtx(routes, { PIHOLE_PASSWORD: 'env-pw' });
     const data = (await fetcher()(ctx, {
       type: 'dns-stats',
       service: 'pihole',
       url: 'http://pihole.local',
-      password: 'pw',
       'hide-graph': true,
     })) as DnsStats;
 
@@ -143,13 +146,14 @@ describe('dns-stats fetcher', () => {
       }
       return undefined;
     };
-    const ctx = makeCtx(routes as unknown as Record<string, unknown>);
+    const ctx = makeCtx(routes as unknown as Record<string, unknown>, {
+      PIHOLE_PASSWORD: 'env-pw',
+      PIHOLE_TOKEN: 'tok',
+    });
     const data = (await fetcher()(ctx, {
       type: 'dns-stats',
       service: 'pihole',
       url: 'http://pihole.local',
-      password: 'pw',
-      token: 'tok',
     })) as DnsStats;
 
     expect(data.totalQueries).toBe(800);
@@ -167,22 +171,24 @@ describe('dns-stats fetcher', () => {
       qsMap[ts] = 2;
       bsMap[ts] = 0;
     }
-    const ctx = makeCtx({
-      'http://pihole.local/admin/api.php?summaryRaw&topItems&overTimeData10mins&auth=tok': {
-        dns_queries_today: 300,
-        ads_blocked_today: 0,
-        ads_percentage_today: 0,
-        domains_being_blocked: 10_000,
-        domains_over_time: qsMap,
-        ads_over_time: bsMap,
-        top_ads: [],
+    const ctx = makeCtx(
+      {
+        'http://pihole.local/admin/api.php?summaryRaw&topItems&overTimeData10mins&auth=tok': {
+          dns_queries_today: 300,
+          ads_blocked_today: 0,
+          ads_percentage_today: 0,
+          domains_being_blocked: 10_000,
+          domains_over_time: qsMap,
+          ads_over_time: bsMap,
+          top_ads: [],
+        },
       },
-    });
+      { PIHOLE_TOKEN: 'tok' },
+    );
     const data = (await fetcher()(ctx, {
       type: 'dns-stats',
       service: 'pihole',
       url: 'http://pihole.local',
-      token: 'tok',
     })) as DnsStats;
 
     expect(data.totalQueries).toBe(300);
@@ -211,28 +217,71 @@ describe('dns-stats fetcher', () => {
   });
 
   it('fers technitium stats', async () => {
-    const ctx = makeCtx({
-      'http://tech.local/api/dashboard/stats/get?token=tok&type=LastDay': {
-        response: {
-          stats: { totalQueries: 1000, blockedQueries: 250, blockedZones: 100, blockListZones: 200 },
-          mainChartData: {
-            datasets: [
-              { label: 'Total', data: Array(24).fill(10) },
-              { label: 'Blocked', data: Array(24).fill(2) },
-            ],
+    const ctx = makeCtx(
+      {
+        'http://tech.local/api/dashboard/stats/get?token=tok&type=LastDay': {
+          response: {
+            stats: { totalQueries: 1000, blockedQueries: 250, blockedZones: 100, blockListZones: 200 },
+            mainChartData: {
+              datasets: [
+                { label: 'Total', data: Array(24).fill(10) },
+                { label: 'Blocked', data: Array(24).fill(2) },
+              ],
+            },
+            topBlockedDomains: [{ domain: 'ads.tech', count: 50 }],
           },
-          topBlockedDomains: [{ domain: 'ads.tech', count: 50 }],
         },
       },
-    });
+      { TECHNITIUM_TOKEN: 'tok' },
+    );
     const data = (await fetcher()(ctx, {
       type: 'dns-stats',
       service: 'technitium',
       url: 'http://tech.local',
-      token: 'tok',
     })) as DnsStats;
     expect(data.blockedPercent).toBe(25);
     expect(data.domainsBlocked).toBe(300);
     expect(data.series).toHaveLength(8);
+  });
+
+  it('ignores credentials left in the config and reads them from the env', async () => {
+    const ctx = makeCtx(
+      {
+        'http://adguard.local/control/stats': {
+          num_dns_queries: 10,
+          dns_queries: Array(24).fill(1),
+          num_blocked_filtering: 0,
+          blocked_filtering: Array(24).fill(0),
+          avg_processing_time: 0,
+        },
+      },
+      { ADGUARD_USERNAME: 'envuser', ADGUARD_PASSWORD: 'envpass' },
+    );
+    await fetcher()(ctx, {
+      type: 'dns-stats',
+      service: 'adguard',
+      url: 'http://adguard.local',
+      username: 'leaked',
+      password: 'leaked',
+    });
+    const inits = (ctx.fetch as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls;
+    expect((inits[0][1].headers as Record<string, string>).Authorization).toBe(
+      `Basic ${btoa('envuser:envpass')}`,
+    );
+    expect((inits[0][1].headers as Record<string, string>).Authorization).not.toContain('leaked');
+  });
+
+  it('strips every credential the schema used to accept', () => {
+    const parsed = dnsStatsSchema.parse({
+      type: 'dns-stats',
+      url: 'http://dns.local',
+      token: 'leaked',
+      password: 'leaked',
+      username: 'leaked',
+    });
+    expect('token' in parsed).toBe(false);
+    expect('password' in parsed).toBe(false);
+    expect('username' in parsed).toBe(false);
+    expect(JSON.stringify(parsed)).not.toContain('leaked');
   });
 });
