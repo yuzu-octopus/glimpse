@@ -16,6 +16,20 @@ const validYaml = {
   ],
 };
 
+/** Container children are typed `unknown[]` (the recursive ref is a bare
+ * z.ZodType), so read their discriminators through a real runtime guard. */
+function childTypes(widgets: unknown): string[] {
+  if (!Array.isArray(widgets)) throw new Error('expected an array of widgets');
+  return widgets.map((w) => {
+    if (w === null || typeof w !== 'object' || !('type' in w)) {
+      throw new Error('expected a widget object');
+    }
+    const { type } = w;
+    if (typeof type !== 'string') throw new Error('expected a string type');
+    return type;
+  });
+}
+
 describe('ConfigSchema', () => {
   it('accepts a valid pages/columns/widgets config', () => {
     const r = ConfigSchema.safeParse(validYaml);
@@ -557,5 +571,88 @@ describe('ConfigSchema', () => {
       expect(raw).toMatch(/Minecraft[\s\S]*?limit:\s*9/);
       expect(raw).toMatch(/@Evourai/);
     }
+  });
+
+  it("accepts glance's to-do type and normalizes it to todo", () => {
+    const r = ConfigSchema.safeParse({
+      pages: [{ name: 'H', widgets: [{ type: 'to-do', id: 'work' }] }],
+    });
+    expect(r.success).toBe(true);
+    if (!r.success) return;
+    const w = r.data.pages[0].widgets![0];
+    expect(w.type).toBe('todo');
+    if (w.type !== 'todo') throw new Error('expected a todo widget');
+    expect(w.id).toBe('work');
+  });
+
+  it("accepts glance's stocks alias and normalizes it to markets", () => {
+    const r = ConfigSchema.safeParse({
+      pages: [{ name: 'H', widgets: [{ type: 'stocks', markets: [{ symbol: 'SPY' }] }] }],
+    });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.pages[0].widgets![0].type).toBe('markets');
+  });
+
+  it('normalizes aliases nested inside a group and a split-column', () => {
+    const r = ConfigSchema.safeParse({
+      pages: [
+        {
+          name: 'H',
+          widgets: [
+            { type: 'group', widgets: [{ type: 'to-do' }, { type: 'stocks', markets: [{ symbol: 'SPY' }] }] },
+            { type: 'split-column', widgets: [{ type: 'to-do' }, { type: 'clock' }] },
+          ],
+        },
+      ],
+    });
+    expect(r.success).toBe(true);
+    if (!r.success) return;
+    const [group, split] = r.data.pages[0].widgets!;
+    if (group.type !== 'group' || split.type !== 'split-column') {
+      throw new Error('expected a group and a split-column');
+    }
+    expect(childTypes(group.widgets)).toEqual(['todo', 'markets']);
+    expect(childTypes(split.widgets)).toEqual(['todo', 'clock']);
+  });
+
+  it('normalizes aliases in head-widgets and column widgets', () => {
+    const r = ConfigSchema.safeParse({
+      pages: [
+        {
+          name: 'H',
+          'head-widgets': [{ type: 'stocks', markets: [{ symbol: 'SPY' }] }],
+          columns: [{ size: 'full', widgets: [{ type: 'to-do' }] }],
+        },
+      ],
+    });
+    expect(r.success).toBe(true);
+    if (!r.success) return;
+    expect(r.data.pages[0]['head-widgets']![0].type).toBe('markets');
+    expect(r.data.pages[0].columns![0].widgets[0].type).toBe('todo');
+  });
+
+  it('still rejects a genuinely unknown type', () => {
+    const r = ConfigSchema.safeParse({
+      pages: [{ name: 'H', widgets: [{ type: 'definitely-not-a-widget' }] }],
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it('still rejects a nested genuinely unknown type', () => {
+    const r = ConfigSchema.safeParse({
+      pages: [{ name: 'H', widgets: [{ type: 'group', widgets: [{ type: 'nope' }] }] }],
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it('leaves an existing canonical todo widget untouched', () => {
+    const r = ConfigSchema.safeParse({
+      pages: [{ name: 'H', widgets: [{ type: 'todo', id: 'x' }] }],
+    });
+    if (!r.success) return;
+    const w = r.data.pages[0].widgets![0];
+    expect(w.type).toBe('todo');
+    if (w.type !== 'todo') throw new Error('expected a todo widget');
+    expect(w.id).toBe('x');
   });
 });
