@@ -12,8 +12,10 @@
   box-shadow: none;
 }
 
-/* The logo is a link, so it follows the link rule: accent unvisited,
-   dimmed on hover. Depth comes from the separator border, not a shadow. */
+/* The logo is a real outbound link, so it stays a real <a> — a link is not
+   an action and must never be dressed as a Button. It follows the link rule:
+   accent unvisited, dimmed on hover. Depth comes from the separator border,
+   not a shadow. */
 .logoLink {
   display: flex;
   align-items: center;
@@ -49,6 +51,12 @@
   line-height: 45px;
 }
 
+/* Page links are kit TopNavItems — current-page state, hover/press washes and
+   the focus ring are theirs, so this rail only owns the row geometry and the
+   overflow. It keeps no scrollbar override: the kit's one rule set in
+   tokens.css paints every scroller, and hiding it here meant the widest nav
+   had no affordance at all — the one tier the doctrine says thumb-only bars
+   must read on. */
 .navLinks {
   display: flex;
   align-items: center;
@@ -56,40 +64,19 @@
   flex: 1;
   min-width: 0;
   height: 100%;
-  /* No scrollbar overrides: the kit's one rule set in tokens.css paints every
-   * scroller, and hiding it here meant the widest nav had no affordance at
-   * all — the one tier the doctrine says thumb-only bars must read on. */
   overflow-x: auto;
 }
 
-/* Purple = tappable. Nav links are links: accent unvisited, resolving to
-   foreground on hover. The current page is the one thing the accent
-   underlines, so accent never decorates and never means two things. */
-.navLink {
-  display: block;
-  height: 100%;
-  line-height: 45px;
-  flex-shrink: 0;
-  border-bottom: 2px solid transparent;
-  transition: color var(--duration-fast) var(--ease-standard),
-    border-color var(--duration-fast) var(--ease-standard);
-  font-size: var(--font-size-h3);
+/* Brand: purple means tappable, so an unvisited page link wears the accent on
+   both rails. The kit already marks the current page with its neutral wash,
+   so the accent is never asked to mean two things at once. */
+.navLinks a,
+.mobileNavLinks a {
   color: var(--color-primary);
-  text-decoration: none;
 }
 
-.navLink:hover {
-  border-bottom-color: var(--color-text-subdue);
-  color: var(--color-text-highlight);
-}
-
-.navLink:active {
-  color: var(--color-text-highlight);
-  border-bottom-color: var(--color-primary);
-}
-
-.navLinkCurrent {
-  border-bottom-color: var(--color-primary);
+.navLinks a[aria-current='page'],
+.mobileNavLinks a[aria-current='page'] {
   color: var(--color-text-highlight);
 }
 
@@ -107,29 +94,13 @@
   height: var(--mobile-navigation-height);
   flex-shrink: 0;
 }
+
+/* Mobile-only control: the button is the kit's, this rule only holds the
+   44x44 touch target it measures 18x18 without. Transparent box around the
+   18px Menu icon — the hit area grows, the visual box does not. */
 .mobileNavToggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Mobile-only control: the 44x44 touch target, measured 18x18 before.
-   * Transparent box around the 18px Menu icon — the hit area grows, the
-   * visual box does not. */
   min-width: 44px;
   min-height: 44px;
-  padding: 0;
-  background: none;
-  border: none;
-  color: var(--color-text-base);
-  cursor: pointer;
-  transition: color var(--duration-fast) var(--ease-standard);
-}
-
-.mobileNavToggle:hover {
-  color: var(--color-text-highlight);
-}
-
-.mobileNavToggle:active {
-  color: var(--color-text-base-muted);
 }
 
 .mobileNavLinks {
@@ -141,25 +112,6 @@
   padding: 20px var(--content-bounds-padding);
   border-top: 1px solid var(--color-widget-content-border);
   border-bottom: 1px solid var(--color-widget-content-border);
-}
-.mobileNavLink {
-  flex-shrink: 0;
-  font-size: var(--font-size-h3);
-  color: var(--color-primary);
-  text-decoration: none;
-  transition: color var(--duration-fast) var(--ease-standard);
-}
-
-.mobileNavLink:hover {
-  color: var(--color-text-highlight);
-}
-
-.mobileNavLink:active {
-  color: var(--color-text-highlight);
-}
-
-.mobileNavLinkCurrent {
-  color: var(--color-text-highlight);
 }
 
 @media (max-width: 768px) {
