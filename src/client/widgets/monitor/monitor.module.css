@@ -83,3 +83,9 @@
 .ms {
   flex-shrink: 0;
 }
+
+/* The HTTP code, left of the latency. Both are fixed-width facts, so neither
+   may be squeezed when a long URL needs the room. */
+.status {
+  flex-shrink: 0;
+}

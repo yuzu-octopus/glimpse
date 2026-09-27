@@ -18,6 +18,25 @@ describe('monitor widget', () => {
     expect(screen.getByText('3000 ms')).toBeInTheDocument();
   });
 
+  it('shows the HTTP status code the check came back with', () => {
+    render(<Monitor config={{ type: 'monitor', sites: [{ url: 'https://example.com' }] }} data={{ sites }} />);
+    // fetched for every site, rendered by nothing before
+    expect(screen.getByText('200')).toBeInTheDocument();
+    expect(screen.getByText('500')).toBeInTheDocument();
+  });
+
+  it('omits the status code for a source that never reports one', () => {
+    render(
+      <Monitor
+        config={{ type: 'monitor', 'kuma-url': 'https://kuma.lab', 'kuma-slug': 'homelab' }}
+        data={{ sites: [{ url: 'https://healthchecks.io', title: 'Cron sync', ok: true, status: null, ms: 12, errorUrl: null, sameTab: false }] }}
+      />,
+    );
+    // no phantom 0 in the code's place
+    expect(document.querySelector(`.${styles.status}`)).toBeNull();
+    expect(screen.getByText('12 ms')).toBeInTheDocument();
+  });
+
   it('shows a dash when latency is unknown', () => {
     render(
       <Monitor
