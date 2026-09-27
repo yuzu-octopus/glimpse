@@ -1,3 +1,4 @@
+import { Badge, ClickableCard, Grid, ProgressBar, Stack, Text } from '@astryxdesign/core';
 import type { MediaItem, TorrentItem } from '../../../shared/widgets/payloads';
 import styles from './media.module.css';
 
@@ -36,55 +37,73 @@ function ageOf(iso: string | null): string | null {
 /** Poster-card grid for recently-added library items (immich, jellyfin). */
 export function MediaGrid({ items }: { items: MediaItem[] }) {
   return (
-    <div className={styles.grid}>
+    <Grid columns={{ minWidth: 110 }} gap={2} className={styles.grid}>
       {items.map((item) => {
         const meta = [item.subtitle, ageOf(item.date)].filter(Boolean).join(' • ');
         return (
-          <a
+          <ClickableCard
             key={`${item.title}-${item.poster ?? item.url ?? ''}`}
+            label={item.title}
             href={item.url ?? undefined}
             target="_blank"
-            rel="noreferrer"
-            className={styles.card}
+            variant="transparent"
+            padding={0}
             data-testid="media-card"
+            className={styles.card}
           >
             {item.poster ? (
               <img src={item.poster} alt="" loading="lazy" className={styles.poster} />
             ) : (
               <div className={styles.posterPlaceholder} aria-hidden="true" />
             )}
-            <span className={styles.title}>{item.title}</span>
-            {meta ? <span className={styles.meta}>{meta}</span> : null}
-          </a>
+            <Text type="supporting" maxLines={1} className={styles.title}>
+              {item.title}
+            </Text>
+            {meta ? (
+              <Text type="supporting" maxLines={1} className={styles.meta}>
+                {meta}
+              </Text>
+            ) : null}
+          </ClickableCard>
         );
       })}
-    </div>
+    </Grid>
   );
 }
 
 /** Torrent rows with progress bars (qbittorrent, transmission). */
 export function TorrentList({ torrents }: { torrents: TorrentItem[] }) {
   return (
-    <div className={styles.torrents}>
+    <Stack gap={2}>
       {torrents.map((t) => {
         const pct = Math.round(t.progress * 100);
         const meta = [formatBytes(t.size), formatSpeed(t.downloadSpeed), formatEta(t.eta)].filter(Boolean).join(' • ');
         return (
-          <div key={t.name} className={styles.torrent} data-testid="torrent-row">
-            <div className={styles.torrentHead}>
-              <span className={styles.torrentName}>{t.name}</span>
-              <span className={styles.badge} data-testid={`torrent-state-${t.state}`}>{t.state}</span>
-            </div>
-            <div className={styles.bar} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`${t.name} progress`}>
-              <div className={styles.fill} style={{ width: `${pct}%` }} />
-            </div>
-            <div className={styles.torrentMeta}>
-              <span>{pct}%</span>
-              {meta ? <span>{meta}</span> : null}
-            </div>
-          </div>
+          <Stack key={t.name} gap={1} data-testid="torrent-row">
+            <Stack direction="horizontal" gap={2} className={styles.torrentHead}>
+              <Text type="body" maxLines={1} className={styles.torrentName}>
+                {t.name}
+              </Text>
+              <Badge variant="neutral" label={t.state} data-testid={`torrent-state-${t.state}`} />
+            </Stack>
+            {/* The kit's bar supplies the track, fill, radius and the
+                role="progressbar" this used to hand-roll; the label is sr-only
+                because the torrent name above is the real description. */}
+            <ProgressBar
+              value={pct}
+              label={`${t.name} progress`}
+              isLabelHidden
+              className={styles.fill}
+            />
+            <Stack direction="horizontal" gap={2} justify="between">
+              <Text type="supporting" hasTabularNumbers>
+                {pct}%
+              </Text>
+              {meta ? <Text type="supporting" maxLines={1}>{meta}</Text> : null}
+            </Stack>
+          </Stack>
         );
       })}
-    </div>
+    </Stack>
   );
 }
