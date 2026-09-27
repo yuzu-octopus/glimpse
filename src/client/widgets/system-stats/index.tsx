@@ -1,3 +1,4 @@
+import { Grid, Stack, Text } from '@astryxdesign/core';
 import type { SystemStatsConfig } from '../../../shared/widgets/system-stats';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
@@ -26,11 +27,16 @@ function Row({
 }) {
   const p = percent == null ? null : Math.max(0, Math.min(100, Math.round(percent)));
   return (
-    <div className={styles.row}>
-      <span className={styles.label}>{label}</span>
-      <span className={styles.value}>{value}</span>
-      {sub ? <span className={styles.sub}>{sub}</span> : null}
+    <Stack gap={1.5} className={styles.row}>
+      <Grid columns={{ minWidth: 48 }} columnGap={3} align="center">
+        <Text type="label">{label}</Text>
+        <Text hasTabularNumbers maxLines={1}>{value}</Text>
+        {sub ? <Text type="supporting" hasTabularNumbers>{sub}</Text> : null}
+      </Grid>
       {p === null ? null : (
+        // Data ink — one series, so one hue: a neutral track with a single fill
+        // that escalates by severity. A label + a number reads the same at 95%
+        // as at 5%; the bar is what makes the difference legible at a glance.
         <meter
           className={styles.meter}
           data-high={p >= 85 || undefined}
@@ -43,7 +49,7 @@ function Row({
           aria-label={`${label} load`}
         />
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -77,7 +83,7 @@ export function SystemStats({ config, data, error, isLoading }: WidgetComponentP
         error={error}
         showErrors={cfg['show-errors']}
       >
-        <div className={styles.placeholder}>No data — not running on homelab host</div>
+        <Text type="supporting">No data — not running on homelab host</Text>
       </WidgetChrome>
     );
   }
