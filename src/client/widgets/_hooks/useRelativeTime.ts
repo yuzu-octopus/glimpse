@@ -1,41 +1,74 @@
-import { useSyncExternalStore } from 'react';
+import { useRef, useSyncExternalStore } from 'react';
 
 const TICK_MS = 60_000;
 const listeners = new Set<() => void>();
-let tick = 0;
+/** The wall clock at the last tick — a snapshot for `useSyncExternalStore`,
+ *  which needs a referentially stable value between renders, never a counter:
+ *  a counter is precisely what a throttled tab gets wrong. */
+let lastTickAt = Date.now();
 let timer: ReturnType<typeof setInterval> | null = null;
+
+function publish(): void {
+  lastTickAt = Date.now();
+  listeners.forEach((l) => l());
+}
+
+/** A hidden tab's interval is throttled to a crawl or frozen outright, so
+ *  ticks stop while the clock does not. Reconcile the moment the tab is back
+ *  instead of waiting for the next tick to notice. */
+function onVisibilityChange(): void {
+  if (!document.hidden) publish();
+}
 
 /** Single shared 60s ticker for the whole page: starts on first subscriber, stops on last. */
 function subscribe(listener: () => void): () => void {
   listeners.add(listener);
   if (timer === null) {
-    timer = setInterval(() => {
-      tick++;
-      listeners.forEach((l) => l());
-    }, TICK_MS);
+    timer = setInterval(publish, TICK_MS);
+    document.addEventListener('visibilitychange', onVisibilityChange);
   }
   return () => {
     listeners.delete(listener);
     if (listeners.size === 0 && timer !== null) {
       clearInterval(timer);
       timer = null;
+      document.removeEventListener('visibilitychange', onVisibilityChange);
     }
   };
 }
 
 function getSnapshot(): number {
-  return tick;
+  return lastTickAt;
 }
 
-/** "5m ago" style relative time that ages by a minute per shared tick. */
-/** Re-render once per shared 60s tick (countdowns, live ages); returns tick count. */
+/** Re-render once per shared 60s tick (and on tab return); returns the wall
+ *  clock of the last tick, for callers that only need the re-render. */
 export function useNow(): number {
   return useSyncExternalStore(subscribe, getSnapshot);
 }
 
+/** "5m ago" style relative time, derived from the wall clock.
+ *
+ *  `ageSeconds` is the caller's own reading. A caller that measures per render
+ *  hands over a fresh one every time and this is a formatter; a caller that
+ *  measures once and memoises it (`useAge`) hands over the same number for the
+ *  widget's whole life, so the hook charges the time that has really passed
+ *  since it first saw that number. Charging *ticks* instead — the obvious
+ *  `+ ticks * 60` — is the bug this replaced: a backgrounded tab is throttled,
+ *  so it gets far fewer ticks than minutes, and every age on the page comes
+ *  back wrong by however long the tab was hidden. Same derivation as the timer
+ *  widget's `advance`: elapsed time, never tick counts. */
 export function useRelativeTime(ageSeconds: number): string {
-  const ticks = useNow();
-  return formatAge(ageSeconds + (ticks * TICK_MS) / 1000);
+  useNow();
+  const anchor = useRef<{ age: number; at: number } | null>(null);
+  const now = Date.now();
+  if (anchor.current === null || anchor.current.age !== ageSeconds) {
+    anchor.current = { age: ageSeconds, at: now };
+  }
+  // A clock that steps backwards — an NTP correction, a resumed machine, a
+  // user edit — must never walk an age into the future.
+  const elapsed = Math.max(0, now - anchor.current.at) / 1000;
+  return formatAge(ageSeconds + elapsed);
 }
 
 export function formatAge(totalSeconds: number): string {

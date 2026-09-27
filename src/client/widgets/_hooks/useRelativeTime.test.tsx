@@ -28,14 +28,73 @@ describe('formatAge', () => {
 });
 
 describe('useRelativeTime', () => {
-  it('ages by one minute per shared tick', () => {
+  const T0 = new Date('2026-08-20T12:00:00Z');
+
+  it('advances a minute per minute of real time', () => {
     vi.useFakeTimers();
+    vi.setSystemTime(T0);
     const { result, unmount } = renderHook(() => useRelativeTime(100));
     expect(result.current).toBe('1m');
     act(() => vi.advanceTimersByTime(60_000));
     expect(result.current).toBe('2m');
     act(() => vi.advanceTimersByTime(60_000));
     expect(result.current).toBe('3m');
+    unmount();
+  });
+
+  it('catches up on real time a throttled tab skipped', () => {
+    // Hidden for 2h: the browser throttles the shared interval, so one tick
+    // lands for two hours of clock. The age must follow the clock.
+    vi.useFakeTimers();
+    vi.setSystemTime(T0);
+    const { result, unmount } = renderHook(() => useRelativeTime(100));
+    expect(result.current).toBe('1m');
+    act(() => {
+      vi.setSystemTime(+T0 + 2 * 3600 * 1000);
+      vi.advanceTimersByTime(60_000);
+    });
+    expect(result.current).toBe('2h');
+    unmount();
+  });
+
+  it('reconciles the moment a hidden tab comes back', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(T0);
+    const { result, unmount } = renderHook(() => useRelativeTime(100));
+    act(() => {
+      vi.setSystemTime(+T0 + 2 * 3600 * 1000);
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(result.current).toBe('2h');
+    unmount();
+  });
+
+  it('does not age on ticks that passed no real time', () => {
+    // The reverse: a burst of ticks with a clock that never moved is not two
+    // hours of ageing, however many of them there were.
+    vi.useFakeTimers();
+    vi.setSystemTime(T0);
+    const { result, unmount } = renderHook(() => useRelativeTime(100));
+    act(() => {
+      vi.advanceTimersByTime(600_000);
+      vi.setSystemTime(T0);
+    });
+    expect(result.current).toBe('1m');
+    unmount();
+  });
+
+  it('holds an age steady when the clock steps backwards', () => {
+    // 59m, one tick before the hour: charging that tick as elapsed time would
+    // jump the reading over the boundary it is sitting on.
+    vi.useFakeTimers();
+    vi.setSystemTime(T0);
+    const { result, unmount } = renderHook(() => useRelativeTime(59 * 60));
+    expect(result.current).toBe('59m');
+    act(() => {
+      vi.setSystemTime(+T0 - 3600_000);
+      vi.advanceTimersByTime(60_000);
+    });
+    expect(result.current).toBe('59m');
     unmount();
   });
 
