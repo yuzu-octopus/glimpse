@@ -1,8 +1,5 @@
-.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: var(--font-size-base); }
-.label { display: block; font-size: 12px; color: var(--color-text-base-muted); text-transform: uppercase; letter-spacing: 0.04em; }
-/* single series, so one hue for every bar: a sequential-by-magnitude ramp
- * would turn one quantitative series into a rainbow. --font-family-mono is
- * the shipped token; --font-mono never resolved and fell back silently. */
-.val { font-weight: 600; font-family: var(--font-family-mono); word-break: break-all; }
-.spark { display: flex; align-items: end; gap: 2px; height: 24px; margin-top: 8px; }
+/* Grid owns the three-column layout and Text owns the label/value roles, so
+   what remains is the sparkline's own ink: a single cyan series plus the
+   margin that separates it from the stat grid above. */
+.spark { margin-top: 8px; }
 .bar { width: 6px; background: var(--color-data-categorical-cyan); border-radius: 2px; display: inline-block; }
