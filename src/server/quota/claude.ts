@@ -25,12 +25,3 @@ export async function fetchClaudeUsage(
   }
   return { provider: 'claude', windows, raw: data };
 }
-
-/** Web fallback — requires PTY/cookie session that Bun cannot spawn; stub. */
-export async function fetchClaudeWebUsage(
-  _auth: { token: string; organizationId?: string },
-  _ctx: WidgetFetchContext,
-): Promise<UsageSnapshot> {
-  // sanitized, no URL/secret leakage
-  throw new Error('claude web fallback not implemented — use OAuth token');
-}
