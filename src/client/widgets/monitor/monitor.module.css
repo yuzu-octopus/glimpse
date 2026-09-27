@@ -37,6 +37,29 @@
   align-self: center;
 }
 
+/* glance .monitor-site-icon: 3.2rem square, desaturated until hover. The
+   row's gap is 3, so the icon keeps the same rhythm as the status dot. */
+.icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  opacity: 0.8;
+  filter: grayscale(0.4);
+  flex-shrink: 0;
+}
+
+.row:hover .icon {
+  opacity: 1;
+  filter: grayscale(0);
+}
+
+/* glance .flat-icon: simple-icons and mdi glyphs are black paths with no
+   fill, so on a dark-only theme they are invisible until inverted. */
+.iconAutoInvert {
+  filter: invert(1);
+}
+
 .rowBody {
   flex: 1;
   min-width: 0;
