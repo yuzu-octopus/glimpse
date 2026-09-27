@@ -57,12 +57,14 @@
 
 /* Purple = tappable. A title that is a link wears the accent unvisited and
    resolves to foreground plus underline on hover; a plain title stays
-   foreground so accent never decorates. */
+   foreground so accent never decorates. The class sits on the Heading, not on
+   the <a> nested inside it, so the keyboard channel is :focus-within — the kit
+   ring lands on the link and the title follows focus down. */
 .titleLink {
   color: var(--color-primary);
 }
 
-.titleLink:hover {
+.titleLink:is(:hover, :focus-within) {
   color: var(--color-text-highlight);
   text-decoration: underline;
 }
