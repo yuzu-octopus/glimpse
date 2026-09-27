@@ -246,3 +246,5 @@
 .percentValue {
   color: var(--color-text-highlight);
 }
+
+.empty { padding: 12px; color: var(--color-text-base-muted); }
