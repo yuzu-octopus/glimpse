@@ -159,8 +159,12 @@ export function parseChannelPage(html: string): {
 
 const PLAYLIST_PREFIX = 'playlist:';
 
-function isChannelId(channel: string): boolean {
-  return /^UC[A-Za-z0-9_-]{22}$/.test(channel);
+/** A channel id is `UC` + 22 url-safe base64 chars, but a config value that
+ * starts with `UC` is a channel id someone mistyped — not a handle to resolve.
+ * Asking the handle resolver about one produced `channel_id=UC1`, a URL that
+ * can never answer, so the decision is by shape and not by validity. */
+function looksLikeChannelId(value: string): boolean {
+  return value.startsWith('UC');
 }
 
 /** The public page a source can be scraped from when its feed comes back
@@ -222,7 +226,7 @@ async function resolveHandleToChannelId(
         headers: { 'User-Agent': YT_UA },
       }, retry);
       const id = extractChannelId(html);
-      if (!id) throw new Error(`could not resolve handle ${handle}`);
+      if (!id) throw new Error('the page carried no channel id');
       ctx.cache.set(cacheKey, id, 24 * 60 * 60 * 1000);
       return id;
     } catch (err) {
@@ -230,6 +234,15 @@ async function resolveHandleToChannelId(
       throw err;
     }
   });
+}
+
+/** Why a handle could not be turned into a feedable id. A 404 is a typo or a
+ * channel that no longer exists and gets said in those words; anything else
+ * (a 5xx, a consent wall that hid the id) is a resolution failure and is
+ * reported as one, because "handle not found" would be a guess. */
+function handleFailure(handle: string, err: unknown): string {
+  const reason = reasonFor(err);
+  return reason === 'HTTP 404' ? `handle not found: ${handle}` : `could not resolve ${handle}: ${reason}`;
 }
 
 /** One configured source, resolved to everything the fetch needs: the RSS
@@ -241,6 +254,8 @@ interface FeedSpec {
   cacheKey: string;
   /** null when we have no page to fall back to for this source */
   pageUrl: string | null;
+  /** set when the config value could not be resolved to a feedable id at all */
+  resolveError?: string;
 }
 
 async function feedSpecsForChannels(
@@ -251,15 +266,20 @@ async function feedSpecsForChannels(
 ): Promise<FeedSpec[]> {
   const results = await Promise.all(
     channels.map(async (ch) => {
+      const isId = looksLikeChannelId(ch);
+      // Named the way YouTube spells it, resolved or not, so the diagnostic
+      // points at the handle the user has to fix.
+      const source = isId ? ch : ch.startsWith('@') ? ch : `@${ch}`;
       let id = ch;
-      let source = ch;
-      if (!isChannelId(ch)) {
-        const handle = ch.startsWith('@') ? ch : `@${ch}`;
+      let resolveError: string | undefined;
+      if (!isId) {
         try {
-          id = await resolveHandleToChannelId(ctx, handle, retry);
-          source = handle;
-        } catch {
-          id = ch;
+          id = await resolveHandleToChannelId(ctx, source, retry);
+        } catch (err) {
+          // The old `catch { id = ch }` sent the raw handle to
+          // `channel_id=@typo` — a URL that cannot possibly answer — so a
+          // misspelt handle read as a quiet widget. Say what is wrong instead.
+          resolveError = handleFailure(source, err);
         }
       }
       return {
@@ -267,6 +287,7 @@ async function feedSpecsForChannels(
         source,
         cacheKey: id,
         pageUrl: videosPageUrl(source),
+        resolveError,
       };
     }),
   );
@@ -418,7 +439,7 @@ registerWidget('videos', async (ctx, config) => {
   const feeds: FeedSpec[] = [...channelFeeds, ...playlistFeeds];
 
   const settled = await Promise.allSettled(
-    feeds.map(async ({ url, source, cacheKey, pageUrl }): Promise<SourceOutcome> => {
+    feeds.map(async ({ url, source, cacheKey, pageUrl, resolveError }): Promise<SourceOutcome> => {
       const fullCacheKey = `videos:feed:${cacheKey}::${cfg['video-url-template'] ?? ''}::${includeShorts ? 'shorts' : 'noshorts'}`;
       // TtlCache.set retains a stale copy for 24h internally, so one key suffices.
       const getCached = (): Video[] | undefined =>
@@ -429,6 +450,12 @@ registerWidget('videos', async (ctx, config) => {
       const opts = { template: cfg['video-url-template'], includeShorts };
       const mapItems = (items: Array<Record<string, unknown>>, channel: string) =>
         items.flatMap((item) => toVideo(item, channel, opts) ?? []);
+      // An unresolvable handle gets no feed request at all: `channel_id=@typo`
+      // is a URL that cannot answer, so asking only turns one 404 into two.
+      // Whatever we last knew for it still renders — with the typo named.
+      if (resolveError) {
+        return { videos: getCached() ?? [], issue: { source, reason: resolveError } };
+      }
       try {
         const raw = await fetchText(ctx, url, { headers: { 'User-Agent': YT_UA } }, retry);
         let parsed = parseVideoFeed(raw);

@@ -110,6 +110,73 @@ describe('Task 3: YouTube @handle primary', () => {
     expect(extractChannelId('no id here')).toBeNull();
   });
 
+  // `catch { id = ch }` used to fall through to `channel_id=@typo`, a URL
+  // that cannot answer, so a misspelt handle cost a second doomed request and
+  // said nothing. The reason now names the handle, and the doomed request is
+  // never made.
+  it('a handle that 404s is reported by name, not fed to channel_id', async () => {
+    const seen: string[] = [];
+    const ctx = makeCtx(async (url) => {
+      seen.push(url);
+      return new Response('not found', { status: 404 });
+    });
+    const data = (await videosFetcher()(ctx, { type: 'videos', channels: ['@typo'] })) as {
+      videos: Video[];
+      issues: { source: string; reason: string }[];
+    };
+
+    expect(seen).toEqual(['https://www.youtube.com/@typo']);
+    expect(data.videos).toEqual([]);
+    expect(data.issues).toEqual([{ source: '@typo', reason: 'handle not found: @typo' }]);
+  });
+
+  it('a bare handle without @ is reported the way YouTube spells it', async () => {
+    const seen: string[] = [];
+    const ctx = makeCtx(async (url) => {
+      seen.push(url);
+      return new Response('not found', { status: 404 });
+    });
+    const data = (await videosFetcher()(ctx, { type: 'videos', channels: ['typo'] })) as {
+      issues: { source: string; reason: string }[];
+    };
+
+    expect(seen).toEqual(['https://www.youtube.com/@typo']);
+    expect(data.issues).toEqual([{ source: '@typo', reason: 'handle not found: @typo' }]);
+  });
+
+  it('a handle page that answers without a channel id is a resolution failure', async () => {
+    const ctx = makeCtx(async (url) =>
+      url.includes('youtube.com/@')
+        ? new Response('<html><body>consent wall</body></html>', { status: 200 })
+        : new Response(FEED, { status: 200 }),
+    );
+    const data = (await videosFetcher()(ctx, { type: 'videos', channels: ['@Wall'] })) as {
+      videos: Video[];
+      issues: { source: string; reason: string }[];
+    };
+
+    expect(data.videos).toEqual([]);
+    expect(data.issues).toEqual([
+      { source: '@Wall', reason: 'could not resolve @Wall: the page carried no channel id' },
+    ]);
+  });
+
+  it('a value starting with UC is a channel id, never sent to the handle resolver', async () => {
+    let handleFetched = false;
+    const ctx = makeCtx(async (url) => {
+      if (url.includes('youtube.com/@')) handleFetched = true;
+      return new Response(FEED, { status: 200 });
+    });
+    const data = (await videosFetcher()(ctx, { type: 'videos', channels: ['UC1'] })) as {
+      videos: Video[];
+      issues: unknown[];
+    };
+
+    expect(handleFetched).toBe(false);
+    expect(data.videos).toHaveLength(1);
+    expect(data.issues).toEqual([]);
+  });
+
   it('config.example.yml uses @handle primary with @spokeishere, @Bug-I etc', () => {
     const yml = readFileSync('config.example.yml', 'utf8');
     expect(yml).toContain('@Fireship');
