@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Button, CheckboxInput, IconButton, Stack, Text, TextInput } from '@astryxdesign/core';
 import { Pencil, Trash2 } from 'lucide-react';
 import type { TodoConfig } from '../../../shared/widgets/todo';
+import { localStateKey } from '../../../shared/widgets/local-state';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import styles from './todo.module.css';
@@ -37,7 +38,7 @@ function load(key: string): TodoItem[] {
 
 export function Todo({ config }: WidgetComponentProps) {
   const cfg = config as unknown as TodoConfig;
-  const storageKey = `glimpse.todo.${cfg.id ?? 'default'}`;
+  const storageKey = localStateKey('todo', cfg.id);
   const [items, setItems] = useState<TodoItem[]>(() => load(storageKey));
   const [text, setText] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);

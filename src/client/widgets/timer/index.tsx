@@ -3,6 +3,7 @@ import { Button } from '@astryxdesign/core';
 import { Pause, Play, RotateCcw } from 'lucide-react';
 import { CHART_HUES } from '../../kit/chart-hues';
 import { formatDuration, parseDuration, type TimerConfig } from '../../../shared/widgets/timer';
+import { localStateKey } from '../../../shared/widgets/local-state';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import styles from './timer.module.css';
@@ -167,7 +168,7 @@ function TimerControls({
 
 export function Timer({ config }: WidgetComponentProps) {
   const cfg = config as unknown as TimerConfig;
-  const storageKey = `glimpse.timer.${cfg.id ?? 'default'}`;
+  const storageKey = localStateKey('timer', cfg.id);
   const defaultSeconds = useMemo(() => parseDuration(cfg.duration ?? '25m'), [cfg.duration]);
 
   const [state, setState] = useState<TimerState>(() => loadState(storageKey, defaultSeconds));

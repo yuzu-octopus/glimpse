@@ -15,6 +15,13 @@ const TYPE_ALIASES: Record<string, string> = {
 /** Accepted alias spellings, for tooling that validates raw config text. */
 export const TYPE_ALIAS_KEYS = Object.keys(TYPE_ALIASES);
 
+/** The canonical name for a config's `type`, or the input unchanged. Aliases
+ * are folded by `withTypeAliases` at parse time, so a transform that runs
+ * *before* the schema has to fold them itself or it will miss a `to-do`. */
+export function canonicalWidgetType(type: string): string {
+  return TYPE_ALIASES[type] ?? type;
+}
+
 /** Rewrite alias `type` values anywhere in a config tree. Only plain objects
  * are rebuilt — a YAML scalar that arrived as a Date must survive as-is. */
 function normalize(value: unknown): unknown {
