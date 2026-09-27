@@ -1,4 +1,4 @@
-import { fetchJson, fetchText } from '../../widgets/http';
+import { fetchJson } from '../../widgets/http';
 import type { WidgetFetchContext } from '../../widgets/registry';
 
 // Generic helper for web-cookie providers.
@@ -15,20 +15,4 @@ export async function webFetchJson<T>(ctx: WidgetFetchContext, url: string, cook
   };
   if (csrf) headers['X-CSRFTOKEN'] = csrf;
   return fetchJson<T>(ctx, url, { headers });
-}
-
-// JSONL/tRPC helpers need text then split
-export async function webFetchText(ctx: WidgetFetchContext, url: string, cookie: string, extra?: RequestInit): Promise<string> {
-  const csrf = cookie.match(/csrftoken=([^;]+)/i)?.[1];
-  const headers: Record<string, string> = {
-    Cookie: cookie,
-    'User-Agent': 'Mozilla/5.0',
-    Accept: '*/*',
-    ...(csrf ? { 'X-CSRFTOKEN': csrf } : {}),
-    ...((extra?.headers as Record<string, string>) ?? {}),
-  };
-  const { headers: _h, signal: _s, ...rest } = extra ?? {};
-  void _h;
-  void _s;
-  return fetchText(ctx, url, { ...rest, headers });
 }
