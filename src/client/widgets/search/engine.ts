@@ -53,57 +53,28 @@ export interface ResolveSearchOpts {
 /**
  * Pure resolver: turn a raw query + bangs/engine config into a {url,target}.
  * Returns {url: null} for empty/whitespace input (caller should no-op).
- * Supports both `resolveSearch('gh query')` (defaults: helium + duckduckgo)
- * and `resolveSearch('gh query', { engine, bangs, target, newTab })`.
- * Also accepts positional `(query, engine, bangs)` for backward compat.
+ *
+ * Deliberately one shape: `(query, { engine, bangs, target, newTab })`. The old
+ * positional `(query, engine, bangs)` form and the `search-engine`/`searchEngine`
+ * /`new-tab`/`new_tab` key aliases were compatibility shims for call shapes that
+ * never existed outside a test named "compat"; they are gone, not deprecated.
  */
 export function resolveSearch(
   query: string,
-  optsOrEngine?: ResolveSearchOpts | SearchConfig['search-engine'] | Bang[],
-  maybeBangs?: Bang[],
+  { engine, bangs, target, newTab }: ResolveSearchOpts = {},
 ): { url: string | null; target: string; bang?: Bang; rest: string } {
-  let engine: SearchConfig['search-engine'] | undefined;
-  let bangs: Bang[] | undefined;
-  let target: string | undefined;
-  let newTab: boolean | undefined;
-
-  if (Array.isArray(optsOrEngine)) {
-    bangs = optsOrEngine;
-  } else if (
-    typeof optsOrEngine === 'string' ||
-    (optsOrEngine !== null &&
-      typeof optsOrEngine === 'object' &&
-      'url' in (optsOrEngine as Record<string, unknown>))
-  ) {
-    engine = optsOrEngine as SearchConfig['search-engine'];
-    bangs = maybeBangs;
-  } else if (optsOrEngine && typeof optsOrEngine === 'object') {
-    const o = optsOrEngine as ResolveSearchOpts & Record<string, unknown>;
-    // allow both `engine` and `search-engine` keys
-    engine =
-      (o.engine as SearchConfig['search-engine']) ??
-      (o['search-engine'] as SearchConfig['search-engine']) ??
-      (o['searchEngine'] as SearchConfig['search-engine']);
-    bangs = o.bangs as Bang[] | undefined;
-    target = o.target as string | undefined;
-    // newTab may be passed as `newTab` or `new-tab` or `new_tab`
-    newTab =
-      (o.newTab as boolean | undefined) ??
-      (o['new-tab'] as boolean | undefined) ??
-      (o['new_tab'] as boolean | undefined);
-    // also allow target key `target`
-    if (!target && typeof o['target'] === 'string') target = o['target'] as string;
-  }
-
-  const effectiveBangs = listBangs(bangs);
-  const engineUrl = resolveEngine(engine);
   const q = query.trim();
   if (!q) return { url: null, target: '_self', rest: '' };
 
-  const { bang, rest } = matchBang(q, effectiveBangs);
+  const { bang, rest } = matchBang(q, listBangs(bangs));
   if (!bang && rest.length === 0) return { url: null, target: '_self', rest };
 
-  const url = (bang?.url ?? engineUrl).replace('{QUERY}', encodeURIComponent(rest));
-  const resolvedTarget = (newTab ?? true) ? (target ?? '_blank') : '_self';
-  return { url, target: resolvedTarget, bang, rest };
+  const url = (bang?.url ?? resolveEngine(engine)).replace('{QUERY}', encodeURIComponent(rest));
+  return {
+    url,
+    // newTab: false is a hard "same tab" request and outranks a configured target.
+    target: newTab === false ? '_self' : (target ?? '_blank'),
+    bang,
+    rest,
+  };
 }

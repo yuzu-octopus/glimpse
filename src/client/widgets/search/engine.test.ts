@@ -88,8 +88,4 @@ describe('search engine', () => {
     expect(resolveEngine({ name: 'c', url: 'https://c.com/?q={QUERY}' })).toBe('https://c.com/?q={QUERY}');
   });
 
-  it('positional resolveSearch(query, engine, bangs) compat', () => {
-    const { url } = resolveSearch('gh hello', 'google');
-    expect(url).toBe('https://github.com/search?q=hello');
-  });
 });
