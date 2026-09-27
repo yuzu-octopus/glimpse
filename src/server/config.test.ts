@@ -2,8 +2,8 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { loadConfig } from './config';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { getConfig, initConfig, loadConfig } from './config';
 
 const feedUrlSchema = z.object({ feeds: z.array(z.object({ url: z.string() })) });
 function firstFeedUrl(widget: unknown): string {
@@ -300,3 +300,62 @@ describe('config dx', () => {
     expect(r.warnings?.some((w) => w.includes('"server"'))).toBe(true);
   });
 });
+
+describe('initConfig auto-reload', () => {
+  const page = (name: string): string =>
+    `pages:\n  - name: ${name}\n    columns:\n      - size: full\n        widgets: [{ type: clock }]\n`;
+  /** Indentation error — loadYamlTree records the file, errors out, returns null. */
+  const broken = (): string => 'pages:\n  - name: Home\n   columns: [\n';
+
+  /** main.yml pulling in a → b → c. */
+  function chain(): { main: string; mainYaml: string; includes: string[] } {
+    const includes = ['a.yml', 'b.yml', 'c.yml'].map((n) => write(n, page(n[0].toUpperCase())));
+    const mainYaml =
+      '$include:\n  - a.yml\n  - b.yml\n  - c.yml\npages:\n  - name: Home\n    columns:\n      - size: full\n        widgets: [{ type: clock }]\n';
+    return { main: write('main.yml', mainYaml), mainYaml, includes };
+  }
+
+  it(
+    'a failed reload keeps watching the includes its file list lost',
+    async () => {
+      const { main, mainYaml, includes } = chain();
+      const reloads: boolean[] = [];
+      expect(initConfig(main, (r) => reloads.push(r.ok)).ok).toBe(true);
+
+      // One file write emits several fs events, and the reload debounce is only
+      // 150ms, so a straggler event would look exactly like the watcher under
+      // test. Every step therefore starts from silence: sample the reload count
+      // until it holds steady for longer than the debounce.
+      const idle = async (): Promise<void> => {
+        let last = reloads.length;
+        for (let i = 0; i < 40; i++) {
+          await new Promise((r) => setTimeout(r, 200));
+          if (reloads.length === last) return;
+          last = reloads.length;
+        }
+      };
+      /** Edit one file and assert it alone provoked a reload with `ok`. */
+      const editAlone = async (edit: () => void, ok: boolean): Promise<void> => {
+        await idle();
+        const before = reloads.length;
+        edit();
+        await vi.waitFor(() => expect(reloads.length).toBeGreaterThan(before), {
+          interval: 100,
+          timeout: 3000,
+        });
+        expect(reloads.at(-1)).toBe(ok);
+      };
+
+      await editAlone(() => writeFileSync(main, broken()), false);
+      expect(getConfig().ok).toBe(true); // last-good config kept…
+
+      // a.yml is an include: the failed load's file list no longer mentions it
+      await editAlone(() => writeFileSync(includes[0]!, page('A2')), false);
+
+      await editAlone(() => writeFileSync(main, mainYaml), true);
+      expect(getConfig().config?.pages.map((p) => p.name)).toEqual(['Home', 'A2', 'B', 'C']);
+    },
+    30_000,
+  );
+});
+

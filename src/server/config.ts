@@ -312,9 +312,15 @@ function debounce<A extends unknown[]>(fn: (...args: A) => void, ms: number) {
 /** Reload and re-register watchers (included files can appear/disappear). */
 function reloadConfig(configPath: string): LoadResult {
   const result = loadConfig(configPath);
+  // A failed load's `files` is not the dependency set. loadYamlTree records a
+  // file before reading it and steps over a broken include, so a broken
+  // include still yields the whole list — but when the MAIN file is the one
+  // that fails, `files` is just [main] and every include drops out. Watching
+  // that list would uninstall their watchers for good: nothing reloads them.
+  const watchFiles = result.ok ? result.files : [...new Set([...current.files, ...result.files])];
   if (result.ok || !current.ok) current = result;
   stopWatchers();
-  for (const file of result.files) {
+  for (const file of watchFiles) {
     try {
       const w = watch(file, () => triggerReload());
       w.on('error', () => {});
