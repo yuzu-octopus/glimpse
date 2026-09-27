@@ -124,23 +124,37 @@ describe('videos fetcher', () => {
     const cachedVideos = [
       { title: 'cached', url: 'https://www.youtube.com/watch?v=cached', channel: 'Cached', published: null, thumbnail: null },
     ] as Video[];
-    const ctx = makeCtx(async () => new Response('', { status: 429 }));
+    // retries: 0 — the fallback now also hits the channel page, and a
+    // retryable status twice over is backoff, not coverage.
+    const ctx = makeCtx(async (url) =>
+      url.includes('feeds/videos.xml') ? new Response('', { status: 429 }) : new Response('', { status: 404 }),
+    );
     ctx.cache.set('videos:feed:UCx', cachedVideos, 3600_000);
     ctx.cache.set('videos:feed:UCx::::noshorts', cachedVideos, 3600_000);
-    const data = (await videosFetcher()(ctx, { type: 'videos', channels: ['UCx'] })) as { videos: Video[] };
+    const data = (await videosFetcher()(ctx, {
+      type: 'videos',
+      channels: ['UCx'],
+      retries: 0,
+    })) as { videos: Video[] };
     expect(data.videos[0].title).toBe('cached');
-  }, 10_000);
+  });
 
   it('500 returns cached stale', async () => {
     const cachedVideos = [
       { title: 'cached500', url: 'https://www.youtube.com/watch?v=cached500', channel: 'Cached', published: null, thumbnail: null },
     ] as Video[];
-    const ctx = makeCtx(async () => new Response('', { status: 500 }));
+    const ctx = makeCtx(async (url) =>
+      url.includes('feeds/videos.xml') ? new Response('', { status: 500 }) : new Response('', { status: 404 }),
+    );
     ctx.cache.set('videos:feed:UCx::::noshorts', cachedVideos, 3600_000);
     ctx.cache.set('videos:feed:UCx', cachedVideos, 3600_000);
-    const data = (await videosFetcher()(ctx, { type: 'videos', channels: ['UCx'] })) as { videos: Video[] };
+    const data = (await videosFetcher()(ctx, {
+      type: 'videos',
+      channels: ['UCx'],
+      retries: 0,
+    })) as { videos: Video[] };
     expect(data.videos[0].title).toBe('cached500');
-  }, 10_000);
+  });
 
   it('sends Mozilla User-Agent on youtube fetches', async () => {
     let ua: string | null = null;
@@ -174,11 +188,23 @@ describe('videos fetcher', () => {
     expect(data.issues).toEqual([{ source: 'UCdead', reason: 'HTTP 404' }]);
   });
 
-  it('says so when a source answers but has nothing to show', async () => {
+  it('says so when the feed is empty and the page has nothing either', async () => {
     const empty = `<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><title>Empty</title></feed>`;
-    const ctx = makeCtx(async (url) =>
-      url.includes('UC1234567890123456789012') ? new Response(empty, { status: 200 }) : new Response(FEED, { status: 200 }),
-    );
+    // The page answers with a real channel page whose grid holds no video: a
+    // genuinely quiet channel, which is the one case that is not a broken
+    // scraper and still has to be reported rather than shown as quiet.
+    const quietChannel = `<!DOCTYPE html><html><body><script>var ytInitialData = {"contents":{}};</script></body></html>`;
+    const ctx: WidgetFetchContext = {
+      fetch: vi.fn(async (url: string) =>
+        url.includes('channel/UC1234567890123456789012/videos')
+          ? new Response(quietChannel, { status: 200 })
+          : new Response(empty, { status: 200 }),
+      ) as unknown as typeof fetch,
+      env: {},
+      cache: new TtlCache(),
+      singleflight: new Singleflight(),
+    };
+
     const data = (await videosFetcher()(ctx, {
       type: 'videos',
       channels: ['UC1234567890123456789012'],
