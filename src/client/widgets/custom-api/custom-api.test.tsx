@@ -36,6 +36,20 @@ describe('custom-api widget', () => {
     expect(screen.getByText('No extras')).toBeInTheDocument();
   });
 
+  // A value the reader acts on is body copy; its timestamp and the subtitle
+  // are metadata. A title with a url is a real link, one without is not.
+  it('assigns each string its text tier and links only the url-backed title', () => {
+    render(<CustomApi config={{ type: 'custom-api', title: 'CI', url: 'https://api.example.com' }} data={{ items, frameless: false }} />);
+    expect(screen.getByText('success')).toHaveAttribute('data-type', 'body');
+    expect(screen.getByText('main')).toHaveAttribute('data-type', 'supporting');
+    expect(screen.getByText('2m ago')).toHaveAttribute('data-type', 'supporting');
+    expect(screen.getByText('Deploy #42').closest('a')).toHaveAttribute(
+      'href',
+      'https://ci.example.com/42',
+    );
+    expect(screen.getByText('No extras').closest('a')).toBeNull();
+  });
+
   it('renders without chrome when frameless', () => {
     render(
       <CustomApi config={{ type: 'custom-api', frameless: true, url: 'https://api.example.com' }} data={{ items, frameless: true }} />,
