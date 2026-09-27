@@ -290,6 +290,67 @@ describe('PageView', () => {
     expect(screen.getByTestId('clock-widget')).toBeInTheDocument();
   });
 
+  /** The selected tab has to survive the group losing children under it. A
+   *  config edit or a reload that drops the last child left `active` pointing
+   *  at a Tab that no longer existed: no selection in the strip and an empty
+   *  panel below, so the whole group read as blank. */
+  it('keeps the panel on a tab that still exists when the group shrinks', async () => {
+    vi.useFakeTimers();
+    const groupOf = (titles: string[]) =>
+      payload({
+        columns: [
+          {
+            size: 'full',
+            widgets: [
+              {
+                type: 'group',
+                config: { type: 'group' },
+                data: null,
+                widgets: titles.map((t) => ({
+                  type: 'clock' as const,
+                  config: { type: 'clock', title: t },
+                  data: null,
+                })),
+              },
+            ],
+          },
+        ],
+      });
+    let current = groupOf(['Tab A', 'Tab B', 'Tab C']);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        new Response(JSON.stringify(current), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
+    );
+    render(
+      <MemoryRouter>
+        <PageView slug="home" />
+      </MemoryRouter>,
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10);
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Tab C' }));
+    expect(screen.getAllByText('Tab C').length).toBeGreaterThan(1);
+
+    // The group loses its last child on the next refetch.
+    current = groupOf(['Tab A', 'Tab B']);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(31_000);
+    });
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'));
+      await vi.advanceTimersByTimeAsync(10);
+    });
+    expect(screen.queryByRole('button', { name: 'Tab C' })).toBeNull();
+    // The panel is on the last surviving child, not empty.
+    expect(screen.getByTestId('clock-widget')).toHaveTextContent('Tab B');
+  });
+
   /** A glance split-column with N children renders N tracks when max-columns
    * allows it. The count reaches CSS as a custom property so the narrow-tile
    * container query and the mobile fallback still own grid-template-columns. */
