@@ -65,31 +65,6 @@ export function ensureWidgetLoaded(type: string): Promise<unknown> | null {
   return p;
 }
 
-/** Eagerly import every widget chunk. Idempotent — second call reuses cached promises. */
-export function preloadWidgets(): Promise<void> {
-  const loaders = new Set<Loader>(Object.values(widgetLoaders));
-  const promises = [...loaders].map((l) => {
-    // Find a representative type for this loader to reuse ensureWidgetLoaded dedupe
-    const entry = Object.entries(widgetLoaders).find(([, v]) => v === l);
-    const t = entry?.[0] ?? '';
-    const existing = t ? widgetPromises.get(t) : undefined;
-    if (existing) return existing;
-    const p = l().catch(() => {});
-    if (t) {
-      widgetPromises.set(t, p);
-      if (t === 'iframe') widgetPromises.set('html', p);
-      if (t === 'html') widgetPromises.set('iframe', p);
-    }
-    return p;
-  });
-  return Promise.all(promises).then(() => {});
-}
-
-/** Test helper — same as preloadWidgets. Exposed for suites that need synchronous registration. */
-export function __preloadWidgetsForTests(): Promise<void> {
-  return preloadWidgets();
-}
-
 /** Idle-preload one page's widget chunks (deduped via ensureWidgetLoaded).
  * Scoped to the visible page — no global preload-all, so off-page chunks
  * stay code-split and load on demand. No-op for empty/unknown types. */
