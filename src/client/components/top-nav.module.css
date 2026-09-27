@@ -125,7 +125,7 @@
 }
 
 .mobileNavToggle:active {
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
 }
 
 .mobileNavLinks {

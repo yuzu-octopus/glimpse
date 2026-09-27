@@ -98,7 +98,7 @@
 }
 
 .statePaused {
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   background: var(--color-widget-background-highlight);
 }
 
@@ -109,7 +109,7 @@
 
 .image {
   font-size: 12px;
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -132,7 +132,7 @@
   background: none;
   padding: 2px 0;
   font-size: 12px;
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   cursor: pointer;
 }
 
@@ -188,6 +188,6 @@
 
 .childState {
   margin-left: auto;
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   white-space: nowrap;
 }

@@ -24,7 +24,7 @@
 }
 
 .todoInput::placeholder {
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   opacity: 1;
 }
 
@@ -104,7 +104,7 @@
 
 .done {
   text-decoration: line-through;
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
 }
 
 .editInput {
@@ -117,7 +117,7 @@
   padding: 2px;
   border: none;
   background: transparent;
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   cursor: pointer;
   border-radius: var(--border-radius);
   opacity: 0;
@@ -136,5 +136,5 @@
 
 .empty {
   font-size: var(--font-size-base);
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
 }

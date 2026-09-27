@@ -14,7 +14,7 @@
 
 .serverDown .serverName,
 .serverDown .uptime {
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
 }
 
 .serverHeader {
@@ -46,7 +46,7 @@
 
 .serverHost {
   font-size: var(--font-size-h6);
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -78,7 +78,7 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -93,12 +93,12 @@
 }
 
 .statSub {
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   font-weight: 400;
 }
 
 .statUnavailable {
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
 }
 
 .bar {
@@ -161,7 +161,7 @@
 }
 
 .detailLabel {
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
 }
 
 /* Bento health card — 2×2 + temp row. Coherent grouping: compute vs storage vs thermal.
@@ -187,7 +187,7 @@
 .cellIcon {
   flex-shrink: 0;
   margin-top: 2px;
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
 }
 
 .cellBody {
@@ -200,7 +200,7 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   margin-bottom: 6px;
 }
 
@@ -232,7 +232,7 @@
 }
 .rowIcon {
   flex-shrink: 0;
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
 }
 .rowLabel {
   flex-shrink: 0;
@@ -242,7 +242,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   font-weight: 400;
   flex-shrink: 1;
 }

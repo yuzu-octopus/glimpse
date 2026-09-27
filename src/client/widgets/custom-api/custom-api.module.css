@@ -108,6 +108,6 @@ a.title:hover {
 
 .timestamp {
   font-size: var(--font-size-h6);
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
 }
 

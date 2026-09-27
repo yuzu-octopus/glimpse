@@ -19,7 +19,7 @@
 }
 
 .trigger:active {
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
 }
 
 .trigger:focus-visible {
@@ -143,7 +143,7 @@
 }
 
 .aboutRow dt {
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
 }
 
 .aboutRow dd {
@@ -198,7 +198,7 @@
 
 .bangTable th {
   background: var(--color-widget-background-highlight);
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   font-weight: 600;
 }
 

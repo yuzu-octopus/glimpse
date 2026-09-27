@@ -67,7 +67,7 @@
   gap: 4px;
   margin: 6px 10px 10px;
   font-size: var(--font-size-h5);
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
 }
 
 .cardTime {
@@ -86,7 +86,7 @@
 .rowTime::after {
   content: '•';
   margin-left: 4px;
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
 }
 
 /* vertical list */
@@ -151,7 +151,7 @@
 
 .rowMeta {
   font-size: var(--font-size-h5);
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
 }
 
 .rowTime {
@@ -168,5 +168,5 @@
 .placeholder {
   padding: 12px 0;
   font-size: var(--font-size-h5);
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
 }

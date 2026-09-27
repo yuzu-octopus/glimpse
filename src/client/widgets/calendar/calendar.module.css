@@ -15,7 +15,7 @@
 
 .dow {
   font-size: var(--font-size-h6);
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   margin-bottom: 3px;
 }
 
@@ -35,5 +35,5 @@
 }
 
 .other {
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
 }

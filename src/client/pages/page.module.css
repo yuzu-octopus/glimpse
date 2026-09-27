@@ -261,7 +261,7 @@
   font: inherit !important;
   font-size: var(--font-size-h4) !important;
   text-transform: uppercase;
-  color: var(--color-text-subdue) !important;
+  color: var(--color-text-base-muted) !important;
   line-height: calc(1.6em - 2px);
   cursor: pointer;
   flex-shrink: 0;

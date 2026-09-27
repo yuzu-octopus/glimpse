@@ -65,7 +65,7 @@
   align-items: center;
   flex-wrap: wrap;
   font-size: var(--font-size-h5);
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   margin-top: 1px;
   min-width: 0;
 }
@@ -76,7 +76,7 @@
 }
 
 .sep {
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   margin: 0 4px;
 }
 

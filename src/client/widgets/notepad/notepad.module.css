@@ -14,7 +14,7 @@
 }
 
 .area::placeholder {
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
 }
 
 .area:focus {

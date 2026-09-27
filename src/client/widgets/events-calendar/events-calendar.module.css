@@ -6,7 +6,7 @@
 .dayHeader {
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   margin-top: 10px;
 }
 
@@ -34,7 +34,7 @@
 
 .time {
   font-size: var(--font-size-xs);
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   white-space: nowrap;
   min-width: 84px;
 }
@@ -49,7 +49,7 @@
 
 .location {
   font-size: var(--font-size-xs);
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
   padding-left: 92px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -58,5 +58,5 @@
 
 .empty {
   font-size: var(--font-size-sm);
-  color: var(--color-text-subdue);
+  color: var(--color-text-base-muted);
 }
