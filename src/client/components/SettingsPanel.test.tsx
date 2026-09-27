@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { SettingsPanel } from './SettingsPanel';
+import { bangs } from '../../shared/widgets/bangs';
 import styles from './settings-panel.module.css';
 
 const stylesheet = readFileSync(resolve('src/client/components/settings-panel.module.css'), 'utf8');
@@ -69,15 +70,27 @@ describe('SettingsPanel section sidebar', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
 
     const nav = screen.getByTestId('settings-nav');
-    const about = within(nav).getByText('About');
-    const docs = within(nav).getByText('Docs');
+    const about = within(nav).getByText('About').closest('button');
+    const docs = within(nav).getByText('Docs').closest('button');
 
-    expect(about.closest('button')).toHaveClass(styles.navItemActive);
-    expect(about.closest('button')?.getAttribute('aria-selected')).toBe('true');
-    expect(about.closest('button')?.getAttribute('role')).toBe('tab');
-    expect(docs.closest('button')).not.toHaveClass(styles.navItemActive);
-    expect(docs.closest('button')?.getAttribute('aria-selected')).toBe('false');
-    expect(screen.getByRole('tabpanel')).toHaveAttribute('id', 'settings-panel-about');
+    // Kit SideNavItem: a real button per section, current one aria-current.
+    expect(about).not.toBeNull();
+    expect(docs).not.toBeNull();
+    expect(about).toHaveAttribute('aria-current', 'page');
+    expect(docs).not.toHaveAttribute('aria-current');
+    expect(document.getElementById('settings-panel-about')).not.toBeNull();
+  });
+
+  it('keeps every section reachable by keyboard — no href-less anchors', () => {
+    stubConfigApi();
+    render(<SettingsPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+
+    for (const label of ['About', 'Docs']) {
+      const item = within(screen.getByTestId('settings-nav')).getByText(label).closest('button');
+      expect(item?.tagName).toBe('BUTTON');
+      expect(item).not.toBeDisabled();
+    }
   });
 
   it('offers no theme picker — the brand theme is not a user setting', () => {
@@ -126,12 +139,44 @@ describe('SettingsPanel section sidebar', () => {
     // tab switches swap only the inner section — the element carrying the
     // fixed-height rule stays mounted, so the dialog never resizes
     expect(document.querySelector(`.${styles.content}`)).toBe(pane);
-    expect(screen.getByRole('tabpanel')).toHaveAttribute('id', 'settings-panel-docs');
+    expect(document.getElementById('settings-panel-docs')).not.toBeNull();
     expect(screen.queryByText('9.9.9')).toBeNull();
     expect(screen.getByRole('link', { name: 'helium.computer/bangs' })).toHaveAttribute(
       'href',
       'https://helium.computer/bangs',
     );
+  });
+
+  it('renders the bang list as real table rows, not card-wrapped items', async () => {
+    stubConfigApi();
+    render(<SettingsPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    await screen.findByText('9.9.9');
+    fireEvent.click(within(screen.getByTestId('settings-nav')).getByText('Docs'));
+
+    const table = screen.getByRole('table', { name: 'Shebang bangs' });
+    expect(within(table).getByRole('columnheader', { name: 'Shortcut' })).toBeInTheDocument();
+    // Every curated bang reaches the reader as a row, not a bare div.
+    for (const bang of bangs.slice(0, 3)) {
+      expect(within(table).getByRole('cell', { name: bang.title })).toBeInTheDocument();
+    }
+    expect(within(table).getAllByRole('row')).toHaveLength(bangs.length + 1);
+
+  });
+});
+
+describe('SettingsPanel About facts', () => {
+  it('keeps the version/config-path pairs as a definition list', async () => {
+    stubConfigApi();
+    render(<SettingsPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    await screen.findByText('9.9.9');
+
+    const list = document.querySelector('dl');
+    expect(list).not.toBeNull();
+    expect(within(list as HTMLElement).getByText('Version').tagName).toBe('DT');
+    expect(within(list as HTMLElement).getByText('9.9.9').tagName).toBe('DD');
+    expect(within(list as HTMLElement).getByText('Config file').tagName).toBe('DT');
   });
 });
 

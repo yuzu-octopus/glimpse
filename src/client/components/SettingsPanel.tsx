@@ -1,5 +1,14 @@
 import { useState } from 'react';
-import { Dialog, DialogHeader, Heading } from '@astryxdesign/core';
+import {
+  Dialog,
+  DialogHeader,
+  Heading,
+  IconButton,
+  SideNavItem,
+  Table,
+  Text,
+  proportional,
+} from '@astryxdesign/core';
 import { BookOpen, Info, Settings } from 'lucide-react';
 import type { ConfigResponse } from '../../shared/api';
 import { bangs } from '../../shared/widgets/bangs';
@@ -8,6 +17,13 @@ import styles from './settings-panel.module.css';
 // config facts from /api/config (loaded on first open, falling back to
 // glance's documented defaults while loading or on failure); Docs covers
 // bangs. The theme itself is not a setting — it is the astryx-dracula brand.
+//
+// The section switcher uses kit SideNavItems, so the active item, its
+// hover/press washes and its focus ring belong to the kit; the <nav> rail
+// around them stays ours because it flips to a row under the dialog. The bang
+// list is a kit Table, so the dense data stays in rows. The About facts stay
+// a <dl>: a definition list is the semantics, not a layout to be swapped for
+// a component.
 
 type SettingsSection = 'about' | 'docs';
 
@@ -40,17 +56,16 @@ export function SettingsPanel() {
 
   return (
     <>
-      <button
-        type="button"
-        aria-label="Settings"
+      <IconButton
+        label="Settings"
+        icon={<Settings size={18} aria-hidden="true" />}
+        variant="ghost"
         className={styles.trigger}
         onClick={() => {
           setOpen(true);
           openAbout();
         }}
-      >
-        <Settings size={18} aria-hidden="true" />
-      </button>
+      />
       <Dialog
         isOpen={open}
         onOpenChange={setOpen}
@@ -64,40 +79,26 @@ export function SettingsPanel() {
             className={styles.nav}
             aria-label="Settings sections"
             data-testid="settings-nav"
-            role="tablist"
           >
-            <button
-              type="button"
-              id="settings-tab-about"
-              role="tab"
-              aria-selected={section === 'about'}
-              aria-controls="settings-panel-about"
-              className={section === 'about' ? `${styles.navItem} ${styles.navItemActive}` : styles.navItem}
+            <SideNavItem
+              label="About"
+              icon={<Info size={16} aria-hidden="true" />}
+              isSelected={section === 'about'}
               onClick={openAbout}
-            >
-              <Info size={16} aria-hidden="true" />
-              About
-            </button>
-            <button
-              type="button"
-              id="settings-tab-docs"
-              role="tab"
-              aria-selected={section === 'docs'}
-              aria-controls="settings-panel-docs"
-              className={section === 'docs' ? `${styles.navItem} ${styles.navItemActive}` : styles.navItem}
+            />
+            <SideNavItem
+              label="Docs"
+              icon={<BookOpen size={16} aria-hidden="true" />}
+              isSelected={section === 'docs'}
               onClick={() => setSection('docs')}
-            >
-              <BookOpen size={16} aria-hidden="true" />
-              Docs
-            </button>
+            />
           </nav>
           <div className={styles.content}>
             {section === 'about' ? (
               <section
                 className={styles.section}
                 id="settings-panel-about"
-                role="tabpanel"
-                aria-labelledby="settings-tab-about"
+                aria-label="About"
               >
                 <Heading level={2} className={styles.sectionTitle}>
                   About
@@ -120,8 +121,7 @@ export function SettingsPanel() {
               <section
                 className={styles.section}
                 id="settings-panel-docs"
-                role="tabpanel"
-                aria-labelledby="settings-tab-docs"
+                aria-label="Docs"
               >
                 <Heading level={2} className={styles.sectionTitle}>
                   Docs
@@ -139,28 +139,31 @@ export function SettingsPanel() {
                   Config override: set <code className={styles.code}>bangs</code> in the{' '}
                   <code className={styles.code}>search</code> widget to replace this list; fallback is the curated helium set below.
                 </p>
-                <table className={styles.bangTable} aria-label="Shebang bangs">
-                  <thead>
-                    <tr>
-                      <th>Shortcut</th>
-                      <th>Title</th>
-                      <th>URL</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {bangs.map((b) => (
-                      <tr key={b.shortcut}>
-                        <td>
-                          <code className={styles.code}>!{b.shortcut}</code>
-                        </td>
-                        <td>{b.title}</td>
-                        <td>
-                          <code className={styles.code} title={b.url}>{b.url}</code>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <Table
+                  data={bangs.map((b) => ({ ...b }))}
+                  aria-label="Shebang bangs"
+                  density="compact"
+                  hasHover
+                  columns={[
+                    {
+                      key: 'shortcut',
+                      header: 'Shortcut',
+                      width: proportional(1),
+                      renderCell: (b) => <Text type="code">!{b.shortcut}</Text>,
+                    },
+                    { key: 'title', header: 'Title', width: proportional(2) },
+                    {
+                      key: 'url',
+                      header: 'URL',
+                      width: proportional(2),
+                      renderCell: (b) => (
+                        <Text type="code" wordBreak="break-all">
+                          {b.url}
+                        </Text>
+                      ),
+                    },
+                  ]}
+                />
               </section>
             )}
           </div>

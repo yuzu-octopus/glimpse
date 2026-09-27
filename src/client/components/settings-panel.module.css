@@ -4,44 +4,20 @@
    UA stylesheet paints it `color: canvastext` — pure white. Neither Astryx
    core nor the kit declares a colour for it, so every descendant without its
    own rule inherited #fff. Declaring the foreground here re-seats the dialog
-   on the same text step <body> uses, so unstyled rows (the Docs table cells)
-   read as page copy instead of a white-text leak. */
+   on the same text step <body> uses, so unstyled rows read as page copy
+   instead of a white-text leak. */
 .dialog {
   color: var(--color-text-base);
 }
 
-/* Gear trigger; fills the header/mobile-nav bar height so the icon centers
- * in the 45px header row (align-items: center on the row).
- *
- * The button is a mobile-first control, so it carries the 44x44 touch target
- * (measured 18x45) as a transparent box around the 18px gear — the hit area
- * grows, the visual box does not. */
+/* Gear trigger — only the box is ours. The gear is an IconButton, so hover,
+   press, focus ring and the square icon box are the kit's; this rule just
+ * stretches it to the 45px header row and holds the 44px mobile touch floor
+ * (measured 18x18 before). Transparent box, identical visual. */
 .trigger {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   height: 100%;
   min-width: 44px;
   min-height: 44px;
-  padding: 0;
-  background: none;
-  border: none;
-  color: var(--color-text-base);
-  cursor: pointer;
-  transition: color 0.3s;
-}
-
-.trigger:hover {
-  color: var(--color-text-highlight);
-}
-
-.trigger:active {
-  color: var(--color-text-base-muted);
-}
-
-.trigger:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
 }
 
 .body {
@@ -50,8 +26,9 @@
   min-height: 0;
 }
 
-/* Left section nav — the active item gets a primary accent bar (a tappable
- * state, so accent is allowed) drawn as a real border, never a shadow. */
+/* Left section rail. The items are kit SideNavItems — active state, hover and
+   focus washes are theirs; the rail only owns the column geometry and the
+   separator that splits it from the content pane. */
 .nav {
   display: flex;
   flex-direction: column;
@@ -60,48 +37,6 @@
   width: 190px;
   padding: 8px;
   border-right: 1px solid var(--color-separator);
-}
-
-.navItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 12px 9px 10px;
-  border: none;
-  border-left: 2px solid transparent;
-  border-radius: var(--border-radius);
-  background: none;
-  color: var(--color-text-base);
-  font-family: inherit;
-  font-size: var(--font-size-base);
-  text-align: left;
-  cursor: pointer;
-  transition: color var(--duration-fast) var(--ease-standard),
-    background-color var(--duration-fast) var(--ease-standard),
-    border-color var(--duration-fast) var(--ease-standard);
-}
-
-/* Hover dims 12%, press dims 20% — no lift, no entrance motion. */
-.navItem:hover {
-  color: var(--color-text-highlight);
-  background-color: var(--color-overlay-hover);
-}
-
-.navItem:active {
-  background-color: var(--color-overlay-pressed);
-}
-
-.navItem:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
-}
-
-.navItemActive,
-.navItemActive:hover,
-.navItemActive:active {
-  color: var(--color-text-highlight);
-  background-color: var(--color-widget-background-highlight);
-  border-left-color: var(--color-primary);
 }
 
 /* Right content pane — generous padding, scrolls independently of the nav.
@@ -137,6 +72,9 @@
   margin: 0;
   color: var(--color-text-paragraph);
 }
+
+/* A definition list is the semantics, not a layout: version and config path
+   are term/definition pairs, so the <dl>/<dt>/<dd> stay exactly as written. */
 .aboutList {
   margin: 0;
   display: flex;
@@ -179,8 +117,9 @@
   color: var(--color-text-highlight);
 }
 
-/* Purple = tappable: a prose link wears the accent underlined and resolves
-   to foreground on hover. */
+/* Prose link: purple means tappable, so it wears the accent underlined and
+   resolves to foreground on hover. The kit Link's accent variant resolves to
+   the paragraph step under this theme, which is why this stays a styled <a>. */
 .docsLink {
   color: var(--color-primary);
   text-decoration: underline;
@@ -195,34 +134,10 @@
   color: var(--color-text-highlight);
 }
 
-.bangTable {
-  width: 100%;
-  margin-top: 12px;
-  border-collapse: collapse;
-  font-size: 12px;
-  border: 1px solid var(--color-widget-content-border);
-  border-radius: var(--radius-container);
-  overflow: hidden;
-}
-
-.bangTable th,
-.bangTable td {
-  padding: 6px 8px;
-  text-align: left;
-  border-bottom: 1px solid var(--color-separator);
-}
-
-.bangTable th {
-  background: var(--color-widget-background-highlight);
-  color: var(--color-text-base-muted);
-  font-weight: 600;
-}
-
-.bangTable td:last-child code {
-  word-break: break-all;
-}
-
-/* Narrow screens: stack the nav above the content. */
+/* Narrow screens: the section rail becomes a row above the content. The
+   items need no second set of active rules — the kit's selected treatment
+   is orientation-agnostic, where the old left-border needed re-deriving as
+   a bottom border here. */
 @media (max-width: 720px) {
   .body {
     flex-direction: column;
@@ -233,18 +148,6 @@
     width: auto;
     border-right: none;
     border-bottom: 1px solid var(--color-separator);
-  }
-
-  .navItem {
-    border-left: none;
-    border-bottom: 2px solid transparent;
-    padding: 9px 10px;
-  }
-
-  .navItemActive,
-  .navItemActive:hover,
-  .navItemActive:active {
-    border-bottom-color: var(--color-primary);
   }
 
   .content {
