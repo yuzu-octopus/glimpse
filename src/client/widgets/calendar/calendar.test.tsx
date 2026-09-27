@@ -1,8 +1,12 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Calendar from './index';
 import styles from './calendar.module.css';
+
+const stylesheet = readFileSync(resolve('src/client/widgets/calendar/calendar.module.css'), 'utf8');
 
 // Aug 2026: the 1st is a Saturday (2026-08-11 is a Tuesday).
 const AUG_2026 = new Date(2026, 7, 11);
@@ -46,6 +50,11 @@ describe('calendar widget', () => {
     // Saturday the 1st lands in the 6th column (index 5)
     expect(dayOneColumn()).toBe(5);
     expect(dowLabels()).toEqual(['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']);
+    // Spillover counts up like a real calendar at both ends: July 27-31 before
+    // Saturday the 1st, September 1-6 after the 31st.
+    const labels = dayCells().map((el) => el.textContent);
+    expect(labels.slice(0, 5)).toEqual(['27', '28', '29', '30', '31']);
+    expect(labels.slice(-6)).toEqual(['1', '2', '3', '4', '5', '6']);
   });
 
   it('starts the week on sunday when configured', () => {
@@ -168,5 +177,17 @@ describe('calendar month scrub', () => {
     next().focus();
     await user.keyboard(' ');
     expect(monthLabel()).toBe('August 2026');
+  });
+});
+
+describe('calendar grid geometry', () => {
+  it('rounds every radius to a brand token — no pills, no ad-hoc pixels', () => {
+    // 5px elements / 4px inner (spacing.md); the brand reserves pills for dots
+    // and avatars, so a bare 999px or 10px here is a regression, not a taste call.
+    const radii = [...stylesheet.matchAll(/border-radius\s*:\s*([^;]+);/g)].map((m) => m[1].trim());
+    expect(radii.length).toBeGreaterThan(0);
+    for (const radius of radii) {
+      expect(radius).toMatch(/^var\(--(border-radius|radius-(element|inner|none))\)$/);
+    }
   });
 });
