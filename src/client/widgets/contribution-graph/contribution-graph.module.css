@@ -34,8 +34,10 @@
   background: var(--color-separator);
 }
 
-/* primary-color ramp, light -> strong */
-.l1 { background: color-mix(in srgb, var(--color-primary) 25%, var(--color-widget-background)); }
-.l2 { background: color-mix(in srgb, var(--color-primary) 50%, var(--color-widget-background)); }
-.l3 { background: color-mix(in srgb, var(--color-primary) 75%, var(--color-widget-background)); }
-.l4 { background: var(--color-primary); }
+/* sequential shamrock ramp, light -> strong. Counts are data, so they take a
+ * real sequential ramp; purple is the tappable hue and never encodes data. */
+.l1 { background: var(--color-data-shamrock-2); }
+.l2 { background: var(--color-data-shamrock-3); }
+.l3 { background: var(--color-data-shamrock-4); }
+.l4 { background: var(--color-data-shamrock-5); }
+
