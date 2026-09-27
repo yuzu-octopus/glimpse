@@ -28,15 +28,23 @@
   display: block;
   width: 100%;
   object-fit: cover;
-  /* glance .thumbnail */
-  filter: grayscale(0.2) contrast(0.9);
-  opacity: 0.8;
-  transition: filter 0.2s, opacity 0.2s;
 }
 
-.card:hover .cardThumb {
-  filter: none;
-  opacity: 1;
+/* glance .thumbnail. The rest dim is gated on a real pointer — a touch
+   device can never fire :hover, so an ungated dim would leave the
+   thumbnails permanently greyed. :focus-within is the keyboard's channel. */
+@media (hover: hover) {
+  .cardThumb {
+    /* glance .thumbnail */
+    filter: grayscale(0.2) contrast(0.9);
+    opacity: 0.8;
+    transition: filter 0.2s, opacity 0.2s;
+  }
+
+  .card:is(:hover, :focus-within) .cardThumb {
+    filter: none;
+    opacity: 1;
+  }
 }
 
 .cardThumbPlaceholder {
@@ -72,7 +80,7 @@
   -webkit-box-orient: vertical;
 }
 
-.card:hover .cardTitle {
+.card:is(:hover, :focus-within) .cardTitle {
   color: var(--color-text-highlight);
 }
 
@@ -148,6 +156,6 @@
   color: var(--color-primary);
 }
 
-.card2:hover .card2Title {
+.card2:is(:hover, :focus-within) .card2Title {
   color: var(--color-text-highlight);
 }
