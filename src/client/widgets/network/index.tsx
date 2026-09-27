@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Grid, Stack, Text } from '@astryxdesign/core';
 import type { NetworkData } from '../../../shared/widgets/payloads';
 import type { NetworkConfig } from '../../../shared/widgets/network';
 import { WidgetChrome } from '../../components/WidgetChrome';
@@ -16,19 +17,31 @@ function Network({ config, data, error, isLoading }: WidgetComponentProps) {
   if (error) return <WidgetChrome title={cfg.title ?? 'Network'} error={String(error)} showErrors={cfg['show-errors']} />;
   return (
     <WidgetChrome title={cfg.title ?? 'Network'} isLoading={!!loading}>
-      <div className={styles.grid}>
-        <div><span className={styles.label}>Local</span><span className={styles.val}>{d?.localIp ?? '—'}</span></div>
-        <div><span className={styles.label}>Public</span><span className={styles.val}>{d?.publicIp ?? '—'}</span></div>
-        <div><span className={styles.label}>Ping</span><span className={styles.val}>{d?.pingMs != null ? `${d.pingMs} ms` : '—'}</span></div>
-      </div>
+      <Grid columns={3} gap={2}>
+        <Stack gap={0.5}>
+          <Text type="label">Local</Text>
+          <Text hasTabularNumbers>{d?.localIp ?? '—'}</Text>
+        </Stack>
+        <Stack gap={0.5}>
+          <Text type="label">Public</Text>
+          <Text hasTabularNumbers>{d?.publicIp ?? '—'}</Text>
+        </Stack>
+        <Stack gap={0.5}>
+          <Text type="label">Ping</Text>
+          <Text hasTabularNumbers>{d?.pingMs != null ? `${d.pingMs} ms` : '—'}</Text>
+        </Stack>
+      </Grid>
+      {/* Data ink, not layout chrome: the inline heights ARE the series, so the
+          bars stay hand-sized. One series means one hue — a sequential ramp
+          would turn a single quantitative series into a rainbow. */}
       {history.length > 1 ? (
-        <div className={styles.spark}>
+        <Stack direction="horizontal" gap={0.5} vAlign="end" height={24} className={styles.spark}>
           {history.map((v, i) => {
             const max = Math.max(...history, 1);
             const h = Math.round((v / max) * 20) + 2;
             return <span key={i} style={{ height: `${h}px` }} className={styles.bar} />;
           })}
-        </div>
+        </Stack>
       ) : null}
     </WidgetChrome>
   );
