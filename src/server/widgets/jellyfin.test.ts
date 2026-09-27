@@ -57,7 +57,7 @@ describe('jellyfin fetcher', () => {
     const ctx = makeCtx(async (url, init) => { inits.push(init ?? {}); return router(url); }, { JELLYFIN_API_KEY: 'env-key' });
     await fetcher()(ctx, { type: 'jellyfin', url: 'https://jellyfin.lab', 'user-id': 'u9', 'api-key': 'leaked' });
     expect(inits[0].headers).toMatchObject({ 'X-Emby-Token': 'env-key' });
-    expect(jellyfinSchema.parse({ type: 'jellyfin', url: 'https://jellyfin.lab', 'api-key': 'leaked' })['api-key']).toBeUndefined();
+    expect('api-key' in jellyfinSchema.parse({ type: 'jellyfin', url: 'https://jellyfin.lab', 'api-key': 'leaked' })).toBe(false);
     const missing = makeCtx(async (url) => router(url));
     await expect(fetcher()(missing, { type: 'jellyfin', url: 'https://jellyfin.lab' })).rejects.toThrow(/JELLYFIN_API_KEY/);
   });

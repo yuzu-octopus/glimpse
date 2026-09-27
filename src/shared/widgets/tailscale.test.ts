@@ -8,11 +8,12 @@ describe('tailscale schema', () => {
     expect(cfg.limit).toBe(20);
   });
 
-  it('leaves api-key optional so the env fallback can take over', () => {
-    expect(tailscaleSchema.parse({ type: 'tailscale' })['api-key']).toBeUndefined();
-    expect(tailscaleSchema.parse({ type: 'tailscale', 'api-key': 'tskey-x' })['api-key']).toBe(
-      'tskey-x',
-    );
+  it('takes no api-key — the widget is configured from TS_API_KEY alone', () => {
+    expect('api-key' in tailscaleSchema.parse({ type: 'tailscale' })).toBe(false);
+    // Stripped, not passed through: the config is handed to the browser whole.
+    const withKey = tailscaleSchema.parse({ type: 'tailscale', 'api-key': 'tskey-x' });
+    expect('api-key' in withKey).toBe(false);
+    expect(JSON.stringify(withKey)).not.toContain('tskey-x');
   });
 
   it('keeps the shared fields every widget inherits', () => {
