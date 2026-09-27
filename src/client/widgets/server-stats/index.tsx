@@ -92,6 +92,14 @@ function ServerCard({ server }: { server: ServerInfo }) {
         <Text as="h3" size="lg" weight="semibold" maxLines={1} className={styles.serverName}>
           <span title={server.hostname || server.name}>{server.hostname || server.name}</span>
         </Text>
+        {/* The fetcher populates platform (os.distro || os.platform) for every
+            server and the header showed only the hostname — so two boxes both
+            called "nas" were indistinguishable. */}
+        {server.platform ? (
+          <Text type="supporting" maxLines={1} className={styles.platform}>
+            {server.platform}
+          </Text>
+        ) : null}
         {age ? <Text type="supporting" hasTabularNumbers className={styles.uptime}>{age}</Text> : null}
       </Stack>
       {server.isReachable ? (
@@ -100,7 +108,7 @@ function ServerCard({ server }: { server: ServerInfo }) {
             icon={Cpu}
             label="CPU"
             detail={server.cpu.name ?? null}
-            temp={null}
+            temp={server.cpu.temp ?? null}
             percent={Math.round(server.cpu.load * 100)}
             value={`${Math.round(server.cpu.load * 100)}%`}
             available={server.cpu.loadIsAvailable}
