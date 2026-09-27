@@ -198,8 +198,10 @@
   transition: background-color var(--duration-fast) var(--ease-standard);
 }
 
-/* Hover dims 12%, press dims 20% — no lift. */
-.mobileToggle:hover {
+/* Hover dims 12%, press dims 20% — no lift. The column toggle is a <button>,
+   so :focus-visible is a real second channel: a keyboard user opening a
+   column gets the same wash a pointer gets, not only the outline. */
+.mobileToggle:is(:hover, :focus-visible) {
   background-color: var(--color-overlay-hover);
 }
 
@@ -274,9 +276,11 @@
 }
 
 /* Tabs are tappable: hover and press resolve to foreground. The accent
-   underlines the active tab — a primary action, never decoration. */
-.groupTabs button:hover,
-.groupTabs [data-tab-value]:hover {
+   underlines the active tab — a primary action, never decoration. Every Tab
+   is a real <button> (roving tabindex), so :focus-visible reaches the same
+   pair of keyboard users the hover was written for. */
+.groupTabs button:is(:hover, :focus-visible),
+.groupTabs [data-tab-value]:is(:hover, :focus-visible) {
   color: var(--color-text-highlight) !important;
   border-bottom-color: var(--color-text-subdue) !important;
 }
