@@ -44,13 +44,13 @@ describe('WidgetChrome', () => {
     expect(screen.getByText('row 4')).toBeInTheDocument();
   });
 
-  it('shows an error banner when error is set', () => {
+  it('surfaces the error through the kit error Banner (role=alert)', () => {
     render(
       <WidgetChrome title="Broken" error="upstream exploded">
         <div>content</div>
       </WidgetChrome>,
     );
-    expect(screen.getByText('upstream exploded')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('upstream exploded');
     expect(screen.queryByText('content')).toBeNull();
   });
 
@@ -84,14 +84,23 @@ describe('WidgetChrome', () => {
     expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' });
   });
 
-  it('shows a red status dot next to the title when error is set', () => {
+  it('flags a failure with a StatusDot carrying an accessible name and title', () => {
     render(
       <WidgetChrome title="Broken" error="upstream exploded">
         <div>content</div>
       </WidgetChrome>,
     );
     const dot = screen.getByTestId('widget-error-dot');
-    expect(dot.className).toContain('errorDot');
+    // the kit's own StatusDot, not a hand-rolled span
+    expect(dot.className).toContain('astryx-statusdot');
+    expect(dot).toHaveAttribute('data-variant', 'error');
+    expect(dot).toHaveAttribute('role', 'img');
+    expect(dot).toHaveAttribute('aria-label', 'Broken failed to load');
+    // the kit's hover explanation — a closed popover, so it is hidden from
+    // the a11y tree until the dot is hovered
+    expect(screen.getByRole('tooltip', { hidden: true })).toHaveTextContent(
+      'Broken failed to load',
+    );
     // error Banner stays in the body
     expect(screen.getByText('upstream exploded')).toBeInTheDocument();
   });
@@ -156,11 +165,20 @@ describe('WidgetChrome brand principles', () => {
     expect(container.querySelector('h3')?.className).toContain('titleLink');
   });
 
-  it('keeps the error marker a crisp badge, not a circle or pill', () => {
-    const css = readFileSync('src/client/components/widget-chrome.module.css', 'utf8');
-    const dot = css.match(/\.errorDot\s*\{[^}]*\}/)?.[0] ?? '';
-    expect(dot).toContain('var(--radius-inner)');
-    expect(dot).not.toContain('50%');
+  it('wears the error header wash only while the failure is surfaced', () => {
+    const { container, rerender } = render(
+      <WidgetChrome title="Broken" error="boom" showErrors={false}>
+        <div>stale</div>
+      </WidgetChrome>,
+    );
+    expect(container.querySelector('[class*="errorHeader"]')).toBeNull();
+
+    rerender(
+      <WidgetChrome title="Broken" error="boom">
+        <div>stale</div>
+      </WidgetChrome>,
+    );
+    expect(container.querySelector('[class*="errorHeader"]')).not.toBeNull();
   });
 
   it('carries no shadow-based depth — borders only', () => {
@@ -168,5 +186,51 @@ describe('WidgetChrome brand principles', () => {
     for (const value of css.matchAll(/box-shadow\s*:\s*([^;]+);/g)) {
       expect(value[1].trim().startsWith('none')).toBe(true);
     }
+  });
+});
+
+describe('WidgetChrome quiet errors (show-errors)', () => {
+  it('shows the Banner by default — a self-hosted dashboard must not fail silently', () => {
+    render(
+      <WidgetChrome title="Broken" error="upstream exploded">
+        <div>stale</div>
+      </WidgetChrome>,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('upstream exploded');
+  });
+
+  it('hides the Banner text and keeps the chrome and stale content when false', () => {
+    render(
+      <WidgetChrome title="Broken" error="upstream exploded" showErrors={false}>
+        <div>stale</div>
+      </WidgetChrome>,
+    );
+    expect(screen.getByRole('heading', { level: 3 })).toBeInTheDocument();
+    expect(screen.getByText('stale')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByText('upstream exploded')).toBeNull();
+  });
+
+  it('renders an empty card, not a hole, when quiet and there is no stale content', () => {
+    render(<WidgetChrome title="Broken" error="upstream exploded" showErrors={false} />);
+    expect(screen.getByRole('heading', { level: 3 })).toBeInTheDocument();
+    expect(screen.getByTestId('widget-body')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('still reports the failure with a StatusDot in both modes', () => {
+    const { rerender } = render(
+      <WidgetChrome title="Broken" error="upstream exploded" showErrors={false} />,
+    );
+    expect(screen.getByTestId('widget-error-dot')).toHaveAttribute(
+      'aria-label',
+      'Broken failed to load',
+    );
+
+    rerender(<WidgetChrome title="Broken" error="upstream exploded" />);
+    expect(screen.getByTestId('widget-error-dot')).toHaveAttribute(
+      'aria-label',
+      'Broken failed to load',
+    );
   });
 });

@@ -1,5 +1,12 @@
 import { memo, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Banner, Card, Heading, Link, Skeleton } from '@astryxdesign/core';
+import {
+  Banner,
+  Card,
+  Heading,
+  Link,
+  Skeleton,
+  StatusDot,
+} from '@astryxdesign/core';
 import { ChevronRight } from 'lucide-react';
 import { HideHeadersContext } from './HideHeadersContext';
 import styles from './widget-chrome.module.css';
@@ -11,6 +18,10 @@ interface WidgetChromeProps {
   cssClass?: string;
   isLoading?: boolean;
   error?: string;
+  /** false → quiet failure: the chrome and whatever content it still has stay,
+   * no error Banner. The StatusDot beside the title keeps reporting the
+   * failure, so quiet never means invisible. Defaults true. */
+  showErrors?: boolean;
   skeletonShape?: 'list' | 'stat' | 'chart' | 'rows';
   /** When set (>= 0), lists longer than this collapse behind a "Show more"
    * toggle. -1 (glance semantics) — or any negative — never collapses. */
@@ -29,6 +40,7 @@ export const WidgetChrome = memo(function WidgetChrome({
   cssClass,
   isLoading,
   error,
+  showErrors,
   skeletonShape,
   collapseAfter,
   items,
@@ -51,6 +63,10 @@ export const WidgetChrome = memo(function WidgetChrome({
     () => items ?? (children === undefined ? [] : [children]),
     [items, children],
   );
+  // `show-errors: false` mutes the widget: no Banner, no error text, no red
+  // header wash. The status dot beside the title is the whole report.
+  const loud = Boolean(error) && showErrors !== false;
+  const failLabel = title ? `${title} failed to load` : 'This widget failed to load';
   const n = collapseAfter ?? 0;
   const has = typeof collapseAfter === 'number' && n >= 0 && list.length > n;
   // Stable slice identity across renders so the memo wrapper (and row
@@ -71,7 +87,7 @@ export const WidgetChrome = memo(function WidgetChrome({
     <div className={styles.widget}>
       {!effectiveHide && title ? (
         <div
-          className={error ? `${styles.header} ${styles.errorHeader}` : styles.header}
+          className={loud ? `${styles.header} ${styles.errorHeader}` : styles.header}
         >
           <span className={styles.titleRow}>
             {titleUrl ? (
@@ -90,10 +106,13 @@ export const WidgetChrome = memo(function WidgetChrome({
               </Heading>
             )}
             {error ? (
-              <span
-                className={styles.errorDot}
+              // Status goes to StatusDot, not a hand-rolled box: the kit owns
+              // the shape, the accessible name, and the hover explanation.
+              <StatusDot
+                variant="error"
+                label={failLabel}
+                tooltip={failLabel}
                 data-testid="widget-error-dot"
-                aria-label="Widget error"
               />
             ) : null}
           </span>
@@ -128,7 +147,7 @@ export const WidgetChrome = memo(function WidgetChrome({
                 </>
               )}
             </div>
-          ) : error ? (
+          ) : loud ? (
             <Banner status="error" title={error} />
           ) : (
             <>

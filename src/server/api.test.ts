@@ -23,12 +23,14 @@ function page(columns: Column[], headWidgets: WidgetConfig[] = []) {
   return { name: 'Home', slug: 'home', columns, 'head-widgets': headWidgets };
 }
 
-const clockWidget: WidgetConfig = { type: 'clock', timezones: [] };
+const clockWidget: WidgetConfig = { type: 'clock', timezones: [], retries: 3, 'show-errors': true };
 const rssWidget: WidgetConfig = {
   type: 'rss',
   cache: '1h',
   limit: 5,
   feeds: [{ url: 'https://example.com/feed.xml' }],
+  retries: 3,
+  'show-errors': true,
 };
 
 afterEach(() => {
@@ -65,6 +67,8 @@ describe('buildPagePayload', () => {
     const monitorWidget: WidgetConfig = {
       type: 'monitor',
       sites: [{ url: 'https://example.com' }],
+      retries: 3,
+      'show-errors': true,
     };
 
     const payload = await buildPagePayload(
@@ -118,6 +122,8 @@ describe('buildPagePayload', () => {
     registerWidget('rss', vi.fn(async () => ({ items: [{ title: 'nested' }] })));
     const groupWidget: WidgetConfig = {
       type: 'group',
+      retries: 3,
+      'show-errors': true,
       widgets: [{ type: 'rss', cache: '1h' }],
     };
     const payload = await buildPagePayload(
@@ -146,7 +152,7 @@ describe('buildPagePayload', () => {
     registerWidget('monitor', colFetcher);
 
     const p = buildPagePayload(
-      page([{ size: 'full', widgets: [{ type: 'monitor', sites: [] }] }], [rssWidget]),
+      page([{ size: 'full', widgets: [{ type: 'monitor', sites: [], retries: 3, 'show-errors': true }] }], [rssWidget]),
       makeCtx(),
     );
     // Both fetchers started before either resolves: awaiting head first would
