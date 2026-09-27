@@ -97,13 +97,41 @@ function ServerHeader({ server }: { server: ServerInfo }) {
   );
 }
 
-/** The per-server readings. Every "is there a GPU / a mount / a temp" test
- *  is a property of the reading, not of the card, so it lives here. */
+/** The GPU reading, if the box reports one. A server with no GPU reports no
+ *  row at all rather than an n/a bar it would never have drawn. */
+function GpuRow({ server }: { server: ServerInfo }) {
+  const gpu = server.gpu?.[0] ?? null;
+  const temp = gpu?.temp ?? null;
+  return (
+    <Row
+      icon={Monitor}
+      label="GPU"
+      detail={gpu?.model ?? null}
+      temp={temp}
+      percent={temp != null ? Math.min(100, Math.round(temp)) : 0}
+      value={temp != null ? `${Math.round(temp)}°C` : gpu?.model ? '—' : 'n/a'}
+      available={!!gpu}
+    />
+  );
+}
+
+/** The primary mount's disk reading; a server with no mountpoints has none. */
+function DiskRow({ server }: { server: ServerInfo }) {
+  const disk = server.mountpoints[0] ?? null;
+  return (
+    <Row
+      icon={HardDrive}
+      label="DISK"
+      percent={disk ? pct(disk.used, disk.total) : 0}
+      value={disk ? `${fmtBytes(disk.used)} / ${fmtBytes(disk.total)}` : 'n/a'}
+      available={!!disk}
+    />
+  );
+}
+
+/** The per-server readings. */
 function ServerMetrics({ server }: { server: ServerInfo }) {
   const memPct = server.memory.isAvailable ? pct(server.memory.used, server.memory.total) : 0;
-  const disk = server.mountpoints[0] ?? null;
-  const diskPct = disk ? pct(disk.used, disk.total) : 0;
-  const gpu = server.gpu?.[0] ?? null;
   return (
     <Stack gap={2}>
       <Row
@@ -115,15 +143,7 @@ function ServerMetrics({ server }: { server: ServerInfo }) {
         value={`${Math.round(server.cpu.load * 100)}%`}
         available={server.cpu.loadIsAvailable}
       />
-      <Row
-        icon={Monitor}
-        label="GPU"
-        detail={gpu?.model ?? null}
-        temp={gpu?.temp ?? null}
-        percent={gpu?.temp != null ? Math.min(100, Math.round(gpu.temp)) : 0}
-        value={gpu?.temp != null ? `${Math.round(gpu.temp)}°C` : gpu?.model ? '—' : 'n/a'}
-        available={!!gpu}
-      />
+      <GpuRow server={server} />
       <Row
         icon={MemoryStick}
         label="RAM"
@@ -131,13 +151,7 @@ function ServerMetrics({ server }: { server: ServerInfo }) {
         value={server.memory.isAvailable ? `${fmtBytes(server.memory.used)} / ${fmtBytes(server.memory.total)}` : 'n/a'}
         available={server.memory.isAvailable}
       />
-      <Row
-        icon={HardDrive}
-        label="DISK"
-        percent={diskPct}
-        value={disk ? `${fmtBytes(disk.used)} / ${fmtBytes(disk.total)}` : 'n/a'}
-        available={!!disk}
-      />
+      <DiskRow server={server} />
       {server.temp?.isAvailable ? (
         <Row
           icon={Thermometer}

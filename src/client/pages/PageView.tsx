@@ -676,6 +676,38 @@ function ColumnGrid({
   );
 }
 
+/** The skeleton-first state. With config, the skeleton mirrors the page's
+ *  real column spans; without it (a direct mount) there is nothing to mirror,
+ *  so the chrome is structure-ready instead. */
+function LoadingPage({ page }: { page?: Page & { slug: string } }) {
+  if (page) {
+    return (
+      <DelayedSkeleton>
+        <PageSkeleton page={page} />
+      </DelayedSkeleton>
+    );
+  }
+  return (
+    <div className={styles.page}>
+      <div className={styles.columns}>
+        <div className={`${styles.column} ${styles.fullColumn}`} data-testid="column">
+          <div className={styles.columnWidgets} data-testid="page-loading">
+            <WidgetChrome isLoading />
+            <WidgetChrome isLoading />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PageError({ error }: { error: string | undefined }) {
+  return (
+    <div className={styles.page}>
+      <Banner status="error" title={error ?? 'Failed to load page'} />
+    </div>
+  );
+}
 
 export function PageView({
   slug,
@@ -697,34 +729,8 @@ export function PageView({
     () => collagePlacement(data, isCollage, width),
     [data, isCollage, width],
   );
-  if (!data && !error) {
-    if (page)
-      return (
-        <DelayedSkeleton>
-          <PageSkeleton page={page} />
-        </DelayedSkeleton>
-      );
-    // Fallback when rendered without config (direct mounts): structure-ready chrome.
-    return (
-      <div className={styles.page}>
-        <div className={styles.columns}>
-          <div className={`${styles.column} ${styles.fullColumn}`} data-testid="column">
-            <div className={styles.columnWidgets} data-testid="page-loading">
-              <WidgetChrome isLoading />
-              <WidgetChrome isLoading />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  if (error && !data) {
-    return (
-      <div className={styles.page}>
-        <Banner status="error" title={error ?? 'Failed to load page'} />
-      </div>
-    );
-  }
+  if (!data && !error) return <LoadingPage page={page} />;
+  if (error && !data) return <PageError error={error} />;
 
   // Stale-while-revalidate: data is still rendered while isValidating; no skeleton flicker
   const resolved = data!;
