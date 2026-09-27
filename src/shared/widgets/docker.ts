@@ -4,7 +4,8 @@ import { sharedWidgetFields, type Pref, type SkeletonShape } from './shared';
 // ── per-widget defaults (file header owns DEFAULTS + Schema + PREF) ──
 export const DOCKER_CONTAINERS_DEFAULTS = { 'sock-path': '/var/run/docker.sock' } as const;
 export const DOCKER_CONTAINERS_PREF: Pref = { cols: 4, rows: 2, resizable: false, priority: 6, zone: 'main', preferredWidth: 340, preferredHeight: 220 };
-export const DOCKER_CONTAINERS_SKELETON: SkeletonShape = 'rows';
+/** A 28px icon beside a name and an image/description line. */
+export const DOCKER_CONTAINERS_SKELETON: SkeletonShape = 'list';
 
 export const dockerContainersSchema = z
   .object({

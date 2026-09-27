@@ -12,7 +12,8 @@ export const CONTRIBUTION_GRAPH_PREF: Pref = {
   preferredHeight: 160,
 };
 
-export const CONTRIBUTION_GRAPH_SKELETON: SkeletonShape = 'rows';
+/** A summary line over a 52x7 cell grid — a block of texture, not text. */
+export const CONTRIBUTION_GRAPH_SKELETON: SkeletonShape = 'chart';
 
 // No `token` here: it was never sent to github.com (the fetcher scrapes public
 // profile HTML), so it only existed to put a secret in the config — which the

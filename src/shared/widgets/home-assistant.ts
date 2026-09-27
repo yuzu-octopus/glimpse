@@ -12,7 +12,8 @@ export const HOME_ASSISTANT_PREF: Pref = {
   preferredWidth: 320,
   preferredHeight: 200,
 };
-export const HOME_ASSISTANT_SKELETON: SkeletonShape = 'rows';
+/** One status dot beside a name and an id — two lines per entity. */
+export const HOME_ASSISTANT_SKELETON: SkeletonShape = 'list';
 
 /** One entry per entity: a bare entity id, or an id plus the label the config
  *  wants shown instead of the one derived from the id / friendly name. */
