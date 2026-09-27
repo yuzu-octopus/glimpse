@@ -12,7 +12,10 @@
   padding-block: calc(var(--widget-content-vertical) / 2 - 0.5px);
 }
 
-/* hover backdrop larger than text — same pattern as Feed rows */
+/* hover backdrop larger than text — same pattern as Feed rows. The row's own
+   children are the focus channel: a container with a url renders its name as
+   a Link and a container with children renders a Button, both real focus
+   targets, so tabbing the expander lights the row it belongs to. */
 .row::before {
   content: '';
   position: absolute;
@@ -25,7 +28,7 @@
   pointer-events: none;
 }
 
-.row:hover::before {
+.row:is(:hover, :focus-within)::before {
   opacity: 1;
 }
 
