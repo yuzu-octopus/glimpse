@@ -34,6 +34,15 @@
   min-width: 0;
 }
 
+/* WCAG 2.5.8: the link box WAS the text block, so a one-line title was a
+   20px target and a two-line title 40px — the tap target doubled or halved
+   with the length of the headline. The floor belongs on the link, not on the
+   row, so the row's own padding keeps owning the rhythm and a clamped
+   one-line title still clears 24. The kit centres the line in the box. */
+.title {
+  min-height: 24px;
+}
+
 .item + .item {
   margin-top: calc(var(--widget-content-vertical) / 3);
   border-top: 1px solid var(--color-separator);
