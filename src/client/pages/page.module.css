@@ -317,20 +317,24 @@
   min-width: 0;
 }
 
-/* Tablet (at or below 900px) — 6 tracks so place() geometry (cols capped
-   at 6) and CSS agree; spans above 6 collapse to 6, interiors reflow via
-   container queries. Desktop above 900px keeps the full 12. */
+/* Tablet (at or below 900px) — the grid follows the span vocabulary, never
+   the other way round.
+   Columns mode has no placer: `--col-span` is authored in 12-col units
+   (resolveSpan 3/9 · 6/6 · 4/4/4, config `span: 3|4|6|8`) and the track
+   count has to stay 12 for those to mean the same thing. A 6-track grid can
+   only round them — ceil(span/2) turns 3+6+3 into 2+3+2 = 7 tracks, so the
+   row cannot hold the pack and every row ends in a void (34-51% dead space
+   measured across this band). 12 tracks make the pack exact by
+   construction, at every width; interiors reflow on the tile container
+   query, which reads the column's own width, not the track count.
+   Collage is place()-driven and sets its track count inline from
+   place().cols (capped at TABLET_COLS), so it never reads this block.
+   Auto-fit is the one span-independent grid: its spans are track hints, and
+   auto-fit would otherwise collapse to 1-2 tracks this narrow and let a
+   span-4 hint open implicit tracks. Pin it to 6. */
 @media (max-width: 900px) {
-  .columns {
+  .autoTiling {
     grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-  .columns [data-span='7'],
-  .columns [data-span='8'],
-  .columns [data-span='9'],
-  .columns [data-span='10'],
-  .columns [data-span='11'],
-  .columns [data-span='12'] {
-    --col-span: 6 !important;
   }
 }
 
