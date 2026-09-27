@@ -2,7 +2,9 @@
 .row { display: grid; gap: 2px; }
 .top { display: flex; gap: 8px; align-items: center; }
 .name { font-weight: 600; color: var(--color-primary); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.name:hover { text-decoration: underline; }
+/* The name is a real <a>; the underline it takes on hover is the affordance
+   that says "this row goes somewhere", so :focus-visible carries it too. */
+.name:is(:hover, :focus-visible) { text-decoration: underline; }
 /* "Changed" is an in-progress state, so it wears cyan's 10% wash + semantic
    border (visual.md: status surfaces are washes with a border, never a direct
    fill). No pills: 5px elements, 4px inner (spacing.md). */
