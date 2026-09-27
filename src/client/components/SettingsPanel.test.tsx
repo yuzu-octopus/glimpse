@@ -114,11 +114,11 @@ describe('SettingsPanel theme gallery', () => {
     expect(presetCard(gruvbox.name)).toHaveClass(styles.card);
   });
 
-  it('marks the active preset with the current-state ring', () => {
+  it('marks the active preset with the current-state border', () => {
     mockedUseThemeSettings.mockReturnValue(makeSettings());
     render(<SettingsPanel />);
 
-    // current preset: primary-colored inset ring; others: none
+    // current preset: primary-colored border; others: none
     expect(presetCard(mocha.name).getAttribute('style')).toContain('var(--color-primary)');
     expect(presetCard(mocha.name).getAttribute('data-selected')).toBe('true');
     expect(presetCard(gruvbox.name).getAttribute('style')).toBeNull();
@@ -240,20 +240,40 @@ describe('SettingsPanel section sidebar', () => {
 });
 
 describe('SettingsPanel layout contract', () => {
-  it('pins the fixed content-pane height and lighten-on-hover treatment in the stylesheet', () => {
+  it('pins the fixed content-pane height and border-based selection in the stylesheet', () => {
     const css = readFileSync(resolve('src/client/components/settings-panel.module.css'), 'utf8');
 
     // content pane height is fixed (85vh minus dialog chrome), not
     // max-height, so switching tabs never changes the dialog size
     expect(css).toMatch(/\.content\s*\{[^}]*height:\s*calc\(85vh - 96px\)/);
 
-    // hover uses muted accent (primary 55% mix 1px ring), distinct from selected 2px solid primary
-    // — no background lightening, only border/corner change
+    // hover uses muted accent (primary 55% mix) on the border, distinct from
+    // the selected solid primary — no background lightening, no ring shadow
     const hoverRule = css.match(/\.card:hover[^{]*\{[^}]*\}/)?.[0] ?? '';
     expect(hoverRule).toContain('color-mix');
     expect(hoverRule).toContain('var(--color-primary)');
     expect(hoverRule).toContain('55%');
+    expect(hoverRule).toContain('border-color');
     expect(hoverRule).not.toContain('var(--color-widget-background-highlight)');
+  });
+
+  it('carries no shadow-based depth — borders only', () => {
+    const css = readFileSync(resolve('src/client/components/settings-panel.module.css'), 'utf8');
+    for (const value of css.matchAll(/box-shadow\s*:\s*([^;]+);/g)) {
+      expect(value[1].trim().startsWith('none')).toBe(true);
+    }
+    // No pills.
+    expect(css).not.toMatch(/border-radius\s*:\s*(50%|999)/);
+  });
+
+  it('section title and docs sub-heading sit on distinct heading tiers', () => {
+    mockedUseThemeSettings.mockReturnValue(makeSettings());
+    render(<SettingsPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    fireEvent.click(within(screen.getByTestId('settings-nav')).getByText('Docs'));
+    // h2 section title over h3 sub-heading — never two same-size tiers.
+    expect(screen.getByRole('heading', { level: 2, name: 'Docs' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'Shebang' })).toBeInTheDocument();
   });
 });
 

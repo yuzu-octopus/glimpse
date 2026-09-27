@@ -1,5 +1,5 @@
 import { memo, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Banner, Card, Link, Skeleton } from '@astryxdesign/core';
+import { Banner, Card, Heading, Link, Skeleton } from '@astryxdesign/core';
 import { ChevronRight } from 'lucide-react';
 import { HideHeadersContext } from './HideHeadersContext';
 import styles from './widget-chrome.module.css';
@@ -75,11 +75,19 @@ export const WidgetChrome = memo(function WidgetChrome({
         >
           <span className={styles.titleRow}>
             {titleUrl ? (
-              <Link href={titleUrl} className={styles.title} hasUnderline={false}>
-                {title}
-              </Link>
+              // Purple = tappable: only a linked title wears the accent.
+              <Heading
+                level={3}
+                className={`${styles.title} ${styles.titleLink}`}
+              >
+                <Link href={titleUrl} hasUnderline={false}>
+                  {title}
+                </Link>
+              </Heading>
             ) : (
-              <span className={styles.title}>{title}</span>
+              <Heading level={3} className={styles.title}>
+                {title}
+              </Heading>
             )}
             {error ? (
               <span

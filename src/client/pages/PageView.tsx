@@ -462,7 +462,9 @@ const MobileColumn = memo(function MobileColumn({
         aria-expanded={open}
         onClick={handleToggle}
       >
-        {label}
+        {/* Supporting tier: the widget headers inside this column are
+            level-3 headings, so the column label must not share their size. */}
+        <Text type="supporting">{label}</Text>
         <ChevronDown size={12} className={open ? styles.chevronUp : ''} />
       </button>
       {open ? <div ref={contentRef}>{children}</div> : null}

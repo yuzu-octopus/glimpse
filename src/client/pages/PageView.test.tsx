@@ -516,6 +516,43 @@ describe('PageView', () => {
     expect(css).toMatch(/\.splitColumn\s*\{[^}]*gap:\s*var\(--(widget-gap|space-gap)\)/);
   });
 
+  it('page layout has no entrance choreography and no shadow-based depth', () => {
+    for (const file of [
+      'src/client/pages/page.module.css',
+      'src/client/components/top-nav.module.css',
+    ]) {
+      const css = readFileSync(file, 'utf8');
+      // Motion answers action: nothing animates itself in.
+      expect(css).not.toMatch(/animation(-name)?\s*:/);
+      // Flat and crisp: depth comes from borders, never a shadow.
+      for (const value of css.matchAll(/box-shadow\s*:\s*([^;]+);/g)) {
+        expect(value[1].trim().startsWith('none')).toBe(true);
+      }
+      // No pills: no radius at or beyond half the element.
+      expect(css).not.toMatch(/border-radius\s*:\s*(50%|999)/);
+    }
+  });
+
+  it('column label is the supporting tier under the level-3 widget headers', () => {
+    const page = {
+      slug: 'home',
+      name: 'Home',
+      width: 'default',
+      tiling: 'columns',
+      headWidgets: [],
+      columns: [
+        { size: 'full', widgets: [{ type: 'clock', title: 'Clock' }] },
+        { size: 'full', widgets: [{ type: 'clock', title: 'Weather' }] },
+      ],
+    } as unknown as Page & { slug: string };
+
+    const { container } = render(<PageSkeleton page={page} />);
+    const toggles = container.querySelectorAll('[class*="mobileToggle"]');
+    expect(toggles).toHaveLength(2);
+    // Supporting text, so the column label never shares the level-3 size.
+    expect(toggles[0].querySelector('[class*="supporting"]')).not.toBeNull();
+  });
+
   it('page content has uniform bottom gap regardless of tiling', () => {
     const css = readFileSync('src/client/pages/page.module.css', 'utf8');
     // .page must keep both padding-block and explicit padding-bottom (calc allowed) so collage stretch can't collapse the footer gap
