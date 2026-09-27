@@ -167,17 +167,15 @@
   font-size: 12px;
 }
 
+/* the dot inherits the state class' own accent colour, so it reads as the
+ * status mark rather than a second (washed) badge surface. */
 .dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  background: currentColor;
 }
-
-.child .stateOk { background: var(--color-positive); }
-.child .stateWarn { background: var(--color-negative); }
-.child .statePaused { background: var(--color-text-subdue); }
-.child .stateUnknown { background: var(--color-tag-orange); }
 
 .childName {
   color: var(--color-text-base);
