@@ -20,7 +20,10 @@
   text-decoration: none;
 }
 
-.repoName:hover {
+/* Both are real anchors (kit Link), so the pointer resolves reach the
+   keyboard: the repo name turning accent, and the sub-row title lifting to
+   highlight, were pointer-only tells about where each row goes. */
+.repoName:is(:hover, :focus-visible) {
   color: var(--color-primary);
 }
 
@@ -118,6 +121,6 @@
   min-width: 0;
 }
 
-.subRow:hover .subTitle {
+.subRow:is(:hover, :focus-visible) .subTitle {
   color: var(--color-text-highlight);
 }
