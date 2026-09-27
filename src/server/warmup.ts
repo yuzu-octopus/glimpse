@@ -5,7 +5,7 @@ import type { WidgetFetchContext } from './widgets/registry';
 
 /** Max concurrent page builds during warmup — unbounded fan-out spikes
  * upstream connections and RSS on large configs. */
-export const WARMUP_CONCURRENCY = 6;
+const WARMUP_CONCURRENCY = 6;
 
 /** Warm every page through the normal cache path (singleflight dedupes,
  * TTL fills) so first visitor never eats cold upstream latency.

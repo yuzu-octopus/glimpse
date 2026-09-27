@@ -5,7 +5,7 @@ export type { WidgetConfig, WidgetType } from './widgets';
 
 export const PAGE_WIDTHS = { default: 1600, slim: 1100, wide: 1920 } as const;
 
-export const ColumnSchema = z
+const ColumnSchema = z
   .object({
     size: z.enum(['small', 'full']).optional(),
     /** Names the column itself — the mobile section header. Without it the
@@ -41,7 +41,7 @@ export function resolveSpan(columns: Column[]): number[] {
   return columns.map(() => 4);
 }
 
-export const PageSchema = z
+const PageSchema = z
   .object({
     name: z.string().min(1),
     slug: z.string().optional(),
