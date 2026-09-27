@@ -100,7 +100,8 @@
 
 /* Bar segments are status surfaces: a 10% categorical wash over the widget
    surface with a semantic border on the leading edge — never a direct fill.
-   Each segment sets its own hue; everything else is shared. */
+   Each segment gets its hue from the kit's CHART_HUES via an inline custom
+   property (queries = cyan, blocked = orange); everything else is shared. */
 .bar > * {
   border-radius: 2px;
   background: color-mix(in srgb, var(--bar-hue) 10%, transparent);
@@ -109,7 +110,6 @@
 }
 
 .queries {
-  --bar-hue: var(--color-data-categorical-cyan);
   flex-grow: 1;
 }
 
@@ -118,8 +118,8 @@
   border-bottom-left-radius: 0;
 }
 
+
 .blocked {
-  --bar-hue: var(--color-data-categorical-orange);
   flex-basis: calc(var(--percent) - 1px);
 }
 

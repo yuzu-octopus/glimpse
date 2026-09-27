@@ -58,17 +58,19 @@
   transform: rotate(-90deg);
 }
 
+/* `--ring-hue` is supplied inline from the kit's CHART_HUES. Purple is
+   deliberately not an option: it means tappable, so it never encodes data. */
 .ringTrack {
   fill: none;
-  /* The arc reads against the track, so the track is the same purple at 10%
+  /* The arc reads against the track, so the track is the same hue at 10%
      — a wash, not a second full-strength stroke. */
-  stroke: color-mix(in srgb, var(--color-data-categorical-purple) 10%, transparent);
+  stroke: color-mix(in srgb, var(--ring-hue) 10%, transparent);
   stroke-width: 6;
 }
 
 .ringValue {
   fill: none;
-  stroke: var(--color-data-categorical-purple);
+  stroke: var(--ring-hue);
   stroke-width: 6;
   stroke-linecap: round;
   transition: stroke-dashoffset 0.25s linear;

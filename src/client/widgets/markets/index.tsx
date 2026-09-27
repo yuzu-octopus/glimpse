@@ -1,6 +1,9 @@
+import type { CSSProperties } from 'react';
 import { Link } from '@astryxdesign/core';
-import { ArrowDown, ArrowUp } from 'lucide-react';
 import { MARKETS_DEFAULTS, type MarketsConfig } from '../../../shared/widgets/keyed';
+import { CHART_HUES } from '../../kit/chart-hues';
+import { Sparkline } from '../../kit/sparkline';
+import { MetricDelta } from '../../kit/metric-delta';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { fmtNumber } from '../_helpers/fmtNumber';
@@ -8,52 +11,42 @@ import type { Market } from '../../../shared/widgets/payloads';
 import styles from './markets.module.css';
 void MARKETS_DEFAULTS;
 
-/** 21-point sparkline, hand-rolled inline SVG (glance parity — a chart, not an icon). */
-export function Sparkline({ values }: { values: number[] }) {
+/**
+ * Kit sparkline in `range` mode — the kit's market-row geometry. The flat
+ * case is the one thing the kit has no slot for: a directionless series has
+ * no sign to show, so it takes CHART_HUES.muted instead of a status hue.
+ */
+export function TrendChart({ symbol, values }: { symbol: string; values: number[] }) {
   if (values.length < 2) return null;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const points = values
-    .map((v, i) => `${(i / (values.length - 1)) * 100},${50 - ((v - min) / range) * 40}`)
-    .join(' ');
   const last = values[values.length - 1]!;
   const first = values[0]!;
-  const trend = last === first ? styles.sparkFlat : last > first ? styles.sparkUp : styles.sparkDown;
+  const flat = last === first;
   return (
-    <svg viewBox="0 0 100 50" className={styles.sparkline} aria-hidden="true">
-      <line
-        className={styles.sparkGrid}
-        x1="0"
-        y1="49.5"
-        x2="100"
-        y2="49.5"
-        strokeWidth={1}
-        vectorEffect="non-scaling-stroke"
+    <span
+      className={flat ? `${styles.sparkline} ${styles.sparkFlat}` : styles.sparkline}
+      style={flat ? ({ '--spark-hue': CHART_HUES.muted } as CSSProperties) : undefined}
+    >
+      <Sparkline
+        data={values.map((value, i) => ({ id: `${symbol}-${i}`, value }))}
+        label={`${symbol} price trend`}
+        positive={!flat && last > first}
+        mode="range"
+        isCompact
       />
-      <polyline
-        className={trend}
-        points={points}
-        fill="none"
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
+    </span>
   );
 }
 
 function Change({ change, changePct }: { change: number | null; changePct: number | null }) {
   if (change === null) return null;
-  // glance colors strictly by sign; zero stays neutral
-  const up = change > 0;
-  const down = change < 0;
-  const cls = up ? styles.up : down ? styles.down : undefined;
+  const text =
+    fmtNumber(change, { maximumFractionDigits: 2 }) +
+    (changePct !== null ? ` (${changePct.toFixed(2)}%)` : '');
+  // glance colors strictly by sign; zero has no sign, so it stays neutral.
+  if (change === 0) return <span className={styles.change}>{text}</span>;
   return (
-    <span className={cls ? `${styles.change} ${cls}` : styles.change}>
-      {up ? <ArrowUp size={12} /> : down ? <ArrowDown size={12} /> : null}
-      {fmtNumber(change, { maximumFractionDigits: 2 })}
-      {changePct !== null ? ` (${changePct.toFixed(2)}%)` : ''}
+    <span className={styles.change}>
+      <MetricDelta value={text} positive={change > 0} />
     </span>
   );
 }
@@ -82,7 +75,7 @@ function Row({ market, symbolLink, chartLink }: { market: Market } & RowLinks) {
   ) : (
     <span className={styles.symbol}>{market.symbol}</span>
   );
-  const sparkline = <Sparkline values={market.chart} />;
+  const sparkline = <TrendChart symbol={market.symbol} values={market.chart} />;
   return (
     <div className={styles.row}>
       <div className={styles.rowLeft}>

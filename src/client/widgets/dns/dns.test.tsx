@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DnsStatsWidget } from './index';
 import type { DnsStats } from '../../../shared/widgets/payloads';
+import { CHART_HUES } from '../../kit/chart-hues';
 import styles from './dns.module.css';
 
 // Vitest serves CSS modules as a class-name proxy, so the token bindings are
@@ -118,12 +119,18 @@ describe('DnsStats client', () => {
     expect(container.querySelector('svg g')).toHaveAttribute('stroke', 'var(--color-graph-gridlines)');
   });
 
-  it('binds bar segments to cyan/orange washes with semantic borders', () => {
+  it('paints the bars with the kit CHART_HUES over a 10% wash with semantic borders', () => {
+    const { container } = render(<DnsStatsWidget config={baseConfig} data={sample()} />);
+    const bar = container.querySelector('[data-testid="dns-bar"]')!;
+    // hues come from the kit's CHART_HUES, never from a hand-picked token
+    expect(bar.querySelector(`.${styles.queries}`)).toHaveStyle({ '--bar-hue': CHART_HUES.cyan });
+    expect(bar.querySelector(`.${styles.blocked}`)).toHaveStyle({ '--bar-hue': CHART_HUES.orange });
     const rule = (selector: string) => css.match(new RegExp(`${selector}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
     expect(rule('\\.bar > \\*')).toContain('var(--bar-hue) 10%');
     expect(rule('\\.bar > \\*')).toContain('border-top: 1px solid var(--bar-hue)');
-    expect(rule('\\.queries')).toContain('--bar-hue: var(--color-data-categorical-cyan)');
-    expect(rule('\\.blocked')).toContain('--bar-hue: var(--color-data-categorical-orange)');
+    // the stylesheet declares no hue of its own, and never a literal colour
+    expect(rule('\\.bar > \\*')).not.toMatch(/#[0-9a-fA-F]{3,8}/);
+    expect(css).not.toMatch(/--bar-hue:\s*var/);
     // washes replace the old direct fills, and no entrance choreography
     expect(css).not.toContain('--color-vertical-progress-value');
     expect(css).not.toContain('--color-negative');

@@ -1,6 +1,10 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
+// Registers the astryx-dracula icon set into Astryx's global icon registry.
+// Must come first: it is a side-effecting import that has to run before the
+// first render so every Astryx component resolves brand icons, not core's.
+import './client/kit/icons';
 import '@astryxdesign/core/reset.css';
 import '@astryxdesign/core/astryx.css';
 // Order is the contract: reset (layer reset) → component base (astryx-base)

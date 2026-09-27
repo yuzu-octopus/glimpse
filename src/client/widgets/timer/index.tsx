@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Button } from '@astryxdesign/core';
 import { Pause, Play, RotateCcw } from 'lucide-react';
+import { CHART_HUES } from '../../kit/chart-hues';
 import { formatDuration, parseDuration, type TimerConfig } from '../../../shared/widgets/timer';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
@@ -174,7 +175,11 @@ export function Timer({ config, isLoading, error }: WidgetComponentProps) {
         </div>
 
         {editing ? (
-          <div className={styles.ringButton} data-testid="timer-ring">
+          <div
+            className={styles.ringButton}
+            data-testid="timer-ring"
+            style={{ '--ring-hue': CHART_HUES.cyan } as React.CSSProperties}
+          >
             <svg viewBox="0 0 100 100" className={styles.ring} aria-hidden="true">
               <circle cx="50" cy="50" r={R} className={styles.ringTrack} />
               {state.mode === 'timer' ? (
@@ -206,6 +211,7 @@ export function Timer({ config, isLoading, error }: WidgetComponentProps) {
             onClick={startEdit}
             aria-label="Edit duration"
             data-testid="timer-ring"
+            style={{ '--ring-hue': CHART_HUES.cyan } as React.CSSProperties}
           >
             <svg viewBox="0 0 100 100" className={styles.ring} aria-hidden="true">
               <circle cx="50" cy="50" r={R} className={styles.ringTrack} />
