@@ -89,10 +89,9 @@ function readTokenFrom(raw: string): string | undefined {
 
 export function resolveAuth(
   env: Record<string, string | undefined>,
-  cfg: { token?: string; tokenFile?: string; accountId?: string },
+  cfg: { tokenFile?: string; accountId?: string },
   provider?: string,
 ): { token: string; accountId?: string } {
-  if (cfg.token) return { token: cfg.token, accountId: cfg.accountId };
   if (cfg.tokenFile) {
     try {
       const tok = readTokenFrom(readFileSync(cfg.tokenFile, 'utf8'));
@@ -115,5 +114,7 @@ export function resolveAuth(
   }
   const tok = env.CODEX_TOKEN ?? env.OPENAI_API_KEY ?? env.ANTHROPIC_API_KEY ?? env.GITHUB_TOKEN;
   if (tok) return { token: tok, accountId: cfg.accountId ?? env.CHATGPT_ACCOUNT_ID };
-  throw new Error('no token: set token, tokenFile, or provider env var');
+  throw new Error(
+    `no token: set ${provider ? `${provider.toUpperCase().replace(/-/g, '_')}_API_KEY, ` : ''}tokenFile, or a provider env var`,
+  );
 }

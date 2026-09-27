@@ -18,20 +18,21 @@ export const AI_QUOTA_PREF: Pref = {
 
 export const AI_QUOTA_SKELETON: SkeletonShape = 'stat';
 
+// No `token` field: the config is served to the browser verbatim, so a token
+// in the YAML is a token in the page. `tokenFile` is a path, not a secret, and
+// stays; everything else resolves from the environment (see quota/index.ts).
 export const aiQuotaSchema = z
   .object({
     type: z.literal('ai-quota'),
     ...sharedWidgetFields,
     // loose: any non-empty string so future CodexBar adds don't break validation
     provider: z.string().min(1).default(() => AI_QUOTA_DEFAULTS.provider),
-    token: z.string().optional(),
     // tokenFile docs (inline //): JetBrains ~/.config/JetBrains/*/AIAssistantQuotaManager2.xml, Kiro kiro-cli auth file, Grok ~/.grok/auth.json, Zed credentials
     tokenFile: z.string().optional(),
     quotaUrl: z.url().optional(),
     projectId: z.string().optional(),
     baseUrl: z.url().optional(),
   })
-  .refine((c) => !!c.token || !!c.tokenFile, { message: 'token or tokenFile required' })
   .superRefine((c, ctx) => {
     if (!(KNOWN_PROVIDERS as readonly string[]).includes(c.provider)) {
       ctx.addIssue({ code: 'custom', message: `unknown provider '${c.provider}' — known: ${KNOWN_PROVIDERS.slice(0, 5).join(', ')}…` });
