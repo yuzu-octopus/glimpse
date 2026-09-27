@@ -348,20 +348,29 @@ registerWidget('dns-stats', async (ctx, config) => {
   // allow-insecure is a no-op for fetch (YAGNI over TLS hacks) — kept in schema for glance parity
 
   if (service === 'adguard') {
-    return fetchAdguard(ctx, base, cfg.username ?? '', cfg.password ?? '', hideGraph, hideTopDomains);
+    return fetchAdguard(
+      ctx,
+      base,
+      ctx.env.ADGUARD_USERNAME ?? '',
+      ctx.env.ADGUARD_PASSWORD ?? '',
+      hideGraph,
+      hideTopDomains,
+    );
   }
   if (service === 'technitium') {
-    return fetchTechnitium(ctx, base, cfg.token ?? '', hideGraph, hideTopDomains);
+    return fetchTechnitium(ctx, base, ctx.env.TECHNITIUM_TOKEN ?? '', hideGraph, hideTopDomains);
   }
   // pihole (v6 with session when password present, fallback to v5)
-  if (cfg.password) {
+  const password = ctx.env.PIHOLE_PASSWORD;
+  const token = ctx.env.PIHOLE_TOKEN;
+  if (password) {
     try {
-      return await fetchPiholeV6(ctx, base, cfg.password, hideGraph, hideTopDomains);
+      return await fetchPiholeV6(ctx, base, password, hideGraph, hideTopDomains);
     } catch (e) {
       // Fallback to v5 when token available; else propagate v6 error
-      if (cfg.token) return fetchPiholeV5(ctx, base, cfg.token, hideGraph, hideTopDomains);
+      if (token) return fetchPiholeV5(ctx, base, token, hideGraph, hideTopDomains);
       throw e;
     }
   }
-  return fetchPiholeV5(ctx, base, cfg.token ?? '', hideGraph, hideTopDomains);
+  return fetchPiholeV5(ctx, base, token ?? '', hideGraph, hideTopDomains);
 });
