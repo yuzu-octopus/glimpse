@@ -716,10 +716,22 @@ describe('PageView', () => {
       /\.columns\s*\{[^}]*display:\s*grid[^}]*repeat\(12,\s*minmax\(0,\s*1fr\)\)[^}]*gap:\s*(var\(--widget-gap\)|clamp\([^)]*\))[^}]*align-content:\s*start/,
     );
     expect(css).toMatch(/\.column\s*\{[^}]*grid-column:\s*span var\(--col-span,\s*12\)/);
-    // tablet: 6 tracks, spans above 6 collapse to 6
-    expect(css).toMatch(/@media \(max-width: 900px\)/);
-    expect(css).toMatch(/repeat\(6,\s*minmax\(0,\s*1fr\)\)/);
-    expect(css).toMatch(/--col-span:\s*6 !important/);
+    // Tablet: the track count follows the span vocabulary, not the reverse.
+    // --col-span is a 12-col unit, so `.columns` keeps all 12 tracks through
+    // the band. Both halves of the P1 regression (a 6-track `.columns` grid,
+    // and a hand remap of the spans into 6-track space) are guarded here:
+    // re-adding either one strands a void in every row (34-51% dead space).
+    const tablet = css.slice(
+      css.indexOf('@media (max-width: 900px)'),
+      css.indexOf('@media', css.indexOf('@media (max-width: 900px)') + 1),
+    );
+    expect(tablet).not.toMatch(/\.columns\b/);
+    expect(css).not.toMatch(/--col-span:\s*(?!12\b)\d/);
+    // The one 6-track grid that is still right: auto-fit, whose spans are
+    // track hints rather than 12-col units, so nothing to re-derive.
+    expect(tablet).toMatch(
+      /\.autoTiling\s*\{\s*grid-template-columns:\s*repeat\(6,\s*minmax\(0,\s*1fr\)\);/,
+    );
     const media = css.slice(css.indexOf('@media (max-width: 600px)'));
     expect(media).toMatch(/\.columns \.column\s*\{[^}]*grid-column:\s*1 \/ -1/);
   });
