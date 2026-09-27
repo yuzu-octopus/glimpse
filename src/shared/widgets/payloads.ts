@@ -56,6 +56,23 @@ export interface Market {
   chart: number[];
 }
 
+/** One configured symbol Yahoo would not answer for. Same contract as
+ * `VideoSourceIssue`: the symbols that did answer still render, so this rides
+ * a StatusDot rather than a Banner. A four-row card from a five-symbol config
+ * reads as complete until you know what is missing. */
+export interface MarketSourceIssue {
+  /** the config entry verbatim — `AAPL`, `^GSPC` */
+  symbol: string;
+  /** short and human, never a stack: `HTTP 500 for …` */
+  reason: string;
+}
+
+export interface MarketsData {
+  markets: Market[];
+  /** empty on a healthy widget — a symbol that works adds no chrome at all */
+  issues: MarketSourceIssue[];
+}
+
 export interface WeatherNow {
   temp: number | null;
   feelsLike: number | null;

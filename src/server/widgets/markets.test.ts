@@ -96,4 +96,54 @@ describe('markets fetcher', () => {
     })) as { markets: Market[] };
     expect(data.markets.map((m) => m.symbol)).toEqual(['UP', 'DOWN']);
   });
+
+  // `Promise.allSettled` + `push` on the fulfilled branch meant a Yahoo 500 on
+  // one of five symbols rendered four rows that look complete. This is the
+  // silent partial loss the videos widget's `issues` array was built for.
+  it('reports the symbols Yahoo would not answer for, keeping the rest', async () => {
+    const ctx = makeCtx({
+      [URL('AAPL')]: chartPayload(125, 100, [1]),
+      [URL('MSFT')]: chartPayload(90, 100, [1]),
+    });
+    const data = (await marketsFetcher()(ctx, {
+      type: 'markets',
+      markets: [{ symbol: 'AAPL' }, { symbol: 'DEAD' }, { symbol: 'MSFT' }],
+    })) as { markets: Market[]; issues: { symbol: string; reason: string }[] };
+    expect(data.markets.map((m) => m.symbol).sort()).toEqual(['AAPL', 'MSFT']);
+    expect(data.issues).toHaveLength(1);
+    // The issue names the config entry, not the position it failed at.
+    expect(data.issues[0].symbol).toBe('DEAD');
+  });
+
+  it('names the status without repeating the request url', async () => {
+    const ctx = makeCtx({ [URL('AAPL')]: chartPayload(125, 100, [1]) });
+    const data = (await marketsFetcher()(ctx, {
+      type: 'markets',
+      markets: [{ symbol: 'AAPL' }, { symbol: 'DEAD' }],
+    })) as { issues: { symbol: string; reason: string }[] };
+    expect(data.issues[0].reason).toBe('HTTP 404');
+    expect(data.issues[0].reason).not.toContain('yahoo.com');
+  });
+
+  it('reports nothing when every symbol answered', async () => {
+    const ctx = makeCtx({
+      [URL('A')]: chartPayload(110, 100, [1]),
+      [URL('B')]: chartPayload(90, 100, [1]),
+    });
+    const data = (await marketsFetcher()(ctx, {
+      type: 'markets',
+      markets: [{ symbol: 'A' }, { symbol: 'B' }],
+    })) as { issues: unknown[] };
+    expect(data.issues).toEqual([]);
+  });
+
+  it('reports every failure when all of them fail', async () => {
+    const ctx = makeCtx({});
+    const data = (await marketsFetcher()(ctx, {
+      type: 'markets',
+      markets: [{ symbol: 'A' }, { symbol: 'B' }],
+    })) as { markets: Market[]; issues: { symbol: string }[] };
+    expect(data.markets).toEqual([]);
+    expect(data.issues.map((i) => i.symbol)).toEqual(['A', 'B']);
+  });
 });

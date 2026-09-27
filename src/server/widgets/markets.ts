@@ -1,7 +1,7 @@
 import { marketsSchema } from '../../shared/widgets/keyed';
 import { fetchJson, retryOptionsFrom } from './http';
 import { registerWidget } from './registry';
-import type { Market } from '../../shared/widgets/payloads';
+import type { Market, MarketSourceIssue, MarketsData } from '../../shared/widgets/payloads';
 
 interface YahooChartResponse {
   chart?: {
@@ -21,6 +21,14 @@ const YAHOO_HEADERS = {
   Accept: 'application/json',
   'User-Agent': 'Mozilla/5.0 (compatible; glimpse/0.1)',
 };
+
+/** The status half of a fetch error: `HTTP 500` or `HTTP fetch failed` — never
+ * the URL, which is the same for every configured symbol, says nothing the
+ * row does not, and wraps three lines in a 340px card. */
+function shortReason(reason: unknown): string {
+  const message = reason instanceof Error ? reason.message : String(reason);
+  return /^(HTTP fetch failed|HTTP \d+)/.exec(message)?.[1] ?? message;
+}
 
 registerWidget('markets', async (ctx, config) => {
   const cfg = marketsSchema.parse(config);
@@ -53,8 +61,25 @@ registerWidget('markets', async (ctx, config) => {
   );
 
   const markets: Market[] = [];
-  for (const r of settled) {
-    if (r.status === 'fulfilled') markets.push(r.value);
+  // A symbol Yahoo will not answer for is a per-source status, not a widget
+  // failure — the symbols that did answer still render. Dropping the
+  // rejection made a five-symbol config render a four-row card that reads as
+  // complete, which is the silent partial loss the videos widget's `issues`
+  // array exists to prevent.
+  const issues: MarketSourceIssue[] = [];
+  for (const [i, r] of settled.entries()) {
+    if (r.status === 'fulfilled') {
+      markets.push(r.value);
+    } else {
+      issues.push({
+        symbol: cfg.markets[i]?.symbol ?? '?',
+        // `HTTP 500 for https://query1.finance.yahoo.com/v8/finance/chart/
+        // BTC-USD?range=1mo&interval=1d` is the same sentence for every symbol
+        // and wraps three lines in a 340px card. The symbol is already named
+        // on the row, so keep the status and drop the URL.
+        reason: shortReason(r.reason),
+      });
+    }
   }
 
   const sortBy = cfg['sort-by'] ?? 'change';
@@ -63,5 +88,5 @@ registerWidget('markets', async (ctx, config) => {
     const bv = b.change ?? 0;
     return sortBy === 'absolute-change' ? Math.abs(bv) - Math.abs(av) : bv - av;
   });
-  return { markets };
+  return { markets, issues } satisfies MarketsData;
 });
