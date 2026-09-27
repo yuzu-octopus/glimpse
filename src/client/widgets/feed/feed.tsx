@@ -84,6 +84,7 @@ export function Feed({ items, layout = 'list', singleLine }: FeedProps) {
                 display="block"
                 maxLines={singleLine ? TITLE_LINES_SINGLE : TITLE_LINES_DEFAULT}
                 hasUnderline={false}
+                className={styles.title}
               >
                 {item.title}
               </Link>
