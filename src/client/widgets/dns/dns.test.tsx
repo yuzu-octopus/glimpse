@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -54,7 +54,67 @@ describe('DnsStats client', () => {
     expect(screen.getByTestId('dns-latency').textContent).toMatch(/12ms/);
   });
 
-  it('renders graph with 8 columns and hover tips', () => {
+  it('gives every bar an accessible name and a keyboard stop', () => {
+    render(<DnsStatsWidget config={baseConfig} data={sample()} />);
+    const cols = screen.getAllByTestId('dns-column');
+    expect(screen.getByRole('group', { name: /by hour/ })).toBeInTheDocument();
+    expect(cols[0]).toHaveAttribute('tabindex', '0');
+    expect(screen.getAllByRole('img').map((n) => n.getAttribute('aria-label'))).toEqual([
+      '12am: 100 queries, 20% blocked',
+      '3am: 110 queries, 20% blocked',
+      '6am: 120 queries, 20% blocked',
+      '9am: 130 queries, 20% blocked',
+      '12pm: 140 queries, 20% blocked',
+      '3pm: 150 queries, 20% blocked',
+      '6pm: 160 queries, 20% blocked',
+      '9pm: 170 queries, 20% blocked',
+    ]);
+    // the tip repeats what the label says — announcing both would double it
+    expect(screen.getAllByTestId('dns-tip')[0]).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('pins a bar on tap, so the readout is reachable without a pointer', () => {
+    render(<DnsStatsWidget config={baseConfig} data={sample()} />);
+    const cols = screen.getAllByTestId('dns-column');
+    expect(cols[3]).not.toHaveAttribute('data-active');
+    fireEvent.click(cols[3]);
+    expect(cols[3]).toHaveAttribute('data-active', 'true');
+    fireEvent.click(cols[5]);
+    expect(cols[3]).not.toHaveAttribute('data-active');
+    expect(cols[5]).toHaveAttribute('data-active', 'true');
+    // tapping the same bar again, or losing focus, releases it
+    fireEvent.click(cols[5]);
+    expect(cols[5]).not.toHaveAttribute('data-active');
+    fireEvent.click(cols[2]);
+    fireEvent.blur(cols[2]);
+    expect(cols[2]).not.toHaveAttribute('data-active');
+  });
+
+  it('Escape releases a pinned bar', () => {
+    render(<DnsStatsWidget config={baseConfig} data={sample()} />);
+    const cols = screen.getAllByTestId('dns-column');
+    fireEvent.click(cols[1]);
+    expect(cols[1]).toHaveAttribute('data-active', 'true');
+    fireEvent.keyDown(cols[1], { key: 'Escape' });
+    expect(cols[1]).not.toHaveAttribute('data-active');
+  });
+
+  it('never dims the headline totals, and reaches every bar through all three channels', () => {
+    // The channels and the totals dim are CSS-only, so the stylesheet is the
+    // surface under test: :hover (pointer), :focus-visible (keyboard),
+    // [data-active] (tap). Every reveal rule shares that one group.
+    expect(css).not.toMatch(/\.totals[^{]*\{[^}]*opacity:\s*0?\.1/);
+    expect(css).not.toContain(':has(.column:hover) .totals');
+    expect(css).toContain('.column:is(:hover, :focus-visible, [data-active]) .tip {');
+    expect(css).toContain('.column:is(:hover, :focus-visible, [data-active]) .bar {');
+    expect(css).toContain('.column:is(:hover, :focus-visible, [data-active])::before {');
+    // the axis label retires the rest through the same three channels
+    expect(css).toContain('.columns:has(.column:is(:hover, :focus-visible, [data-active]))');
+    expect(css).toContain('.column:not(:is(:hover, :focus-visible, [data-active])) .time {');
+    expect(css).not.toContain('.columns:hover .column:not(:hover) .time');
+  });
+
+  it('renders graph with 8 columns and per-bar tips', () => {
     render(<DnsStatsWidget config={baseConfig} data={sample()} />);
     const cols = screen.getAllByTestId('dns-column');
     expect(cols).toHaveLength(8);

@@ -1,16 +1,13 @@
+/* The totals are the widget's headline numbers. They used to drop to 10% for
+   the duration of a hover so the per-bar tip could sit over them — on a touch
+   device, which can never fire :hover, that is a legibility regression with
+   no way to recover it. The tip is an opaque popover, so it reads on top
+   without dimming anything. */
 .totals {
   display: flex;
   text-align: center;
   justify-content: space-between;
   gap: 8px;
-  transition: opacity 0.3s;
-  transition-delay: 50ms;
-}
-
-.dns:has(.columns .tip:hover),
-.dns:has(.column:hover) .totals {
-  opacity: 0.1;
-  transition-delay: 0s;
 }
 
 .totalsItem {
@@ -75,7 +72,11 @@
   pointer-events: none;
 }
 
-.column:hover::before {
+/* The inspection wash, the bar dim, the axis label and the tip all resolve
+   from one selector group: :hover for a pointer, :focus-visible for a
+   keyboard, [data-active] for a tap. A readout that exists under only one of
+   them is a readout some device never gets. */
+.column:is(:hover, :focus-visible, [data-active])::before {
   opacity: 0.05;
 }
 
@@ -94,7 +95,7 @@
 }
 
 /* Hover dims, it does not lift. */
-.column:hover .bar {
+.column:is(:hover, :focus-visible, [data-active]) .bar {
   opacity: 0.7;
 }
 
@@ -145,12 +146,15 @@
   transform: translateY(0);
 }
 
-.column:hover .time {
+.column:is(:hover, :focus-visible, [data-active]) .time {
   opacity: 1;
   transform: translateY(0);
 }
 
-.columns:hover .column:not(:hover) .time {
+/* Inspecting one bar promotes its axis label and retires the rest, so the
+   labels cannot collide. Every channel that reveals a bar drives this too. */
+.columns:has(.column:is(:hover, :focus-visible, [data-active]))
+  .column:not(:is(:hover, :focus-visible, [data-active])) .time {
   opacity: 0;
 }
 
@@ -176,7 +180,7 @@
   text-align: center;
 }
 
-.column:hover .tip {
+.column:is(:hover, :focus-visible, [data-active]) .tip {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }

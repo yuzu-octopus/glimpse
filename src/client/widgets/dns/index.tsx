@@ -1,4 +1,5 @@
 import type { DnsStatsConfig } from '../../../shared/widgets/dns';
+import { useState } from 'react';
 import type { DnsStats } from '../../../shared/widgets/payloads';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
@@ -16,6 +17,10 @@ export function DnsStatsWidget({ config, data, error, isLoading }: WidgetCompone
   const cfg = config as unknown as DnsStatsConfig;
   const d = data as DnsStats | null;
   const loading = isLoading ?? ((data as unknown) == null && !error);
+  // Above the early returns: a tap pins a bar's readout, and on touch there is
+  // neither :hover nor :focus-visible, so without this third channel the
+  // per-bar values exist only for a device that has neither.
+  const [pinned, setPinned] = useState<number | null>(null);
 
   if (loading) {
     return (
@@ -65,7 +70,7 @@ export function DnsStatsWidget({ config, data, error, isLoading }: WidgetCompone
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
     >
-      <div className={styles.dns} data-testid="dns-root">
+      <div data-testid="dns-root">
         <div className={styles.totals}>
           <div className={styles.totalsItem}>
             <div className={styles.totalsValue} data-testid="dns-total">
@@ -114,10 +119,27 @@ export function DnsStatsWidget({ config, data, error, isLoading }: WidgetCompone
                 </g>
               </svg>
             </div>
-            <div className={styles.columns}>
+            <div
+              className={styles.columns}
+              role="group"
+              aria-label="DNS queries and blocked share, by hour"
+            >
               {d.series.map((pt, idx) => (
-                <div key={`dns-${pt.queries}-${pt.blocked}-${pt.percentBlocked}-${pt.percentTotal}`} className={styles.column} data-testid="dns-column">
-                  <div className={styles.tip} data-testid="dns-tip">
+                <div
+                  key={`dns-${pt.queries}-${pt.blocked}-${pt.percentBlocked}-${pt.percentTotal}`}
+                  className={styles.column}
+                  data-testid="dns-column"
+                  data-active={pinned === idx || undefined}
+                  tabIndex={0}
+                  role="img"
+                  aria-label={`${d.timeLabels[idx] ?? `Hour ${idx + 1}`}: ${fmt(pt.queries)} queries, ${pt.percentBlocked}% blocked`}
+                  onClick={() => setPinned((cur) => (cur === idx ? null : idx))}
+                  onBlur={() => setPinned((cur) => (cur === idx ? null : cur))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') setPinned(null);
+                  }}
+                >
+                  <div className={styles.tip} data-testid="dns-tip" aria-hidden="true">
                     <div>
                       <div className={styles.tipValue}>{fmt(pt.queries)}</div>
                       <div className={styles.tipLabel}>QUERIES</div>
