@@ -42,9 +42,6 @@ describe('widget registry derivation', () => {
       cols: null, rows: 3, resizable: true, priority: 10, zone: 'main',
       preferredWidth: null, preferredHeight: null,
     });
-    expect(SKELETON_SHAPE.rss).toBe('list');
-    expect(SKELETON_SHAPE.clock).toBe('stat');
-    expect(SKELETON_SHAPE.videos).toBe('chart');
-    expect(SKELETON_SHAPE.timer).toBe('rows');
+    // The skeleton map is pinned per type in skeleton-shape.test.ts.
   });
 });
