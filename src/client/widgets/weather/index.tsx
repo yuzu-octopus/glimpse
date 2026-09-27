@@ -58,7 +58,40 @@ const WEATHER_CODES: Record<number, string> = {
   99: 'Thunderstorm',
 };
 
-const DAY_NAMES = new Intl.DateTimeFormat('en-GB', { weekday: 'short' });
+/** Weekday of a bare `YYYY-MM-DD`, read in UTC so no offset can shift it.
+ * `new Date('2026-09-27T00:00:00')` is an *instant* — midnight in the
+ * viewer's zone — so formatting it in a zone 13 hours behind renders the
+ * previous day's weekday. The date here is a calendar day, not an instant,
+ * and UTC is the identity zone for that. */
+const DAY_NAMES_UTC = new Intl.DateTimeFormat('en-GB', { weekday: 'short', timeZone: 'UTC' });
+
+/** Formatters are cached per zone — the same discipline clock/index.tsx uses
+ * for its per-hour `Intl.DateTimeFormat` map. */
+const todayFormatters = new Map<string, Intl.DateTimeFormat>();
+
+/** Today, as a `YYYY-MM-DD` key, *in the zone the forecast dates are in*.
+ * Open-meteo answers `timezone=auto`, so the rows are the forecast location's
+ * calendar days: a Tokyo forecast's rows roll over while the viewer is still
+ * on the 26th. The old `toISOString().slice(0, 10)` was a third zone again —
+ * UTC — so "Today" landed on yesterday's row for most of the day. A payload
+ * with no zone (pre-field cache entry) falls back to the viewer's own, which
+ * is what the weekday labels already assumed. */
+function todayKey(timeZone: string | null): string {
+  const zone = timeZone ?? '';
+  let fmt = todayFormatters.get(zone);
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat('en-GB', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      timeZone: timeZone ?? undefined,
+    });
+    todayFormatters.set(zone, fmt);
+  }
+  const parts = fmt.formatToParts(new Date());
+  const p = (t: string) => parts.find((x) => x.type === t)?.value ?? '';
+  return `${p('year')}-${p('month')}-${p('day')}`;
+}
 
 export function Weather({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as WeatherConfig;
@@ -76,14 +109,14 @@ export function Weather({ config, data, error, isLoading }: WidgetComponentProps
       </WidgetChrome>
     );
   }
-  const today = new Date().toISOString().slice(0, 10);
-  const day = (date: string) => (date === today ? 'Today' : DAY_NAMES.format(new Date(date + 'T00:00:00')));
+  const today = todayKey(w.timezone ?? null);
+  const day = (date: string) => (date === today ? 'Today' : DAY_NAMES_UTC.format(new Date(date + 'T00:00:00Z')));
 
   const unit = (cfg.units ?? 'metric') === 'metric' ? 'C' : 'F';
   const condition = w.current.code != null ? WEATHER_CODES[w.current.code] : undefined;
 
   return (
-    <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
+    <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']} error={error} showErrors={cfg['show-errors']}>
       <div className={styles.current}>
         <div className={styles.temp}>{w.current.temp != null ? `${Math.round(w.current.temp)}°` : '—'}</div>
         <div className={styles.currentIcon}>{weatherIcon(w.current.code)}</div>

@@ -68,4 +68,36 @@ describe('weather fetcher', () => {
     const ctx = makeCtx({ 'https://geocoding-api.open-meteo.com/v1/search': { results: [] } });
     await expect(weatherFetcher()(ctx, { type: 'weather', location: 'Nowhere' })).rejects.toThrow('location not found');
   });
+
+  // The `daily` dates are calendar days in the *forecast's* zone, because the
+  // request asks open-meteo for `timezone=auto`. Without the zone in the
+  // payload the renderer has to guess, and it used to guess UTC.
+  it('stamps the zone the daily dates were counted in', async () => {
+    const ctx = makeCtx({
+      'https://geocoding-api.open-meteo.com/v1/search': {
+        results: [{ latitude: 35.6, longitude: 139.7, name: 'Tokyo', country: 'Japan' }],
+      },
+      'https://api.open-meteo.com/v1/forecast': {
+        timezone: 'Asia/Tokyo',
+        current: { temperature_2m: 21 },
+        daily: { time: ['2024-06-01'], weather_code: [0], temperature_2m_max: [24], temperature_2m_min: [16] },
+      },
+    });
+    const data = (await weatherFetcher()(ctx, { type: 'weather', location: 'Tokyo' })) as WeatherData;
+    expect(data.timezone).toBe('Asia/Tokyo');
+  });
+
+  it('reports a null zone rather than inventing one when the provider omits it', async () => {
+    const ctx = makeCtx({
+      'https://geocoding-api.open-meteo.com/v1/search': {
+        results: [{ latitude: 51.5, longitude: -0.12, name: 'London' }],
+      },
+      'https://api.open-meteo.com/v1/forecast': {
+        current: { temperature_2m: 12 },
+        daily: { time: ['2024-06-01'], weather_code: [0], temperature_2m_max: [15], temperature_2m_min: [8] },
+      },
+    });
+    const data = (await weatherFetcher()(ctx, { type: 'weather', location: 'London' })) as WeatherData;
+    expect(data.timezone).toBeNull();
+  });
 });

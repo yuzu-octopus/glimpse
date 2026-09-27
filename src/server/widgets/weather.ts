@@ -21,6 +21,8 @@ interface ForecastDaily {
 interface ForecastResponse {
   current?: ForecastCurrent;
   daily?: ForecastDaily;
+  /** IANA name open-meteo resolved `timezone=auto` to. */
+  timezone?: string;
 }
 
 export interface GeocodePlace {
@@ -87,6 +89,7 @@ registerWidget('weather', async (ctx, config) => {
 
   const data: WeatherData = {
     location: area,
+    timezone: typeof forecast.timezone === 'string' ? forecast.timezone : null,
     current: {
       temp: forecast.current?.temperature_2m ?? null,
       feelsLike: forecast.current?.apparent_temperature ?? null,
