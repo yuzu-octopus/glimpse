@@ -40,3 +40,43 @@ describe('check-config did-you-mean scope', () => {
     expect(out).toContain('unknown widget type "rsss" — did you mean "rss"?');
   });
 });
+
+describe('check-config unsupported options', () => {
+  it('warns about a glance option Glimpse does not implement, with its path', () => {
+    const file = fixture(
+      'pages:\n  - name: T\n    columns:\n      - span: 12\n        widgets:\n          - type: weather\n            location: Berlin\n            show-area-name: true\n',
+    );
+    const { code, out } = run(file);
+    expect(code).toBe(0);
+    expect(out).toContain(
+      'warning: line 8: "show-area-name" is not a supported option of the weather widget (pages[0].columns[0].widgets[0].show-area-name) — Glimpse ignores it',
+    );
+  });
+
+  it('stays quiet for an option that IS implemented', () => {
+    const file = fixture(
+      'pages:\n  - name: T\n    columns:\n      - span: 12\n        widgets:\n          - type: rss\n            feeds:\n              - url: https://x/f\n                item-link-prefix: https://x/\n          - type: repository\n            repository: a/b\n            commits-limit: 3\n          - type: bookmarks\n            groups:\n              - title: D\n                hide-arrow: true\n                links:\n                  - title: G\n                    url: https://g\n                    target: _self\n',
+    );
+    const { code, out } = run(file);
+    expect(code).toBe(0);
+    expect(out).not.toContain('not a supported option');
+  });
+
+  it('leaves top-level glance keys alone — they are not stripped, just unused', () => {
+    const file = fixture('app-name: Mine\nport: 8080\nlogo-url: /l.png\npages:\n  - name: T\n    widgets:\n      - type: clock\n');
+    const { code, out } = run(file);
+    expect(code).toBe(0);
+    expect(out).not.toContain('not a supported option');
+  });
+
+  it('does not read a block scalar body as config', () => {
+    const file = fixture(
+      'pages:\n  - name: T\n    widgets:\n      - type: notepad\n        id: n\n        content: |\n          - type: rss\n            made-up: 1\n',
+    );
+    const { code, out } = run(file);
+    expect(code).toBe(0);
+    expect(out).not.toContain('made-up');
+    // `content` itself is not a notepad option, so that one is real
+    expect(out).toContain('"content" is not a supported option');
+  });
+});
