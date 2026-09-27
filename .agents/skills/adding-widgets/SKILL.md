@@ -32,3 +32,5 @@ One widget type = touches exactly 6 places across 3 layers. Miss any registry/ag
 - Static-importing the renderer anywhere → defeats code splitting.
 - Reading `limit` without trusting the schema default → double defaults drift.
 - Inventing Astryx props — only APIs in `node_modules/@astryxdesign/core/dist/**/*.d.ts` exist.
+- Hardcoding a hex, or defining a `--color-*` var in the widget's CSS module — the `astryx-dracula` kit owns every color. Use `var(--color-*)` / `var(--space-*)` / `var(--radius-*)`; new color need is a kit change, not a one-off.
+- Picking chart series colors by hand — use the 55 `--color-data-*` tokens: `--color-data-categorical-{blue,orange,purple,green,pink,cyan,red,teal,brown,indigo}` for series, and `--color-data-{blue,gray,orange,pink,purple,red,shamrock,teal,yellow}-{1..5}` for sequential ramps.
