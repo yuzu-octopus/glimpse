@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from '@astryxdesign/core';
+import { useState, type CSSProperties } from 'react';
+import { Badge, Card, HStack, Icon, Link, Text } from '@astryxdesign/core';
 import { ChevronDown, Container, GitBranch } from 'lucide-react';
 import { RELEASES_DEFAULTS, type ReleasesConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
@@ -9,10 +9,18 @@ import type { Release } from '../../../shared/widgets/payloads';
 import styles from './releases.module.css';
 void RELEASES_DEFAULTS;
 
+/** Kit nested-inset surface (spacing.md: outer card `padding={4}`, nested
+ *  `padding={3}`): background plus a separator border, never a direct fill. */
+const insetCard: CSSProperties = {
+  backgroundColor: 'var(--color-background)',
+  border: 'var(--border-width) solid var(--color-separator)',
+};
+
 function SourceIcon({ source }: { source: Release['source'] }) {
-  if (source === 'github') return <GitBranch size={16} className={styles.icon} />;
-  if (source === 'gitlab' || source === 'codeberg') return <GitBranch size={16} className={styles.icon} />;
-  return <Container size={16} className={styles.icon} />;
+  const IconComponent =
+    source === 'github' || source === 'gitlab' || source === 'codeberg' ? GitBranch : Container;
+  // Secondary, not `inherit` — an icon must not tint with its neighbours.
+  return <Icon icon={IconComponent} size="sm" color="secondary" />;
 }
 
 function releaseKey(r: Release): string {
@@ -20,6 +28,9 @@ function releaseKey(r: Release): string {
   // added to guard docker-hub tags sharing one url path.
   return `${r.url}::${r.tag}`;
 }
+
+/** Whole lines of notes shown in the expanded row before the ellipsis. */
+const NOTES_PREVIEW_LINES = 10;
 
 function ReleaseRow({
   release,
@@ -42,7 +53,7 @@ function ReleaseRow({
 
   return (
     <div
-      className={`${styles.row} ${hasNotes ? styles.rowExpandable : ''} ${open ? styles.rowOpen : ''}`}
+      className={`${styles.row} ${hasNotes ? styles.rowExpandable : ''}`}
       onClick={hasNotes ? toggle : undefined}
       role={hasNotes ? 'button' : undefined}
       tabIndex={hasNotes ? 0 : undefined}
@@ -83,15 +94,34 @@ function ReleaseRow({
           </button>
         ) : null}
       </div>
-      <div className={styles.meta}>
+      {/* Metadata: every edge on the 4px half-step (`gap={1}`), the separator
+          as its own item so chip and age get the same beat. Age is metadata. */}
+      <HStack gap={1} vAlign="center" wrap="wrap" className={styles.meta}>
         {showIcon ? <SourceIcon source={release.source} /> : null}
-        {release.tag ? <span className={styles.tag}>{release.tag}</span> : null}
-        {release.published ? <span>· {age}</span> : null}
-      </div>
+        {release.tag ? <Badge variant="yellow" label={release.tag} className={styles.tag} /> : null}
+        {release.published ? (
+          <>
+            <Text type="supporting" aria-hidden="true">
+              ·
+            </Text>
+            <Text type="supporting">{age}</Text>
+          </>
+        ) : null}
+      </HStack>
       {hasNotes ? (
         <div className={`${styles.collapse} ${open ? styles.collapseOpen : ''}`}>
           <div className={styles.collapseInner}>
-            {open ? <pre className={styles.notes}>{trimmed}</pre> : null}
+            {open ? (
+              /* Upstream changelogs run to thousands of lines, so the inset
+                 clamps to whole lines with a real ellipsis — no half-cut
+                 line, no nested scroller. The row title links to the full
+                 release, which is where glance sends readers too. */
+              <Card variant="transparent" padding={3} style={insetCard} className={styles.notesCard}>
+                <Text type="body" as="div" maxLines={NOTES_PREVIEW_LINES} wordBreak="break-all" className={styles.notes}>
+                  {trimmed}
+                </Text>
+              </Card>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -119,6 +149,7 @@ function Releases({ config, data, error, isLoading }: WidgetComponentProps) {
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
       error={error}
+      showErrors={cfg['show-errors']}
       isLoading={loading}
       collapseAfter={cfg['collapse-after']}
       items={releases.map((r) => {

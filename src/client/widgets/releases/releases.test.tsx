@@ -112,4 +112,66 @@ describe('releases widget', () => {
     // expanded Set is keyed by url::tag, so order change must not collapse
     expect(screen.getAllByText(/fix details/)).toHaveLength(1);
   });
+
+  // Kit doctrine: tags/chips are yellow and read at tag scale, not as buttons;
+  // timestamps are `supporting` metadata, never body copy.
+  it('renders the version tag as a yellow tag chip and the age as supporting metadata', () => {
+    const { container } = render(
+      <Releases
+        config={{ type: 'releases', repositories: ['a/b'] }}
+        data={{
+          releases: [
+            {
+              name: 'v0.7.0',
+              tag: 'v0.7.0',
+              url: 'https://example.com/v1',
+              published: '2024-06-01T00:00:00Z',
+              source: 'github',
+            },
+          ],
+        }}
+      />,
+    );
+    expect(container.querySelector('[data-variant="yellow"]')).toHaveTextContent('v0.7.0');
+    const age = screen.getByText(/\d+d/);
+    expect(age).toHaveAttribute('data-type', 'supporting');
+  });
+
+  // Reading copy is `body`; `code` is for tokens, commands and hex. Upstream
+  // changelogs run to thousands of lines, so the inset clamps to whole lines.
+  it('clamps expanded notes to whole lines inside a nested inset card', async () => {
+    const user = userEvent.setup();
+    const notes = '## Notes\nexternal_statistics_mean_type_message fixed';
+    const { container } = render(
+      <Releases
+        config={{ type: 'releases', repositories: ['a/b'] }}
+        data={{
+          releases: [
+            {
+              name: 'v1',
+              tag: 'v1',
+              url: 'https://example.com/v1',
+              published: null,
+              source: 'github',
+              notes,
+            },
+          ],
+        }}
+      />,
+    );
+    await user.click(screen.getByLabelText(/Show release notes/));
+
+    const body = screen.getByText(/external_statistics_mean_type_message/);
+    expect(body).toHaveAttribute('data-type', 'body');
+    // Clamped to whole lines with a real ellipsis — never a half-cut last line.
+    expect(body.getAttribute('style')).toContain('-webkit-line-clamp: 10');
+    // The untruncated note stays in the DOM for the tooltip and the source link.
+    expect(body.textContent).toBe(notes);
+    // Nested inset: transparent variant + the kit inset surface, never a
+    // default filled card sitting inside the outer widget card.
+    const inset = container.querySelector('[data-variant="transparent"]');
+    expect(inset).toBeInTheDocument();
+    expect(inset).toHaveStyle({ backgroundColor: 'var(--color-background)' });
+    expect(inset?.querySelector('[data-type="body"]')).toBe(body);
+  });
 });

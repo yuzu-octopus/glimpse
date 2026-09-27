@@ -17,11 +17,11 @@
 .row:nth-child(7) { animation-delay: 180ms; }
 .row:nth-child(8) { animation-delay: 210ms; }
 
-/* header row for title + expand button */
+/* header row for title + expand button — 4px half-step (small elements) */
 .rowHeader {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -41,13 +41,14 @@
   color: var(--color-primary);
 }
 
+/* 24px floor — WCAG 2.2 AA pointer-target minimum (spacing.md) */
 .expandBtn {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border: 1px solid var(--color-widget-content-border);
   border-radius: var(--border-radius);
   background: var(--color-widget-background-highlight);
@@ -69,14 +70,15 @@
   transition: transform 0.2s;
 }
 
-/* entire card is expandable when notes exist — flat, no shadow */
+/* entire card is expandable when notes exist — flat, no shadow.
+   4px bleed so the focus ring has room inside the outer card inset. */
 .rowExpandable {
   cursor: pointer;
   border-radius: var(--border-radius);
-  margin-left: -6px;
-  margin-right: -6px;
-  padding-left: 6px;
-  padding-right: 6px;
+  margin-left: -4px;
+  margin-right: -4px;
+  padding-left: 4px;
+  padding-right: 4px;
 }
 
 .rowExpandable:focus-visible {
@@ -84,53 +86,22 @@
   outline-offset: 1px;
 }
 
-.rowOpen {
-  /* flat highlight via subtle border tint, not lightened bg */
+.meta {
+  margin-top: 4px;
 }
 
-.body {
-  margin-top: 6px;
-}
-
-.previewRow {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.preview {
-  flex: 1;
-  min-width: 0;
-  font-size: var(--font-size-h6);
-  line-height: 1.5;
-  color: var(--color-text-paragraph);
-  overflow-wrap: anywhere;
-}
-
-.previewClamp {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.toggle {
-  flex-shrink: 0;
-  border: none;
-  background: none;
-  padding: 0;
-  font: inherit;
-  font-size: var(--font-size-h6);
-  color: var(--color-primary);
-  cursor: pointer;
-}
-
-.toggle:hover {
-  text-decoration: underline;
+/* Core Badge ships a 9999px pill; brand principle 7 is "flat and crisp, 5px
+   radii, no pills". Visual-over-spec deviation, recorded at the site of the
+   choice: keep the Badge's yellow tag wash, drop the pill and the
+   button-scale padding so it reads as a tag, not a control. */
+.tag {
+  border-radius: var(--radius-element);
+  padding-inline: 4px;
+  line-height: 1.4;
 }
 
 .collapse {
+  margin-top: 8px;
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
@@ -142,78 +113,28 @@
   opacity: 1;
 }
 
+/* Release notes are reading copy, not tokens or commands — the `body` role,
+   not `code`. `pre-wrap` keeps the upstream line structure. */
+.notes {
+  white-space: pre-wrap;
+}
+
 .collapseInner {
   min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
+.notesCard {
+  max-width: 100%;
+}
+
+/* Release notes are reading copy, not tokens or commands — `body` role, not
+   `code`. `pre-wrap` keeps the upstream line structure; `anywhere` stops long
+   identifiers (issue refs, function names) from overflowing the inset. */
 .notes {
-  margin: 0;
-  padding: 8px 10px;
-  font: inherit;
-  font-size: var(--font-size-h6);
-  line-height: 1.5;
-  color: var(--color-text-paragraph);
-  background: var(--color-widget-background-highlight);
-  border: 1px solid var(--color-widget-content-border);
-  border-radius: var(--border-radius);
   white-space: pre-wrap;
-  word-break: break-word;
-  max-height: 220px;
-  overflow: auto;
-}
-
-/* glance list-horizontal-text: subdue meta row under the name */
-.meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--font-size-base);
-  color: var(--color-text-base-muted);
-  margin-top: 2px;
-}
-
-/* glance .attachments > *: chip with separator bg, h6, radius — now vibrant per tag */
-.tag {
-  border-radius: var(--border-radius);
-  padding: 1px 5px;
-  font-size: var(--font-size-h6);
-  border: 1px solid color-mix(in srgb, var(--color-tag-yellow) 28%, transparent);
-  background-color: color-mix(in srgb, var(--color-tag-yellow) 22%, transparent);
-  color: var(--color-tag-yellow);
-}
-
-.tag:nth-child(5n+2) {
-  background-color: color-mix(in srgb, var(--color-tag-green) 22%, transparent);
-  color: var(--color-tag-green);
-  border-color: color-mix(in srgb, var(--color-tag-green) 28%, transparent);
-}
-
-.tag:nth-child(5n+3) {
-  background-color: color-mix(in srgb, var(--color-tag-cyan) 22%, transparent);
-  color: var(--color-tag-cyan);
-  border-color: color-mix(in srgb, var(--color-tag-cyan) 28%, transparent);
-}
-
-.tag:nth-child(5n+4) {
-  background-color: color-mix(in srgb, var(--color-tag-blue) 22%, transparent);
-  color: var(--color-tag-blue);
-  border-color: color-mix(in srgb, var(--color-tag-blue) 28%, transparent);
-}
-
-.tag:nth-child(5n+5) {
-  background-color: color-mix(in srgb, var(--color-tag-pink) 22%, transparent);
-  color: var(--color-tag-pink);
-  border-color: color-mix(in srgb, var(--color-tag-pink) 28%, transparent);
-}
-
-/* glance .release-source-icon: 16px, opacity 0.4 */
-.icon {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-  opacity: 0.4;
+  overflow-wrap: anywhere;
 }
