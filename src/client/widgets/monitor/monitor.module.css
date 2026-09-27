@@ -5,6 +5,14 @@
    the hand-rolled title colour and the 8-rung entrance-delay ladder are gone —
    the ladder was a brand violation (no entrance choreography), not a lookalike. */
 
+/* No rows to show. `show-failing-only` on a healthy set is the case this
+   exists for: without it the card body is an empty rail that reads as a
+   failed render rather than an all-clear. */
+.empty {
+  padding: 12px;
+  color: var(--color-text-base-muted);
+}
+
 .row {
   padding-block: 2px;
 }

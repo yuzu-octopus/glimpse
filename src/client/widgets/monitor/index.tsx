@@ -87,10 +87,21 @@ function Monitor({ config, data, error, isLoading }: WidgetComponentProps) {
       error={error}
       showErrors={cfg['show-errors']}
       isLoading={loading}
-      items={visible.map((s) => (
+    >
+      {/* `show-failing-only` with every site healthy filtered all of them out,
+          and unlike dns/system-stats/weather this had no empty branch — the
+          card body came back as a bare empty rail with nothing to say why.
+          The two empties are not the same news: an empty config has nothing
+          to check, while an all-clear is the answer the filter was asked for. */}
+      {visible.length === 0 && !loading ? (
+        <div className={styles.empty}>
+          {sites.length === 0 ? 'No sites to monitor.' : 'All sites up.'}
+        </div>
+      ) : null}
+      {visible.map((s) => (
         <SiteRow key={s.url} site={s} icon={icons[s.url]} />
       ))}
-    />
+    </WidgetChrome>
   );
 }
 

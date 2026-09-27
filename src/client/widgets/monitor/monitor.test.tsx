@@ -166,4 +166,44 @@ describe('monitor widget', () => {
     expect(screen.getByTestId('widget-error-dot')).toBeInTheDocument();
     expect(screen.queryByText('Example')).toBeNull();
   });
+
+  /** `show-failing-only` on a healthy set filters every site out. Unlike
+   *  dns/system-stats/weather there was no empty branch, so the card body came
+   *  back as a bare empty rail — indistinguishable from a broken widget. */
+  it('reports the all-clear when show-failing-only filters out every healthy site', () => {
+    const { container } = render(
+      <Monitor
+        config={{ type: 'monitor', 'show-failing-only': true, sites: [{ url: 'https://example.com' }] }}
+        data={{ sites: [sites[0]!] }}
+      />,
+    );
+    expect(screen.getByText('All sites up.')).toBeInTheDocument();
+    // No row chrome — the filter did its job, there is just nothing failing.
+    expect(container.querySelector(`.${styles.row}`)).toBeNull();
+  });
+
+  // "Nothing to check" and "nothing is broken" are opposite news, and the
+  // card has to say which one it is.
+  it('says there is nothing to monitor when the payload carries no sites', () => {
+    render(
+      <Monitor
+        config={{ type: 'monitor', sites: [] }}
+        data={{ sites: [] }}
+        isLoading={false}
+      />,
+    );
+    expect(screen.getByText('No sites to monitor.')).toBeInTheDocument();
+  });
+
+  it('keeps the all-clear out of the way while it is still loading', () => {
+    render(
+      <Monitor
+        config={{ type: 'monitor', 'show-failing-only': true, sites: [{ url: 'https://example.com' }] }}
+        data={null}
+        isLoading
+      />,
+    );
+    expect(screen.queryByText('All sites up.')).toBeNull();
+    expect(screen.getByTestId('widget-loading')).toBeInTheDocument();
+  });
 });
