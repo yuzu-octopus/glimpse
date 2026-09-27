@@ -1,9 +1,13 @@
+/* custom-api rows — a glance-style dense list: image/icon, title over
+ * subtitle, then the value and its timestamp right-aligned. The row itself is
+ * a kit HStack, the text columns are kit Stack, and every string is a Text or
+ * a Link, so what stays here is only what props cannot express. */
+
 .frameless {
   display: block;
 }
 
 .framelessError {
-  font-size: var(--font-size-base);
   color: var(--color-negative);
   padding: var(--widget-content-padding);
   background: var(--color-widget-background);
@@ -11,62 +15,21 @@
   border-radius: var(--border-radius);
 }
 
-.row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+/* The kit Stack has no flex-grow, so the column that takes the leftover width
+   beside the image stays a one-line local rule. */
+.rowBody {
+  flex: 1;
   min-width: 0;
+}
+
+.rowRight {
+  flex-shrink: 0;
 }
 
 .row + .row {
   margin-top: 5px;
   border-top: 1px solid var(--color-separator);
   padding-top: 5px;
-}
-
-.rowBody {
-  min-width: 0;
-  flex: 1;
-}
-
-.titleRow {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-
-.starIcon {
-  color: var(--color-tag-yellow);
-  flex-shrink: 0;
-}
-
-.title {
-  display: block;
-  font-size: var(--font-size-h4);
-  font-weight: 500;
-  color: var(--color-text-highlight);
-  text-decoration: none;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-a.title {
-  color: var(--color-primary);
-}
-
-a.title:hover {
-  color: var(--color-text-highlight);
-}
-
-.subtitle {
-  font-size: var(--font-size-h5);
-  color: var(--color-text-paragraph);
-  margin-top: 1px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .icon {
@@ -76,6 +39,7 @@ a.title:hover {
   object-fit: contain;
 }
 
+/* glance .thumbnail — desaturated at rest, full colour on hover. */
 .image {
   width: 48px;
   height: 48px;
@@ -91,23 +55,3 @@ a.title:hover {
   filter: none;
   opacity: 1;
 }
-
-.rowRight {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  flex-shrink: 0;
-}
-
-.value {
-  font-size: var(--font-size-base);
-  font-weight: 600;
-  color: var(--color-text-highlight);
-}
-
-.timestamp {
-  font-size: var(--font-size-h6);
-  color: var(--color-text-base-muted);
-}
-
