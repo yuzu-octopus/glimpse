@@ -1,4 +1,5 @@
-import { defineMediaWidget, MediaGrid, pickItems } from '../_media/media';
+import { defineMediaWidget, pickItems } from '../_media/factory';
+import { MediaGrid } from '../_media/media';
 
 const Jellyfin = defineMediaWidget('jellyfin', {
   defaultTitle: 'Jellyfin',
