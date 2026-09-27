@@ -212,7 +212,9 @@
   user-select: none;
 }
 
-.details summary:hover {
+/* <summary> is natively focusable, so the keyboard channel is the same
+   treatment as the pointer's. */
+.details summary:is(:hover, :focus-visible) {
   color: var(--color-text-highlight);
 }
 

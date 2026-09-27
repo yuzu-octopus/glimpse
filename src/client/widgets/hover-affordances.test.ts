@@ -13,7 +13,10 @@ const dir = dirname(fileURLToPath(import.meta.url));
 const read = (rel: string) => readFileSync(join(dir, rel), 'utf8');
 
 /** Every rule in the sheet as { selector, body }, unwrapping @media blocks. */
-function rules(src: string): Array<{ selector: string; body: string }> {
+function rules(sheet: string): Array<{ selector: string; body: string }> {
+  // A comment names the rule it precedes, so an unstripped parse reads a
+  // commented-out `:hover` as a live selector.
+  const src = sheet.replace(/\/\*[\s\S]*?\*\//g, '');
   const out: Array<{ selector: string; body: string }> = [];
   let buf = '';
   for (let i = 0; i < src.length; i++) {
@@ -50,7 +53,12 @@ function pointerOnly(src: string): string | undefined {
 }
 
 const REST_DIMMED = ['custom-api/custom-api.module.css', 'rss/rss.module.css', 'reddit/reddit.module.css'];
-const NO_HOVER_ONLY = [...REST_DIMMED, 'monitor/monitor.module.css', 'feed/feed.module.css'];
+const NO_HOVER_ONLY = [
+  ...REST_DIMMED,
+  'monitor/monitor.module.css',
+  'feed/feed.module.css',
+  'dns/dns.module.css',
+];
 
 describe('hover affordances are not hover-only', () => {
   it.each(NO_HOVER_ONLY)('%s pairs every :hover with a focus channel', (rel) => {
