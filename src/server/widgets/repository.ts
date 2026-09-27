@@ -2,7 +2,7 @@ import { REPOSITORY_DEFAULTS, repositorySchema } from '../../shared/widgets/keye
 import { fetchJson, retryOptionsFrom } from './http';
 import { getGitHubToken } from '../github-token';
 import { registerWidget } from './registry';
-import type { RepoPull } from '../../shared/widgets/payloads';
+import type { RepoCommit, RepoPull } from '../../shared/widgets/payloads';
 
 interface GitHubRepo {
   full_name?: string;
@@ -16,6 +16,27 @@ interface GitHubIssueLike {
   title?: string;
   html_url?: string;
   pull_request?: unknown;
+}
+
+interface GitHubCommit {
+  sha?: string;
+  html_url?: string;
+  commit?: {
+    message?: string;
+    author?: { name?: string; date?: string } | null;
+  };
+}
+
+/** glance widget-repository.go:226 splits the message on the first blank
+ * line, so a commit body never crowds out its subject. */
+function mapCommit(c: GitHubCommit): RepoCommit {
+  return {
+    sha: (c.sha ?? '').slice(0, 7),
+    message: (c.commit?.message ?? '').split('\n\n', 1)[0],
+    author: c.commit?.author?.name ?? '',
+    date: c.commit?.author?.date ?? null,
+    url: c.html_url ?? '',
+  };
 }
 
 function mapIssue(p: GitHubIssueLike): RepoPull {
@@ -38,7 +59,7 @@ registerWidget('repository', async (ctx, config) => {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
-  const [repo, pulls, issues] = await Promise.all([
+  const [repo, pulls, issues, commits] = await Promise.all([
     fetchJson<GitHubRepo>(ctx, base, { headers }, retry),
     fetchJson<GitHubIssueLike[]>(
       ctx,
@@ -52,8 +73,17 @@ registerWidget('repository', async (ctx, config) => {
       { headers },
       retry,
     ),
+    // glance defaults commits-limit to -1 ("show none"), so the fourth
+    // request only exists for a config that asked for commits.
+    (cfg['commits-limit'] ?? REPOSITORY_DEFAULTS['commits-limit']) > 0
+      ? fetchJson<GitHubCommit[]>(
+          ctx,
+          `${base}/commits?per_page=${cfg['commits-limit']}`,
+          { headers },
+          retry,
+        )
+      : Promise.resolve([] as GitHubCommit[]),
   ]);
-
   return {
     name: repo.full_name ?? cfg.repository,
     description: repo.description ?? null,
@@ -61,5 +91,6 @@ registerWidget('repository', async (ctx, config) => {
     url: repo.html_url ?? `https://github.com/${cfg.repository}`,
     pulls: pulls.map(mapIssue),
     issues: issues.flatMap((i) => ('pull_request' in i ? [] : [mapIssue(i)])),
+    commits: commits.map(mapCommit),
   };
 });

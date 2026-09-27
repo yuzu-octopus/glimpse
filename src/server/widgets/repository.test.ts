@@ -84,6 +84,48 @@ describe('repository fetcher', () => {
     }
   });
 
+  it('asks for commits only when commits-limit is above glance\'s -1 default', async () => {
+    const { ctx, fetchMock } = makeCtx({
+      [REPO_URL]: REPO,
+      [PULLS_URL]: PULLS,
+      [ISSUES_URL]: ISSUES,
+    });
+    const off = (await repositoryFetcher()(ctx, { type: 'repository', repository: 'acme/widget' })) as RepositoryData;
+    expect(off.commits).toEqual([]);
+    expect(fetchMock.mock.calls.map((c) => c[0])).not.toContain(`${REPO_URL}/commits?per_page=3`);
+
+    const { ctx: ctx2, fetchMock: fetchMock2 } = makeCtx({
+      [REPO_URL]: REPO,
+      [PULLS_URL]: PULLS,
+      [ISSUES_URL]: ISSUES,
+      [`${REPO_URL}/commits?per_page=3`]: [
+        {
+          sha: 'abcdef1234567890',
+          html_url: 'https://github.com/acme/widget/commit/abcdef1',
+          commit: {
+            message: 'Fix the thing\n\nA long body that must not show.',
+            author: { name: 'Robin', date: '2024-01-01T10:00:00Z' },
+          },
+        },
+      ],
+    });
+    const on = (await repositoryFetcher()(ctx2, {
+      type: 'repository',
+      repository: 'acme/widget',
+      'commits-limit': 3,
+    })) as RepositoryData;
+    expect(on.commits).toEqual([
+      {
+        sha: 'abcdef1',
+        message: 'Fix the thing',
+        author: 'Robin',
+        date: '2024-01-01T10:00:00Z',
+        url: 'https://github.com/acme/widget/commit/abcdef1',
+      },
+    ]);
+    expect(fetchMock2.mock.calls.map((c) => c[0])).toContain(`${REPO_URL}/commits?per_page=3`);
+  });
+
   it('throws on missing repo (404)', async () => {
     const { ctx } = makeCtx({});
     await expect(

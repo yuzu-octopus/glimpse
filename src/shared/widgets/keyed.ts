@@ -18,7 +18,7 @@ export const MONITOR_SKELETON: SkeletonShape = 'rows';
 export const CUSTOM_API_DEFAULTS = { limit: 5 } as const;
 export const CUSTOM_API_PREF: Pref = { cols: 3, rows: 1, resizable: false, priority: 5, zone: 'main', preferredWidth: 340, preferredHeight: 200 };
 export const CUSTOM_API_SKELETON: SkeletonShape = 'chart';
-export const REPOSITORY_DEFAULTS = { 'pull-requests-limit': 5, 'issues-limit': 5 } as const;
+export const REPOSITORY_DEFAULTS = { 'pull-requests-limit': 5, 'issues-limit': 5, 'commits-limit': -1 } as const;
 export const REPOSITORY_PREF: Pref = { cols: 4, rows: 2, resizable: false, priority: 6, zone: 'main', preferredWidth: 360, preferredHeight: 200 };
 export const REPOSITORY_SKELETON: SkeletonShape = 'stat';
 
@@ -199,5 +199,8 @@ export const repositorySchema = z.object({
   token: z.string().optional(),
   'pull-requests-limit': z.number().int().positive().default(REPOSITORY_DEFAULTS['pull-requests-limit']),
   'issues-limit': z.number().int().positive().default(REPOSITORY_DEFAULTS['issues-limit']),
+  /** Latest commits from the default branch. -1 is glance's default and means
+   * "show none", so the extra /commits request is only made when asked for. */
+  'commits-limit': z.number().int().min(-1).default(REPOSITORY_DEFAULTS['commits-limit']),
 });
 export type RepositoryConfig = z.infer<typeof repositorySchema>;
