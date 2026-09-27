@@ -48,6 +48,7 @@ describe('buildPagePayload', () => {
   });
 
   // The mobile column toggle reads `columns[].title`; the live payload and the
+
   // skeleton (which the client patches the stream onto) must both carry it or
   // the label flashes "Column N" and then renames itself.
   it('carries a column title into both the live and the skeleton payload', async () => {
@@ -281,6 +282,26 @@ describe('streamPagePayload', () => {
     expect(chunks).toHaveLength(2);
     expect(chunks[0].path).toMatch(/headWidgets/);
     expect(chunks[1].path).toMatch(/columns/);
+  });
+
+  it('delivers a frame for every configured widget, even when fetches fail', async () => {
+    // A dropped chunk leaves the client on the skeleton frame it already
+    // rendered, with nothing to tell it apart from a slow widget — the
+    // skeleton never resolves and no error is shown. Every configured
+    // widget must get a frame, carrying the error when it failed.
+    registerWidget('rss', vi.fn(async () => {
+      throw new Error('upstream exploded');
+    }));
+    const testPage = {
+      name: 'Home',
+      slug: 'home',
+      columns: [{ size: 'full', widgets: [{ type: 'rss' }, clockWidget] }],
+    } as unknown as Parameters<typeof streamPagePayload>[0];
+    const chunks: StreamChunk[] = [];
+    for await (const c of streamPagePayload(testPage, makeCtx())) chunks.push(c);
+    expect(chunks).toHaveLength(2);
+    const failed = chunks.find((c) => c.payload.type === 'rss');
+    expect(failed?.payload.error).toBe('upstream exploded');
   });
 });
 
