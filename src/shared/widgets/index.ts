@@ -148,21 +148,21 @@ const schemaEntries = [
  * PREFERRED_SIZES / SKELETON_SHAPE derive from this table; the derivation
  * test fails if a union member has no row here. */
 export const widgetMeta = {
-  notepad: { schema: notepadSchema, pref: NOTEPAD_PREF, skeleton: NOTEPAD_SKELETON },
-  timer: { schema: timerSchema, pref: TIMER_PREF, skeleton: TIMER_SKELETON },
-  bookmarks: { schema: bookmarksSchema, pref: BOOKMARKS_PREF, skeleton: BOOKMARKS_SKELETON },
-  search: { schema: searchSchema, pref: SEARCH_PREF, skeleton: SEARCH_SKELETON },
-  clock: { schema: clockSchema, pref: CLOCK_PREF, skeleton: CLOCK_SKELETON },
-  calendar: { schema: calendarSchema, pref: CALENDAR_PREF, skeleton: CALENDAR_SKELETON },
+  notepad: { schema: notepadSchema, pref: NOTEPAD_PREF, skeleton: NOTEPAD_SKELETON, configOnly: true },
+  timer: { schema: timerSchema, pref: TIMER_PREF, skeleton: TIMER_SKELETON, configOnly: true },
+  bookmarks: { schema: bookmarksSchema, pref: BOOKMARKS_PREF, skeleton: BOOKMARKS_SKELETON, configOnly: true },
+  search: { schema: searchSchema, pref: SEARCH_PREF, skeleton: SEARCH_SKELETON, configOnly: true },
+  clock: { schema: clockSchema, pref: CLOCK_PREF, skeleton: CLOCK_SKELETON, configOnly: true },
+  calendar: { schema: calendarSchema, pref: CALENDAR_PREF, skeleton: CALENDAR_SKELETON, configOnly: true },
   'events-calendar': { schema: eventsCalendarSchema, pref: EVENTS_CALENDAR_PREF, skeleton: EVENTS_CALENDAR_SKELETON },
-  todo: { schema: todoSchema, pref: TODO_PREF, skeleton: TODO_SKELETON },
-  iframe: { schema: iframeSchema, pref: IFRAME_PREF, skeleton: IFRAME_SKELETON },
-  html: { schema: htmlSchema, pref: HTML_PREF, skeleton: HTML_SKELETON },
+  todo: { schema: todoSchema, pref: TODO_PREF, skeleton: TODO_SKELETON, configOnly: true },
+  iframe: { schema: iframeSchema, pref: IFRAME_PREF, skeleton: IFRAME_SKELETON, configOnly: true },
+  html: { schema: htmlSchema, pref: HTML_PREF, skeleton: HTML_SKELETON, configOnly: true },
   rss: { schema: rssSchema, pref: RSS_PREF, skeleton: RSS_SKELETON },
   'hacker-news': { schema: hackerNewsSchema, pref: HACKER_NEWS_PREF, skeleton: HACKER_NEWS_SKELETON },
   reddit: { schema: redditSchema, pref: REDDIT_PREF, skeleton: REDDIT_SKELETON },
-  group: { schema: groupSchema, pref: GROUP_PREF, skeleton: GROUP_SKELETON },
-  'split-column': { schema: splitColumnSchema, pref: SPLIT_COLUMN_PREF, skeleton: SPLIT_COLUMN_SKELETON },
+  group: { schema: groupSchema, pref: GROUP_PREF, skeleton: GROUP_SKELETON, configOnly: true },
+  'split-column': { schema: splitColumnSchema, pref: SPLIT_COLUMN_PREF, skeleton: SPLIT_COLUMN_SKELETON, configOnly: true },
   releases: { schema: releasesSchema, pref: RELEASES_PREF, skeleton: RELEASES_SKELETON },
   weather: { schema: weatherSchema, pref: WEATHER_PREF, skeleton: WEATHER_SKELETON },
   lobsters: { schema: lobstersSchema, pref: LOBSTERS_PREF, skeleton: LOBSTERS_SKELETON },
@@ -190,7 +190,20 @@ export const widgetMeta = {
   'home-assistant': { schema: homeAssistantSchema, pref: HOME_ASSISTANT_PREF, skeleton: HOME_ASSISTANT_SKELETON },
   'model-endpoints': { schema: modelEndpointsSchema, pref: MODEL_ENDPOINTS_PREF, skeleton: MODEL_ENDPOINTS_SKELETON },
   'tailscale': { schema: tailscaleSchema, pref: TAILSCALE_PREF, skeleton: TAILSCALE_SKELETON },
-} as const satisfies Record<string, { schema: z.ZodType; pref: Pref; skeleton: SkeletonShape }>;
+} as const satisfies Record<string, { schema: z.ZodType; pref: Pref; skeleton: SkeletonShape; configOnly?: true }>;
+
+/**
+ * Widget types the server never fetches for: pure config-driven renderers
+ * plus the container types. Their payload is `data: null` by design, so a
+ * render layer that reads `data == null` as "still loading" shows them a
+ * skeleton that can never resolve. Derived from the same registry row as
+ * the schema, so a type cannot be added here and forgotten there.
+ */
+export const CONFIG_ONLY: Record<string, true> = Object.fromEntries(
+  Object.entries(widgetMeta)
+    .filter(([, m]) => 'configOnly' in m)
+    .map(([t]) => [t, true]),
+);
 
 /** Public widget type union, derived from the schema entries. */
 export type WidgetType = (typeof schemaEntries)[number]['shape']['type']['value'];

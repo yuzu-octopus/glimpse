@@ -189,6 +189,47 @@ describe('PageView', () => {
     await waitFor(() => expect(screen.queryByTestId('widget-loading')).toBeNull());
   });
 
+  it('never marks a config-only widget loading, but still waits for a data widget', async () => {
+    // A config-only widget's payload is `data: null` by design and no chunk
+    // will ever arrive, so deriving `isLoading` from the payload alone
+    // strands its skeleton permanently. A data widget must keep showing
+    // one until its data lands — the flag is not a blanket "null data".
+    const seen: { type: string; isLoading: unknown }[] = [];
+    const probe = (type: string) => {
+      const C = (props: { isLoading?: boolean }) => {
+        seen.push({ type, isLoading: props.isLoading });
+        return <div data-testid={`probe-${type}`} />;
+      };
+      registerWidgetComponent(type as WidgetType, C);
+      return C;
+    };
+    probe('clock');
+    probe('weather');
+    try {
+      renderPage(
+        payload({
+          columns: [
+            {
+              size: 'full',
+              widgets: [
+                { type: 'clock' as WidgetType, config: { type: 'clock' }, data: null },
+                { type: 'weather' as WidgetType, config: { type: 'weather', location: 'London' }, data: null },
+              ],
+            },
+          ],
+        }),
+      );
+      await screen.findByTestId('probe-clock');
+      await screen.findByTestId('probe-weather');
+      const byType = new Map(seen.map((s) => [s.type, s.isLoading]));
+      expect(byType.get('clock')).toBe(false);
+      expect(byType.get('weather')).toBe(true);
+    } finally {
+      clientWidgets.delete('clock' as WidgetType);
+      clientWidgets.delete('weather' as WidgetType);
+    }
+  });
+
   it('renders a placeholder for unimplemented widgets', async () => {
     renderPage(
       payload({
