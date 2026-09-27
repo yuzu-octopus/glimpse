@@ -104,28 +104,6 @@ kbd:active {
   box-shadow: 0 0 0 0 var(--color-widget-background-highlight);
 }
 
-@keyframes pageContentEntrance {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes collapsibleItemReveal {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @keyframes loadingIconSpin {
   to {
     transform: rotate(360deg);
