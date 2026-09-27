@@ -119,10 +119,11 @@ describe('WidgetChrome', () => {
     fireEvent.click(screen.getByRole('button', { name: /show more/i }));
     const btn = screen.getByRole('button', { name: /show less/i });
     expect(getComputedStyle(btn).position).not.toBe('sticky');
+    // The kit Button owns the toggle's box, so nothing in the module may pin
+    // it to the viewport — the guard used to be scoped to the one class the
+    // raw button owned.
     const css = readFileSync('src/client/components/widget-chrome.module.css', 'utf8');
-    const moreExpandedBlock = css.match(/\.moreExpanded\s*\{[^}]*\}/s)?.[0] ?? '';
-    expect(moreExpandedBlock).not.toMatch(/position\s*:\s*sticky/);
-    expect(moreExpandedBlock).not.toMatch(/bottom\s*:/);
+    expect(css).not.toMatch(/position\s*:\s*sticky/);
   });
 
   it('Show more and Show less have same position (both not sticky)', () => {
