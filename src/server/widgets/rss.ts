@@ -1,7 +1,6 @@
-import { RSS_DEFAULTS, rssSchema } from '../../shared/widgets/feeds';
+import { rssSchema } from '../../shared/widgets/feeds';
 import { registerWidget } from './registry';
 import { fetchText, retryOptionsFrom } from './http';
-import { widgetLimit } from './runtime';
 import { getBXML } from './xml';
 import type { RssItem } from '../../shared/widgets/payloads';
 
@@ -129,7 +128,7 @@ registerWidget('rss', async (ctx, config) => {
       // glance widget-rss.go:253 — a configured prefix replaces the link
       // outright, which is the escape hatch for feeds that emit bare paths.
       const linkPrefix = feed['item-link-prefix'];
-      const perFeedLimit = feed.limit ?? widgetLimit(cfg, RSS_DEFAULTS.limit);
+      const perFeedLimit = feed.limit ?? cfg.limit;
       const slice = parsed.items.slice(0, perFeedLimit);
       return slice.map((item) => ({
         title: itemTitle(item),
@@ -157,6 +156,5 @@ registerWidget('rss', async (ctx, config) => {
       return tb - ta;
     });
   }
-  const limit = widgetLimit(cfg, RSS_DEFAULTS.limit);
-  return { items: items.slice(0, limit) };
+  return { items: items.slice(0, cfg.limit) };
 });
