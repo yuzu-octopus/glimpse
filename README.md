@@ -26,7 +26,7 @@ Built with **Bun**, **TypeScript**, **Vite**, **React 19**, the **Astryx** desig
 
 ## Features
 
-- **39 widget types** — feeds, homelab monitoring, containers, AI quota, media, twitch, timers, calendars, radar, trending — see [Widgets](#widgets)
+- **42 widget types** — feeds, homelab monitoring, containers, smart-home state, VPN tailnets, AI quota, model availability, media, twitch, timers, calendars, radar, trending — see [Widgets](#widgets)
 - **One theme — [astryx-dracula](https://github.com/yuzu-octopus/astryx-dracula)** — the pure Dracula brand for Astryx, dark-only by design: 270+ brand tokens, JetBrains Mono for body/heading/code, a fixed status vocabulary, and a shared chart layer (5 purple-free categorical hues plus 55 `--color-data-*` ramp tokens). No presets, no light mode, no picker; `custom-css-file:` is the only override
 - **12-column bento layout** — `pages` → `columns` (`span` tracks on a 12-col grid; legacy `size: small/full` still works) plus a `tiling: collage` mode driven by one pure `place()` module, responsive 12/6/1 tracks on desktop/tablet/mobile, optional `head-widgets`
 - **Progressive loading** — the server streams widgets as their data settles over a skeleton-first NDJSON stream; widget components are lazy chunks preloaded after first paint. Fast (cached/config-only) widgets paint instantly while slow API widgets show type-shaped skeletons and fill in as responses arrive; the server pre-warms its widget cache at boot and on config changes so the first visitor never waits on upstreams. Skeleton grid mirrors real column spans so layout never shifts.
@@ -81,7 +81,8 @@ pages:
 - Shared widget props: `title`, `title-url`, `hide-header`, `css-class`, `retries` (extra fetch attempts, 0–10, default 3), `show-errors` (default true; `false` mutes the error banner, and the header status dot still reports the failure).
 - A column takes an optional `title`, which names the whole stack and is what the mobile section header reads. Unlabelled, the header falls back to the column's first widget title, then to `Column N` — name your columns if you want the mobile headers to say what they are.
 - `cache` accepts glance's duration syntax (`45s`, `12h`, `1d`). With no `cache` set the default TTL comes from the widget kind: 1s for `server-stats` / `system-stats`, 10m for `weather-radar`, 60s for the live types (`clock`, `weather`, `markets`, `monitor`, `server-stats`, `system-stats`), 1h for everything else.
-- `${ENV_VAR}` references in any string value are interpolated at load time (missing variable = validation error). The `${secret:name}` Docker-secrets syntax is not supported.
+- Only those six live types also poll themselves (1s on a page containing `server-stats` / `system-stats`, 30s otherwise). Every other widget re-reads on tab focus, route change, or reload — so a state widget you want to look live (`home-assistant`, `tailscale`, `ai-quota`, …) needs an explicit short `cache: 60s`; without one the server hands back the same cached payload for up to an hour.
+- `${ENV_VAR}` references in any string value are interpolated at load time (missing variable = validation error); `${ENV_VAR:-fallback}` supplies a default instead of failing. The `${secret:name}` Docker-secrets syntax is not supported.
 - `$include: <path>` merges another config file (relative to the including file; pages append, `custom-css-file` takes the last include's value).
 - The config file is watched and auto-reloaded on save; last good config stays active on validation errors.
 - All configs are zod-validated, including glance's structural rules: 1–3 columns per page, columns require `size` or `span` (`span` explicit on all or none), when using `size` a page has 1 or 2 `full` columns, a `group` cannot contain another `group` or `split-column`, and page slugs must be unique.
@@ -99,7 +100,7 @@ Server variables, all optional, read from the process environment (no `.env` loa
 | `GLIMPSE_PORT` | `3000` | Port of the Bun server |
 | `GITHUB_TOKEN` / `GH_TOKEN` | — | Bearer token for GitHub requests (`releases`, `repository`); falls back to `gh auth token`, then unauthenticated |
 
-Widgets also read their own credentials from the environment — `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET`, `IMMICH_API_KEY`, `JELLYFIN_API_KEY`, `QBITTORRENT_USERNAME` / `QBITTORRENT_PASSWORD`, `TRANSMISSION_USERNAME` / `TRANSMISSION_PASSWORD`, and the per-provider `ai-quota` keys. `${ENV_VAR}` interpolation in YAML covers the rest.
+Widgets also read their own credentials from the environment — `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET`, `IMMICH_API_KEY`, `JELLYFIN_API_KEY`, `QBITTORRENT_USERNAME` / `QBITTORRENT_PASSWORD`, `TRANSMISSION_USERNAME` / `TRANSMISSION_PASSWORD`, `HA_TOKEN`, `TS_API_KEY`, and the per-provider `ai-quota` keys. `${ENV_VAR}` interpolation in YAML covers the rest.
 
 ## Widgets
 
@@ -124,8 +125,10 @@ Widgets also read their own credentials from the environment — `TWITCH_CLIENT_
 | `system-stats` | CPU / GPU / RAM / disk of the host | `systeminformation`; 1s server cache when present |
 | `dns-stats` | DNS server query stats | Pi-hole (v6 session auth, v5 token fallback) or Technitium |
 | `docker-containers` | Container status | Docker Engine API over unix socket |
-| `ai-quota` | AI provider quota and balance | 70 known provider ids (46 with fetchers), ported from [CodexBar](https://github.com/steipete/CodexBar): Codex / Claude / OpenAI / Copilot / OpenCode / Gemini / Vertex / Grok and the table-driven rows. `token` or `tokenFile` is required; shows `used%`, reset countdown, plan and balance |
+| `ai-quota` | AI provider quota and balance | 70 known provider ids, all with fetchers, ported from [CodexBar](https://github.com/steipete/CodexBar): Codex / Claude / OpenAI / Copilot / OpenCode / Gemini / Vertex / Grok and the table-driven rows. `token` or `tokenFile` is required; shows `used%`, reset countdown, plan and balance. Default `cache` is 1h — raise the rate with `cache: 2m` |
 | `model-endpoints` | Whether the models you depend on are still being served | OpenRouter per-model endpoints, free and keyless: `models[]` (required `vendor/model` slugs, 1–12), `provider` tag, `limit` rows (8), `unhealthy-only`. Worst-status-first, grouped by model, with 5m / 30m / 1d uptime. Availability, not quota — `ai-quota` covers the quota windows |
+| `tailscale` | Tailnet devices, online first | Tailscale API v2 `/devices`; `api-key` (`${TS_API_KEY}`, scope `devices:core:read`), `tailnet` (`-` = the key's own tailnet), `limit` ≤ 200 (20); exit-node badges, last-seen on offline rows |
+| `home-assistant` | Current state of chosen Home Assistant entities | One REST `GET /api/states` per refresh, filtered server-side to `entities[]` (required; bare id or `{entity, label}`); `url` (default `http://homeassistant.local:8123`), `token` or `HA_TOKEN`. **State only** — the present value of each entity, no history: no energy chart, no long-term statistics (those need HA's WebSocket recorder API, not REST) |
 | `events-calendar` | Upcoming events from ICS feeds | `urls[]` / `ics-url` (at least one required); `days` (14), `limit` (20) |
 | `weather-radar` | Animated precipitation radar | RainViewer tiles centered on `location`; `zoom` 3–10 (7) |
 | `github-trending` | Trending GitHub repositories | `language`, `since` daily / weekly / monthly, `limit` ≤ 25 (10) |
