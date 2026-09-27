@@ -36,6 +36,38 @@ describe('SystemStats client', () => {
     expect(screen.queryByText('No data — not running on homelab host')).not.toBeInTheDocument();
   });
 
+  it('inks the utilisation — every loaded row carries a meter at its own percent', () => {
+    render(<SystemStats config={baseConfig} data={sampleData} />);
+    const bar = (name: string) => screen.getByRole('meter', { name });
+    expect(bar('CPU load')).toHaveAttribute('aria-valuenow', '42');
+    expect(bar('MEM load')).toHaveAttribute('aria-valuenow', '50'); // 8/16 GB
+    expect(bar('DISK load')).toHaveAttribute('aria-valuenow', '20');
+    expect(bar('TEMP load')).toHaveAttribute('aria-valuenow', '55');
+    expect(bar('GPU load')).toHaveAttribute('aria-valuenow', '60');
+  });
+
+  it('escalates the fill at 85% and flips to the negative hue at 95%', () => {
+    const stateAt = (use: number) => {
+      const { unmount } = render(
+        <SystemStats config={baseConfig} data={{ ...sampleData, fs: [{ ...sampleData.fs[0], use }] }} />,
+      );
+      const disk = screen.getByRole('meter', { name: 'DISK load' });
+      const out = [disk.getAttribute('data-high'), disk.getAttribute('data-critical')];
+      unmount();
+      return out;
+    };
+    expect(stateAt(5)).toEqual([null, null]);
+    expect(stateAt(84)).toEqual([null, null]);
+    expect(stateAt(85)).toEqual(['true', null]);
+    expect(stateAt(94)).toEqual(['true', null]);
+    expect(stateAt(95)).toEqual(['true', 'true']);
+  });
+
+  it('draws no bar for a row with no measurable load', () => {
+    render(<SystemStats config={baseConfig} data={{ ...sampleData, gpu: [{ model: 'M5', temp: null }] }} />);
+    expect(screen.queryByRole('meter', { name: 'GPU load' })).toBeNull();
+  });
+
   it('renders loading chrome when isLoading', () => {
     render(<SystemStats config={baseConfig} data={null} isLoading />);
     // placeholder not shown when loading; Chrome shows skeleton (no rows)
