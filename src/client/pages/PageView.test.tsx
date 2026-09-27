@@ -351,6 +351,37 @@ describe('PageView', () => {
     expect(screen.getByTestId('clock-widget')).toHaveTextContent('Tab B');
   });
 
+  /** Before the per-widget boundary, a payload that threw while rendering
+   *  unmounted every widget on the page — one malformed field and the whole
+   *  dashboard went blank, with no card to say which widget did it. */
+  it('degrades a widget that throws on its payload and keeps the rest of the page', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    registerWidgetComponent('clock' as WidgetType, ({ config }) => {
+      if (config.title === 'Exploding') {
+        throw new TypeError("Cannot read properties of null (reading 'toLocaleString')");
+      }
+      return <div data-testid="clock-widget">{String(config.title)}</div>;
+    });
+    renderPage(
+      payload({
+        columns: [
+          {
+            size: 'full',
+            widgets: [
+              { type: 'clock', config: { type: 'clock', title: 'Exploding' }, data: null },
+              { type: 'clock', config: { type: 'clock', title: 'Survivor' }, data: null },
+            ],
+          },
+        ],
+      }),
+    );
+    await screen.findByTestId('clock-widget');
+    // The crash costs its own card, and the card names the widget.
+    expect(screen.getByText('Exploding failed to render')).toBeInTheDocument();
+    // The rest of the page is still there.
+    expect(screen.getByTestId('clock-widget')).toHaveTextContent('Survivor');
+  });
+
   /** A glance split-column with N children renders N tracks when max-columns
    * allows it. The count reaches CSS as a custom property so the narrow-tile
    * container query and the mobile fallback still own grid-template-columns. */

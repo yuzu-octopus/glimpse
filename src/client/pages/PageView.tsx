@@ -7,6 +7,7 @@ import type { Page } from '../../shared/config';
 import type { WidgetType } from '../../shared/config';
 import { HideHeadersContext } from '../components/HideHeadersContext';
 import { WidgetChrome } from '../components/WidgetChrome';
+import { WidgetErrorBoundary } from '../components/WidgetErrorBoundary';
 import { usePageData } from '../hooks/usePageData';
 import { clientWidgets } from '../widgets/registry';
 import { ensureWidgetLoaded } from '../widgets';
@@ -307,22 +308,30 @@ function tileStyle(span: number, rowSpan?: number): CSSProperties {
   return s;
 }
 
-/** Renders one widget: registry component, container, or not-implemented. - memo safe: widget ref changes on update per streaming invariant */
+/** Renders one widget: registry component, container, or not-implemented.
+ *  Wrapped per widget, not per page: an unvalidated payload that throws while
+ *  rendering costs its own card, not the dashboard. - memo safe: widget ref
+ *  changes on update per streaming invariant */
 const WidgetSlot = memo(function WidgetSlot({ widget }: { widget: WidgetPayload }) {
-  if (widget.widgets) return <ContainerWidget widget={widget} />;
   return (
-    <Suspense
-      fallback={
-        <WidgetChrome
-          title={widgetTitle(widget)}
-          hideHeader={widget.config['hide-header'] === true}
-          isLoading
-          skeletonShape={SKELETON_SHAPE[(widget.type as string) ?? (widget.config.type as string) ?? ''] ?? 'rows'}
-        />
-      }
-    >
-      <WidgetSlotContent widget={widget} />
-    </Suspense>
+    <WidgetErrorBoundary identity={widget} title={widgetTitle(widget)}>
+      {widget.widgets ? (
+        <ContainerWidget widget={widget} />
+      ) : (
+        <Suspense
+          fallback={
+            <WidgetChrome
+              title={widgetTitle(widget)}
+              hideHeader={widget.config['hide-header'] === true}
+              isLoading
+              skeletonShape={SKELETON_SHAPE[(widget.type as string) ?? (widget.config.type as string) ?? ''] ?? 'rows'}
+            />
+          }
+        >
+          <WidgetSlotContent widget={widget} />
+        </Suspense>
+      )}
+    </WidgetErrorBoundary>
   );
 });
 
