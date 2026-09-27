@@ -10,6 +10,8 @@ import { readFileSync } from 'node:fs';
 import { loadConfig } from '../src/server/config';
 import { widgetMeta } from '../src/shared/widgets';
 import { TYPE_ALIAS_KEYS } from '../src/shared/widgets/aliases';
+import { ConfigSchema } from '../src/shared/config';
+import { z } from 'zod';
 
 const configPath = process.argv[2] ?? process.env.GLIMPSE_CONFIG ?? './config.yml';
 // Aliases are folded by the schema before it discriminates, so the linter must
@@ -109,14 +111,172 @@ srcLines.forEach((text, i) => {
   }
 });
 
+// ── unsupported options ────────────────────────────────────────────────────
+// The one class of config error zod cannot report: a widget's object strips
+// unknown keys, so a glance option Glimpse never implemented parses clean and
+// renders nothing. `.strict()` is not the fix — glance declares ~38 top-level
+// config keys and ConfigSchema admits 2, so strict mode would reject every real
+// config. So the shape is diffed here instead, against the raw source, where a
+// line number still exists. Top level is exempt for the reason above.
+
+type Obj = { shape: Record<string, z.ZodType>; def?: { catchall?: unknown } };
+
+/** Peels the wrappers a schema is dressed in: optional, default, nullable,
+ * the alias-folding pipe, and the lazy back-reference group/split-column use
+ * for their own children. */
+function unwrap(s: z.ZodType): z.ZodType {
+  let cur = s;
+  for (;;) {
+    const def = (cur.def ?? {}) as { innerType?: z.ZodType; out?: z.ZodType; getter?: () => z.ZodType };
+    const next = cur instanceof z.ZodLazy ? def.getter?.() : cur instanceof z.ZodPipe ? def.out : def.innerType;
+    if (next === undefined) return cur;
+    cur = next;
+  }
+}
+
+interface Frame {
+  /** Indent of the lines that are this frame's direct children. */
+  indent: number;
+  /** Keys accepted here, or null while a widget item's `type:` is unread. */
+  shape: Record<string, z.ZodType> | null;
+  obj: Obj | null;
+  /** A widget list: the shape only arrives once the item's `type:` names it. */
+  widget: boolean;
+  /** False where unknown keys are legal (the root) or unknowable. */
+  warn: boolean;
+  /** Widget type, for the message; inherited by nested frames. */
+  type?: string;
+  /** Path of the object this frame describes; `[]` marks a list. */
+  path: string;
+  /** List items seen, for the `[n]` index. */
+  seen: number;
+}
+
+function unsupportedOptions(lines: string[]): string[] {
+  const out: string[] = [];
+  const stack: Frame[] = [
+    { indent: -1, shape: ConfigSchema.shape, obj: ConfigSchema, widget: false, warn: false, path: '', seen: 0 },
+  ];
+  let blockIndent = -1; // inside a `|`/`>` scalar, whose body is not config
+
+  lines.forEach((text, i) => {
+    const indent = indentOf(text);
+    if (blockIndent >= 0) {
+      if (indent > blockIndent || /^\s*(#|$)/.test(text)) return;
+      blockIndent = -1;
+    }
+    if (/^\s*(#|$)/.test(text)) return;
+    const isItem = /^\s*-\s+/.test(text);
+    const m = /^([\w$-]+)\s*:(.*)$/.exec(isItem ? text.replace(/^\s*-\s+/, '') : text.trimStart());
+    if (!m) return;
+    const [, key, rest] = m;
+
+    while (stack.length > 1 && stack[stack.length - 1]!.indent > indent) stack.pop();
+    let frame = stack[stack.length - 1]!;
+    let base = frame.path;
+    if (isItem) {
+      const index = frame.seen++;
+      base = frame.path.endsWith('[]') ? `${frame.path.slice(0, -2)}[${index}]` : frame.path;
+      // The item's keys sit one step in from its dash.
+      stack.push({
+        indent: indent + 2,
+        obj: frame.widget ? null : frame.obj,
+        shape: frame.widget ? null : frame.obj?.shape ?? null,
+        widget: frame.widget,
+        warn: !frame.widget && frame.obj?.def?.catchall === undefined,
+        path: base,
+        seen: 0,
+        type: frame.type,
+      });
+      frame = stack[stack.length - 1]!;
+    }
+    if (frame.widget) {
+      if (key !== 'type') {
+        if (!frame.shape) return;
+      } else {
+        const type = rest.trim().replace(/^['"]|['"]$/g, '');
+        const schema = widgetMeta[type as keyof typeof widgetMeta]?.schema as Obj | undefined;
+        frame.obj = schema ?? null;
+        frame.shape = schema?.shape ?? null;
+        frame.type = type;
+        frame.warn = schema !== undefined;
+        return;
+      }
+    }
+
+    const keyPath = base === '' ? key : `${base}.${key}`;
+    if (frame.warn && frame.shape && !(key in frame.shape)) {
+      out.push(
+        `line ${i + 1}: "${key}" is not a supported option${frame.type ? ` of the ${frame.type} widget` : ''} (${keyPath}) — Glimpse ignores it`,
+      );
+    }
+    if (/^[|>][-+]?\d*$/.test(rest.trim())) {
+      blockIndent = indent;
+      return;
+    }
+
+    const member = frame.shape?.[key];
+    if (member === undefined) return;
+    const inner = unwrap(member);
+    const list = inner instanceof z.ZodArray;
+    const value = list ? unwrap((inner as z.ZodArray).element) : inner;
+    // A record's keys are whatever the config calls them, so its frame takes
+    // the key's own path and each child hangs off it.
+    const record = value instanceof z.ZodRecord ? unwrap(value.def.valueType) : null;
+    const resolved = record ?? value;
+    let child: Obj | null = null;
+    let isUnion = false;
+    if (resolved instanceof z.ZodDiscriminatedUnion) {
+      isUnion = true;
+    } else if (resolved instanceof z.ZodObject) {
+      child = resolved;
+    } else if (resolved instanceof z.ZodUnion) {
+      // `search-engine:` is string-or-object; its object form is only
+      // unambiguous when the union names exactly one.
+      const objects = resolved.options
+        .map(unwrap)
+        .filter((o): o is z.ZodObject => o instanceof z.ZodObject);
+      if (objects.length === 1) child = objects[0]!;
+    }
+    if (!isUnion && !child) return;
+    // Two YAML spellings: children indented under the key, or a list whose
+    // dashes sit at the key's own indent. The next line says which.
+    const next = lines[i + 1];
+    const nextIndent = next === undefined ? indent + 2 : indentOf(next);
+    const childIndent = next !== undefined && /^\s*-\s/.test(next) && nextIndent <= indent ? nextIndent : indent + 2;
+    stack.push({
+      indent: childIndent,
+      obj: child,
+      shape: child?.shape ?? null,
+      widget: isUnion,
+      // `.loose()` objects keep unknown keys instead of stripping them, and a
+      // record's keys are the config's own naming, not options — neither has
+      // anything ignored to report.
+      warn: !isUnion && !record && child?.def?.catchall === undefined,
+      path: list || isUnion ? `${keyPath}[]` : keyPath,
+      seen: 0,
+      type: frame.type,
+    });
+  });
+  return out;
+}
+
+const unsupported = unsupportedOptions(srcLines);
+
+// One warning list, printed on both exits: an unsupported option is worth
+// saying whether or not something else is also wrong.
+const warnings = [
+  ...(result.warnings ?? []).map((w) => `warning: ${w}`),
+  ...unknownTypes.map(
+    (u) =>
+      `warning: line ${u.line}: unknown widget type "${u.value}"${u.guess ? ` — did you mean "${u.guess}"?` : ''}`,
+  ),
+  ...unsupported.map((u) => `warning: ${u}`),
+];
+
 if (result.ok) {
   console.log(`${configPath}: OK (${result.config!.pages.length} page(s))`);
-  for (const w of result.warnings ?? []) console.log(`warning: ${w}`);
-  for (const u of unknownTypes) {
-    console.log(
-      `warning: line ${u.line}: unknown widget type "${u.value}"${u.guess ? ` — did you mean "${u.guess}"?` : ''}`,
-    );
-  }
+  for (const w of warnings) console.log(w);
   process.exit(0);
 }
 
@@ -130,10 +290,5 @@ for (const e of result.errors ?? []) {
   const h = hintFor(e);
   if (h) console.log(`  ${h}`);
 }
-for (const w of result.warnings ?? []) console.log(`warning: ${w}`);
-for (const u of unknownTypes) {
-  console.log(
-    `line ${u.line}: unknown widget type "${u.value}"${u.guess ? ` — did you mean "${u.guess}"?` : ''}`,
-  );
-}
+for (const w of warnings) console.log(w);
 process.exit(1);
