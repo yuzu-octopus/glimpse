@@ -3,5 +3,6 @@
 .rank { font-size: 12px; color: var(--color-text-base-muted); width: 16px; text-align: right; flex-shrink: 0; }
 .art { width: 40px; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
 .name { font-weight: 600; color: var(--color-primary); text-decoration: none; }
-.name:hover { text-decoration: underline; }
+/* The game name is a real <a>, so the hover underline reaches the keyboard. */
+.name:is(:hover, :focus-visible) { text-decoration: underline; }
 .empty { padding: 12px; color: var(--color-text-base-muted); }
