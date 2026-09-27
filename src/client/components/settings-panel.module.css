@@ -116,7 +116,6 @@
   padding: 28px 30px;
   height: calc(85vh - 96px);
   overflow-y: auto;
-  scrollbar-width: thin;
 }
 
 .section {
