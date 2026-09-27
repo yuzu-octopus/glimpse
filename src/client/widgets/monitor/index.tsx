@@ -51,6 +51,15 @@ function SiteRow({ site, icon }: { site: MonitorSite; icon?: string }) {
           {site.url}
         </Text>
       </Stack>
+      {/* The HTTP status the check came back with: fetched for every site and
+          never shown, while glance lists it beside the latency. The dot
+          already carries pass/fail, so this stays neutral — it tells you
+          *which* code, not how to feel about it. */}
+      {site.status != null ? (
+        <Text type="supporting" hasTabularNumbers className={styles.status}>
+          {site.status}
+        </Text>
+      ) : null}
       <Text type="supporting" hasTabularNumbers className={styles.ms}>
         {site.ms !== null ? `${site.ms} ms` : '—'}
       </Text>
