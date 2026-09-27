@@ -27,7 +27,7 @@ Built with **Bun**, **TypeScript**, **Vite**, **React 19**, the **Astryx** desig
 ## Features
 
 - **39 widget types** — feeds, homelab monitoring, containers, AI quota, media, twitch, timers, calendars, radar, trending — see [Widgets](#widgets)
-- **One theme — [astryx-dracula](https://github.com/yuzu-octopus/astryx-dracula)** — the pure Dracula brand for Astryx, dark-only by design: 330 brand tokens, JetBrains Mono for body/heading/code, a fixed status vocabulary, and a shared chart layer (5 purple-free categorical hues plus 55 `--color-data-*` ramp tokens). No presets, no light mode, no picker; `custom-css-file:` is the only override
+- **One theme — [astryx-dracula](https://github.com/yuzu-octopus/astryx-dracula)** — the pure Dracula brand for Astryx, dark-only by design: 270+ brand tokens, JetBrains Mono for body/heading/code, a fixed status vocabulary, and a shared chart layer (5 purple-free categorical hues plus 55 `--color-data-*` ramp tokens). No presets, no light mode, no picker; `custom-css-file:` is the only override
 - **12-column bento layout** — `pages` → `columns` (`span` tracks on a 12-col grid; legacy `size: small/full` still works) plus a `tiling: collage` mode driven by one pure `place()` module, responsive 12/6/1 tracks on desktop/tablet/mobile, optional `head-widgets`
 - **Progressive loading** — the server streams widgets as their data settles over a skeleton-first NDJSON stream; widget components are lazy chunks preloaded after first paint. Fast (cached/config-only) widgets paint instantly while slow API widgets show type-shaped skeletons and fill in as responses arrive; the server pre-warms its widget cache at boot and on config changes so the first visitor never waits on upstreams. Skeleton grid mirrors real column spans so layout never shifts.
 - **Server-side fetching** — secrets configured once in the server environment; live SWR updates (1s poll for homelab pages, 30s otherwise) without losing stale content mid-refresh. GitHub-backed widgets (releases, repository) automatically use `GITHUB_TOKEN`/`GH_TOKEN` or a logged-in `gh` CLI token when available, lifting the API rate limit from 60 to 5,000 req/h
@@ -77,30 +77,33 @@ pages:
                 title: selfh.st
 ```
 
-- Shared widget props: `title`, `title-url`, `hide-header`, `cache` (e.g. `12h`, `1d`; default 5m), `css-class`, `retries` (extra fetch attempts, 0–10, default 3), `show-errors` (`false` mutes the error banner; the header status dot still reports the failure).
+- Shared widget props: `title`, `title-url`, `hide-header`, `css-class`, `retries` (extra fetch attempts, 0–10, default 3), `show-errors` (default true; `false` mutes the error banner, and the header status dot still reports the failure).
+- `cache` accepts glance's duration syntax (`45s`, `12h`, `1d`). With no `cache` set the default TTL comes from the widget kind: 1s for `server-stats` / `system-stats`, 10m for `weather-radar`, 60s for the live types (`clock`, `weather`, `markets`, `monitor`, `server-stats`, `system-stats`), 1h for everything else.
 - `${ENV_VAR}` references in any string value are interpolated at load time (missing variable = validation error). The `${secret:name}` Docker-secrets syntax is not supported.
 - `$include: <path>` merges another config file (relative to the including file; pages append, `custom-css-file` takes the last include's value).
 - The config file is watched and auto-reloaded on save; last good config stays active on validation errors.
-- All configs are zod-validated, including glance's structural rules (1–3 columns per page, columns require `size` or `span` — `span` explicit on all or none; when using `size`, exactly 1–2 `full` columns, no nested groups, unique slugs).
+- All configs are zod-validated, including glance's structural rules: 1–3 columns per page, columns require `size` or `span` (`span` explicit on all or none), when using `size` a page has 1 or 2 `full` columns, a `group` cannot contain another `group` or `split-column`, and page slugs must be unique.
 - Glance's `to-do` and `stocks` type names load as aliases for `todo` and `markets` — at any nesting depth, including inside `group` / `split-column` — and fold to the canonical name at validation time.
 
-See [`config.example.yml`](config.example.yml) for a working four-page starting point.
+See [`config.example.yml`](config.example.yml) for a working four-page starting point (Home / Dev / Social / Lab).
 
 ### Environment variables
 
-All optional; read from the process environment (no `.env` loader).
+Server variables, all optional, read from the process environment (no `.env` loader):
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `GLIMPSE_CONFIG` | `./config.yml` | Config path (first CLI argument wins) |
 | `GLIMPSE_PORT` | `3000` | Port of the Bun server |
-| `GITHUB_TOKEN` | — | Bearer token for GitHub requests (`releases`, `repository`); raises the unauthenticated rate limit |
+| `GITHUB_TOKEN` / `GH_TOKEN` | — | Bearer token for GitHub requests (`releases`, `repository`); falls back to `gh auth token`, then unauthenticated |
+
+Widgets also read their own credentials from the environment — `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET`, `IMMICH_API_KEY`, `JELLYFIN_API_KEY`, `QBITTORRENT_USERNAME` / `QBITTORRENT_PASSWORD`, `TRANSMISSION_USERNAME` / `TRANSMISSION_PASSWORD`, and the per-provider `ai-quota` keys. `${ENV_VAR}` interpolation in YAML covers the rest.
 
 ## Widgets
 
-**Config-only** (no network): `bookmarks` · `search` (with bangs) · `clock` · `calendar` · `todo` · `notepad` · `timer` · `iframe` · `html`
+**Config-only** (no network): `bookmarks` · `search` (with bangs) · `clock` · `calendar` · `todo` · `iframe` · `html` — plus `timer` and `notepad`, documented below.
 
-**Containers**: `group` (tabbed) · `split-column` (2 or more children side by side, `max-columns` to cap the row)
+**Containers**: `group` (tabbed) · `split-column` (2 or more children side by side, `max-columns` caps the row at 2 or more tracks)
 
 | Data widget | What it does | Source / notes |
 | --- | --- | --- |
@@ -115,31 +118,32 @@ All optional; read from the process environment (no `.env` loader).
 | `custom-api` | Items mapped from any JSON endpoint | JSONPath field mapping; `subrequests: {name: {url, …}}` fans several endpoints into one list (reached as `$.<name>.<field>` when no top-level `url` is set) |
 | `repository` | Repo stats + open PRs / issues | GitHub REST API |
 | `lobsters` | lobste.rs stories | Configurable instance |
-| `server-stats` | Health of configured local services | `systeminformation` probes |
-| `system-stats` | CPU / GPU / RAM / disk of the host | `systeminformation`; 1s live poll when present |
-| `dns-stats` | DNS server query stats | Pi-hole v6 (session auth) or Technitium |
+| `server-stats` | Health of configured local services | `systeminformation` probes; defaults to one local server |
+| `system-stats` | CPU / GPU / RAM / disk of the host | `systeminformation`; 1s server cache when present |
+| `dns-stats` | DNS server query stats | Pi-hole (v6 session auth, v5 token fallback) or Technitium |
 | `docker-containers` | Container status | Docker Engine API over unix socket |
-| `ai-quota` | AI provider quota (70 providers: Codex / Claude / OpenAI / Opencode etc.) | Ported from [CodexBar](https://github.com/steipete/CodexBar); token auto-resolved from env / `tokenFile` / `~/.codex/auth.json`; shows `used%`, reset countdown, plan/balance |
-| `timer` | Circular countdown + stopwatch + notepad | Config-only; `duration: 25m` / `mm:ss`; editable ring, `notes: true` for scratch area |
-| `notepad` | Minimal sticky textbox | Config-only; persists per `id` to `localStorage` |
+| `ai-quota` | AI provider quota and balance | 70 known provider ids (46 with fetchers), ported from [CodexBar](https://github.com/steipete/CodexBar): Codex / Claude / OpenAI / Copilot / OpenCode / Gemini / Vertex / Grok and the table-driven rows. `token` or `tokenFile` is required; shows `used%`, reset countdown, plan and balance |
 | `events-calendar` | Upcoming events from ICS feeds | `urls[]` / `ics-url` (at least one required); `days` (14), `limit` (20) |
 | `weather-radar` | Animated precipitation radar | RainViewer tiles centered on `location`; `zoom` 3–10 (7) |
 | `github-trending` | Trending GitHub repositories | `language`, `since` daily / weekly / monthly, `limit` ≤ 25 (10) |
 | `contribution-graph` | GitHub contribution heatmap | `username` (required), optional `token`, `limit` weeks 1–104 (52) |
 | `network` | Local network + public IP at a glance | `ping-target` (1.1.1.1), `public-ip` (true) |
-| `change-detection` | Watched URLs with change badges | `urls[]` (required, ≤ 10), `selector` tag / `#id` / `.class`, `cache` |
+| `change-detection` | Watched URLs with change badges | `urls[]` (required, ≤ 10), `selector` tag / `#id` / `.class` |
 | `twitch-channels` | Live status of followed Twitch channels | `channels[]` (required logins), `sort-by` viewers / live, `collapse-after` (5); needs `TWITCH_CLIENT_ID` + `TWITCH_CLIENT_SECRET` |
 | `twitch-top-games` | Twitch categories ranked by viewers | `limit` ≤ 25 (10), `collapse-after` (5), `exclude[]` category slugs; needs `TWITCH_CLIENT_ID` + `TWITCH_CLIENT_SECRET` |
 | `immich` | Recently added photos | `url` (required), `api-key` or `IMMICH_API_KEY`, `limit` (10) |
 | `jellyfin` | Recently added movies / episodes | `url` (required), `api-key` or `JELLYFIN_API_KEY`, `user-id` auto-resolved, `limit` (10) |
 | `qbittorrent` | Torrent status with progress bars | `url` (required), `username` / `password` or `QBITTORRENT_USERNAME` / `QBITTORRENT_PASSWORD`, `limit` (10) |
 | `transmission` | Torrent status with progress bars | `url` (required), `username` / `password` or `TRANSMISSION_USERNAME` / `TRANSMISSION_PASSWORD`, `limit` (10) |
-Feed widgets respect the `cache` prop; unauthenticated GitHub/Reddit requests are rate-limited, so raise `cache` for those if you hit limits.
+| `timer` | Circular countdown + stopwatch + notes | Config-only; `duration: 25m` / `mm:ss`, editable ring, `notes: true` for the scratch area; persists per `id` |
+| `notepad` | Minimal sticky textbox | Config-only; `placeholder`, persists per `id` to `localStorage` |
+
+Unauthenticated GitHub and Reddit requests are rate-limited, so raise `cache` for those widgets if you hit limits.
 
 ## Theming
 
-- **Single theme**: [astryx-dracula](https://github.com/yuzu-octopus/astryx-dracula) (`^0.2.1`, MIT) is a runtime dependency, imported as `astryx-dracula/tokens.css` + `astryx-dracula/theme.css` and injected as `<Theme theme={astryxDraculaTheme} mode="dark">`. It is **dark-only** — Dracula dark is the brand, not a mode.
-- **Nothing to switch**: no presets, no light mode, no picker. The Settings dialog has two sections — About and Docs — and no appearance controls. Display mode is hardcoded; nothing about the theme is persisted to `localStorage`.
+- **Single theme**: [astryx-dracula](https://github.com/yuzu-octopus/astryx-dracula) (`^0.2.1`, MIT) is a runtime dependency, imported as `astryx-dracula/tokens.css` + `astryx-dracula/theme.css` and applied by `<Theme theme={astryxDraculaTheme} mode="dark">`. It is **dark-only** — Dracula dark is the brand, not a mode.
+- **Nothing to switch**: no presets, no light mode, no picker. The Settings dialog has two sections, About and Docs, and no appearance controls. Display mode is hardcoded; nothing about the theme is persisted to `localStorage`.
 - **Custom CSS**: a top-level `custom-css-file: ./custom.css` (path relative to `config.yml`'s directory) is served with the theme and injected last so it wins. This is the only supported appearance override.
 - **No config theme block**: a `theme:` key is a validation error (`config.theme: block removed …`). Delete it; hoist a custom stylesheet to `custom-css-file:`. Run `bun run check-config` to confirm.
 
@@ -183,10 +187,11 @@ Feed widgets respect the `cache` prop; unauthenticated GitHub/Reddit requests ar
 ## Known deviations from glance
 
 - `custom-api` maps fields via JSONPath, not Go `html/template`.
+- `icon:` shorthand resolution (`si:`, `di:`, `mdi:`, `sh:`, and the `auto-invert ` prefix) works on `bookmarks` links. glance also accepts `icon:` per `monitor` site and a `glance.icon` Docker label; Glimpse does not.
 - **No light mode, custom themes, or theme picker** — Glimpse has one dark theme (`astryx-dracula`); the `theme:` config block is rejected.
 - `todo` persists in browser localStorage only (per-browser, not shared).
 - Authentication and brute-force lockout are not implemented.
-- Not ported: `extension`, `calendar-legacy`.
+- Not ported: `extension`, `calendar-legacy`. Every other glance widget type has a Glimpse equivalent.
 - `${secret:}` Docker-secrets syntax is unsupported.
 
 ## Development
@@ -195,12 +200,10 @@ Feed widgets respect the `cache` prop; unauthenticated GitHub/Reddit requests ar
 bun run test        # vitest (jsdom); schema + fetcher + component tests per widget, no network
 bun run test:watch
 bunx tsc --noEmit   # strict typecheck gate
-npx react-doctor@latest   # React quality scan (full scan is the gate)
-bun run new-widget <kebab-name>   # scaffold schema + fetcher + renderer + tests
-bun run check-config [path]       # validate config with line numbers + did-you-mean
+bunx react-doctor@latest   # React quality scan (full scan is the gate)
 ```
 
-Each widget ships three files — a shared zod schema, a server fetcher (data widgets), and a client component — joined by typed registries. Layout: `src/client/` (SPA), `src/server/` (Bun API), `src/shared/` (contracts used by both).
+Each widget ships three files — a shared zod schema, a server fetcher (data widgets), and a client component — joined by typed registries. Layout: `src/client/` (SPA), `src/server/` (Bun API), `src/shared/` (contracts used by both). See [AGENTS.md](AGENTS.md) for the full command list, architecture notes, and the widget checklist.
 
 ---
 

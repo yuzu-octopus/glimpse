@@ -25,6 +25,15 @@
   opacity: 0.65;
 }
 
+/* media.tsx renders `styles.placeholder` for the empty state but this module
+   had no rule for it, so all four media widgets shipped an unstyled empty
+   state. Matches videos.module.css. */
+.placeholder {
+  padding: 12px 0;
+  font-size: var(--font-size-h5);
+  color: var(--color-text-base-muted);
+}
+
 .torrentName {
   flex: 1;
   min-width: 0;
