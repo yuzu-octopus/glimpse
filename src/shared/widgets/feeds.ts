@@ -88,13 +88,9 @@ export const redditSchema = z.object({
     ])
     .optional(),
   'extra-sort-by': z.enum(['engagement']).optional(),
-  'app-auth': z
-    .object({
-      name: z.string().optional(),
-      id: z.string(),
-      secret: z.string(),
-    })
-    .optional(),
+  // No `app-auth`: the client id/secret pair is a credential, and the config
+  // is served to the browser verbatim. REDDIT_CLIENT_ID / REDDIT_CLIENT_SECRET
+  // in the environment switch the widget to the OAuth host.
 });
 export type RedditConfig = z.infer<typeof redditSchema>;
 

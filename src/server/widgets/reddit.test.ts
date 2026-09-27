@@ -3,6 +3,7 @@ import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './reddit';
 import type { RedditPost } from '../../shared/widgets/payloads';
+import { redditSchema } from '../../shared/widgets/feeds';
 
 const LISTING = {
   data: {
@@ -36,6 +37,7 @@ const LISTING = {
 
 function makeCtx(
   routes: Record<string, unknown> | unknown,
+  env: Record<string, string | undefined> = {},
 ): { ctx: WidgetFetchContext; fetchMock: ReturnType<typeof vi.fn> } {
   const fetchMock = vi.fn(async (url: string) => {
     const hit =
@@ -47,7 +49,7 @@ function makeCtx(
   return {
     ctx: {
       fetch: fetchMock as unknown as typeof fetch,
-      env: {},
+      env,
       cache: new TtlCache(),
       singleflight: new Singleflight(),
     },
@@ -110,21 +112,20 @@ describe('reddit fetcher', () => {
     ).rejects.toThrow(/allow-insecure/);
   });
 
-  it('fetches an app-auth token and sends it as a Bearer header', async () => {
-    const { ctx, fetchMock } = makeCtx({
-      'https://www.reddit.com/api/v1/access_token': { access_token: 'tok123', expires_in: 3600 },
-      'https://oauth.reddit.com/r/selfhosted/hot.json?limit=5&t=day': { data: { children: [] } },
-    });
-    await redditFetcher()(ctx, {
-      type: 'reddit',
-      subreddit: 'selfhosted',
-      'app-auth': { name: 'glimpse', id: 'client-id', secret: 'client-secret' },
-    });
+  it('exchanges the env client credentials for a token and sends it as a Bearer header', async () => {
+    const { ctx, fetchMock } = makeCtx(
+      {
+        'https://www.reddit.com/api/v1/access_token': { access_token: 'tok123', expires_in: 3600 },
+        'https://oauth.reddit.com/r/selfhosted/hot.json?limit=5&t=day': { data: { children: [] } },
+      },
+      { REDDIT_CLIENT_ID: 'client-id', REDDIT_CLIENT_SECRET: 'env-secret' },
+    );
+    await redditFetcher()(ctx, { type: 'reddit', subreddit: 'selfhosted' });
 
     const [tokenUrl, tokenOpts] = fetchMock.mock.calls[0];
     expect(tokenUrl).toBe('https://www.reddit.com/api/v1/access_token');
     expect(tokenOpts.method).toBe('POST');
-    expect(tokenOpts.headers.Authorization).toBe(`Basic ${btoa('client-id:client-secret')}`);
+    expect(tokenOpts.headers.Authorization).toBe(`Basic ${btoa('client-id:env-secret')}`);
     expect(tokenOpts.body).toBe('grant_type=client_credentials');
 
     const [listingUrl, listingOpts] = fetchMock.mock.calls[1];
@@ -134,31 +135,37 @@ describe('reddit fetcher', () => {
   });
 
   it('reuses the cached token across calls', async () => {
-    const { ctx, fetchMock } = makeCtx({
-      'https://www.reddit.com/api/v1/access_token': { access_token: 'tok123' },
-      'https://oauth.reddit.com/r/selfhosted/hot.json?limit=5&t=day': { data: { children: [] } },
-    });
-    const cfg = { type: 'reddit', subreddit: 'selfhosted', 'app-auth': { id: 'a', secret: 'b' } };
+    const { ctx, fetchMock } = makeCtx(
+      {
+        'https://www.reddit.com/api/v1/access_token': { access_token: 'tok123' },
+        'https://oauth.reddit.com/r/selfhosted/hot.json?limit=5&t=day': { data: { children: [] } },
+      },
+      { REDDIT_CLIENT_ID: 'a', REDDIT_CLIENT_SECRET: 'b' },
+    );
+    const cfg = { type: 'reddit', subreddit: 'selfhosted' };
     await redditFetcher()(ctx, cfg);
     await redditFetcher()(ctx, cfg);
     const tokenCalls = fetchMock.mock.calls.filter(([url]) => url === 'https://www.reddit.com/api/v1/access_token');
     expect(tokenCalls).toHaveLength(1);
   });
 
-  it('uses oauth host for search when app-auth present', async () => {
-    const { ctx, fetchMock } = makeCtx({
-      'https://www.reddit.com/api/v1/access_token': { access_token: 'tok' },
-      'https://oauth.reddit.com/search.json?q=docker&sort=hot&t=day&limit=5': { data: { children: [] } },
-    });
-    await redditFetcher()(ctx, { type: 'reddit', subreddit: 'selfhosted', search: 'docker', 'app-auth': { id: 'id', secret: 'sec' } });
+  it('uses the oauth host for search when the env credentials are set', async () => {
+    const { ctx, fetchMock } = makeCtx(
+      {
+        'https://www.reddit.com/api/v1/access_token': { access_token: 'tok' },
+        'https://oauth.reddit.com/search.json?q=docker&sort=hot&t=day&limit=5': { data: { children: [] } },
+      },
+      { REDDIT_CLIENT_ID: 'id', REDDIT_CLIENT_SECRET: 'sec' },
+    );
+    await redditFetcher()(ctx, { type: 'reddit', subreddit: 'selfhosted', search: 'docker' });
     const [secondUrl] = fetchMock.mock.calls[1];
     expect(String(secondUrl)).toContain('oauth.reddit.com/search.json');
   });
 
-  it('throws hint on 403 without app-auth', async () => {
+  it('throws hint on 403 without env credentials', async () => {
     const fetchMock = vi.fn(async () => new Response('blocked', { status: 403 }));
     const ctx: WidgetFetchContext = { fetch: fetchMock as unknown as typeof fetch, env: {}, cache: new TtlCache(), singleflight: new Singleflight() };
-    await expect(redditFetcher()(ctx, { type: 'reddit', subreddit: 'selfhosted' })).rejects.toThrow(/add reddit\.app-auth id\/secret or.*proxy\/request-url-template/);
+    await expect(redditFetcher()(ctx, { type: 'reddit', subreddit: 'selfhosted' })).rejects.toThrow(/REDDIT_CLIENT_ID.*proxy\/request-url-template/);
     const firstOpts = (fetchMock.mock.calls[0] as unknown as [string, { headers: Record<string, string> }])[1];
     expect(firstOpts.headers['User-Agent']).toMatch(/Mozilla/);
   });
@@ -169,13 +176,13 @@ describe('reddit fetcher', () => {
 
 
 
-  it('reddit with app-auth uses oauth token (sequential mock, TDD red-green)', async () => {
+  it('reddit with env credentials uses the oauth token (sequential mock, TDD red-green)', async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: 'tok' }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ data: { children: [{ data: { title: 'hi', permalink: '/r/selfhosted/comments/1/hi/', created_utc: 1 } }] } }), { status: 200 }));
-    const ctx: WidgetFetchContext = { fetch: fetchMock as unknown as typeof fetch, env: {}, cache: new TtlCache(), singleflight: new Singleflight() };
-    const data = (await redditFetcher()(ctx, { type: 'reddit', subreddit: 'selfhosted', 'app-auth': { id: 'id', secret: 'sec' } })) as { posts: RedditPost[] };
+    const ctx: WidgetFetchContext = { fetch: fetchMock as unknown as typeof fetch, env: { REDDIT_CLIENT_ID: 'id', REDDIT_CLIENT_SECRET: 'sec' }, cache: new TtlCache(), singleflight: new Singleflight() };
+    const data = (await redditFetcher()(ctx, { type: 'reddit', subreddit: 'selfhosted' })) as { posts: RedditPost[] };
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('access_token'), expect.any(Object));
     expect(data.posts.length).toBe(1);
     // second call was oauth host
@@ -200,5 +207,20 @@ describe('reddit fetcher', () => {
     })) as { posts: RedditPost[] };
     expect(data.posts[0].title).toBe('High engagement');
     expect(data.posts[1].title).toBe('Low score');
+  });
+
+  it('takes no app-auth — the config value is stripped and never used', async () => {
+    const parsed = redditSchema.parse({ type: 'reddit', subreddit: 'selfhosted', 'app-auth': { id: 'leaked', secret: 'leaked' } });
+    expect('app-auth' in parsed).toBe(false);
+    expect(JSON.stringify(parsed)).not.toContain('leaked');
+
+    // With no env credentials the widget stays anonymous — the leftover
+    // `app-auth:` cannot talk its way back into an authenticated request.
+    const { ctx, fetchMock } = makeCtx({
+      'https://www.reddit.com/r/selfhosted/hot.json?limit=5&t=day': { data: { children: [] } },
+    });
+    await redditFetcher()(ctx, { type: 'reddit', subreddit: 'selfhosted', 'app-auth': { id: 'leaked', secret: 'leaked' } });
+    expect(String(fetchMock.mock.calls[0][0])).toBe('https://www.reddit.com/r/selfhosted/hot.json?limit=5&t=day');
+    expect(JSON.stringify(fetchMock.mock.calls)).not.toContain('leaked');
   });
 });
