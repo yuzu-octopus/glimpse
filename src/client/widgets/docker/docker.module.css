@@ -59,6 +59,10 @@
   flex-shrink: 0;
   margin-left: auto;
   max-width: 60%;
+  /* The kit's Badge ships `--radius-full`, i.e. a pill. The brand is flat and
+     crisp — 5px on elements, no pills except dots and avatars — so pin it back
+     to the element radius. The kit still owns the wash and the hue. */
+  border-radius: var(--radius-element);
 }
 
 .expand {

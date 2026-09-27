@@ -1,11 +1,14 @@
-/* ai-quota is now Badge + ProgressBar + Text. Two things stay in the module:
-   the cyan data fill (the kit's ProgressBar has no cyan variant, and the
-   chart-hue guard forbids a bespoke hex — so it points at the same
-   --color-data-categorical-cyan token the hand-rolled bar used), and the
-   separator/edge rhythm the Stack props do not express. */
+/* ai-quota is now Badge + ProgressBar + Text. What stays in the module is the
+   three things a prop cannot express: the badge radius (the kit ships a pill,
+   the brand does not), the cyan data fill, and the row rhythm. */
 
 .plan {
   align-self: flex-start;
+  /* The kit's Badge ships `--radius-full`, i.e. a pill. The brand is flat and
+     crisp — 5px on elements, no pills except dots and avatars — so pin it back
+     to the element radius. This also preserves the sibling's de-pill across the
+     swap; the kit still owns the yellow wash and the 12px label type. */
+  border-radius: var(--radius-element);
 }
 
 .row + .row {
@@ -13,9 +16,11 @@
 }
 
 /* The bar encodes quota consumption, which is data — cyan, not purple. The
-   kit's warning (yellow) and error (red) variants cover the escalation, so
-   only the healthy-state accent variant is repointed at the data token. */
-.fill:global(.astryx-progressbar) [role='progressbar'] > div {
+   kit's warning (yellow) and error (red) variants own the escalation, so the
+   override is scoped to the `.accent` fill ONLY. An unscoped `> div` rule
+   repaints the escalating bars cyan too and silently flattens the severity
+   ladder, which is exactly the signal the widget exists to show. */
+.fill [data-variant='accent'] {
   background: var(--color-data-categorical-cyan);
 }
 

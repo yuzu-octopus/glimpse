@@ -85,6 +85,12 @@
   color: currentColor;
 }
 
+/* glance utils.css .flat-icon: simple-icons and mdi glyphs are black paths
+ * with no fill, so on a dark-only theme they are invisible until inverted. */
+.iconAutoInvert {
+  filter: invert(1);
+}
+
 .linkTitle {
   min-width: 0;
   font-size: var(--font-size-h4);

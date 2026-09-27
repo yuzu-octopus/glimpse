@@ -84,7 +84,7 @@ export function TorrentList({ torrents }: { torrents: TorrentItem[] }) {
               <Text type="body" maxLines={1} className={styles.torrentName}>
                 {t.name}
               </Text>
-              <Badge variant="neutral" label={t.state} data-testid={`torrent-state-${t.state}`} />
+              <Badge variant="neutral" label={t.state} className={styles.badge} data-testid={`torrent-state-${t.state}`} />
             </Stack>
             {/* The kit's bar supplies the track, fill, radius and the
                 role="progressbar" this used to hand-roll; the label is sr-only

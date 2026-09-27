@@ -137,7 +137,7 @@ export function Todo({ config }: WidgetComponentProps) {
               isLabelHidden
               value={item.done}
               onChange={() => toggle(item.id)}
-              size="sm"
+              size="md"
             />
             {editingId === item.id ? (
               <TextInput
