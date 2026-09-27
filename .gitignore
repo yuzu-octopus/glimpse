@@ -50,3 +50,16 @@ npm-debug.log*
 docs/superpowers/*
 !docs/superpowers/plans/
 !docs/superpowers/specs/
+
+# astryx CLI scratch
+# We commit astryx.config.mjs (the integration-pack registry). The CLI hard-fails
+# `astryx doctor` with "Multiple Astryx config files" if a second astryx.config.*
+# coexists, so keep the other extensions out of the repo. If you ever migrate to
+# .ts, delete this line in the same commit that renames the tracked file.
+astryx.config.ts
+astryx.config.js
+# `astryx init --features agents` scaffolds these for tools this project doesn't
+# use; we own AGENTS.md by hand. Re-include a file here if that ever changes.
+.claude/CLAUDE.md
+.cursorrules
+HERMES.md

@@ -80,6 +80,7 @@ Env: `GLIMPSE_CONFIG` (CLI arg wins > env > ./config.yml), `GLIMPSE_PORT=3000`, 
 - **Package manager:** `bun` / `bunx` (never npm/npx/node/pip). `bun.lock` is the lockfile; `trustedDependencies` covers @astryxdesign postinstall scripts.
 - **Build:** Vite 6 + `@vitejs/plugin-react`, `vite-plugin-pwa` (autoUpdate, `navigateFallbackDenylist [/^\/api\//]`), lazy widget chunks + manualChunks react/astryx/icons/react-router-dom. `/api/config` sends no-store while the SW caches it — intentional offline layering, documented in vite.config.ts.
 - **Constraints:** headless shared Chromium available for browser smoke tests; `glance/**` ignored everywhere; unported glance widgets are tracked in README → Known deviations (`extension`, `calendar-legacy`; no auth/lockout).
+- **Astryx CLI config:** `astryx.config.mjs` (project root) registers `astryx-dracula` in the CLI's `integrations` list, which is what makes `bunx astryx template <id> --package astryx-dracula` resolve the kit's ~43 themed pages/blocks. Keep exactly one `astryx.config.*` in the repo — two make `astryx doctor` FAIL; verify with `bunx astryx doctor` and `bunx astryx template --list`.
 
 ## Testing & QA
 - **Stack:** Vitest 4 + jsdom + `@testing-library/react` + `jest-dom`, `globals:true`, `setupFiles: ./src/test/setup.ts` (localStorage polyfill, dialog shims, Bun global).
