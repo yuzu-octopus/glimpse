@@ -9,10 +9,9 @@ import type { WidgetFetchContext } from './registry';
  * - cacheKey is the `slug:path` string built by fetchWidget (passed in).
  * - ttl comes from the widget's `cache` string or getDefaultTtl(type).
  * - singleflight dedupes concurrent identical fetches.
- * - limit ownership: callers pass raw widget config; the fetcher
- *   they supply should be pure parse+fetch (zod defaults already give
- *   limit=5 where the schema declares it). A tiny helper `widgetLimit`
- *   is exported for legacy callers that still do `cfg.limit ?? 5`.
+ * - limit ownership: callers pass raw widget config; the fetcher owns
+ *   limit, because the zod schema it parses is the only place a default
+ *   is declared, so nothing downstream may re-default it.
  *
  * Why not stash cacheKey building here? Page-level keys are `slug:path`
  * built in fetchWidget; putting the template there keeps runtime
@@ -23,15 +22,6 @@ import type { WidgetFetchContext } from './registry';
  * Single call shape: fetchWidgetData(ctx, type, config, cacheKey, fetcher) —
  * the key is the `${pageSlug}:${path}` string built by fetchWidget.
  */
-export const WIDGET_DEFAULT_LIMIT = 5;
-
-export function widgetLimit(
-  cfg: { limit?: number },
-  fallback = WIDGET_DEFAULT_LIMIT,
-): number {
-  return cfg.limit ?? fallback;
-}
-
 
 type Fetcher<T = unknown> = (
   ctx: WidgetFetchContext,
