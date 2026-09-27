@@ -64,40 +64,30 @@ export const PageSchema = z
   });
 export type Page = z.infer<typeof PageSchema>;
 
-/** Glance HSL theme block (docs/configuration.md §Theme). */
-export const ThemePresetSchema = z
+/**
+ * Custom CSS is the one theme-adjacent knob that survived the collapse to the
+ * single astryx-dracula theme: a stylesheet appended after the theme so it
+ * still wins. Top-level because the `theme:` block is gone.
+ */
+export const ConfigSchema = z
   .object({
-    light: z.boolean().optional(),
-    'background-color': z.string().optional(),
-    'primary-color': z.string().optional(),
-    'positive-color': z.string().optional(),
-    'negative-color': z.string().optional(),
-    'contrast-multiplier': z.number().optional(),
-    'text-saturation-multiplier': z.number().optional(),
-  })
-  .loose();
-export type ThemePreset = z.infer<typeof ThemePresetSchema>;
-
-export const ThemeConfigSchema = z
-  .object({
-    light: z.boolean().optional(),
-    'background-color': z.string().optional(),
-    'primary-color': z.string().optional(),
-    'positive-color': z.string().optional(),
-    'negative-color': z.string().optional(),
-    'contrast-multiplier': z.number().optional(),
-    'text-saturation-multiplier': z.number().optional(),
+    pages: z.array(PageSchema).min(1),
     'custom-css-file': z.string().optional(),
-    'disable-picker': z.boolean().optional(),
-    presets: z.record(z.string(), ThemePresetSchema).optional(),
+    // Declared only so the removal below can see it: zod strips unknown keys
+    // before superRefine runs, so a `theme:` block must be a real field to be
+    // detected at all. It never parses successfully.
+    theme: z.unknown().optional(),
   })
-  .loose();
-export type ThemeConfig = z.infer<typeof ThemeConfigSchema>;
-
-export const ConfigSchema = z.object({
-  pages: z.array(PageSchema).min(1),
-  theme: ThemeConfigSchema.optional(),
-});
+  .superRefine((c, ctx) => {
+    if (c.theme !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['theme'],
+        message:
+          'block removed — Glimpse now uses the astryx-dracula theme; delete the theme block from your config (if you set a custom stylesheet, move it to a top-level `custom-css-file:` key)',
+      });
+    }
+  });
 export type Config = z.infer<typeof ConfigSchema>;
 
 /** Config after slug derivation — every page has a unique slug. */

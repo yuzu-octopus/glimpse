@@ -87,12 +87,26 @@ describe('ConfigSchema', () => {
     expect(ConfigSchema.safeParse({}).success).toBe(false);
   });
 
-  it('validates the theme block field types', () => {
+  it('rejects a theme block with a migration message, once, not per key', () => {
     const r = ConfigSchema.safeParse({
       ...validYaml,
-      theme: { 'background-color': '240 21 15', 'contrast-multiplier': 'nope' },
+      theme: { light: true, 'background-color': '240 21 15', presets: { brand: {} } },
     });
     expect(r.success).toBe(false);
+    if (r.success) return;
+    const issues = r.error.issues;
+    expect(issues).toHaveLength(1);
+    expect(issues[0].path).toEqual(['theme']);
+    expect(issues[0].message).toContain('block removed');
+    expect(issues[0].message).toContain('astryx-dracula');
+    expect(issues[0].message).toContain('delete the theme block');
+  });
+
+  it('accepts a top-level custom-css-file', () => {
+    const r = ConfigSchema.safeParse({ ...validYaml, 'custom-css-file': 'custom.css' });
+    expect(r.success).toBe(true);
+    if (!r.success) return;
+    expect(r.data['custom-css-file']).toBe('custom.css');
   });
 
   it('parses tiling, min-column-width, and column span', () => {

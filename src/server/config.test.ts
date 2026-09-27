@@ -176,15 +176,14 @@ pages:
     expect(firstFeedUrl(r.config!.pages[0].columns![1].widgets[0])).toBe('https://example.com/${secret:github_token}/feed.xml');
   });
 
-  it('merges included files (pages appended, theme overridden)', () => {
+  it('merges included files (pages appended, custom-css-file overridden)', () => {
     write('extra.yml', `
 pages:
   - name: Extra
     columns:
       - size: full
         widgets: [{ type: clock }]
-theme:
-  'primary-color': 10 50 50
+'custom-css-file': extra.css
 `);
     const main = write('glance.yml', `
 $include: extra.yml
@@ -193,15 +192,29 @@ pages:
     columns:
       - size: full
         widgets: [{ type: clock }]
-theme:
-  'primary-color': 200 50 50
-  'background-color': 0 0 10
+'custom-css-file': main.css
 `);
     const r = loadConfig(main);
     expect(r.ok).toBe(true);
     expect(r.config?.pages.map((p) => p.name)).toEqual(['Home', 'Extra']);
-    expect(r.config?.theme?.['primary-color']).toBe('10 50 50');
-    expect(r.config?.theme?.['background-color']).toBe('0 0 10');
+    expect(r.config?.['custom-css-file']).toBe('extra.css');
+  });
+
+  it('fails a config that still carries a theme block, naming the fix', () => {
+    const main = write('glance.yml', `
+pages:
+  - name: Home
+    columns:
+      - size: full
+        widgets: [{ type: clock }]
+theme:
+  'primary-color': 200 50 50
+`);
+    const r = loadConfig(main);
+    expect(r.ok).toBe(false);
+    expect(r.errors).toEqual([
+      'config.theme: block removed — Glimpse now uses the astryx-dracula theme; delete the theme block from your config (if you set a custom stylesheet, move it to a top-level `custom-css-file:` key)',
+    ]);
   });
 
   it('detects circular includes', () => {

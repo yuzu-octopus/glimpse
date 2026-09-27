@@ -1,6 +1,11 @@
 # Glimpse — curated demo (4 pages, hide-headers, Singapore).
 # Tiling: Home/Dev/Lab = columns (12-col spans), Social = collage (place()-driven bento).
 # New widgets: server-stats / dns-stats / docker-containers (all homelab, on Lab).
+#
+# Theme: astryx-dracula, dark only — there is no `theme:` block, and a config
+# that still has one fails to load with a message saying so. To append your
+# own CSS on top of the brand theme, name a file next to this config:
+# custom-css-file: custom.css
 pages:
   - name: Home
     slug: home

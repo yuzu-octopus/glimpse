@@ -221,13 +221,13 @@ function loadYamlTree(
         const parentPages = Array.isArray(merged.pages) ? merged.pages : [];
         const subPages = Array.isArray(sub.pages) ? sub.pages : [];
         merged.pages = [...parentPages, ...subPages];
-        if (sub.theme !== undefined) {
-          merged.theme = { ...(isRecord(merged.theme) ? merged.theme : {}), ...(isRecord(sub.theme) ? sub.theme : {}) };
+        if (sub['custom-css-file'] !== undefined) {
+          merged['custom-css-file'] = sub['custom-css-file'];
         }
         for (const k of Object.keys(sub)) {
-          if (k !== 'pages' && k !== 'theme') {
+          if (k !== 'pages' && k !== 'custom-css-file') {
             warnings.push(
-              `$include ${incAbs}: ignoring unsupported top-level key "${k}" (only pages and theme merge)`,
+              `$include ${incAbs}: ignoring unsupported top-level key "${k}" (only pages and custom-css-file merge)`,
             );
           }
         }

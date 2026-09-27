@@ -114,5 +114,8 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/test/setup.ts',
+    // astryx-dracula's entry imports './icons' without an extension, which the
+    // node ESM loader refuses. Inlining it lets vite resolve icons.tsx.
+    server: { deps: { inline: ['astryx-dracula'] } },
   },
 });

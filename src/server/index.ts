@@ -175,15 +175,12 @@ const server = Bun.serve({
     if (pathname === '/api/theme') {
       const r = getConfig();
       let customCss: string | null = null;
-      const cssFile = r.ok && r.config ? r.config.theme?.['custom-css-file'] : undefined;
+      const cssFile = r.ok && r.config ? r.config['custom-css-file'] : undefined;
       if (cssFile) {
         customCss = readThemeCss(cssFile);
       }
       return json(
-        {
-          theme: r.ok && r.config ? r.config.theme ?? null : null,
-          customCss,
-        },
+        { customCss },
         200,
         { 'cache-control': 'public, max-age=60' },
       );

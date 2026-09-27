@@ -13,7 +13,7 @@ const agree = BunYAML ? it : it.skip;
 describe('YAML parser conformance (Bun.YAML vs fallback)', () => {
   const docs = [
     'pages:\n  - name: Home\n    columns:\n      - size: full\n        widgets:\n          - type: clock\n',
-    'theme:\n  light: true\n  contrast-multiplier: 1.2\n  background-color: "10 20 30"\n',
+    "'custom-css-file': extra.css\nbackground: '10 20 30'\n",
     'pages:\n  - name: X\n    columns:\n      - size: small\n        widgets:\n          - type: rss\n            limit: 5\n            hide-header: false\n',
     '# comment\npages: [{ type: clock }]\n',
     "pages:\n  - name: 'My Home!'\n    slug: home\n",
@@ -96,7 +96,7 @@ describe('config dx', () => {
     expect(JSON.stringify(r.config)).toContain('${secret:tok}');
   });
 
-  it('warns instead of dropping non-pages/theme $include keys', () => {
+  it('warns instead of dropping unsupported $include keys', () => {
     write(
       'extra.yml',
       'server: { port: 1234 }\npages:\n  - name: Extra\n    columns:\n      - size: full\n        widgets: [{ type: clock }]\n',
