@@ -105,7 +105,9 @@
   width: 100%;
   height: 5px;
   border: none;
-  border-radius: 999px;
+  /* Flat and crisp, not a pill: 2px reads as a bar on a 5px track where 999px
+   * reads as a lozenge. */
+  border-radius: 2px;
   background: var(--color-track, var(--color-widget-background-highlight));
   overflow: hidden;
   appearance: none;
