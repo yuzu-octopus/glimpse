@@ -1,56 +1,24 @@
-.row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  column-gap: 12px;
-  min-width: 0;
-  animation: collapsibleItemReveal 0.25s backwards;
-}
+/* system-stats is now Stack + Grid + Text, so `.label` (uppercase, 600,
+   letter-spaced) and `.value`/`.sub` are gone — they were literally the
+   `Text type="label"` and `Text hasTabularNumbers` jobs. What stays is the row
+   rhythm plus the severity meter, which is data ink the kit has no prop for:
+   ProgressBar's variants would lose the 85/95 escalation thresholds and the
+   native <meter> semantics the tests assert on. */
 
 .row + .row {
   margin-top: 8px;
-  border-top: 1px solid var(--color-separator);
   padding-top: 8px;
+  border-top: 1px solid var(--color-separator);
 }
 
-.label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text-base-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  min-width: 48px;
-}
-
-.value {
-  font-size: var(--font-size-h3);
-  font-weight: 500;
-  color: var(--color-text-base);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sub {
-  margin-left: auto;
-  flex-shrink: 0;
-  font-size: 12px;
-  color: var(--color-text-base-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Data ink — one series, so one hue: a neutral track with a single fill that
-   escalates by severity, exactly like server-stats' meter. A label + a number
-   reads the same at 95% as at 5%; the bar is what makes the difference
-   legible at a glance. Track is Comment, never a tinted second series. */
+/* Neutral track, single fill escalating by severity. Track is Comment, never a
+   tinted second series. Not a pill: the brand is flat and crisp, 2px on a 5px bar. */
 .meter {
   display: block;
-  grid-column: 1 / -1;
   width: 100%;
   height: 5px;
   margin-top: 6px;
   border: none;
-  /* Not a pill: the brand is flat and crisp, 2px on a 5px bar. */
   border-radius: 2px;
   background: var(--color-track, var(--color-widget-background-highlight));
   overflow: hidden;
@@ -72,10 +40,4 @@
 
 .meter[data-critical='true']::before {
   background: var(--color-negative);
-}
-
-.placeholder {
-  font-size: 12px;
-  color: var(--color-text-base-muted);
-  padding: 8px 0;
 }
