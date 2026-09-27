@@ -310,7 +310,7 @@ function debounce<A extends unknown[]>(fn: (...args: A) => void, ms: number) {
 }
 
 /** Reload and re-register watchers (included files can appear/disappear). */
-export function reloadConfig(configPath: string): LoadResult {
+function reloadConfig(configPath: string): LoadResult {
   const result = loadConfig(configPath);
   if (result.ok || !current.ok) current = result;
   stopWatchers();

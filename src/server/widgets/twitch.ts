@@ -21,7 +21,7 @@ function creds(ctx: WidgetFetchContext): { clientId: string; clientSecret: strin
 }
 
 /** App access token via OAuth client-credentials, cached just short of expiry. */
-export async function getTwitchAppToken(ctx: WidgetFetchContext, retry: RetryOptions = retryOptionsFrom(undefined)): Promise<string> {
+async function getTwitchAppToken(ctx: WidgetFetchContext, retry: RetryOptions = retryOptionsFrom(undefined)): Promise<string> {
   const { clientId, clientSecret } = creds(ctx);
   const cached = ctx.cache.get<string>('twitch:app-token');
   if (cached !== undefined) return cached;
@@ -74,7 +74,7 @@ function helixListUrl(base: string, key: string, values: string[], extra?: strin
   return `${base}?${q.toString()}${extra ?? ''}`;
 }
 
-export function twitchSlug(name: string): string {
+function twitchSlug(name: string): string {
   return name
     .toLowerCase()
     .replace(/['’]/g, '')

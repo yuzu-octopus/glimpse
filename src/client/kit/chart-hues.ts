@@ -11,5 +11,3 @@ export const CHART_HUES = {
   pink: 'var(--dracula-pink)',
   muted: 'var(--dracula-comment)',
 } as const;
-
-export type ChartHue = (typeof CHART_HUES)[keyof typeof CHART_HUES];
