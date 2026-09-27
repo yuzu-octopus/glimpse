@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Grid, IconButton, Stack, Text } from '@astryxdesign/core';
+import { useState } from 'react';
+import { Grid, IconButton, Stack, Text, useCalendarDays, type DayOfWeek } from '@astryxdesign/core';
 import { ChevronLeft, ChevronRight, Undo2 } from 'lucide-react';
 import type { CalendarConfig } from '../../../shared/widgets/calendar';
 import { WidgetChrome } from '../../components/WidgetChrome';
@@ -11,27 +11,20 @@ const MONTH_FORMAT = new Intl.DateTimeFormat('en-GB', {
   year: 'numeric',
 });
 
-/** Weekday of the first grid column, monday=0 … sunday=6. */
-const DAY_START: Record<string, number> = {
-  monday: 0,
-  tuesday: 1,
-  wednesday: 2,
-  thursday: 3,
-  friday: 4,
-  saturday: 5,
-  sunday: 6,
+/** First grid column, in the kit's sunday=0 … saturday=6 order. */
+const DAY_START: Record<string, DayOfWeek> = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
 };
-
-const DOW_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
-
-/** Glance renders a fixed six-week grid (static/js/calendar.js:4,
- * FULL_MONTH_SLOTS = 7*6) so scrubbing never resizes the widget — a variable
- * tail would leave blank slots and reflow between four and six rows. */
-const FULL_MONTH_SLOTS = 7 * 6;
 
 function Calendar({ config }: WidgetComponentProps) {
   const cfg = config as unknown as CalendarConfig;
-  const start = DAY_START[(cfg['first-day-of-week'] ?? 'monday').toLowerCase()] ?? 0;
+  const start = DAY_START[(cfg['first-day-of-week'] ?? 'monday').toLowerCase()] ?? 1;
 
   // The clock is read on every render rather than on a midnight ticker, so the
   // clamp below notices a month rolling over even while the widget sits idle.
@@ -41,6 +34,11 @@ function Calendar({ config }: WidgetComponentProps) {
   // one number makes both "is this the current month" and "is this in the
   // future" plain comparisons.
   const currentMonth = now.getFullYear() * 12 + now.getMonth();
+  // A day is identified by its ISO date, so today is one string comparison and
+  // the highlight needs no month arithmetic of its own.
+  const month1 = String(now.getMonth() + 1).padStart(2, '0');
+  const day1 = String(now.getDate()).padStart(2, '0');
+  const today = `${now.getFullYear()}-${month1}-${day1}`;
 
   const [view, setView] = useState(currentMonth);
   // 0 until the first scrub, so the initial paint does not animate.
@@ -61,29 +59,12 @@ function Calendar({ config }: WidgetComponentProps) {
   const year = Math.floor(view / 12);
   const month = view % 12;
 
-  const cells = useMemo(() => {
-    const first = new Date(year, month, 1);
-    // JS getDay() is sunday=0; convert to monday=0 then align to the start day.
-    const offset = (((first.getDay() + 6) % 7) - start + 7) % 7;
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const daysInPrev = new Date(year, month, 0).getDate();
-    const out: { id: string; day: number; current: boolean }[] = [];
-    for (let i = offset - 1; i >= 0; i--) {
-      out.push({ id: `prev-${i}`, day: daysInPrev - i, current: false });
-    }
-    for (let d = 1; d <= daysInMonth; d++) {
-      out.push({ id: `cur-${d}`, day: d, current: true });
-    }
-    for (let d = 1; out.length < FULL_MONTH_SLOTS; d++) {
-      out.push({ id: `next-${d}`, day: d, current: false });
-    }
-    return out;
-  }, [year, month, start]);
-
-  const dows = useMemo(
-    () => [...DOW_LABELS.slice(start), ...DOW_LABELS.slice(0, start)],
-    [start],
-  );
+  // The kit owns the grid: the weekday labels, the day arithmetic and the
+  // outside-month spillover. `hasVariableRowCount` stays off because Glance
+  // renders a fixed six-week grid (static/js/calendar.js:4,
+  // FULL_MONTH_SLOTS = 7*6) so scrubbing never resizes the widget — a variable
+  // tail would leave blank slots and reflow between four and six rows.
+  const { days, dayNames } = useCalendarDays({ year, month: month + 1, weekStartsOn: start });
 
   return (
     <WidgetChrome
@@ -136,7 +117,7 @@ function Calendar({ config }: WidgetComponentProps) {
         </Stack>
 
         <Grid columns={7} align="center" justify="center" columnGap={0.5}>
-          {dows.map((d) => (
+          {dayNames.map((d) => (
             <Text key={d} as="div" type="supporting" className={styles.dow}>
               {d}
             </Text>
@@ -153,18 +134,18 @@ function Calendar({ config }: WidgetComponentProps) {
           columnGap={0.5}
           className={dir === -1 ? styles.slidePrev : dir === 1 ? styles.slideNext : undefined}
         >
-          {cells.map((c) => {
-            const isToday = isCurrent && c.current && c.day === now.getDate();
+          {days.map((d) => {
+            const isToday = d.iso === today;
             return (
               <Text
-                key={c.id}
+                key={d.iso}
                 as="div"
                 type="body"
                 hasTabularNumbers
                 aria-current={isToday ? 'date' : undefined}
-                className={`${styles.day} ${c.current ? '' : styles.other} ${isToday ? styles.today : ''}`}
+                className={`${styles.day} ${d.isOutside ? styles.other : ''} ${isToday ? styles.today : ''}`}
               >
-                {c.day}
+                {d.dayNumber}
               </Text>
             );
           })}
