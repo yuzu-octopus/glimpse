@@ -432,9 +432,18 @@ registerWidget('videos', async (ctx, config) => {
   const retry = retryOptionsFrom(cfg);
 
   const channelFeeds = await feedSpecsForChannels(ctx, cfg.channels, includeShorts, retry);
+  // A playlist is a source like any other: `playlist:` is prefixed for the
+  // feed, and the public playlist page is its second channel, so a feed that
+  // 404s or comes back empty no longer costs the whole source.
   const playlistFeeds = cfg.playlists.map((p): FeedSpec => {
-    const pid = p.startsWith(PLAYLIST_PREFIX) ? p : `${PLAYLIST_PREFIX}${p}`;
-    return { url: feedUrlForId(pid, includeShorts), source: p, cacheKey: pid, pageUrl: null };
+    const pid = p.startsWith(PLAYLIST_PREFIX) ? p.slice(PLAYLIST_PREFIX.length) : p;
+    const prefixed = `${PLAYLIST_PREFIX}${pid}`;
+    return {
+      url: feedUrlForId(prefixed, includeShorts),
+      source: p,
+      cacheKey: prefixed,
+      pageUrl: `https://www.youtube.com/playlist?list=${encodeURIComponent(pid)}`,
+    };
   });
   const feeds: FeedSpec[] = [...channelFeeds, ...playlistFeeds];
 
