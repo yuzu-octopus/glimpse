@@ -72,6 +72,12 @@ export interface WeatherDay {
 
 export interface WeatherData {
   location: string;
+  /** IANA zone the `daily` dates are calendar days *in* — open-meteo is asked
+   * for `timezone=auto`, so a forecast for Tokyo rolls over eight hours before
+   * the viewer's does, and "Today" has to be asked in the same zone the dates
+   * were counted in. `null` on a payload predating this field, which the
+   * renderer reads as the viewer's own zone. */
+  timezone: string | null;
   current: WeatherNow;
   daily: WeatherDay[];
 }
