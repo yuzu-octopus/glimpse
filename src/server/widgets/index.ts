@@ -28,3 +28,6 @@ import './jellyfin';
 import './qbittorrent';
 import './transmission';
 import './twitch';
+import './home-assistant';
+import './model-endpoints';
+import './tailscale';
