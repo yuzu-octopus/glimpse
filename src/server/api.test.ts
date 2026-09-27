@@ -47,6 +47,18 @@ describe('buildPagePayload', () => {
     expect(payload.columns[0].widgets[0]).toEqual({ type: 'clock', config: clockWidget, data: null });
   });
 
+  // The mobile column toggle reads `columns[].title`; the live payload and the
+  // skeleton (which the client patches the stream onto) must both carry it or
+  // the label flashes "Column N" and then renames itself.
+  it('carries a column title into both the live and the skeleton payload', async () => {
+    const named = page([{ size: 'full', title: 'Homelab', widgets: [clockWidget] }]);
+    expect((await buildPagePayload(named, makeCtx())).columns[0].title).toBe('Homelab');
+    expect(skeletonPagePayload(named).columns[0].title).toBe('Homelab');
+    // absent stays absent, so the client falls through to its own fallbacks
+    const unnamed = await buildPagePayload(page([{ size: 'full', widgets: [clockWidget] }]), makeCtx());
+    expect('title' in unnamed.columns[0]).toBe(false);
+  });
+
   it('fetches data for registered widgets through the fetcher', async () => {
     const fetcher = vi.fn(async () => ({ items: [{ title: 'hello' }] }));
     registerWidget('rss', fetcher);

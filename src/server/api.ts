@@ -49,7 +49,10 @@ export async function buildPagePayload(
   page: Page & { slug: string },
   ctx: WidgetFetchContext,
 ): Promise<PagePayload> {
-  const buildColumn = (col: { size: 'small' | 'full'; span?: number; widgets: unknown[] }, colIdx: number) =>
+  const buildColumn = (
+    col: { size: 'small' | 'full'; span?: number; title?: string; widgets: unknown[] },
+    colIdx: number,
+  ) =>
     Promise.all(
       col.widgets.map((w, i) =>
         fetchWidget(ctx, page.slug, `c:${colIdx}:${i}`, isRecord(w) ? w : { type: 'unknown' }),
@@ -58,6 +61,7 @@ export async function buildPagePayload(
       size: col.size,
       widgets,
       ...(col.span !== undefined ? { span: col.span } : {}),
+      ...(col.title !== undefined ? { title: col.title } : {}),
     }));
 
   const headPromise = Array.isArray(page['head-widgets'])
@@ -220,10 +224,16 @@ export function skeletonPagePayload(page: Page & { slug: string }): PagePayload 
     ? (page['head-widgets'] as unknown[]).map(skel)
     : [];
   const columns = Array.isArray(page.columns)
-    ? ((page.columns ?? []) as Array<{ size: 'small' | 'full'; span?: number; widgets: unknown[] }>).map((col) => ({
+    ? ((page.columns ?? []) as Array<{
+        size: 'small' | 'full';
+        span?: number;
+        title?: string;
+        widgets: unknown[];
+      }>).map((col) => ({
         size: col.size,
         widgets: col.widgets.map(skel),
         ...(col.span !== undefined ? { span: col.span } : {}),
+        ...(col.title !== undefined ? { title: col.title } : {}),
       }))
     : [];
   const isFlat = Array.isArray((page as { widgets?: unknown[] }).widgets);

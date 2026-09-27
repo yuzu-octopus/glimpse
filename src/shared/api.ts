@@ -26,6 +26,9 @@ export interface ColumnPayload {
   widgets: WidgetPayload[];
   /** Auto-tiling span hint (1-4); only set when the config declares it. */
   span?: number;
+  /** Column name from the config; the mobile section header reads this
+   * before falling back to the first widget's title. */
+  title?: string;
 }
 export interface PagePayload {
   slug: string;
