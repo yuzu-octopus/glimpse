@@ -83,6 +83,7 @@ function CustomApi({ config, data, error, isLoading }: WidgetComponentProps) {
       hideHeader={cfg['hide-header']}
       cssClass={cfg['css-class']}
       error={error}
+      showErrors={cfg['show-errors']}
       isLoading={loading}
       collapseAfter={collapseAfter}
       items={rows}

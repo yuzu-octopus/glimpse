@@ -66,6 +66,7 @@ function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
         hideHeader={cfg['hide-header']}
         cssClass={cfg['css-class']}
         error={error}
+        showErrors={cfg['show-errors']}
         collapseAfter={collapseAfter}
         items={videos.map((v) => (
           <VideoRow key={v.url} video={v} />
@@ -81,6 +82,7 @@ function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
       titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
       error={error}
+      showErrors={cfg['show-errors']}
       collapseAfter={collapseAfter}
       cssClass={[cfg['css-class'], grid ? styles.gridWrap : styles.cards].filter(Boolean).join(' ') || undefined}
       items={videos.map((v) => <Card key={v.url} video={v} />)}

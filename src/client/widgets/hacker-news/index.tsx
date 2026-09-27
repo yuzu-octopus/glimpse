@@ -55,6 +55,7 @@ function HackerNews({ config, data, error, isLoading }: WidgetComponentProps) {
         cssClass={cfg['css-class']}
         isLoading
         error={error}
+        showErrors={cfg['show-errors']}
       />
     );
   }
@@ -66,6 +67,7 @@ function HackerNews({ config, data, error, isLoading }: WidgetComponentProps) {
       cssClass={cfg['css-class']}
       isLoading={loading}
       error={error}
+      showErrors={cfg['show-errors']}
     >
       <Feed items={visible} layout="list" />
       {hasCollapse ? (

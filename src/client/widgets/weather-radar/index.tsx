@@ -28,12 +28,12 @@ export function WeatherRadar({ config, data, error, isLoading }: WidgetComponent
 
   if (loading) {
     return (
-      <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']} isLoading error={error} />
+      <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']} isLoading error={error} showErrors={cfg['show-errors']} />
     );
   }
   if (!w) {
     return (
-      <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']} error={error}>
+      <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']} error={error} showErrors={cfg['show-errors']}>
         <div className={styles.empty}>No radar data.</div>
       </WidgetChrome>
     );

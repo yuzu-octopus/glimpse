@@ -45,12 +45,12 @@ function toFeedItems(items: RssItem[], detailed: boolean): FeedItem[] {
   });
 }
 
-function Cards({ items, title, titleUrl, hideHeader, cssClass, cardHeight, thumbnailHeight, overlay, error, isLoading }: {
+function Cards({ items, title, titleUrl, hideHeader, cssClass, cardHeight, thumbnailHeight, overlay, error, showErrors, isLoading }: {
   items: RssItem[]; title?: string; titleUrl?: string; hideHeader?: boolean; cssClass?: string;
-  cardHeight?: number; thumbnailHeight?: number; overlay?: boolean; error?: string; isLoading?: boolean;
+  cardHeight?: number; thumbnailHeight?: number; overlay?: boolean; error?: string; showErrors?: boolean; isLoading?: boolean;
 }) {
   return (
-    <WidgetChrome title={title} titleUrl={titleUrl} hideHeader={hideHeader} cssClass={cssClass} error={error} isLoading={isLoading}>
+    <WidgetChrome title={title} titleUrl={titleUrl} hideHeader={hideHeader} cssClass={cssClass} error={error} showErrors={showErrors} isLoading={isLoading}>
       <div className={styles.cardRow}>
         {items.map((item) =>
           overlay ? (
@@ -132,6 +132,7 @@ function Rss({ config, data, error, isLoading }: WidgetComponentProps) {
         cssClass={cfg['css-class']}
         isLoading
         error={error}
+        showErrors={cfg['show-errors']}
       />
     );
   }
@@ -148,6 +149,7 @@ function Rss({ config, data, error, isLoading }: WidgetComponentProps) {
         thumbnailHeight={cfg['thumbnail-height']}
         overlay={cfg['overlay'] === true}
         error={error}
+        showErrors={cfg['show-errors']}
         isLoading={loading}
       />
     );
@@ -161,6 +163,7 @@ function Rss({ config, data, error, isLoading }: WidgetComponentProps) {
       cssClass={cfg['css-class']}
       isLoading={loading}
       error={error}
+      showErrors={cfg['show-errors']}
     >
       <Feed items={visible} layout="list" singleLine={singleLine} />
       {hasCollapse ? (

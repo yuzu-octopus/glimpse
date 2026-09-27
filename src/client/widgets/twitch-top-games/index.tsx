@@ -24,6 +24,7 @@ function TwitchTopGames({ config, data, error, isLoading }: WidgetComponentProps
         cssClass={cfg['css-class']}
         isLoading
         error={error}
+        showErrors={cfg['show-errors']}
       />
     );
   }
@@ -36,6 +37,7 @@ function TwitchTopGames({ config, data, error, isLoading }: WidgetComponentProps
       cssClass={cfg['css-class']}
       isLoading={loading}
       error={error}
+      showErrors={cfg['show-errors']}
     >
       {games.length === 0 && !loading ? <div className={styles.empty}>No top games</div> : null}
       <ol className={styles.list}>

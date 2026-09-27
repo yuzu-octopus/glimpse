@@ -155,6 +155,7 @@ export function Timer({ config, isLoading, error }: WidgetComponentProps) {
       cssClass={cfg['css-class']}
       isLoading={isLoading}
       error={error}
+      showErrors={cfg['show-errors']}
     >
       <div className={styles.wrap} data-testid="timer-widget" data-mode={state.mode}>
         <div className={styles.modeRow} role="tablist" aria-label="Timer mode">

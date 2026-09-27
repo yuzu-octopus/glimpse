@@ -67,6 +67,7 @@ function Reddit({ config, data, error, isLoading }: WidgetComponentProps) {
         cssClass={cfg['css-class']}
         isLoading
         error={error}
+        showErrors={cfg['show-errors']}
       />
     );
   }
@@ -79,6 +80,7 @@ function Reddit({ config, data, error, isLoading }: WidgetComponentProps) {
         hideHeader={cfg['hide-header']}
         cssClass={cfg['css-class']}
         error={error}
+        showErrors={cfg['show-errors']}
         isLoading={loading}
       >
         <div className={styles.cards}>
@@ -98,6 +100,7 @@ function Reddit({ config, data, error, isLoading }: WidgetComponentProps) {
       cssClass={cfg['css-class']}
       isLoading={loading}
       error={error}
+      showErrors={cfg['show-errors']}
     >
       <Feed items={visible} layout="list" />
       {hasCollapse ? (
