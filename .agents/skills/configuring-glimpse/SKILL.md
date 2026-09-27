@@ -23,7 +23,7 @@ pages:
 ```
 Max 3 columns/page, columns require `size` or `span` (span explicit on all or none); when using `size`, exactly 1–2 `full`. Groups cannot nest `group`/`split-column`.
 
-An optional column `title` names the whole stack and is what the mobile section header shows. Without one the header falls back to the column's first widget title, then `Column N`.
+Without a column `title` the mobile section header falls back to the column's first widget title, then `Column N`.
 
 ## Shared widget props
 Every widget accepts all of these — no widget-specific opt-in needed.
@@ -31,12 +31,14 @@ Every widget accepts all of these — no widget-specific opt-in needed.
 |---|---|---|
 | `title`, `title-url` | — | header text + click target |
 | `hide-header: true` | — | page-level `hide-headers: true` forces it everywhere |
-| `cache` | `5m` | `\d+[smhd]` e.g. `12h` |
+| `cache` | per widget type | `\d+[smhd]` e.g. `12h`. Unset: 1s for `server-stats` / `system-stats`, 10m for `weather-radar`, 60s for the six live types, 1h for everything else — so a state widget you want fresh needs an explicit `cache: 60s` |
 | `css-class` | — | extra class on the card |
 | `retries` | `3` | extra fetch attempts **after** the first, 0–10. `0` = try once, never retry. Raise it for flaky upstreams; lower it so a dead endpoint fails fast instead of stalling the poll. |
 | `show-errors` | `true` | `false` renders a failed widget quietly — no error banner, no red chrome, just the card and whatever content it still has. The status dot beside the title keeps reporting the failure, so quiet is never invisible. |
 
 Also inherited: `priority`, `span`, `zone` — pure bento hints, used when a page lists `widgets:` flat and ignored in `columns:` mode.
+
+Only the six live types (`clock`, `weather`, `markets`, `monitor`, `server-stats`, `system-stats`) also poll themselves — 1s on a page containing `server-stats` / `system-stats`, 30s otherwise. Every other widget re-reads on tab focus, route change, or reload, and the server then serves its own cache until that TTL expires. A `home-assistant` or `tailscale` card on a page with no live widget will look frozen for up to an hour until you set `cache`.
 
 ### Glance type aliases
 `to-do` loads as `todo` and `stocks` as `markets`, at any nesting depth including inside `group` / `split-column`. Canonical names in docs, error messages, and every registry stay `todo` and `markets`. `bun run check-config` accepts both spellings.
@@ -69,7 +71,9 @@ Also inherited: `priority`, `span`, `zone` — pure bento hints, used when a pag
 | `server-stats` | `servers[]`: {name?, type: local(default) \| remote, url?} |
 | `system-stats` | none required (host machine) |
 | `dns-stats` | `service`: pihole \| adguard \| technitium, `url`, credentials |
-| `docker-containers` | `sock-path` (default `/var/run/docker.sock`; tcp:// or http:// URL also works) |
+| `docker-containers` | `sock-path` (default `/var/run/docker.sock`; tcp:// or http:// URL also works), `running-only`, `category`, `hide-by-default` |
+| `tailscale` | `api-key` (`${TS_API_KEY}`, needs the `devices:core:read` scope), `tailnet` (id, or `-` for the tailnet that owns the key), `limit` 1–200 (20). Online devices sort first; exit-node badges come from `enabledRoutes` in the same one call |
+| `home-assistant` | `entities[]` required, in display order — a bare entity id (`sensor.living_room_temp`) or `{entity, label}` to override the derived name; `url` (default `http://homeassistant.local:8123`), `token` or `HA_TOKEN`. **State only**: the current value of each entity from one REST `GET /api/states`, filtered server-side (never one request per entity). There is no history here — no energy chart, no long-term statistics; those come from HA's WebSocket recorder API, not REST, so a config asking for them wants a different tool |
 | `bookmarks` | `groups[]`: {title, links[]} |
 | `search` | `search-engine` (preset name / URL / {name,url}), `bangs[]`, new-tab (default true), target |
 | `clock` | `timezones[]` {timezone, label}, hour-format 24h\|12h |
@@ -79,7 +83,8 @@ Also inherited: `priority`, `span`, `zone` — pure bento hints, used when a pag
 | `group` | tabbed container; `widgets[]` (≥1; cannot nest `group`/`split-column`) |
 | `split-column` | side-by-side container; `widgets[]` (≥2) laid out in a grid of at most `max-columns` tracks per row (`max-columns` ≥ 2, default 2, clamped to the child count) — N children, one column each, wrapping past the cap. Cannot nest `group`/`split-column`. |
 | `todo` / `iframe` / `html` | id / source+height / raw content |
-| `ai-quota` | `provider` (70 ids: codex/claude/openai/anthropic/copilot/gemini/cursor/kimi/opencode/vertex/jetbrains/zed/grok/amp/kiro/antigravity/ollama/bedrock/stepfun/… — `KNOWN_PROVIDERS` in `src/shared/widgets/quota-types.ts`), `token` (env `${VAR}`) or `tokenFile` (mounted path: JetBrains `AIAssistantQuotaManager2.xml`, Kiro `kiro-cli` auth file, Grok `~/.grok/auth.json`, Zed `~/.config/zed/credentials`, Amp `~/.config/amp/auth.json`), `quotaUrl` override (e.g. `Z_AI_API_HOST`, Ollama `http://localhost:11434`, Antigravity `https://localhost:8765`), `projectId` (OpenAI/Vertex/GCP), `baseUrl`, `cache` (`2m` default, `5m` for file/CLI) |
+| `ai-quota` | `provider` (70 ids, all with fetchers: codex/claude/openai/anthropic/copilot/gemini/cursor/kimi/opencode/vertex/jetbrains/zed/grok/amp/kiro/antigravity/ollama/bedrock/stepfun/… — `KNOWN_PROVIDERS` in `src/shared/widgets/quota-types.ts`), `token` (env `${VAR}`) or `tokenFile` (mounted path: JetBrains `AIAssistantQuotaManager2.xml`, Kiro `kiro-cli` auth file, Grok `~/.grok/auth.json`, Zed `~/.config/zed/credentials`, Amp `~/.config/amp/auth.json`), `quotaUrl` override (e.g. `Z_AI_API_HOST`, Ollama `http://localhost:11434`, Antigravity `https://localhost:8765`), `projectId` (OpenAI/Vertex/GCP), `baseUrl`. Default `cache` is 1h — set `cache: 2m` for a counter you actually watch |
+| `model-endpoints` | Whether the **models and providers you depend on are still being served** — availability, not your quota. `ai-quota` above is the quota/balance view; adding both is fine, but neither answers the other's question, and one being empty says nothing about the other. `models[]` required (OpenRouter `vendor/model` slugs, 1–12), `provider` tag filter, `limit` rows 1–100 (8), `unhealthy-only`. Keyless — no token, no `quotaUrl`; worst-status-first, grouped by model, 5m / 30m / 1d uptime |
 
 Authoritative shapes: `src/shared/widgets/*.ts` (schema per widget) and working examples in `config.example.yml`.
 
@@ -119,7 +124,7 @@ Authoritative shapes: `src/shared/widgets/*.ts` (schema per widget) and working 
 
 ## Variables & includes
 - `${VAR}` interpolates from process env into any string; **missing var is a validation error** at startup (`${VAR:-fallback}` supplies a default). `${secret:…}` is NOT supported. Validate offline first: `bun run check-config [path]` (line numbers + did-you-mean widget types).
-- `$include: ./more.yml` (string or list; absolute paths OK) — relative to the including file, recursive with no depth limit; pages append (parent first, then includes in order), `custom-css-file` merges with the last include winning; non-string entries are validation errors; diamonds are included once, true cycles rejected with `circular $include detected`.
+- `$include: ./more.yml` (string or list; absolute paths OK) — relative to the including file, recursive with no depth limit; pages append (parent first, then includes in order), `custom-css-file` merges with the last include winning; non-string entries are validation errors; diamonds are included once, true cycles rejected with `circular $include detected`. Only `pages` and `custom-css-file` merge — any other top-level key in an included file (`server:`, a stray `theme:`) is dropped with a warning rather than an error.
 - Config auto-reloads on save; watch out: cache keys reset on reload.
 
 ## Theming
