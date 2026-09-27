@@ -56,12 +56,10 @@
   flex: 1;
   min-width: 0;
   height: 100%;
+  /* No scrollbar overrides: the kit's one rule set in tokens.css paints every
+   * scroller, and hiding it here meant the widest nav had no affordance at
+   * all — the one tier the doctrine says thumb-only bars must read on. */
   overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.navLinks::-webkit-scrollbar {
-  display: none;
 }
 
 /* Purple = tappable. Nav links are links: accent unvisited, resolving to
