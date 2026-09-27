@@ -18,14 +18,23 @@
   color: var(--color-text-highlight);
 }
 
+.trigger:active {
+  color: var(--color-text-subdue);
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
 .body {
   display: flex;
   align-items: stretch;
   min-height: 0;
 }
 
-/* Left section nav — active item gets a primary accent bar on top of the
- * highlight, mirroring Astryx SideNavItem's selected treatment. */
+/* Left section nav — the active item gets a primary accent bar (a tappable
+ * state, so accent is allowed) drawn as a real border, never a shadow. */
 .nav {
   display: flex;
   flex-direction: column;
@@ -40,8 +49,9 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 12px;
+  padding: 9px 12px 9px 10px;
   border: none;
+  border-left: 2px solid transparent;
   border-radius: var(--border-radius);
   background: none;
   color: var(--color-text-base);
@@ -49,19 +59,32 @@
   font-size: var(--font-size-base);
   text-align: left;
   cursor: pointer;
-  transition: color 0.15s, background-color 0.15s;
+  transition: color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
 }
 
+/* Hover dims 12%, press dims 20% — no lift, no entrance motion. */
 .navItem:hover {
   color: var(--color-text-highlight);
-  background-color: var(--color-widget-background-highlight);
+  background-color: var(--color-overlay-hover);
+}
+
+.navItem:active {
+  background-color: var(--color-overlay-pressed);
+}
+
+.navItem:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
 }
 
 .navItemActive,
-.navItemActive:hover {
+.navItemActive:hover,
+.navItemActive:active {
   color: var(--color-text-highlight);
   background-color: var(--color-widget-background-highlight);
-  box-shadow: inset 2px 0 0 var(--color-primary);
+  border-left-color: var(--color-primary);
 }
 
 /* Right content pane — generous padding, scrolls independently of the nav.
@@ -86,10 +109,10 @@
   min-width: 0;
 }
 
+/* Section title — a level-2 heading. Size comes from the heading level,
+   so the Docs sub-heading below it lands on a distinct tier. */
 .sectionTitle {
   margin: 0;
-  font-size: var(--font-size-h3);
-  font-weight: 600;
   color: var(--color-text-highlight);
 }
 
@@ -99,9 +122,9 @@
   gap: 8px;
 }
 
-/* glance .theme-choices label styling */
+/* glance .theme-choices label styling — the supporting tier under the
+   section heading (rendered as Text type="supporting"). */
 .groupLabel {
-  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -118,29 +141,40 @@
 
 .modeButton {
   padding: 6px 14px;
-  border: none;
-  border-right: 1px solid var(--color-widget-content-border);
+  border: 1px solid transparent;
+  border-right-color: var(--color-widget-content-border);
   background: var(--color-widget-background);
   color: var(--color-text-base);
   font-family: inherit;
   font-size: var(--font-size-base);
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
-}
-
-.modeButton:last-child {
-  border-right: none;
+  transition: background-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
 }
 
 .modeButton:hover {
   color: var(--color-text-highlight);
+  background-color: var(--color-overlay-hover);
 }
 
+.modeButton:active {
+  background-color: var(--color-overlay-pressed);
+}
+
+.modeButton:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+/* Selected segment: quiet selection surface plus an accent border —
+   depth comes from a border, never an inset shadow. */
 .modeButtonActive,
-.modeButtonActive:hover {
-  background: var(--color-widget-background-highlight);
+.modeButtonActive:hover,
+.modeButtonActive:active {
+  background-color: var(--color-widget-background-highlight);
   color: var(--color-text-highlight);
-  box-shadow: inset 0 0 0 1px var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .group {
@@ -176,17 +210,35 @@
   min-width: 0;
   overflow: hidden;
   cursor: pointer;
+  /* Astryx SelectableCard expresses selection as an inset ring shadow
+     (--_card-ring). Selection is a border here — flat and crisp, depth from
+     borders, never a shadow. (!important beats StyleX's selected rule.) */
+  --_card-ring: 0 0 transparent !important;
 }
 
-/* Hover — 1px accent ring only, distinct from selected 2px primary.
-   Minimal border change (accent purple muted) — no background lighten. */
+/* Hover — a muted accent border, distinct from the selected solid accent.
+   Depth comes from the border, not a ring shadow; no background lighten. */
 .card:hover:not([data-selected='true']) {
-  --_card-ring: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 55%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
+}
+
+.card:active:not([data-selected='true']) {
+  border-color: var(--color-primary);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Selected preset: solid accent border, replacing the inset ring shadow. */
+.card[data-selected='true'] {
+  border-color: var(--color-primary);
 }
 
 /* Astryx SelectableCard paints an opaque --color-overlay-hover ::after over
    the card on hover/press, which covers the swatches ("censored" look).
-   Kill the overlay; our ring + border carry the hover affordance.
+   Kill the overlay; our border carries the hover affordance.
    (!important — StyleX hover rule stacks .x.x:hover + 7x :not(#\#)). */
 .card::after,
 .card:hover::after,
@@ -199,7 +251,7 @@
   background-color: var(--color);
   width: 14px;
   height: 14px;
-  border-radius: 3px;
+  border-radius: var(--radius-inner);
   flex-shrink: 0;
 }
 
@@ -261,13 +313,15 @@
   color: var(--color-text-highlight);
 }
 
+/* Docs sub-heading — a level-3 heading, so it sits a tier below the
+   level-2 section title instead of matching it. */
 .docsHeading {
   margin: 16px 0 8px;
-  font-size: 14px;
-  font-weight: 600;
   color: var(--color-text-highlight);
 }
 
+/* Purple = tappable: a prose link wears the accent underlined and resolves
+   to foreground on hover. */
 .docsLink {
   color: var(--color-primary);
   text-decoration: underline;
@@ -278,13 +332,17 @@
   color: var(--color-text-highlight);
 }
 
+.docsLink:active {
+  color: var(--color-text-highlight);
+}
+
 .bangTable {
   width: 100%;
   margin-top: 12px;
   border-collapse: collapse;
   font-size: 12px;
   border: 1px solid var(--color-widget-content-border);
-  border-radius: 5px;
+  border-radius: var(--radius-container);
   overflow: hidden;
 }
 
@@ -325,9 +383,16 @@
     border-bottom: 1px solid var(--color-separator);
   }
 
+  .navItem {
+    border-left: none;
+    border-bottom: 2px solid transparent;
+    padding: 9px 10px;
+  }
+
   .navItemActive,
-  .navItemActive:hover {
-    box-shadow: inset 0 -2px 0 var(--color-primary);
+  .navItemActive:hover,
+  .navItemActive:active {
+    border-bottom-color: var(--color-primary);
   }
 
   .content {

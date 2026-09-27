@@ -17,21 +17,23 @@
 
 
 /* glance widgets.css .widget-header — sits ABOVE the bordered content box,
-   not inside it. Left-aligned, uppercase, mono, 1.4rem. */
+   not inside it. Left-aligned, uppercase, mono. The title's size comes from
+   the Heading level (3), not from here — two-tier hierarchy owns type. */
 .header {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 0 calc(var(--widget-content-horizontal-padding) + 1px);
   margin-bottom: 9px;
-  font-size: var(--font-size-h4);
   line-height: 1.4;
   color: var(--color-text-highlight);
   text-align: left;
 }
 
-/* glance widgets.css .widget-error-header — negative-tinted backdrop
-   bleeding half a content-padding step into the surrounding area. */
+/* glance widgets.css .widget-error-header — negative status surface bleeding
+   half a content-padding step into the surrounding area. Status resolves
+   through a 10% muted wash plus a semantic border, never a direct tint
+   fill, and depth is the border — no soft shadow. */
 .errorHeader {
   position: relative;
   z-index: 1;
@@ -43,8 +45,8 @@
   position: absolute;
   inset: calc(0px - (var(--widget-content-vertical-padding) / 2))
     calc(0px - (var(--widget-content-horizontal-padding) / 2));
-  background: var(--color-negative);
-  opacity: 0.05;
+  background: color-mix(in srgb, var(--color-negative) 10%, transparent);
+  border: 1px solid var(--color-error);
   border-radius: var(--border-radius);
   z-index: -1;
 }
@@ -56,16 +58,18 @@
   min-width: 0;
 }
 
-/* Small red status dot next to the title when the widget failed. */
+/* Small negative status marker next to the title when the widget failed.
+   4px inner radius — a crisp badge, never a circle or pill. */
 .errorDot {
   width: 10px;
   height: 10px;
-  border-radius: 50%;
+  border-radius: var(--radius-inner);
   background: var(--color-negative);
   flex-shrink: 0;
 }
 
 .title {
+  margin: 0;
   text-transform: uppercase;
   color: inherit;
   text-decoration: none;
@@ -73,6 +77,22 @@
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
+}
+
+/* Purple = tappable. A title that is a link wears the accent unvisited and
+   resolves to foreground plus underline on hover; a plain title stays
+   foreground so accent never decorates. */
+.titleLink {
+  color: var(--color-primary);
+}
+
+.titleLink:hover {
+  color: var(--color-text-highlight);
+  text-decoration: underline;
+}
+
+.titleLink:active {
+  color: var(--color-text-highlight);
 }
 
 .body {
@@ -116,7 +136,8 @@
   min-width: 0;
 }
 
-/* glance utils.css .expand-toggle-button */
+/* glance utils.css .expand-toggle-button — a tappable action, so hover dims
+   12% and press dims 20% through the overlay tokens. */
 .more {
   font: inherit;
   border: 0;
@@ -129,17 +150,27 @@
   font-size: var(--font-size-h4);
   padding: var(--widget-content-vertical-padding) 0;
   background: var(--color-widget-background);
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.more:hover {
+  background-color: var(--color-overlay-hover);
+}
+
+.more:active {
+  background-color: var(--color-overlay-pressed);
 }
 
 /* glance utils.css .expand-toggle-button-icon — chevron right of the label,
-   pointing down when collapsed, up when expanded. */
+   pointing down when collapsed, up when expanded. Rotation is the expand
+   action answering, which motion is for. */
 .chevron {
   display: inline-block;
   margin-left: 10px;
   position: relative;
   top: -2px;
   transform: rotate(90deg);
-  transition: transform 0.3s;
+  transition: transform var(--duration-fast) var(--ease-standard);
   flex-shrink: 0;
 }
 

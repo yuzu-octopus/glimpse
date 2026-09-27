@@ -9,7 +9,6 @@
   padding-inline: var(--space-viewport);
   width: 100%;
   box-sizing: border-box;
-  animation: pageContentEntrance 0.3s cubic-bezier(0.25, 1, 0.5, 1) backwards;
   /* ensure bottom padding is outside any flex/overflow clipping context;
      display: flow-root prevents last-child margin collapse from eating it */
   display: flow-root;
@@ -172,7 +171,9 @@
   min-width: 0;
 }
 
-/* Mobile column toggle header (glance look: uppercase + separator). */
+/* Mobile column toggle — the column's label tier. It is supporting text
+   (12px) directly above the level-3 widget headers inside it, so the two
+   tiers never share a size. Uppercase + separator border, flat. */
 .mobileToggle {
   display: none;
   align-items: center;
@@ -190,6 +191,21 @@
   color: var(--color-text-base);
   cursor: pointer;
   text-align: start;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+/* Hover dims 12%, press dims 20% — no lift. */
+.mobileToggle:hover {
+  background-color: var(--color-overlay-hover);
+}
+
+.mobileToggle:active {
+  background-color: var(--color-overlay-pressed);
+}
+
+.mobileToggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .chevronUp {
@@ -219,7 +235,7 @@
 
 /* Group tabs (widget-group.css port): flat inline text, uppercase, no pills.
    Overrides Astryx TabList/Tab stylex (hover pill + white bottom indicator)
-   to match glance flat philosophy — no shadows, no backgrounds. */
+   to match the flat philosophy — borders and a dim, never a shadow. */
 .groupTabs {
   display: flex;
   gap: 18px;
@@ -250,14 +266,31 @@
   cursor: pointer;
   flex-shrink: 0;
   padding: 0 !important;
-  transition: color 0.3s, border-color 0.3s;
+  transition: color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
 }
 
-.groupTabs button:hover:not(.groupTabCurrent),
-.groupTabs a:hover:not(.groupTabCurrent),
-.groupTabs [data-tab-value]:hover:not(.groupTabCurrent) {
+/* Tabs are tappable: hover and press resolve to foreground. The accent
+   underlines the active tab — a primary action, never decoration. */
+.groupTabs button:hover,
+.groupTabs a:hover,
+.groupTabs [data-tab-value]:hover {
   color: var(--color-text-highlight) !important;
   border-bottom-color: var(--color-text-subdue) !important;
+}
+
+.groupTabs button:active,
+.groupTabs a:active,
+.groupTabs [data-tab-value]:active {
+  color: var(--color-text-highlight) !important;
+  border-bottom-color: var(--color-primary) !important;
+}
+
+.groupTabs button:focus-visible,
+.groupTabs a:focus-visible,
+.groupTabs [data-tab-value]:focus-visible {
+  outline: 2px solid var(--color-primary) !important;
+  outline-offset: 2px !important;
 }
 
 .groupTabs .groupTabCurrent {

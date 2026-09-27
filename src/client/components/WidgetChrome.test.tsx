@@ -136,3 +136,37 @@ describe('WidgetChrome', () => {
     expect(screen.getByTestId('widget-loading').className).toContain('shapeStat');
   });
 });
+
+describe('WidgetChrome brand principles', () => {
+  it('renders the title as a level-3 heading, not a bare span', () => {
+    render(<WidgetChrome title="My Widget">x</WidgetChrome>);
+    // Two-tier hierarchy: widget headers are heading level 3.
+    expect(screen.getByRole('heading', { level: 3, name: 'My Widget' })).toBeInTheDocument();
+  });
+
+  it('marks only a linked title as tappable (accent)', () => {
+    const { container, rerender } = render(<WidgetChrome title="Plain">x</WidgetChrome>);
+    expect(container.querySelector('h3')?.className).not.toContain('titleLink');
+
+    rerender(
+      <WidgetChrome title="Linked" titleUrl="https://example.com">
+        x
+      </WidgetChrome>,
+    );
+    expect(container.querySelector('h3')?.className).toContain('titleLink');
+  });
+
+  it('keeps the error marker a crisp badge, not a circle or pill', () => {
+    const css = readFileSync('src/client/components/widget-chrome.module.css', 'utf8');
+    const dot = css.match(/\.errorDot\s*\{[^}]*\}/)?.[0] ?? '';
+    expect(dot).toContain('var(--radius-inner)');
+    expect(dot).not.toContain('50%');
+  });
+
+  it('carries no shadow-based depth — borders only', () => {
+    const css = readFileSync('src/client/components/widget-chrome.module.css', 'utf8');
+    for (const value of css.matchAll(/box-shadow\s*:\s*([^;]+);/g)) {
+      expect(value[1].trim().startsWith('none')).toBe(true);
+    }
+  });
+});

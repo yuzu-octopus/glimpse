@@ -1,5 +1,5 @@
 import { useMemo, useState, type CSSProperties } from 'react';
-import { Dialog, DialogHeader, SelectableCard } from '@astryxdesign/core';
+import { Dialog, DialogHeader, Heading, SelectableCard, Text } from '@astryxdesign/core';
 import { BookOpen, Info, Palette, Settings } from 'lucide-react';
 import { presets, type Preset } from '../../shared/theme/presets';
 import type { ConfigResponse } from '../../shared/api';
@@ -55,7 +55,9 @@ export function SettingsPanel() {
   const renderGroup = (label: string, group: Preset[]) =>
     group.length > 0 ? (
       <div key={label} className={styles.group}>
-        <div className={styles.groupLabel}>{label}</div>
+        <div className={styles.groupLabel}>
+          <Text type="supporting">{label}</Text>
+        </div>
         <div className={styles.grid}>
           {group.map((p) => {
             const current = p.id === presetId;
@@ -78,11 +80,7 @@ export function SettingsPanel() {
                   }
                 }}
                 className={styles.card}
-                style={
-                  current
-                    ? ({ '--_card-ring': 'inset 0 0 0 2px var(--color-primary)' } as CSSProperties)
-                    : undefined
-                }
+                style={current ? ({ borderColor: 'var(--color-primary)' } as CSSProperties) : undefined}
                 variant="transparent"
                 padding={1.5}
                 data-testid="preset-card"
@@ -174,9 +172,13 @@ export function SettingsPanel() {
                 role="tabpanel"
                 aria-labelledby="settings-tab-appearance"
               >
-                <h2 className={styles.sectionTitle}>Appearance</h2>
+                <Heading level={2} className={styles.sectionTitle}>
+                  Appearance
+                </Heading>
                 <div className={styles.field}>
-                  <div className={styles.groupLabel}>Mode</div>
+                  <div className={styles.groupLabel}>
+                    <Text type="supporting">Mode</Text>
+                  </div>
                   <div className={styles.modeRow} role="group" aria-label="Color mode">
                     {(['system', 'light', 'dark'] as const).map((m) => (
                       <button
@@ -206,7 +208,9 @@ export function SettingsPanel() {
                 role="tabpanel"
                 aria-labelledby="settings-tab-about"
               >
-                <h2 className={styles.sectionTitle}>About</h2>
+                <Heading level={2} className={styles.sectionTitle}>
+                  About
+                </Heading>
                 <p className={styles.aboutBlurb}>Glimpse — a glance-style dashboard for your homelab.</p>
                 <dl className={styles.aboutList}>
                   <div className={styles.aboutRow}>
@@ -228,8 +232,12 @@ export function SettingsPanel() {
                 role="tabpanel"
                 aria-labelledby="settings-tab-docs"
               >
-                <h2 className={styles.sectionTitle}>Docs</h2>
-                <h3 className={styles.docsHeading}>Shebang</h3>
+                <Heading level={2} className={styles.sectionTitle}>
+                  Docs
+                </Heading>
+                <Heading level={3} className={styles.docsHeading}>
+                  Shebang
+                </Heading>
                 <p className={styles.aboutBlurb}>
                   Bangs are shortcuts that route a query directly to a site. Prefix the search with{' '}
                   <code className={styles.code}>!gh</code> or <code className={styles.code}>gh</code>{' '}
