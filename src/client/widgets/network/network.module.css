@@ -3,3 +3,6 @@
    margin that separates it from the stat grid above. */
 .spark { margin-top: 8px; }
 .bar { width: 6px; background: var(--color-data-categorical-cyan); border-radius: 2px; display: inline-block; }
+/* A tick with no reading holds its slot and draws nothing: the hole is the
+   data, and any ink here would read as a very fast response. */
+.gap { width: 6px; display: inline-block; }

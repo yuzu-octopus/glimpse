@@ -30,15 +30,18 @@ registerWidget('network', async (ctx, cfg) => {
     }
   }
 
-  let pingMs: number | null = null;
+  // Time to first byte, not ping: the clock spans DNS, TCP, the TLS
+  // handshake and the target's own time to answer. An error response is the
+  // quickest answer a broken target can give, so it records no sample —
+  // otherwise a dead host with a fast 503 charts as the best link here.
+  let ttfbMs: number | null = null;
   try {
     const start = Date.now();
-    await ctx.fetch(`https://${pingTarget}/`, { method: 'HEAD', signal: AbortSignal.timeout(3000) } as RequestInit).then((r: Response) => r.text().catch(() => {}));
-    pingMs = Date.now() - start;
+    const res = await ctx.fetch(`https://${pingTarget}/`, { method: 'HEAD', signal: AbortSignal.timeout(3000) } as RequestInit);
+    ttfbMs = res.ok ? Date.now() - start : null;
   } catch {
-    pingMs = null;
+    ttfbMs = null;
   }
-
-  const data: NetworkData = { localIp: localIp(), publicIp, pingMs };
+  const data: NetworkData = { localIp: localIp(), publicIp, ttfbMs };
   return data;
 });

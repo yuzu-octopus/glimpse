@@ -310,7 +310,9 @@ export type TrendingData = TrendingRepo[];
 export interface NetworkData {
   localIp: string;
   publicIp?: string | null;
-  pingMs?: number | null;
+  /** HTTPS time-to-first-byte to the probe target. Not an ICMP ping: it
+   *  includes DNS, TCP, TLS and the server's own response time. */
+  ttfbMs?: number | null;
 }
 
 export interface ChangeDetectionItem {

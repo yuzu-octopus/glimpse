@@ -13,32 +13,36 @@ const SAMPLE_MS = 30_000;
 function Network({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as NetworkConfig;
   const d = data as NetworkData | null;
-  const [history, setHistory] = useState<number[]>([]);
+  const [history, setHistory] = useState<(number | null)[]>([]);
   const latest = useRef<number | null>(null);
   useEffect(() => {
-    // A failed ping is not a reading: it clears the last one so the sampler
-    // holds the window it has instead of repeating a stale value as if it
-    // were fresh.
-    latest.current = d?.pingMs ?? null;
-  }, [d?.pingMs]);
+    // A failed probe is not a reading: it clears the last one so the next
+    // tick records a hole rather than repeating a stale value as if it were
+    // fresh.
+    latest.current = d?.ttfbMs ?? null;
+  }, [d?.ttfbMs]);
   // The series is a time series, not an arrival log: it samples on its own
-  // tick and records whatever the last reading was. Keying it on the ping
-  // value — the obvious version — appends nothing while the link is steady,
-  // which on a LAN it always is, so the sparkline never draws at all. A flat
-  // line is what steady looks like. The target is the series' identity: a
-  // page can swap one network card for another in the same slot, and that
-  // card's history is not this one's.
+  // tick and records whatever the last reading was — including nothing at
+  // all, because a tick that produced no reading still happened. Skipping
+  // it would let a long outage chart as a short, healthy-looking window of
+  // only the samples that survived. Keying it on the reading value — the
+  // obvious version — appends nothing while the link is steady, which on a
+  // LAN it always is, so the sparkline never draws at all. A flat line is
+  // what steady looks like. The target is the series' identity: a page can
+  // swap one network card for another in the same slot, and that card's
+  // history is not this one's.
   const series = String(cfg['ping-target'] ?? NETWORK_DEFAULTS.pingTarget);
   useEffect(() => {
     setHistory([]);
     const id = setInterval(() => {
-      const ping = latest.current;
-      if (ping == null) return;
-      setHistory((h) => [...h.slice(-(SAMPLES - 1)), ping]);
+      setHistory((h) => [...h.slice(-(SAMPLES - 1)), latest.current]);
     }, SAMPLE_MS);
     return () => clearInterval(id);
   }, [series]);
   const loading = isLoading ?? (data == null && !error);
+  // The scale comes from the readings alone: a hole is the absence of a
+  // value, and letting one into the max would flatten the real bars.
+  const max = Math.max(...history.filter((v): v is number => v != null), 1);
   if (error) {
     return (
       <WidgetChrome
@@ -69,8 +73,8 @@ function Network({ config, data, error, isLoading }: WidgetComponentProps) {
           <Text hasTabularNumbers>{d?.publicIp ?? '—'}</Text>
         </Stack>
         <Stack gap={0.5}>
-          <Text type="label">Ping</Text>
-          <Text hasTabularNumbers>{d?.pingMs != null ? `${d.pingMs} ms` : '—'}</Text>
+          <Text type="label">TTFB</Text>
+          <Text hasTabularNumbers>{d?.ttfbMs != null ? `${d.ttfbMs} ms` : '—'}</Text>
         </Stack>
       </Grid>
       {/* Data ink, not layout chrome: the inline heights ARE the series, so the
@@ -78,11 +82,16 @@ function Network({ config, data, error, isLoading }: WidgetComponentProps) {
           would turn a single quantitative series into a rainbow. */}
       {history.length > 1 ? (
         <Stack direction="horizontal" gap={0.5} vAlign="end" height={24} className={styles.spark}>
-          {history.map((v, i) => {
-            const max = Math.max(...history, 1);
-            const h = Math.round((v / max) * 20) + 2;
-            return <span key={i} style={{ height: `${h}px` }} className={styles.bar} />;
-          })}
+          {history.map((v, i) =>
+            // A tick with no reading takes its slot as a hole. A short bar
+            // there would read as a very fast response, which is the one
+            // thing a failed probe is not.
+            v == null ? (
+              <span key={i} className={styles.gap} />
+            ) : (
+              <span key={i} style={{ height: `${Math.round((v / max) * 20) + 2}px` }} className={styles.bar} />
+            ),
+          )}
         </Stack>
       ) : null}
     </WidgetChrome>

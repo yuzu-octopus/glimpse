@@ -4,11 +4,16 @@ import Network from './index';
 import styles from './network.module.css';
 import type { NetworkData } from '../../../shared/widgets/payloads';
 
-/** A LAN link: the ping never moves, which is the case the buffer must chart. */
-const STEADY: NetworkData = { localIp: '10.0.0.4', publicIp: '203.0.113.7', pingMs: 1 };
+/** A LAN link: the reading never moves, which is the case the buffer must chart. */
+const STEADY: NetworkData = { localIp: '10.0.0.4', publicIp: '203.0.113.7', ttfbMs: 1 };
 
 function bars(container: HTMLElement): HTMLElement[] {
   return Array.from(container.querySelectorAll<HTMLElement>(`.${styles.bar}`));
+}
+
+/** A slot the sampler advanced through with no reading to record. */
+function gaps(container: HTMLElement): HTMLElement[] {
+  return Array.from(container.querySelectorAll<HTMLElement>(`.${styles.gap}`));
 }
 
 function sample(times: number): void {
@@ -22,7 +27,7 @@ afterEach(() => {
 });
 
 describe('network widget', () => {
-  it('charts a steady ping as a flat sparkline', () => {
+  it('charts a steady reading as a flat sparkline', () => {
     vi.useFakeTimers();
     const { container } = render(<Network config={{ type: 'network' }} data={STEADY} />);
     expect(bars(container).length).toBe(0);
@@ -57,7 +62,7 @@ describe('network widget', () => {
       <Network config={{ type: 'network' }} data={STEADY} />,
     );
     sample(1);
-    rerender(<Network config={{ type: 'network' }} data={{ ...STEADY, pingMs: 40 }} />);
+    rerender(<Network config={{ type: 'network' }} data={{ ...STEADY, ttfbMs: 40 }} />);
     sample(1);
     const [short, tall] = bars(container);
     expect(Number.parseInt(short.style.height, 10)).toBeLessThan(
@@ -72,17 +77,46 @@ describe('network widget', () => {
     expect(bars(container).length).toBe(20);
   });
 
-  it('appends nothing while there is no reading to chart', () => {
+  it('advances the window on a dropped sample instead of skipping it', () => {
     vi.useFakeTimers();
     const { container, rerender } = render(
       <Network config={{ type: 'network' }} data={STEADY} />,
     );
     sample(3);
     expect(bars(container).length).toBe(3);
-    rerender(<Network config={{ type: 'network' }} data={{ ...STEADY, pingMs: null }} />);
+    rerender(<Network config={{ type: 'network' }} data={{ ...STEADY, ttfbMs: null }} />);
     sample(3);
-    // A failed ping is not a reading: the series holds rather than repeating
-    // the last good value as if it were a fresh one.
+    // A failed probe is still 30 seconds that passed. Skipping it would let a
+    // 3-hour outage chart as a tidy 10 minutes of the samples that survived,
+    // so the window advances and the hole shows in its place.
+    expect(gaps(container).length).toBe(3);
     expect(bars(container).length).toBe(3);
+    // Twenty slots, not twenty-three: the cap is on the window, and the
+    // holes are inside it.
+    sample(30);
+    expect(bars(container).length + gaps(container).length).toBe(20);
+  });
+
+  it('scales bars against the readings it has, ignoring holes', () => {
+    vi.useFakeTimers();
+    const { container, rerender } = render(
+      <Network config={{ type: 'network' }} data={{ ...STEADY, ttfbMs: 40 }} />,
+    );
+    sample(1);
+    rerender(<Network config={{ type: 'network' }} data={{ ...STEADY, ttfbMs: null }} />);
+    sample(1);
+    rerender(<Network config={{ type: 'network' }} data={{ ...STEADY, ttfbMs: 40 }} />);
+    sample(1);
+    expect(gaps(container).length).toBe(1);
+    // A hole is not a value: it must not drag the series max toward zero and
+    // squash the real bars.
+    const [before, after] = bars(container);
+    expect(before.style.height).toBe(after.style.height);
+  });
+
+  it('labels the reading for what it measures, not for what it is not', () => {
+    const { getByText } = render(<Network config={{ type: 'network' }} data={STEADY} />);
+    expect(getByText('TTFB')).toBeTruthy();
+    expect(() => getByText('Ping')).toThrow();
   });
 });
