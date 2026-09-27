@@ -1,6 +1,6 @@
 ---
 name: troubleshooting-glimpse
-description: Use when Glimpse fails to start, shows a stale or old dashboard after an update, reports EADDRINUSE on port 3000, rejects a `theme:` config block, shows widget error banners, drops config validation errors, behaves oddly in the dev proxy, or when service worker / PWA cache staleness is suspected
+description: Use when Glimpse fails to start, shows a stale or old dashboard after an update, reports EADDRINUSE on port 3000, rejects a `theme:` config block, shows widget error banners — or shows none at all, which is `show-errors: false` — drops config validation errors, fetches retried more than you expect, behaves oddly in the dev proxy, or when service worker / PWA cache staleness is suspected
 ---
 
 # Troubleshooting Glimpse
@@ -15,6 +15,12 @@ Two layers go stale independently: the browser's PWA service-worker cache, and t
 | `EADDRINUSE` on :3000 at startup | old server process from before restart still holds the socket | `lsof -ti tcp:3000 \| xargs kill`, then start again. Persistent offender: `pkill -f 'src/server/index.ts'` |
 | Old UI after `git pull && bun run build`, even hard refresh | Workbox precache; `autoUpdate` SW activates immediately (skipWaiting+clientsClaim) but the already-open tab keeps executing the previously loaded bundle until it is reloaded — and one hard reload can still pull freshly-served index.html referencing assets mid-swap | Two consecutive reloads normally self-heal. Deterministic: DevTools → Application → Service Workers → Unregister, then Clear site data, close all :3000 tabs, reopen |
 | Widget card shows red error text | upstream fetch failed AND no stale copy existed (24h retain). Error text is sanitized (query strings stripped) — safe to read | Check network/upstream; raise that widget's `cache`; error self-heals next successful fetch |
+| A failing widget shows *nothing* — no banner, no red chrome, just the card | `show-errors: false` is set on it | expected. The status dot beside the title still reports the failure. Set it back to `true` to see the message |
+| A fetch hangs for a long time before failing | `retries` (default 3, max 10) is multiplying the backoff across attempts | set `retries: 0` to try once, or a low value like `1` so a dead endpoint fails fast |
+| Astryx components render core's built-in icons instead of Dracula's | `src/client/kit/icons` is not the first import in `src/main.tsx` | the icon registry is module-level state — the side-effecting import must run before the first render, above both core stylesheets |
+| Chart series colour is wrong, or purple is encoding data | a hand-picked hue instead of `CHART_HUES`, which is purple-free by construction | import `CHART_HUES` from `src/client/kit/chart-hues`; reserve `--color-data-*` ramps for magnitude (a heatmap), never identity |
+| Tag or bookmark chips change colour between rows | colour assigned by DOM position (`:nth-child`) | hash the identity through `tagAccent()` in `src/client/widgets/feed/tag-accent.ts` |
+| `config.pages…widgets: custom-api: set url or at least one subrequests entry` | `custom-api` with neither a top-level `url` nor a `subrequests` entry | add one. Note that with a top-level `url` set, the subrequests are fetched but unreachable — the url payload is the root |
 | Config edit ignored / dashboard unchanged | YAML failed zod validation on auto-reload — last good config stays active | Run `bun run check-config [path]` for line numbers + did-you-mean, or read server console: error names the exact JSON path. Fix and save again |
 | Startup fails with validation errors listing `${VAR}` | referenced env var not exported | export it, or remove the reference. No `.env` loader exists |
 | Dev :5173 has no data | `/api` must reach :3000 | start `bun run dev:server` too; vite proxies with changeOrigin |
@@ -29,4 +35,6 @@ Two layers go stale independently: the browser's PWA service-worker cache, and t
 - Port override: `GLIMPSE_PORT=3001 bun run start`. Config path: first CLI arg > `GLIMPSE_CONFIG` > `./config.yml`.
 - Health check: `curl localhost:3000/health`.
 - Verify what the server actually serves: `curl -s "localhost:3000/api/page/<slug>" | head -c 400` (JSON) or append `?stream` to watch the NDJSON skeleton+chunks arrive.
+- When measuring a freshly built UI, reset the PWA first: DevTools → Application → Service Workers → Unregister, then Clear site data, then reload. A stale precache will happily serve you the previous build and you will "discover" a bug that was fixed hours ago.
+- `GET /api/config` returns `400` with `{ ok: false, errors: [...] }` when the config fails validation — curl it to see the exact JSON paths the browser swallowed.
 - Theme assets are static (`/api/theme` carries only the optional custom CSS) — clear the SW cache, not a server cache.
