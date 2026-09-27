@@ -154,6 +154,56 @@ function summary(payload: ModelEndpointsData): string {
   return parts.join(' · ');
 }
 
+/** `checked/requested models · N providers · …` with the overflow tail. */
+function SummaryLine({
+  payload,
+  hidden,
+}: {
+  payload: ModelEndpointsData;
+  hidden: number;
+}) {
+  return (
+    <Text type="supporting" maxLines={1}>
+      {summary(payload)}
+      {hidden > 0 ? ` · +${hidden} more` : ''}
+    </Text>
+  );
+}
+
+/** An unreachable model is not an empty result, and saying "no endpoints"
+ *  when the request never landed would blame the provider for our own
+ *  network. */
+function EmptyNote({
+  payload,
+  unhealthyOnly,
+}: {
+  payload: ModelEndpointsData;
+  unhealthyOnly?: boolean;
+}) {
+  return (
+    <Text type="supporting">
+      {payload.failed.length === payload.requested
+        ? 'No models answered'
+        : unhealthyOnly
+          ? 'Every provider is up'
+          : 'No endpoints returned'}
+    </Text>
+  );
+}
+
+function EndpointTable({ rows }: { rows: Row[] }) {
+  return (
+    <Table
+      data={rows}
+      columns={COLUMNS}
+      density="compact"
+      dividers="rows"
+      hasHover
+      textOverflow="truncate"
+    />
+  );
+}
+
 function ModelEndpoints({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as ModelEndpointsConfig;
   const payload = (data ?? null) as ModelEndpointsData | null;
@@ -173,36 +223,13 @@ function ModelEndpoints({ config, data, error, isLoading }: WidgetComponentProps
       skeletonShape="rows"
     >
       <Stack gap={2} className={styles.body}>
-        {payload ? (
-          <Text type="supporting" maxLines={1}>
-            {summary(payload)}
-            {hidden > 0 ? ` · +${hidden} more` : ''}
-          </Text>
-        ) : null}
+        {payload ? <SummaryLine payload={payload} hidden={hidden} /> : null}
 
         {rows.length === 0 && !loading && payload ? (
-          <Text type="supporting">
-            {/* An unreachable model is not an empty result, and saying
-                "no endpoints" when the request never landed would blame the
-                provider for our own network. */}
-            {payload.failed.length === payload.requested
-              ? 'No models answered'
-              : cfg['unhealthy-only']
-                ? 'Every provider is up'
-                : 'No endpoints returned'}
-          </Text>
+          <EmptyNote payload={payload} unhealthyOnly={cfg['unhealthy-only']} />
         ) : null}
 
-        {rows.length > 0 ? (
-          <Table
-            data={rows}
-            columns={COLUMNS}
-            density="compact"
-            dividers="rows"
-            hasHover
-            textOverflow="truncate"
-          />
-        ) : null}
+        {rows.length > 0 ? <EndpointTable rows={rows} /> : null}
       </Stack>
     </WidgetChrome>
   );
