@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { widgetMeta, type WidgetType } from '../../shared/widgets';
+import { CONFIG_ONLY, widgetMeta, type WidgetType } from '../../shared/widgets';
 import { widgetLoaders } from '../../client/widgets';
 import { serverWidgets } from './registry';
 import './index';
@@ -8,20 +8,14 @@ import './index';
  * Widgets with no server fetcher on purpose: pure config-driven renderers
  * plus the container types, which never fetch. Everything else must register
  * a fetcher — a missing import in index.ts used to mean silent null data.
+ *
+ * The set itself lives in `shared/widgets` (derived from the same registry
+ * row as the schema), because the render layer needs it too: a config-only
+ * widget's payload is `data: null` forever, and treating that as "still
+ * loading" strands a skeleton that can never resolve. The first test below
+ * is what keeps the two in step — a type flagged config-only that has a
+ * fetcher, or a type with no fetcher that is not flagged, both fail here.
  */
-const CONFIG_ONLY: Record<string, true> = {
-  bookmarks: true,
-  calendar: true,
-  clock: true,
-  group: true,
-  html: true,
-  iframe: true,
-  notepad: true,
-  search: true,
-  'split-column': true,
-  timer: true,
-  todo: true,
-};
 
 /** Containers never lazy-load a chunk (ensureWidgetLoaded returns null). */
 const CONTAINERS: Record<string, true> = {
@@ -36,6 +30,17 @@ describe('widget registry coverage', () => {
     for (const t of types) {
       if (CONFIG_ONLY[t]) continue;
       expect(serverWidgets.has(t), `server fetcher missing for "${t}"`).toBe(true);
+    }
+  });
+
+  it('agrees with the server about which types are config-only', () => {
+    // Both directions, so the flag cannot rot: a type the server fetches
+    // cannot be flagged config-only (its data would never render), and a
+    // type the server does not fetch must be (or its skeleton is stranded).
+    for (const t of types) {
+      expect(CONFIG_ONLY[t] === true, `"${t}" config-only flag must match the server`).toBe(
+        !serverWidgets.has(t),
+      );
     }
   });
 
