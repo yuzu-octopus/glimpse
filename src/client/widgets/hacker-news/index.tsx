@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button } from '@astryxdesign/core';
 import { ChevronRight } from 'lucide-react';
 import { HACKER_NEWS_DEFAULTS, type HackerNewsConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
@@ -6,7 +7,6 @@ import { registerWidgetComponent, type WidgetComponentProps } from '../registry'
 import { formatAge } from '../_hooks/useRelativeTime';
 import type { HnPost } from '../../../shared/widgets/payloads';
 import Feed, { type FeedItem } from '../feed/feed';
-import chromeStyles from '../../components/widget-chrome.module.css';
 void HACKER_NEWS_DEFAULTS;
 
 /** post source host, minus www (glance rss-list shows the channel/domain). */
@@ -71,21 +71,13 @@ function HackerNews({ config, data, error, isLoading }: WidgetComponentProps) {
     >
       <Feed items={visible} layout="list" />
       {hasCollapse ? (
-        expanded ? (
-          <button
-            type="button"
-            className={`${chromeStyles.more} ${chromeStyles.moreExpanded}`}
-            onClick={() => setExpanded(false)}
-          >
-            Show less
-            <ChevronRight size={12} className={chromeStyles.chevron} />
-          </button>
-        ) : (
-          <button type="button" className={chromeStyles.more} onClick={() => setExpanded(true)}>
-            {`Show more (${feedItems.length - (collapseAfter as number)})`}
-            <ChevronRight size={12} className={chromeStyles.chevron} />
-          </button>
-        )
+        <Button
+          variant="ghost"
+          size="sm"
+          label={expanded ? 'Show less' : `Show more (${feedItems.length - (collapseAfter as number)})`}
+          endContent={<ChevronRight size={12} />}
+          onClick={() => setExpanded(!expanded)}
+        />
       ) : null}
     </WidgetChrome>
   );

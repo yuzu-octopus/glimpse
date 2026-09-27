@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ClickableCard, Grid, HStack, Text } from '@astryxdesign/core';
+import { Button, ClickableCard, Grid, HStack, Text } from '@astryxdesign/core';
 import { ChevronRight } from 'lucide-react';
 import { REDDIT_DEFAULTS, type RedditConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
@@ -8,7 +8,6 @@ import { formatAge } from '../_hooks/useRelativeTime';
 import type { RedditPost } from '../../../shared/widgets/payloads';
 import styles from './reddit.module.css';
 import Feed, { type FeedItem } from '../feed/feed';
-import chromeStyles from '../../components/widget-chrome.module.css';
 void REDDIT_DEFAULTS;
 
 const CARD_TITLE_LINES = 3;
@@ -90,13 +89,13 @@ function Reddit({ config, data, error, isLoading }: WidgetComponentProps) {
         isLoading={loading}
       >
         {style === 'vertical-cards' ? (
-          <Grid columns={{ minWidth: 150 }} gap={2.5} className={styles.cards}>
+          <Grid columns={{ minWidth: 150 }} gap={2} className={styles.cards}>
             {posts.map((post) => (
               <Card key={post.url} post={post} showMeta />
             ))}
           </Grid>
         ) : (
-          <HStack gap={2.5} className={`${styles.cards} ${styles.rail}`}>
+          <HStack gap={2} className={`${styles.cards} ${styles.rail}`}>
             {posts.map((post) => (
               <Card key={post.url} post={post} showMeta={false} />
             ))}
@@ -118,21 +117,13 @@ function Reddit({ config, data, error, isLoading }: WidgetComponentProps) {
     >
       <Feed items={visible} layout="list" />
       {hasCollapse ? (
-        expanded ? (
-          <button
-            type="button"
-            className={`${chromeStyles.more} ${chromeStyles.moreExpanded}`}
-            onClick={() => setExpanded(false)}
-          >
-            Show less
-            <ChevronRight size={12} className={chromeStyles.chevron} />
-          </button>
-        ) : (
-          <button type="button" className={chromeStyles.more} onClick={() => setExpanded(true)}>
-            {`Show more (${feedItems.length - (collapseAfter as number)})`}
-            <ChevronRight size={12} className={chromeStyles.chevron} />
-          </button>
-        )
+        <Button
+          variant="ghost"
+          size="sm"
+          label={expanded ? 'Show less' : `Show more (${feedItems.length - (collapseAfter as number)})`}
+          endContent={<ChevronRight size={12} />}
+          onClick={() => setExpanded(!expanded)}
+        />
       ) : null}
     </WidgetChrome>
   );
