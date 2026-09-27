@@ -31,6 +31,15 @@
   flex-shrink: 0;
 }
 
+/* os.distro strings run long ("Debian GNU/Linux 12 (bookworm)"), so the
+   platform is the one header field allowed to shrink and clamp. */
+.platform {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .rowIcon {
   flex-shrink: 0;
   color: var(--color-text-base-muted);

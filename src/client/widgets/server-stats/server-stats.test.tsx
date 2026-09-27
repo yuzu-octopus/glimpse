@@ -7,7 +7,7 @@ const up = {
   hostname: 'yuzu-mac',
   platform: 'macOS',
   bootTime: new Date(Date.now() - 3600 * 1000).toISOString(),
-  cpu: { load: 1.75, loadIsAvailable: true },
+  cpu: { name: 'Apple M1', load: 1.75, loadIsAvailable: true, temp: 55 },
   memory: { used: 12e9, total: 32e9, isAvailable: true },
   mountpoints: [{ path: '/', used: 250e9, total: 500e9 }],
   temp: { main: 42, isAvailable: true },
@@ -50,6 +50,23 @@ describe('server-stats widget', () => {
     expect(screen.getAllByText('42°C').length).toBeGreaterThanOrEqual(1);
     // uptime rendered (1h ago)
     expect(screen.getAllByText('1h').length).toBeGreaterThan(0);
+    // the platform the fetcher populated, one per card
+    expect(screen.getAllByText('macOS')).toHaveLength(2);
+    // the CPU's own temperature, not just the host sensor row
+    expect(screen.getAllByText('55°C').length).toBe(2);
+  });
+
+  it('shows no platform or cpu temp when the server reports neither', () => {
+    render(
+      <ServerStats
+        config={{ type: 'server-stats' }}
+        data={{ servers: [{ ...up, platform: '', cpu: { name: null, load: 0.5, loadIsAvailable: true, temp: null } }] }}
+      />,
+    );
+    expect(screen.queryByText('macOS')).toBeNull();
+    expect(screen.queryByText('55°C')).toBeNull();
+    // load still renders, so the row is not silently empty
+    expect(screen.getByText('50%')).toBeInTheDocument();
   });
   it('renders unreachable server with negative icon state and no bars', () => {
     render(<ServerStats config={{ type: 'server-stats' }} data={{ servers: [down] }} />);
