@@ -1,4 +1,4 @@
-import { REDDIT_DEFAULTS, redditSchema } from '../../shared/widgets/feeds';
+import { redditSchema } from '../../shared/widgets/feeds';
 import { parseCacheDuration } from '../cache';
 import { fetchWithRetry, retryOptionsFrom, type HttpOptions, type RetryOptions } from './http';
 import { compareEngagement } from './engagement';
@@ -90,7 +90,7 @@ async function getAccessToken(
 registerWidget('reddit', async (ctx, config) => {
   const cfg = redditSchema.parse(config);
   const retry = retryOptionsFrom(cfg);
-  const limit = cfg.limit ?? REDDIT_DEFAULTS.limit;
+  const limit = cfg.limit;
   const sort = cfg['sort-by'] ?? 'hot';
   const period = cfg['top-period'] ?? 'day';
 
