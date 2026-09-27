@@ -129,6 +129,49 @@ describe('docker-containers fetcher', () => {
     expect(data.map((c) => c.name)).toEqual(['jellyfin']);
   });
 
+  it('resolves the container icon, defaulting to the inverted bundled mark', async () => {
+    const data = await fetchDockerContainers(mockFetch as unknown as typeof fetch, {
+      type: 'docker-containers',
+    });
+    const pihole = data.find((c) => c.name === 'pihole')!;
+    // The bundled SVG is a black currentColor path — invisible unfilled on a
+    // dark-only theme, so the default asks to be inverted.
+    expect(pihole.icon).toEqual({ url: '/dockerhub.svg', autoInvert: true });
+  });
+
+  it('resolves a glance.icon label through the shared customIconField port', async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify([
+          { Names: ['/a'], Image: 'a', State: 'running', Status: 'Up', Labels: { 'glance.icon': 'si:nginx' } },
+          { Names: ['/b'], Image: 'b', State: 'running', Status: 'Up', Labels: { 'glance.icon': 'https://cdn.example/logo.png' } },
+        ]),
+        { status: 200 },
+      ),
+    );
+    const data = await fetchDockerContainers(mockFetch as unknown as typeof fetch, {
+      type: 'docker-containers',
+    });
+    const [a, b] = data;
+    expect(a!.icon).toEqual({
+      url: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/nginx.svg',
+      autoInvert: true,
+    });
+    // A real logo keeps its own colours, so it must not be inverted.
+    expect(b!.icon).toEqual({ url: 'https://cdn.example/logo.png', autoInvert: false });
+  });
+
+  it('resolves an icon set through the containers config override', async () => {
+    const data = await fetchDockerContainers(mockFetch as unknown as typeof fetch, {
+      type: 'docker-containers',
+      containers: { jellyfin: { icon: 'di:immich' } },
+    });
+    expect(data.find((c) => c.name === 'jellyfin')!.icon).toEqual({
+      url: 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/immich.svg',
+      autoInvert: false,
+    });
+  });
+
   it('filters by category', async () => {
     mockFetch.mockResolvedValueOnce(
       new Response(

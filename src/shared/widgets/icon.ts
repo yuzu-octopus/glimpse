@@ -12,6 +12,10 @@
 // `auto-invert <…>` inverts a black glyph for the dark theme; si:/mdi: glyphs
 // are black paths, so they always ask for it. The theme is dark-only, so
 // glance's "invert unless the scheme is light" has no second branch here.
+//
+// Shared, not per-widget: the same `icon:` string means the same thing in a
+// bookmark, a monitor site and a docker container label, and the server
+// resolves it for docker because the flag rides along in the fetch payload.
 
 export interface ResolvedIcon {
   src: string;

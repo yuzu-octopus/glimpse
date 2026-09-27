@@ -22,7 +22,16 @@ function ContainerRow({ c }: { c: DockerContainer }) {
   const variant = STATE_VARIANT[c.stateIcon];
   return (
     <Stack direction="horizontal" gap={3} vAlign="start" className={styles.row}>
-      <img src={c.icon.url || '/dockerhub.svg'} alt="" className={styles.icon} loading="lazy" />
+      {/* The fetcher resolved the container's `glance.icon` label, so a black
+          glyph (the bundled mark, any si:/mdi: shorthand) arrives flagged and
+          is inverted here — on a dark-only theme, unfilled black is nothing. */}
+      <img
+        src={c.icon.url || '/dockerhub.svg'}
+        alt=""
+        loading="lazy"
+        className={c.icon.autoInvert ? `${styles.icon} ${styles.iconAutoInvert}` : styles.icon}
+        data-testid="docker-icon"
+      />
       <Stack gap={0.5} className={styles.body}>
         <Stack direction="horizontal" gap={2} vAlign="center" className={styles.titleRow}>
           {c.url ? (
