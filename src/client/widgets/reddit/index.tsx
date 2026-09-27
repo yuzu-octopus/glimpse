@@ -115,7 +115,7 @@ function Reddit({ config, data, error, isLoading }: WidgetComponentProps) {
       error={error}
       showErrors={cfg['show-errors']}
     >
-      <Feed items={visible} layout="list" />
+      <Feed items={visible} layout="list" emptyText="No posts" />
       {hasCollapse ? (
         <Button
           variant="ghost"

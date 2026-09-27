@@ -12,6 +12,14 @@
   overflow-x: auto;
 }
 
+/* Same shape as the media/videos `.placeholder`: muted, no icon, no border of
+ * its own — the empty feed is a state, not a card. */
+.empty {
+  padding: 12px 0;
+  font-size: var(--font-size-h5);
+  color: var(--color-text-base-muted);
+}
+
 .item {
   display: flex;
   gap: calc(var(--widget-content-horizontal) - 5px);

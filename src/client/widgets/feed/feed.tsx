@@ -34,12 +34,19 @@ export interface FeedProps {
   layout?: FeedLayout;
   /** when true titles truncate to one line; else they clamp to two (rss single-line-titles) */
   singleLine?: boolean;
+  /** Rendered in place of the rows when `items` is empty. A feed that
+   * returned nothing must say so: an empty bordered card is indistinguishable
+   * from a widget that failed to render. */
+  emptyText?: string;
 }
 
 /** Title clamp: two lines by default, one when the feed asks for single-line titles. */
 const TITLE_LINES_DEFAULT = 2;
 const TITLE_LINES_SINGLE = 1;
 const DESCRIPTION_LINES = 2;
+
+/** Used when a caller supplies no wording of its own. */
+const DEFAULT_EMPTY_TEXT = 'Nothing to show';
 
 /** A tag is a Badge, and yellow is the tag hue — the default the cycle falls back to. */
 const ACCENT_VARIANT: Record<TagAccent, BadgeVariant> = {
@@ -61,8 +68,8 @@ function Shell({ layout, children }: { layout: FeedLayout; children: ReactNode }
   return <Stack gap={0}>{children}</Stack>;
 }
 
-export function Feed({ items, layout = 'list', singleLine }: FeedProps) {
-  if (items.length === 0) return null;
+export function Feed({ items, layout = 'list', singleLine, emptyText = DEFAULT_EMPTY_TEXT }: FeedProps) {
+  if (items.length === 0) return <div className={styles.empty}>{emptyText}</div>;
   return (
     <Shell layout={layout}>
       {items.map((item) => {

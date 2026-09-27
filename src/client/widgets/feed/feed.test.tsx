@@ -106,8 +106,16 @@ describe('Feed (generic)', () => {
     expect(container.querySelectorAll(`.${styles.item}`)).toHaveLength(1);
   });
 
-  it('renders empty without crashing', () => {
-    const { container } = render(<Feed items={[]} />);
-    expect(container.querySelectorAll(`.${styles.item}`)).toHaveLength(0);
+  // An empty feed used to render `null` inside the widget card, so rss / hn /
+  // reddit / lobsters showed a blank bordered box that looked like a broken
+  // widget. The empty feed now says so, in the caller's own words.
+  it('states the empty case instead of leaving a blank card', () => {
+    render(<Feed items={[]} emptyText="No feed items" />);
+    expect(screen.getByText('No feed items')).toBeInTheDocument();
   });
-});
+
+  it('falls back to its own wording when the caller supplies none', () => {
+    render(<Feed items={[]} />);
+    expect(screen.getByText('Nothing to show')).toBeInTheDocument();
+  });
+ });
