@@ -119,14 +119,16 @@
 
 /* Prose link: purple means tappable, so it wears the accent underlined and
    resolves to foreground on hover. The kit Link's accent variant resolves to
-   the paragraph step under this theme, which is why this stays a styled <a>. */
+   the paragraph step under this theme, which is why this stays a styled <a>.
+   It is a real <a> in a <p>, so :focus-visible is the keyboard's equivalent of
+   the hover — without it the resolve exists only for a device with a pointer. */
 .docsLink {
   color: var(--color-primary);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-.docsLink:hover {
+.docsLink:is(:hover, :focus-visible) {
   color: var(--color-text-highlight);
 }
 
