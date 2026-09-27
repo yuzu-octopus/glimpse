@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from '@astryxdesign/core';
+import { Badge, Button, Link, Stack, StatusDot, Text, Tooltip, type BadgeVariant, type StatusDotVariant } from '@astryxdesign/core';
 import { ChevronRight } from 'lucide-react';
 import type { DockerContainersConfig } from '../../../shared/widgets/docker';
 import type { DockerContainer, DockerData } from '../../../shared/widgets/payloads';
@@ -7,67 +7,87 @@ import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import styles from './docker.module.css';
 
-const STATE_CLASS: Record<DockerContainer['stateIcon'], string> = {
-  ok: styles.stateOk,
-  warn: styles.stateWarn,
-  paused: styles.statePaused,
-  unknown: styles.stateUnknown,
+/** One vocabulary for both marks: the badge chip and the child dot read from
+ *  the same state, so a paused parent never paints one hue and its child another. */
+const STATE_VARIANT: Record<DockerContainer['stateIcon'], { badge: BadgeVariant; dot: StatusDotVariant }> = {
+  ok: { badge: 'success', dot: 'success' },
+  warn: { badge: 'error', dot: 'error' },
+  paused: { badge: 'neutral', dot: 'neutral' },
+  unknown: { badge: 'neutral', dot: 'neutral' },
 };
 
 function ContainerRow({ c }: { c: DockerContainer }) {
   const [open, setOpen] = useState(false);
   const hasChildren = (c.children?.length ?? 0) > 0;
-  const title = (
-    <span className={styles.name} data-testid="docker-name">
-      {c.name}
-    </span>
-  );
+  const variant = STATE_VARIANT[c.stateIcon];
   return (
-    <div className={styles.row}>
+    <Stack direction="horizontal" gap={3} vAlign="start" className={styles.row}>
       <img src={c.icon.url || '/dockerhub.svg'} alt="" className={styles.icon} loading="lazy" />
-      <div className={styles.body}>
-        <div className={styles.titleRow}>
+      <Stack gap={0.5} className={styles.body}>
+        <Stack direction="horizontal" gap={2} vAlign="center" className={styles.titleRow}>
           {c.url ? (
-            <Link href={c.url} target={c.sameTab ? undefined : '_blank'} className={styles.link} hasUnderline={false}>
-              {title}
+            <Link
+              href={c.url}
+              target={c.sameTab ? undefined : '_blank'}
+              hasUnderline={false}
+              className={styles.link}
+              maxLines={1}
+            >
+              <Text data-testid="docker-name">{c.name}</Text>
             </Link>
           ) : (
-            title
+            <Text data-testid="docker-name">{c.name}</Text>
           )}
-          <span
-            className={`${styles.badge} ${STATE_CLASS[c.stateIcon]}`}
-            data-testid={`docker-state-${c.stateIcon}`}
-            title={`${c.state}: ${c.stateText}`}
-          >
-            {c.stateText || c.state || 'unknown'}
-          </span>
-        </div>
-        <span className={styles.image}>{c.image}</span>
-        {c.description ? <span className={styles.description}>{c.description}</span> : null}
+          {/* Count/state goes to Badge, not a hand-rolled pill: the kit owns the
+              5px radius, the wash and the semantic colour set. Tooltip, not a
+              native `title` — BaseProps omits title on purpose. */}
+          <Tooltip content={`${c.state}: ${c.stateText}`} placement="above">
+            <Badge
+              variant={variant.badge}
+              label={c.stateText || c.state || 'unknown'}
+              className={styles.badge}
+              data-testid={`docker-state-${c.stateIcon}`}
+            />
+          </Tooltip>
+        </Stack>
+        <Text type="supporting" maxLines={1}>{c.image}</Text>
+        {c.description ? <Text type="supporting" maxLines={1}>{c.description}</Text> : null}
         {hasChildren ? (
           <>
-            <button type="button" className={styles.expand} onClick={() => setOpen(!open)} aria-expanded={open}>
-              <ChevronRight size={12} className={open ? styles.chevronOpen : styles.chevron} />
-              {`${c.children!.length} container${c.children!.length === 1 ? '' : 's'}`}
-            </button>
+            <Button
+              label={`${c.children!.length} container${c.children!.length === 1 ? '' : 's'}`}
+              variant="ghost"
+              size="sm"
+              onClick={() => setOpen(!open)}
+              aria-expanded={open}
+              className={styles.expand}
+              icon={<ChevronRight size={12} className={open ? styles.chevronOpen : styles.chevron} />}
+            />
             {open ? (
               <ul className={styles.children}>
                 {c.children!.map((child) => (
                   <li key={child.name} className={styles.child}>
-                    <span
-                      className={`${styles.dot} ${STATE_CLASS[child.stateIcon]}`}
+                    {/* Status goes to StatusDot: the kit owns the 8px mark and
+                        the accessible name, so the row needs no hand-rolled dot. */}
+                    <StatusDot
+                      variant={STATE_VARIANT[child.stateIcon].dot}
+                      label={`${child.name} ${child.stateText || child.state}`}
                       data-testid={`docker-state-${child.stateIcon}`}
                     />
-                    <span className={styles.childName}>{child.name}</span>
-                    <span className={styles.childState}>{child.stateText || child.state}</span>
+                    <Text type="supporting" maxLines={1} className={styles.childName}>
+                      {child.name}
+                    </Text>
+                    <Text type="supporting" className={styles.childState}>
+                      {child.stateText || child.state}
+                    </Text>
                   </li>
                 ))}
               </ul>
             ) : null}
           </>
         ) : null}
-      </div>
-    </div>
+      </Stack>
+    </Stack>
   );
 }
 

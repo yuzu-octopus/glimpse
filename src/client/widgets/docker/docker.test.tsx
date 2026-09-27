@@ -47,7 +47,12 @@ describe('docker-containers widget', () => {
     render(<DockerContainers config={{ type: 'docker-containers' }} data={data} />);
     expect(screen.getAllByTestId('docker-state-warn').length).toBeGreaterThan(0);
     expect(screen.getAllByTestId('docker-state-ok').length).toBeGreaterThan(0);
-    expect(screen.getByTitle(/exited/)).toBeInTheDocument();
+    // The kit's Badge carries the state text; the raw state:stateText
+    // explanation is the kit Tooltip (a closed popover, hidden until hover),
+    // not a native `title` the kit's BaseProps deliberately omits.
+    expect(screen.getAllByRole('tooltip', { hidden: true }).map((t) => t.textContent)).toContain(
+      'exited: exited (1) 2 hours ago',
+    );
   });
 
   it('links container name when url label set, honoring same-tab default (new tab)', () => {
