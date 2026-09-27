@@ -104,6 +104,42 @@ function Cards({ items, title, titleUrl, hideHeader, cssClass, cardHeight, thumb
   );
 }
 
+/** glance semantics: only a non-negative `collapse-after` truncates, and only
+ *  when there is actually something hidden behind the toggle. `hidden` is the
+ *  count the button promises, so the two never disagree. */
+function collapseSlice<T>(
+  items: T[],
+  after: number | undefined,
+  expanded: boolean,
+): { has: boolean; hidden: number; visible: T[] } {
+  const has = typeof after === 'number' && after >= 0 && items.length > after;
+  return {
+    has,
+    hidden: has ? items.length - (after as number) : 0,
+    visible: has && !expanded ? items.slice(0, after) : items,
+  };
+}
+
+function ShowMore({
+  expanded,
+  hidden,
+  onToggle,
+}: {
+  expanded: boolean;
+  hidden: number;
+  onToggle: () => void;
+}) {
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      label={expanded ? 'Show less' : `Show more (${hidden})`}
+      endContent={<ChevronRight size={12} />}
+      onClick={onToggle}
+    />
+  );
+}
+
 function Rss({ config, data, error, isLoading }: WidgetComponentProps) {
   // ticker drives relative times live without per-row timers
   useRelativeTime(0);
@@ -118,9 +154,11 @@ function Rss({ config, data, error, isLoading }: WidgetComponentProps) {
   const singleLine = cfg['single-line-titles'] === true;
   const feedItems = toFeedItems(items, detailed);
   const [expanded, setExpanded] = useState(false);
-  const hasCollapse =
-    typeof collapseAfter === 'number' && collapseAfter >= 0 && feedItems.length > collapseAfter;
-  const visible = hasCollapse && !expanded ? feedItems.slice(0, collapseAfter) : feedItems;
+  const { has: hasCollapse, hidden, visible } = collapseSlice(
+    feedItems,
+    collapseAfter,
+    expanded,
+  );
 
   if (loading) {
     return (
@@ -166,12 +204,10 @@ function Rss({ config, data, error, isLoading }: WidgetComponentProps) {
     >
       <Feed items={visible} layout="list" singleLine={singleLine} emptyText="No feed items" />
       {hasCollapse ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          label={expanded ? 'Show less' : `Show more (${feedItems.length - (collapseAfter as number)})`}
-          endContent={<ChevronRight size={12} />}
-          onClick={() => setExpanded(!expanded)}
+        <ShowMore
+          expanded={expanded}
+          hidden={hidden}
+          onToggle={() => setExpanded(!expanded)}
         />
       ) : null}
     </WidgetChrome>
