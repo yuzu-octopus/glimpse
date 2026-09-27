@@ -1,0 +1,46 @@
+/* Home Assistant state rows — dot + name/entity-id + current value. The kit
+   owns the dot, the type scale and the text colours; what is left here is the
+   row rhythm, the separator, the hover backdrop and the right-hand value
+   column, matching the Docker and Feed row idiom. */
+
+.row {
+  position: relative;
+  isolation: isolate;
+  padding-block: calc(var(--widget-content-vertical) / 2 - 0.5px);
+}
+
+.row::before {
+  content: '';
+  position: absolute;
+  inset: -4px -10px;
+  border-radius: var(--border-radius);
+  background-color: var(--color-widget-background-highlight);
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.row:hover::before {
+  opacity: 1;
+}
+
+.row + .row {
+  margin-top: calc(var(--widget-content-vertical) / 3);
+  border-top: 1px solid var(--color-separator);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The entity id is metadata, and the row is 12px-floored everywhere. */
+.id {
+  opacity: 0.8;
+}
+
+.value {
+  flex-shrink: 0;
+  text-align: right;
+}
