@@ -14,14 +14,14 @@ export const CONTRIBUTION_GRAPH_PREF: Pref = {
 
 export const CONTRIBUTION_GRAPH_SKELETON: SkeletonShape = 'rows';
 
-export const contributionGraphSchema = z
-  .object({
-    type: z.literal('contribution-graph'),
-    ...sharedWidgetFields,
-    username: z.string().min(1),
-    token: z.string().optional(),
-    limit: z.number().int().min(1).max(104).default(CONTRIBUTION_GRAPH_DEFAULTS.limit),
-  })
-  .loose();
-
+// No `token` here: it was never sent to github.com (the fetcher scrapes public
+// profile HTML), so it only existed to put a secret in the config — which the
+// server hands to the browser verbatim.
+export const contributionGraphSchema = z.object({
+  type: z.literal('contribution-graph'),
+  ...sharedWidgetFields,
+  username: z.string().min(1),
+  limit: z.number().int().min(1).max(104).default(CONTRIBUTION_GRAPH_DEFAULTS.limit),
+});
 export type ContributionGraphConfig = z.infer<typeof contributionGraphSchema>;
+

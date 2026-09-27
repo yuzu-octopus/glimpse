@@ -4,6 +4,7 @@ import { serverWidgets, type WidgetFetchContext } from './registry';
 import { parseContributionDays } from './contribution-graph';
 import './contribution-graph';
 import type { ContributionGraphData } from '../../shared/widgets/payloads';
+import { contributionGraphSchema } from '../../shared/widgets/contribution';
 
 const FIXTURE = `<div class="ContributionCalendar">
 <table><tr>
@@ -96,5 +97,15 @@ describe('schema defaults', () => {
     const { ctx } = makeCtx(html);
     const data = (await fetcher()(ctx, { type: 'contribution-graph', username: 'octocat' })) as ContributionGraphData;
     expect(data.days.at(-1)?.date).toBe('2024-02-04');
+  });
+});
+
+describe('schema takes no token', () => {
+  it('strips a token instead of shipping it to the browser', () => {
+    // The fetcher never sent this anywhere — it scrapes public profile HTML —
+    // so the field was pure leak surface in the config the server serves whole.
+    const cfg = contributionGraphSchema.parse({ type: 'contribution-graph', username: 'octocat', token: 'leaked' });
+    expect('token' in cfg).toBe(false);
+    expect(JSON.stringify(cfg)).not.toContain('leaked');
   });
 });
