@@ -1,5 +1,5 @@
 import { VIDEOS_DEFAULTS, videosSchema } from '../../shared/widgets/keyed';
-import { fetchText, retryOptionsFrom, type RetryOptions } from './http';
+import { fetchText, fetchWithRetry, retryOptionsFrom, type RetryOptions } from './http';
 import { registerWidget } from './registry';
 import type { Video, VideoSourceIssue, VideosData } from '../../shared/widgets/payloads';
 import type { WidgetFetchContext } from './registry';
@@ -178,6 +178,16 @@ function videosPageUrl(source: string): string | null {
   return null;
 }
 
+/** A channel id is `UC` + 22 url-safe base64 chars. */
+const CHANNEL_ID_RE = /^UC[A-Za-z0-9_-]{22}$/;
+
+/** The `UC…` the page names in its JSON, `externalId` first. The ordering is
+ * load-bearing, not incidental: a `@handle` page carries 17 distinct `UC…`
+ * strings, and the loose `channelId` pattern lands on a *real but different*
+ * channel whose feed answers 200 with 15 plausible wrong videos — silent
+ * wrong content, which is worse than the empty widget this widget was fixed
+ * to stop rendering. Verified correct 7/7 against the page canonical
+ * (docs/research/youtube-fetching-2026/REPORT.md, finding 2). */
 export function extractChannelId(html: string): string | null {
   const patterns = [
     /"externalId"\s*:\s*"(UC[A-Za-z0-9_-]{22})"/,
@@ -192,20 +202,163 @@ export function extractChannelId(html: string): string | null {
   return null;
 }
 
+/** The `UC…` the page states about itself in `<link rel="canonical">` or
+ * `og:url` — identity from the document, not from a JSON field a redesign can
+ * repoint. Attribute order is not relied on: the tag is matched, then its
+ * `href`/`content` is read.
+ *
+ * null means "this page states no channel id", which is NOT a mismatch — a
+ * handle page can canonicalise to its `/@handle` form. Only two ids that
+ * disagree are a rejection. */
+export function extractCanonicalChannelId(html: string): string | null {
+  const tag =
+    /<link\b[^>]*\brel=["']canonical["'][^>]*>/i.exec(html)?.[0] ??
+    /<meta\b[^>]*\bproperty=["']og:url["'][^>]*>/i.exec(html)?.[0];
+  const url = tag ? /\b(?:href|content)=["']([^"']+)["']/i.exec(tag)?.[1] : undefined;
+  if (!url) return null;
+  return (
+    /\/channel\/(UC[A-Za-z0-9_-]{22})/.exec(url)?.[1] ??
+    /[?&]channel_id=(UC[A-Za-z0-9_-]{22})/.exec(url)?.[1] ??
+    null
+  );
+}
+
+/** The page scrape, gated on the page agreeing with itself: a candidate the
+ * canonical/og:url contradicts is rejected, not returned. The extractor alone
+ * is only correct while YouTube keeps shipping `externalId`, and the one event
+ * that drops it is exactly the redesign that breaks scrapers generally
+ * (docs/research/youtube-fetching-2026/REPORT.md, finding 2). */
+function channelIdFromPage(html: string): string {
+  const candidate = extractChannelId(html);
+  if (!candidate) throw new Error('the page carried no channel id');
+  const canonical = extractCanonicalChannelId(html);
+  if (canonical && canonical !== candidate) {
+    throw new Error('the page canonical names another channel');
+  }
+  return candidate;
+}
+
 // Why channel_id and not UULF (glance's UC→UULF playlist trick):
 // Glance builds a playlist feed via UULF<id without UC> (the channel's uploads playlist).
 // As of 2024-2025 YouTube returns empty/0 entries for that UULF feed for many channels,
 // while ?channel_id=UC... remains populated and reliable. We therefore prefer
 // https://www.youtube.com/feeds/videos.xml?channel_id=<UC...> directly. Handles (@handle)
-// still work data-driven: resolveHandleToChannelId fetches https://www.youtube.com/@handle
-// and extracts the UC id via regex on externalId/browseId/channelId, so config stays
-// flexible — use UC... for stability or @handle for convenience (e.g. @spokeishere, @Bug-I).
+// still work data-driven, so config stays flexible — use UC... for stability or
+// @handle for convenience (e.g. @spokeishere, @Bug-I).
+// Handles (@handle) resolve through InnerTube's resolve_url first and the
+// channel page second — see resolveViaInnerTube for why that order.
 function feedUrlForId(id: string, _includeShorts: boolean): string {
   if (id.startsWith(PLAYLIST_PREFIX)) {
     const pid = id.slice(PLAYLIST_PREFIX.length);
     return `https://www.youtube.com/feeds/videos.xml?playlist_id=${encodeURIComponent(pid)}`;
   }
   return `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(id)}`;
+}
+
+const RESOLVE_URL =
+  'https://www.youtube.com/youtubei/v1/navigation/resolve_url?prettyPrint=false';
+/** A pinned WEB client version. Proven keyless on 2026-09-27; the research
+ * calls a hardcoded version low-risk for resolution, so no rotation
+ * machinery is warranted. */
+const WEB_CLIENT_VERSION = '2.20260708.00.00';
+
+const HANDLE_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** resolve_url answered, and answered "no such thing". Kept distinct from
+ * every other failure because it is the one that must not be rescued: a
+ * handle YouTube cannot resolve has no channel page to scrape either, so the
+ * second request could only ever be another 404. */
+class HandleNotFound extends Error {}
+
+/** Why this order, and not the other way round: resolve_url is keyless, it
+ * returns the id YouTube itself would browse, and its 404 body is the only
+ * unambiguous bad-config signal in the whole chain. The channel-page scrape
+ * stays as the fallback because yt-dlp's initial-data extraction was still an
+ * unmerged fix on 2026-09-27 — the scrape is our resilience when InnerTube
+ * changes, not our first choice
+ * (docs/research/youtube-fetching-2026/REPORT.md, findings 1, 3 and 4). */
+async function resolveViaInnerTube(
+  ctx: WidgetFetchContext,
+  handle: string,
+  retry: RetryOptions,
+): Promise<string> {
+  const body = JSON.stringify({
+    context: {
+      client: {
+        hl: 'en',
+        gl: 'US',
+        clientName: 'WEB',
+        clientVersion: WEB_CLIENT_VERSION,
+        userAgent: YT_UA,
+      },
+    },
+    url: `https://www.youtube.com/${handle}`,
+  });
+  let res: Response;
+  try {
+    res = await fetchWithRetry(
+      ctx,
+      RESOLVE_URL,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': YT_UA,
+          'Origin': 'https://www.youtube.com',
+          'X-YouTube-Client-Name': '1',
+          'X-YouTube-Client-Version': WEB_CLIENT_VERSION,
+        },
+        body,
+      },
+      retry,
+    );
+  } catch (err) {
+    // `{"error":{"message":"Requested entity was not found."}}` on 404 is the
+    // signal; everything else (400 on a changed contract, 5xx, a network
+    // blip) is an outage the scrape may still survive.
+    if (reasonFor(err) === 'HTTP 404') {
+      throw new HandleNotFound(err instanceof Error ? err.message : String(err));
+    }
+    throw err;
+  }
+
+  let payload: unknown;
+  try {
+    payload = await res.json();
+  } catch {
+    throw new Error('resolve_url returned an unreadable body');
+  }
+  // A 200 with no `UC…` at `response.endpoint.browseEndpoint.browseId` is
+  // unresolved, not an empty string: the research is explicit that this shape
+  // must fail loudly (docs/research/youtube-fetching-2026/REPORT.md, "Failing
+  // loudly"). Defaulting it to `''` would send `channel_id=` to the feed and
+  // manufacture a 404 of our own.
+  const node = payload as
+    | { response?: { endpoint?: { browseEndpoint?: { browseId?: unknown } } } }
+    | null;
+  const browseId = node?.response?.endpoint?.browseEndpoint?.browseId;
+  if (typeof browseId !== 'string' || !CHANNEL_ID_RE.test(browseId)) {
+    throw new Error('resolve_url returned no channel id');
+  }
+  return browseId;
+}
+
+/** The fallback channel: the handle's own page. No retry budget of its own —
+ * the resolve already spent the configured one, and a handle that needs
+ * rescuing should cost one look, not a second full backoff ladder. The same
+ * rule the feed's page rescue follows. */
+async function resolveViaChannelPage(
+  ctx: WidgetFetchContext,
+  handle: string,
+  retry: RetryOptions,
+): Promise<string> {
+  const html = await fetchText(
+    ctx,
+    `https://www.youtube.com/${handle}`,
+    { headers: { 'User-Agent': YT_UA } },
+    { ...retry, retries: 0 },
+  );
+  return channelIdFromPage(html);
 }
 
 async function resolveHandleToChannelId(
@@ -222,16 +375,26 @@ async function resolveHandleToChannelId(
     const cached2 = ctx.cache.get<string>(cacheKey);
     if (cached2) return cached2;
     try {
-      const html = await fetchText(ctx, `https://www.youtube.com/${handle}`, {
-        headers: { 'User-Agent': YT_UA },
-      }, retry);
-      const id = extractChannelId(html);
-      if (!id) throw new Error('the page carried no channel id');
-      ctx.cache.set(cacheKey, id, 24 * 60 * 60 * 1000);
+      const id = await resolveViaInnerTube(ctx, handle, retry);
+      ctx.cache.set(cacheKey, id, HANDLE_TTL_MS);
       return id;
-    } catch (err) {
-      if (stale) return stale;
-      throw err;
+    } catch (resolveErr) {
+      if (resolveErr instanceof HandleNotFound) {
+        if (stale) return stale;
+        throw resolveErr;
+      }
+      try {
+        const id = await resolveViaChannelPage(ctx, handle, retry);
+        ctx.cache.set(cacheKey, id, HANDLE_TTL_MS);
+        return id;
+      } catch (scrapeErr) {
+        if (stale) return stale;
+        // The scrape went last, so its reason is the honest one to report: a
+        // 404 there is the same "no such channel" the resolve would have
+        // said, and a broken scraper names the failure better than the
+        // InnerTube error that sent us to it.
+        throw scrapeErr;
+      }
     }
   });
 }
