@@ -1,12 +1,14 @@
+/* the plan is a tag, not a link and not a value: yellow owns chips.
+ * 14% wash + 22% border is the chip pattern feed/bookmarks use. */
 .plan {
   display: inline-block;
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
+  color: var(--color-tag-yellow);
+  background: color-mix(in srgb, var(--color-tag-yellow) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-tag-yellow) 22%, transparent);
   border-radius: 999px;
   padding: 2px 8px;
   margin-bottom: 8px;
@@ -35,9 +37,12 @@
   overflow: hidden;
 }
 
+/* the bar encodes quota consumption, which is data — cyan, not purple.
+ * .fillWarning / .fillNegative below escalate on the fixed status
+ * vocabulary (yellow attention, red negative) and are unchanged. */
 .fill {
   height: 100%;
-  background: var(--color-primary);
+  background: var(--color-data-categorical-cyan);
   border-radius: 4px;
   transition: width 0.2s ease;
 }
