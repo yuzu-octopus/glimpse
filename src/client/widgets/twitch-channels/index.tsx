@@ -2,6 +2,7 @@ import { TWITCH_CHANNELS_DEFAULTS, type TwitchChannelsConfig } from '../../../sh
 import type { TwitchChannelsData } from '../../../shared/widgets/payloads';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
+import { StatusDot } from '@astryxdesign/core';
 import { useState } from 'react';
 import chromeStyles from '../../components/widget-chrome.module.css';
 import styles from './twitch-channels.module.css';
@@ -52,7 +53,9 @@ function TwitchChannels({ config, data, error, isLoading }: WidgetComponentProps
             ) : null}
             <div className={styles.body}>
               <a href={s.url} target="_blank" rel="noopener noreferrer" className={styles.name}>
-                {s.live ? <span className={styles.dot} aria-label="live" /> : null}
+                {/* the kit's StatusDot owns the pulse and the accessible name;
+                 * red is the negative hue and a live stream is not a failure */}
+                {s.live ? <StatusDot variant="success" label="Live" isPulsing /> : null}
                 {s.displayName}
               </a>
               {s.live ? <div className={styles.title}>{s.title}</div> : <div className={styles.title}>Offline</div>}
