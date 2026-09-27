@@ -89,22 +89,27 @@
   padding: 2px 2px 0 2px;
   flex-direction: column;
   gap: 2px;
-  transition: border-color 0.2s;
+  transition: opacity 0.2s;
   min-height: 10px;
 }
 
+/* Hover dims, it does not lift. */
 .column:hover .bar {
-  border-color: var(--color-text-subdue);
-  border-bottom-color: var(--color-progress-border);
+  opacity: 0.7;
 }
 
+/* Bar segments are status surfaces: a 10% categorical wash over the widget
+   surface with a semantic border on the leading edge — never a direct fill.
+   Each segment sets its own hue; everything else is shared. */
 .bar > * {
   border-radius: 2px;
-  background: var(--color-vertical-progress-value);
+  background: color-mix(in srgb, var(--bar-hue) 10%, transparent);
+  border-top: 1px solid var(--bar-hue);
   min-height: 1px;
 }
 
 .queries {
+  --bar-hue: var(--color-data-categorical-cyan);
   flex-grow: 1;
 }
 
@@ -114,9 +119,8 @@
 }
 
 .blocked {
-  background-color: var(--color-negative);
+  --bar-hue: var(--color-data-categorical-orange);
   flex-basis: calc(var(--percent) - 1px);
-  min-height: 1px;
 }
 
 .time {
@@ -222,7 +226,6 @@
   justify-content: space-between;
   gap: 10px;
   font-size: var(--font-size-h5);
-  animation: collapsibleItemReveal 0.25s backwards;
 }
 
 .domain {

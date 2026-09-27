@@ -60,13 +60,15 @@
 
 .ringTrack {
   fill: none;
-  stroke: var(--color-widget-content-border);
+  /* The arc reads against the track, so the track is the same purple at 10%
+     — a wash, not a second full-strength stroke. */
+  stroke: color-mix(in srgb, var(--color-data-categorical-purple) 10%, transparent);
   stroke-width: 6;
 }
 
 .ringValue {
   fill: none;
-  stroke: var(--color-primary);
+  stroke: var(--color-data-categorical-purple);
   stroke-width: 6;
   stroke-linecap: round;
   transition: stroke-dashoffset 0.25s linear;

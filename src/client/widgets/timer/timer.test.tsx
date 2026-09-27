@@ -1,7 +1,15 @@
 import { fireEvent, render, screen, act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { formatDuration, parseDuration } from '../../../shared/widgets/timer';
 import { Timer } from './index';
+import styles from './timer.module.css';
+
+// Vitest serves CSS modules as a class-name proxy, so the token bindings are
+// only observable in the stylesheet source itself.
+const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'timer.module.css'), 'utf8');
 
 function renderTimer(config: Record<string, unknown> = {}) {
   return render(
@@ -68,5 +76,21 @@ describe('timer widget', () => {
     const textarea = screen.getByTestId('timer-notes');
     fireEvent.change(textarea, { target: { value: 'remember to ship' } });
     expect(screen.getByTestId('timer-notes')).toHaveValue('remember to ship');
+  });
+
+  it('ring track and arc carry the ring marks', () => {
+    const { container } = renderTimer({ duration: '25m' });
+    const circles = container.querySelectorAll('svg circle');
+    expect(circles).toHaveLength(2);
+    expect(circles[0]).toHaveClass(styles.ringTrack);
+    expect(circles[1]).toHaveClass(styles.ringValue);
+  });
+
+  it('binds the ring track and arc to the purple data token', () => {
+    const rule = (selector: string) => css.match(new RegExp(`${selector}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
+    expect(rule('\\.ringTrack')).toContain('var(--color-data-categorical-purple)');
+    expect(rule('\\.ringValue')).toContain('stroke: var(--color-data-categorical-purple)');
+    // no entrance choreography
+    expect(css).not.toContain('animation');
   });
 });

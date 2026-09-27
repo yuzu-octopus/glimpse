@@ -1,6 +1,14 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import Markets, { Sparkline } from './index';
+import styles from './markets.module.css';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Vitest serves CSS modules as a class-name proxy, so the token bindings are
+// only observable in the stylesheet source itself.
+const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'markets.module.css'), 'utf8');
 
 const markets = [
   {
@@ -111,5 +119,30 @@ describe('markets widget', () => {
     expect(screen.queryByRole('link', { name: 'X chart' })).toBeNull();
     // the sparkline still renders, just not wrapped in an anchor
     expect(container.querySelector('polyline')).not.toBeNull();
+  });
+
+  it('sparkline line follows the series direction', () => {
+    const { container, rerender } = render(<Sparkline values={[1, 2, 3]} />);
+    expect(container.querySelector('polyline')).toHaveClass(styles.sparkUp);
+    rerender(<Sparkline values={[3, 2, 1]} />);
+    expect(container.querySelector('polyline')).toHaveClass(styles.sparkDown);
+    // no sign to show: the sequential ramp, not a status hue
+    rerender(<Sparkline values={[2, 2, 2]} />);
+    expect(container.querySelector('polyline')).toHaveClass(styles.sparkFlat);
+  });
+
+  it('sparkline draws its baseline as the chart grid', () => {
+    const { container } = render(<Sparkline values={[1, 2, 3]} />);
+    expect(container.querySelector('line')).toHaveClass(styles.sparkGrid);
+  });
+
+  it('binds the sparkline to the data palette and the gridline token', () => {
+    const rule = (selector: string) => css.match(new RegExp(`${selector}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
+    expect(rule('\\.sparkUp')).toContain('var(--color-data-categorical-green)');
+    expect(rule('\\.sparkDown')).toContain('var(--color-data-categorical-red)');
+    expect(rule('\\.sparkFlat')).toContain('var(--color-data-blue-1)');
+    expect(rule('\\.sparkGrid')).toContain('var(--color-graph-gridlines)');
+    // no entrance choreography
+    expect(css).not.toContain('animation');
   });
 });

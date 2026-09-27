@@ -17,12 +17,24 @@ export function Sparkline({ values }: { values: number[] }) {
   const points = values
     .map((v, i) => `${(i / (values.length - 1)) * 100},${50 - ((v - min) / range) * 40}`)
     .join(' ');
+  const last = values[values.length - 1]!;
+  const first = values[0]!;
+  const trend = last === first ? styles.sparkFlat : last > first ? styles.sparkUp : styles.sparkDown;
   return (
     <svg viewBox="0 0 100 50" className={styles.sparkline} aria-hidden="true">
+      <line
+        className={styles.sparkGrid}
+        x1="0"
+        y1="49.5"
+        x2="100"
+        y2="49.5"
+        strokeWidth={1}
+        vectorEffect="non-scaling-stroke"
+      />
       <polyline
+        className={trend}
         points={points}
         fill="none"
-        stroke="var(--color-text-subdue)"
         strokeWidth={1.5}
         strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"
