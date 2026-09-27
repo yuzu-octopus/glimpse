@@ -21,20 +21,19 @@ const entityEntry = z.union([
   z.object({ entity: z.string().min(1), label: z.string().min(1).optional() }),
 ]);
 
-export const homeAssistantSchema = z
-  .object({
-    type: z.literal('home-assistant'),
-    ...sharedWidgetFields,
-    /** Home Assistant base URL — the REST API lives under <url>/api. */
-    url: z.string().min(1).default(HOME_ASSISTANT_DEFAULTS.url),
-    /** Long-lived access token. Falls back to the HA_TOKEN env var. */
-    token: z.string().optional(),
-    /** Entities to show, in display order. One `GET /api/states` returns every
-     *  entity in the install, so this is filtered server-side — never one
-     *  request per entry. */
-    entities: z.array(entityEntry).min(1),
-  })
-  .loose();
+// The long-lived access token is read from HA_TOKEN by the fetcher, never from
+// the config: the config is served to the browser verbatim, so a token in the
+// YAML is a token in the page.
+export const homeAssistantSchema = z.object({
+  type: z.literal('home-assistant'),
+  ...sharedWidgetFields,
+  /** Home Assistant base URL — the REST API lives under <url>/api. */
+  url: z.string().min(1).default(HOME_ASSISTANT_DEFAULTS.url),
+  /** Entities to show, in display order. One `GET /api/states` returns every
+   *  entity in the install, so this is filtered server-side — never one
+   *  request per entry. */
+  entities: z.array(entityEntry).min(1),
+});
 
 export type HomeAssistantConfig = z.infer<typeof homeAssistantSchema>;
 export type HomeAssistantEntityEntry = z.infer<typeof entityEntry>;

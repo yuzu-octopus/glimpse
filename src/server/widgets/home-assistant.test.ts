@@ -3,6 +3,7 @@ import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './home-assistant';
 import type { HomeAssistantData } from '../../shared/widgets/payloads';
+import { homeAssistantSchema } from '../../shared/widgets/home-assistant';
 
 const STATES = [
   {
@@ -56,26 +57,27 @@ function makeCtx(
   return { ctx, calls };
 }
 
-const jsonCtx = (env: Record<string, string | undefined> = {}): FakeCtx =>
+/** HA_TOKEN is the only credential source, so it is on by default here. */
+const TOKEN_ENV = { HA_TOKEN: 'env-tok' };
+
+const jsonCtx = (env: Record<string, string | undefined> = TOKEN_ENV): FakeCtx =>
   makeCtx(async () => new Response(JSON.stringify(STATES), { status: 200 }), env);
 
 const fetcher = () => serverWidgets.get('home-assistant')!;
 
-const fetchWith = (entities: unknown[], env: Record<string, string | undefined> = {}) =>
-  fetcher()(jsonCtx(env).ctx, {
+const fetchWith = (entities: unknown[]) =>
+  fetcher()(jsonCtx().ctx, {
     type: 'home-assistant',
     url: 'http://ha.local:8123',
-    token: 'tok',
     entities,
   }) as Promise<HomeAssistantData>;
 
 describe('home-assistant fetcher', () => {
   it('fetches /api/states once and filters to the configured entities in order', async () => {
-    const { ctx, calls } = jsonCtx();
+    const { ctx, calls } = jsonCtx({ HA_TOKEN: 'tok' });
     const data = (await fetcher()(ctx, {
       type: 'home-assistant',
       url: 'http://ha.local:8123/',
-      token: 'tok',
       entities: ['sensor.living_room_temp', 'binary_sensor.front_door', 'sensor.unused_by_config'],
     })) as HomeAssistantData;
 
@@ -100,14 +102,26 @@ describe('home-assistant fetcher', () => {
     expect(data.entities[0].value).toBe('On');
   });
 
+  it('ignores a token left in the config — the schema strips it', async () => {
+    const { ctx, calls } = jsonCtx({ HA_TOKEN: 'env-tok' });
+    await fetcher()(ctx, {
+      type: 'home-assistant',
+      url: 'http://ha.local:8123',
+      token: 'leaked',
+      entities: ['light.kitchen'],
+    });
+    expect(calls[0].init?.headers).toMatchObject({ authorization: 'Bearer env-tok' });
+    expect('token' in homeAssistantSchema.parse({ type: 'home-assistant', entities: ['light.kitchen'], token: 'leaked' })).toBe(false);
+  });
+
   it('throws a legible error when /api/states is not an entity list', async () => {
-    const { ctx } = makeCtx(async () => new Response('{"message":"Invalid access token"}', { status: 200 }));
+    const { ctx } = makeCtx(async () => new Response('{"message":"Invalid access token"}', { status: 200 }), { HA_TOKEN: 'bad' });
     await expect(
-      fetcher()(ctx, { type: 'home-assistant', url: 'http://ha.local:8123', token: 'bad', entities: ['light.kitchen'] }),
+      fetcher()(ctx, { type: 'home-assistant', url: 'http://ha.local:8123', entities: ['light.kitchen'] }),
     ).rejects.toThrow(/did not return an entity list/);
   });
 
-  it('throws when no token is configured', async () => {
+  it('throws when HA_TOKEN is unset', async () => {
     const { ctx } = makeCtx(async () => new Response('[]', { status: 200 }));
     await expect(
       fetcher()(ctx, { type: 'home-assistant', url: 'http://ha.local:8123', entities: ['light.kitchen'] }),
