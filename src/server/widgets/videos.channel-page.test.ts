@@ -337,4 +337,71 @@ describe('videos: channel-page fallback', () => {
 
     expect(seen).toContain('https://www.youtube.com/%40Fireship/videos');
   });
+
+  // A playlist went through the same pipeline but had none of the fallbacks:
+  // a feed that 404s simply cost the source, silently. It has exactly the same
+  // public page a channel does.
+  it('a playlist whose feed dies falls back to its public playlist page', async () => {
+    const seen: string[] = [];
+    const ctx = {
+      fetch: vi.fn(async (url: string) => {
+        seen.push(url);
+        if (url.startsWith('https://www.youtube.com/playlist?list=')) {
+          return new Response(CHANNEL_PAGE, { status: 200 });
+        }
+        return new Response('gone', { status: 404 });
+      }) as unknown as typeof fetch,
+      env: {},
+      cache: new TtlCache(),
+      singleflight: new Singleflight(),
+    } satisfies WidgetFetchContext;
+
+    const data = (await videosFetcher()(ctx, {
+      type: 'videos',
+      playlists: ['PLabc'],
+    })) as { videos: Video[]; issues: unknown[] };
+
+    expect(seen).toEqual([
+      'https://www.youtube.com/feeds/videos.xml?playlist_id=PLabc',
+      'https://www.youtube.com/playlist?list=PLabc',
+    ]);
+    expect(data.videos).toHaveLength(5);
+    expect(data.issues).toEqual([]);
+  });
+
+  it('a dead playlist is reported like a dead channel', async () => {
+    const ctx = {
+      fetch: vi.fn(async () => new Response('gone', { status: 404 })) as unknown as typeof fetch,
+      env: {},
+      cache: new TtlCache(),
+      singleflight: new Singleflight(),
+    } satisfies WidgetFetchContext;
+    const data = (await videosFetcher()(ctx, {
+      type: 'videos',
+      playlists: ['PLgone'],
+    })) as { videos: Video[]; issues: { source: string; reason: string }[] };
+
+    expect(data.videos).toEqual([]);
+    expect(data.issues).toEqual([{ source: 'PLgone', reason: 'HTTP 404' }]);
+  });
+
+  it('the playlist: prefix is optional in config and does not change the fetch', async () => {
+    const seen: string[] = [];
+    const ctx = {
+      fetch: vi.fn(async (url: string) => {
+        seen.push(url);
+        return new Response(EMPTY_FEED, { status: 200 });
+      }) as unknown as typeof fetch,
+      env: {},
+      cache: new TtlCache(),
+      singleflight: new Singleflight(),
+    } satisfies WidgetFetchContext;
+
+    await videosFetcher()(ctx, { type: 'videos', playlists: ['playlist:PLabc'] });
+
+    expect(seen).toEqual([
+      'https://www.youtube.com/feeds/videos.xml?playlist_id=PLabc',
+      'https://www.youtube.com/playlist?list=PLabc',
+    ]);
+  });
 });
