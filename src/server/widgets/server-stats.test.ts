@@ -85,6 +85,46 @@ describe('server-stats fetcher', () => {
     expect(mockOsInfo).toHaveBeenCalledTimes(1);
   });
 
+  it('defaults to a 1s cache when no cache is set', async () => {
+    vi.useFakeTimers();
+    try {
+      const ctx = makeCtx();
+      await fetcher()(ctx, { type: 'server-stats' });
+      expect(mockOsInfo).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(1_001);
+      await fetcher()(ctx, { type: 'server-stats' });
+      expect(mockOsInfo).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('honours an explicit cache over the 1s default', async () => {
+    vi.useFakeTimers();
+    try {
+      const ctx = makeCtx();
+      await fetcher()(ctx, { type: 'server-stats', cache: '30s' });
+      vi.advanceTimersByTime(29_000);
+      await fetcher()(ctx, { type: 'server-stats', cache: '30s' });
+      expect(mockOsInfo).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('falls back to 1s for an unparseable cache, not the 5m parse default', async () => {
+    vi.useFakeTimers();
+    try {
+      const ctx = makeCtx();
+      await fetcher()(ctx, { type: 'server-stats', cache: 'soon' });
+      vi.advanceTimersByTime(1_001);
+      await fetcher()(ctx, { type: 'server-stats', cache: 'soon' });
+      expect(mockOsInfo).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('remote server: fetches url/api/server-stats and uses payload', async () => {
     const remotePayload = {
       servers: [

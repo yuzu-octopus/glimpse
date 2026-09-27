@@ -135,7 +135,10 @@ async function remoteServer(url: string, name: string | undefined, ctxFetch: typ
 registerWidget('server-stats', async (ctx, config) => {
   const cfg = serverStatsSchema.parse(config);
   const key = `server-stats:${JSON.stringify(cfg.servers)}`;
-  const ttl = parseCacheDuration(cfg.cache) || getDefaultTtl('system-stats');
+  // parseCacheDuration's own fallback is 5m, which is 300x the 1s the client
+  // polls at — pass the live default in so an absent *or* unparseable `cache`
+  // lands on 1s. Never `|| getDefaultTtl(...)`: the left side is never falsy.
+  const ttl = parseCacheDuration(cfg.cache, getDefaultTtl('server-stats'));
   return ctx.singleflight.run(key, async () => {
     const cached = ctx.cache.get<ServerStatsData>(key);
     if (cached) return cached;
