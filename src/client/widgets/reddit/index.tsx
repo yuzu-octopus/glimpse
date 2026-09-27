@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from '@astryxdesign/core';
+import { ClickableCard, Grid, HStack, Text } from '@astryxdesign/core';
 import { ChevronRight } from 'lucide-react';
 import { REDDIT_DEFAULTS, type RedditConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
@@ -11,24 +11,30 @@ import Feed, { type FeedItem } from '../feed/feed';
 import chromeStyles from '../../components/widget-chrome.module.css';
 void REDDIT_DEFAULTS;
 
+const CARD_TITLE_LINES = 3;
+
 function Card({ post, showMeta }: { post: RedditPost; showMeta: boolean }) {
   const age = formatAge(post.ageSeconds);
   return (
-    <Link key={post.url} href={post.url} target="_blank" className={styles.card} hasUnderline={false}>
+    <ClickableCard
+      label={post.title}
+      href={post.url}
+      target="_blank"
+      padding={0}
+      className={styles.card}
+    >
       {post.thumbnail ? (
         <img src={post.thumbnail} alt="" loading="lazy" className={styles.cardThumb} />
       ) : (
-        <div className={styles.cardThumbPlaceholder} />
+        <div className={styles.cardThumbPlaceholder} aria-hidden="true" />
       )}
-      <span className={styles.cardTitle}>{post.title}</span>
-      {showMeta ? (
-        <span className={styles.cardMeta}>
-          <span>{post.score} points</span>
-          <span className={styles.sep}>•</span>
-          <span>{age}</span>
-        </span>
-      ) : null}
-    </Link>
+      <div className={styles.cardBody}>
+        <Text type="body" maxLines={CARD_TITLE_LINES}>
+          {post.title}
+        </Text>
+        {showMeta ? <Text type="supporting">{`${post.score} points · ${age}`}</Text> : null}
+      </div>
+    </ClickableCard>
   );
 }
 
@@ -83,11 +89,19 @@ function Reddit({ config, data, error, isLoading }: WidgetComponentProps) {
         showErrors={cfg['show-errors']}
         isLoading={loading}
       >
-        <div className={styles.cards}>
-          {posts.map((post) => (
-            <Card key={post.url} post={post} showMeta={style === 'vertical-cards'} />
-          ))}
-        </div>
+        {style === 'vertical-cards' ? (
+          <Grid columns={{ minWidth: 150 }} gap={2.5} className={styles.cards}>
+            {posts.map((post) => (
+              <Card key={post.url} post={post} showMeta />
+            ))}
+          </Grid>
+        ) : (
+          <HStack gap={2.5} className={`${styles.cards} ${styles.rail}`}>
+            {posts.map((post) => (
+              <Card key={post.url} post={post} showMeta={false} />
+            ))}
+          </HStack>
+        )}
       </WidgetChrome>
     );
   }
