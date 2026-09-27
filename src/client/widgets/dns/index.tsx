@@ -50,7 +50,7 @@ export function DnsStatsWidget({ config, data, error, isLoading }: WidgetCompone
         hideHeader={cfg['hide-header']}
         cssClass={cfg['css-class']}
       >
-        <div style={{ fontSize: 12, color: 'var(--color-text-base-muted)', padding: '8px 0' }}>No data</div>
+        <div className={styles.empty}>No data</div>
       </WidgetChrome>
     );
   }
