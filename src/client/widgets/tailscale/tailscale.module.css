@@ -1,0 +1,50 @@
+/* Tailscale node rows — dot + name/badges + os·version or "seen Nh ago" +
+   the 100.x address. The kit owns the dot, the type scale and every colour;
+   what is left here is the row rhythm, the separator, the hover backdrop and
+   the right-hand address column, matching the Docker and Home Assistant row
+   idiom. */
+
+.row {
+  position: relative;
+  isolation: isolate;
+  padding-block: calc(var(--widget-content-vertical) / 2 - 0.5px);
+}
+
+.row::before {
+  content: '';
+  position: absolute;
+  inset: -4px -10px;
+  border-radius: var(--border-radius);
+  background-color: var(--color-widget-background-highlight);
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.row:hover::before {
+  opacity: 1;
+}
+
+.row + .row {
+  margin-top: calc(var(--widget-content-vertical) / 3);
+  border-top: 1px solid var(--color-separator);
+}
+
+/* An unreachable node recedes: same 12px floor, less weight. The status dot
+   and the "seen … ago" line still carry the state, so nothing is lost. */
+.rowOffline {
+  opacity: 0.62;
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The tailnet address is data, not copy — mono, right-aligned, never a
+   breakpoint away from its row. */
+.address {
+  flex-shrink: 0;
+  text-align: right;
+}
