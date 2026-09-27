@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import Markets, { Sparkline } from './index';
+import Markets, { TrendChart } from './index';
 import styles from './markets.module.css';
+import { CHART_HUES } from '../../kit/chart-hues';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -51,12 +52,23 @@ describe('markets widget', () => {
     expect(screen.getByText('—')).toBeInTheDocument();
   });
 
-  it('sparkline renders a polyline for a 21-point series and nothing for a flat/empty series', () => {
+  it('renders one bar per point and nothing for a series too short to plot', () => {
     const values = Array.from({ length: 21 }, (_, i) => 100 + i);
-    const { container, rerender } = render(<Sparkline values={values} />);
-    expect(container.querySelector('polyline')).not.toBeNull();
-    rerender(<Sparkline values={[]} />);
+    const { container, rerender } = render(<TrendChart symbol="AAPL" values={values} />);
+    expect(container.querySelectorAll('rect')).toHaveLength(21);
+    rerender(<TrendChart symbol="AAPL" values={[]} />);
     expect(container.querySelector('svg')).toBeNull();
+  });
+
+  it('labels every sparkline uniquely for screen readers', () => {
+    render(
+      <Markets
+        config={{ type: 'markets', markets: [{ symbol: 'AAPL' }, { symbol: 'BTC-USD' }] }}
+        data={{ markets }}
+      />,
+    );
+    expect(screen.getByRole('img', { name: 'AAPL price trend' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'BTC-USD price trend' })).toBeInTheDocument();
   });
 
   it('resolves symbol links from the template with {SYMBOL}', () => {
@@ -118,30 +130,25 @@ describe('markets widget', () => {
     expect(screen.queryByRole('link', { name: 'X' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'X chart' })).toBeNull();
     // the sparkline still renders, just not wrapped in an anchor
-    expect(container.querySelector('polyline')).not.toBeNull();
+    expect(container.querySelector('rect')).not.toBeNull();
   });
 
-  it('sparkline line follows the series direction', () => {
-    const { container, rerender } = render(<Sparkline values={[1, 2, 3]} />);
-    expect(container.querySelector('polyline')).toHaveClass(styles.sparkUp);
-    rerender(<Sparkline values={[3, 2, 1]} />);
-    expect(container.querySelector('polyline')).toHaveClass(styles.sparkDown);
-    // no sign to show: the sequential ramp, not a status hue
-    rerender(<Sparkline values={[2, 2, 2]} />);
-    expect(container.querySelector('polyline')).toHaveClass(styles.sparkFlat);
+  it('paints the series green when it rises, red when it falls, and muted when flat', () => {
+    const { container, rerender } = render(<TrendChart symbol="X" values={[1, 2, 3]} />);
+    expect(container.querySelector('rect')).toHaveAttribute('fill', 'var(--dracula-green)');
+    rerender(<TrendChart symbol="X" values={[3, 2, 1]} />);
+    expect(container.querySelector('rect')).toHaveAttribute('fill', 'var(--dracula-red)');
+    // no sign to show: the kit's muted hue, not a status hue
+    rerender(<TrendChart symbol="X" values={[2, 2, 2]} />);
+    const flat = container.querySelector('rect')!;
+    expect(flat.closest('span')).toHaveClass(styles.sparkFlat);
+    expect(flat.closest('span')).toHaveStyle({ '--spark-hue': CHART_HUES.muted });
   });
 
-  it('sparkline draws its baseline as the chart grid', () => {
-    const { container } = render(<Sparkline values={[1, 2, 3]} />);
-    expect(container.querySelector('line')).toHaveClass(styles.sparkGrid);
-  });
-
-  it('binds the sparkline to the data palette and the gridline token', () => {
-    const rule = (selector: string) => css.match(new RegExp(`${selector}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
-    expect(rule('\\.sparkUp')).toContain('var(--color-data-categorical-green)');
-    expect(rule('\\.sparkDown')).toContain('var(--color-data-categorical-red)');
-    expect(rule('\\.sparkFlat')).toContain('var(--color-data-blue-1)');
-    expect(rule('\\.sparkGrid')).toContain('var(--color-graph-gridlines)');
+  it('draws the flat-series override from the hue variable, never a literal', () => {
+    const rule = css.match(/\.sparkFlat rect\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(rule).toContain('fill: var(--spark-hue)');
+    expect(rule).not.toMatch(/#[0-9a-fA-F]{3,8}/);
     // no entrance choreography
     expect(css).not.toContain('animation');
   });

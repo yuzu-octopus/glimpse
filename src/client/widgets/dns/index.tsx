@@ -3,6 +3,7 @@ import type { DnsStats } from '../../../shared/widgets/payloads';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { fmtNumber as fmt } from '../_helpers/fmtNumber';
+import { CHART_HUES } from '../../kit/chart-hues';
 import styles from './dns.module.css';
 
 function fmtApprox(n: number): string {
@@ -132,9 +133,19 @@ export function DnsStatsWidget({ config, data, error, isLoading }: WidgetCompone
                       style={{ '--bar-height': String(pt.percentTotal) } as React.CSSProperties}
                       data-testid="dns-bar"
                     >
-                      {pt.queries !== pt.blocked ? <div className={styles.queries} /> : null}
+                      {pt.queries !== pt.blocked ? (
+                        <div className={styles.queries} style={{ '--bar-hue': CHART_HUES.cyan } as React.CSSProperties} />
+                      ) : null}
                       {pt.percentBlocked > 0 ? (
-                        <div className={styles.blocked} style={{ '--percent': `${pt.percentBlocked}%` } as React.CSSProperties} />
+                        <div
+                          className={styles.blocked}
+                          style={
+                            {
+                              '--percent': `${pt.percentBlocked}%`,
+                              '--bar-hue': CHART_HUES.orange,
+                            } as React.CSSProperties
+                          }
+                        />
                       ) : null}
                     </div>
                   ) : null}

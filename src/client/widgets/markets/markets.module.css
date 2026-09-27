@@ -48,29 +48,19 @@
   line-height: 0;
 }
 
+/* Wrapper: the kit Sparkline sizes itself at width 100%, so the row's chart
+   box (glance .market-chart, 65px) lives here. */
 .sparkline {
   display: block;
   width: 65px;
-  height: auto;
+  line-height: 0;
 }
 
-/* Chart ink: the sparkline line carries the series direction, and the
-   baseline is the chart's grid. A directionless (flat) series has no sign to
-   show, so it takes the sequential ramp instead of a status hue. */
-.sparkUp {
-  stroke: var(--color-data-categorical-green);
-}
-
-.sparkDown {
-  stroke: var(--color-data-categorical-red);
-}
-
-.sparkFlat {
-  stroke: var(--color-data-blue-1);
-}
-
-.sparkGrid {
-  stroke: var(--color-graph-gridlines);
+/* A directionless (flat) series has no sign to show, so it takes the kit's
+   muted chart hue instead of a status hue. The sparkline sets `fill` as an
+   SVG presentation attribute, which any CSS rule outranks. */
+.sparkFlat rect {
+  fill: var(--spark-hue);
 }
 
 /* glance .market-values: min-width 80px, right-aligned, change stacked over
@@ -93,6 +83,9 @@
   white-space: nowrap;
 }
 
+/* The delta line. MetricDelta sets its own body role (14px); the neutral
+   zero-change fallback inherits the same size from here so a column of rows
+   never mixes two type sizes. */
 .change {
   display: inline-flex;
   align-items: center;
@@ -100,35 +93,22 @@
   gap: 2px;
   min-width: 0;
   max-width: 100%;
-  font-size: var(--font-size-h3);
+  font-size: var(--font-size-base);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-.change svg {
-  flex: none;
-}
 
-/* Delta text is status, not chart ink: green positive, red negative. */
-.up {
-  color: var(--color-positive);
-}
 
-.down {
-  color: var(--color-negative);
-}
 
-/* Narrow body (a 300px column ≈ 264px of content): tighten the row, shrink
-   the sparkline, and drop the change line to the h5 size so symbol + name
-   + chart + change% + price all fit without truncation. */
+/* Narrow body (a 300px column ≈ 264px of content): tighten the row and
+   shrink the chart so symbol + name + chart + change% + price all fit
+   without truncation. */
 @container (max-width: 340px) {
   .row {
     gap: 10px;
   }
   .sparkline {
     width: 40px;
-  }
-  .change {
-    font-size: var(--font-size-h5);
   }
 }

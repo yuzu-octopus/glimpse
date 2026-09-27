@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { formatDuration, parseDuration } from '../../../shared/widgets/timer';
+import { CHART_HUES } from '../../kit/chart-hues';
 import { Timer } from './index';
 import styles from './timer.module.css';
 
@@ -86,10 +87,16 @@ describe('timer widget', () => {
     expect(circles[1]).toHaveClass(styles.ringValue);
   });
 
-  it('binds the ring track and arc to the purple data token', () => {
+  it('takes the ring ink from the kit CHART_HUES, never purple', () => {
+    const { container } = renderTimer({ duration: '25m' });
+    const ring = screen.getByTestId('timer-ring');
+    expect(ring).toHaveStyle({ '--ring-hue': CHART_HUES.cyan });
     const rule = (selector: string) => css.match(new RegExp(`${selector}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
-    expect(rule('\\.ringTrack')).toContain('var(--color-data-categorical-purple)');
-    expect(rule('\\.ringValue')).toContain('stroke: var(--color-data-categorical-purple)');
+    expect(rule('\\.ringValue')).toContain('stroke: var(--ring-hue)');
+    expect(rule('\\.ringTrack')).toContain('var(--ring-hue) 10%');
+    // purple means tappable, so it must never encode data
+    expect(css).not.toContain('purple');
+    expect(container.querySelector('svg')).not.toBeNull();
     // no entrance choreography
     expect(css).not.toContain('animation');
   });
