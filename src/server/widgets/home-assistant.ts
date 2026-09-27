@@ -112,8 +112,8 @@ function toEntity(entry: Entry, found: HaState | undefined): HomeAssistantEntity
 
 registerWidget('home-assistant', async (ctx, config): Promise<HomeAssistantData> => {
   const cfg = homeAssistantSchema.parse(config);
-  const token = cfg.token ?? ctx.env.HA_TOKEN;
-  if (!token) throw new Error('home-assistant: missing token (set token or HA_TOKEN)');
+  const token = ctx.env.HA_TOKEN;
+  if (!token) throw new Error('home-assistant: missing HA_TOKEN');
   const base = cfg.url.replace(/\/+$/, '');
 
   // One call returns every entity in the install, so the config's list is a

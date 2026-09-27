@@ -29,4 +29,16 @@ describe('home-assistant schema', () => {
       homeAssistantSchema.parse({ type: 'home-assistant', entities: [{ entity: '' }] }),
     ).toThrow();
   });
+
+  it('takes no token — HA_TOKEN is the only credential source', () => {
+    // Stripped, not passed through: the config is handed to the browser whole,
+    // so a leftover `token:` must not survive parsing.
+    const withToken = homeAssistantSchema.parse({
+      type: 'home-assistant',
+      entities: ['light.kitchen'],
+      token: 'leaked',
+    });
+    expect('token' in withToken).toBe(false);
+    expect(JSON.stringify(withToken)).not.toContain('leaked');
+  });
 });
