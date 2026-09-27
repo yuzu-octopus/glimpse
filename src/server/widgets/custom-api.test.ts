@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './custom-api';
+import { customApiSchema } from '../../shared/widgets/keyed';
 import type { CustomApiItem } from '../../shared/widgets/payloads';
 
 const API_PAYLOAD = {
@@ -223,5 +224,93 @@ describe('custom-api fetcher', () => {
     attempts = 0;
     await expect(customApiFetcher()(makeCtx(failing), config(2))).rejects.toThrow('HTTP 500');
     expect(attempts).toBe(3);
+  });
+
+  it('serves a subrequests-only widget, keyed by name in the JSONPath root', async () => {
+    const seen: string[] = [];
+    const ctx = makeCtx(async (url) => {
+      seen.push(url);
+      const text = url.endsWith('/one') ? 'From one' : 'From two';
+      return new Response(JSON.stringify({ list: [{ text }] }), { status: 200 });
+    });
+    const data = (await customApiFetcher()(ctx, {
+      type: 'custom-api',
+      subrequests: {
+        'another-one': { url: 'https://api.example.com/one' },
+        'another-two': { url: 'https://api.example.com/two' },
+      },
+      options: { path: '$.*.list[*]', title: '$.text' },
+    })) as { items: CustomApiItem[] };
+    expect(seen.sort()).toEqual(['https://api.example.com/one', 'https://api.example.com/two']);
+    expect(data.items).toHaveLength(2);
+    expect(data.items.map((i) => i.title).sort()).toEqual(['From one', 'From two']);
+  });
+
+  it('applies per-subrequest parameters, method and body', async () => {
+    const calls: { url: string; method?: string; body?: unknown }[] = [];
+    const ctx = makeCtx(async (url, init) => {
+      calls.push({ url, method: init?.method, body: init?.body });
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+    await customApiFetcher()(ctx, {
+      type: 'custom-api',
+      subrequests: {
+        post: {
+          url: 'https://api.example.com/sub',
+          method: 'POST',
+          parameters: { tag: ['a', 'b'] },
+          body: { hello: 'world' },
+        },
+      },
+      options: { path: '$' },
+    });
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toBe('https://api.example.com/sub?tag=a&tag=b');
+    expect(calls[0].method).toBe('POST');
+    expect(calls[0].body).toBe(JSON.stringify({ hello: 'world' }));
+  });
+
+  it('applies the insecure-http guard to subrequests too', async () => {
+    const ctx = makeCtx(async () => new Response('{}', { status: 200 }));
+    await expect(
+      customApiFetcher()(ctx, {
+        type: 'custom-api',
+        subrequests: { insecure: { url: 'http://api.example.com/x' } },
+        options: { path: '$' },
+      }),
+    ).rejects.toThrow('allow-insecure');
+  });
+
+  it('rejects a custom-api with neither url nor subrequests', () => {
+    const r = customApiSchema.safeParse({ type: 'custom-api' });
+    expect(r.success).toBe(false);
+  });
+
+  it('accepts url alongside subrequests', () => {
+    const r = customApiSchema.safeParse({
+      type: 'custom-api',
+      url: 'https://api.example.com/main',
+      subrequests: { extra: { url: 'https://api.example.com/extra' } },
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it('rejects an empty subrequests map as no request at all', () => {
+    expect(customApiSchema.safeParse({ type: 'custom-api', subrequests: {} }).success).toBe(false);
+  });
+
+  it('uses the url payload as root when both url and subrequests are set', async () => {
+    const ctx = makeCtx(async (url) =>
+      new Response(JSON.stringify({ list: [{ text: url.includes('main') ? 'main' : 'sub' }] }), {
+        status: 200,
+      }),
+    );
+    const data = (await customApiFetcher()(ctx, {
+      type: 'custom-api',
+      url: 'https://api.example.com/main',
+      subrequests: { extra: { url: 'https://api.example.com/extra' } },
+      options: { path: '$.list[*]', title: '$.text' },
+    })) as { items: CustomApiItem[] };
+    expect(data.items.map((i) => i.title)).toEqual(['main']);
   });
 });
