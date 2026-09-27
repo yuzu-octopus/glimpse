@@ -136,10 +136,10 @@ export const monitorSchema = z
   });
 export type MonitorConfig = z.infer<typeof monitorSchema>;
 
-export const customApiSchema = z.object({
-  type: z.literal('custom-api'),
-  ...sharedWidgetFields,
-  url: z.string(),
+/** Everything a custom-api request can declare, minus `url` — a subrequest
+ * names its own. Shared by the widget body and each subrequests entry so a
+ * subrequest supports exactly what the top level does. */
+const customApiRequestFields = {
   headers: z.record(z.string(), z.string()).optional(),
   method: z
     .enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'])
@@ -147,25 +147,45 @@ export const customApiSchema = z.object({
   body: z.union([z.string(), z.record(z.string(), z.unknown())]).optional(),
   'body-type': z.enum(['json', 'string']).optional(),
   parameters: z.record(z.string(), z.union([z.string(), z.array(z.string())])).optional(),
-  frameless: z.boolean().optional(),
   'allow-insecure': z.boolean().optional(),
   'skip-json-validation': z.boolean().optional(),
-  limit: z.number().int().min(0).default(CUSTOM_API_DEFAULTS.limit),
-  'collapse-after': z.number().int().min(-1).optional(),
-  options: z
-    .object({
-      path: z.string(),
-      title: z.string().optional(),
-      url: z.string().optional(),
-      description: z.string().optional(),
-      icon: z.string().optional(),
-      subtitle: z.string().optional(),
-      value: z.string().optional(),
-      image: z.string().optional(),
-      timestamp: z.string().optional(),
-    })
-    .default(() => ({ path: '$' })),
-});
+};
+
+export const customApiSchema = z
+  .object({
+    type: z.literal('custom-api'),
+    ...sharedWidgetFields,
+    // glance: url and subrequests are both optional, but at least one must be
+    // set — enforced in the superRefine below.
+    url: z.string().optional(),
+    ...customApiRequestFields,
+    subrequests: z.record(z.string(), z.object({ url: z.string(), ...customApiRequestFields })).optional(),
+    frameless: z.boolean().optional(),
+    limit: z.number().int().min(0).default(CUSTOM_API_DEFAULTS.limit),
+    'collapse-after': z.number().int().min(-1).optional(),
+    options: z
+      .object({
+        path: z.string(),
+        title: z.string().optional(),
+        url: z.string().optional(),
+        description: z.string().optional(),
+        icon: z.string().optional(),
+        subtitle: z.string().optional(),
+        value: z.string().optional(),
+        image: z.string().optional(),
+        timestamp: z.string().optional(),
+      })
+      .default(() => ({ path: '$' })),
+  })
+  .superRefine((v, ctx) => {
+    // An empty map is truthy but names no request, so count entries.
+    if (v.url === undefined && Object.keys(v.subrequests ?? {}).length === 0) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'custom-api: set `url` or at least one `subrequests` entry',
+      });
+    }
+  });
 export type CustomApiConfig = z.infer<typeof customApiSchema>;
 
 export const repositorySchema = z.object({
