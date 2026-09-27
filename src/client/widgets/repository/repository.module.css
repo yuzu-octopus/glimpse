@@ -73,11 +73,23 @@
 
 .subRow {
   display: flex;
+  min-width: 0;
+  padding: 2px 0;
+  text-decoration: none;
+}
+
+/* astryx's Link nests its children in a single span, and that span is the
+   row's only flex item. Left alone its automatic minimum size is the
+   max-content width of the nowrap title, so the row ran 400-780px past a
+   300px card and .subTitle's ellipsis clamp — inline inside the wrapper —
+   never fired. Constrain the wrapper and let it carry the number/title
+   baseline the row was written for. */
+.subRow > * {
+  display: flex;
   align-items: baseline;
   gap: 6px;
-  padding: 2px 0;
+  flex: 1;
   min-width: 0;
-  text-decoration: none;
 }
 
 .subNumber {
