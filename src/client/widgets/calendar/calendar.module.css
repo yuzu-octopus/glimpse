@@ -1,39 +1,61 @@
-.month {
-  font-size: var(--font-size-h2);
-  font-weight: 600;
-  text-transform: capitalize;
-  color: var(--color-text-highlight);
-  margin-bottom: 15px;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
-  text-align: center;
+/* Nav target: glance ships 2rem square header buttons
+   (glance/internal/glance/static/css/widget-calendar.css:40-48); 32px also
+   clears the WCAG 2.2 AA 24px pointer-target floor. */
+.nav {
+  min-width: 32px;
+  min-height: 32px;
 }
 
 .dow {
-  font-size: var(--font-size-h6);
   color: var(--color-text-base-muted);
-  margin-bottom: 3px;
 }
 
 .day {
-  font-size: var(--font-size-base);
-  color: var(--color-text-base);
   padding: 3px 0;
-  border: 1px solid transparent;
   border-radius: var(--border-radius);
 }
 
+/* Glance marks today with a neutral surface, not an accent
+   (glance/.../widget-calendar.css:30-34): purple means tappable, so the
+   current date must never wear the primary accent as decoration. */
 .today {
-  background-color: color-mix(in srgb, var(--color-primary) 16%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 28%, transparent);
-  color: var(--color-primary);
-  font-weight: 600;
+  background-color: var(--color-popover-border);
+  color: var(--color-text-highlight);
 }
 
 .other {
   color: var(--color-text-base-muted);
+}
+
+/* Month scrub: a short direction-aware entrance. Glance slides the dates out
+   and back in (glance/internal/glance/static/js/calendar.js:20-28); the kit
+   ships one duration token and one easing, so only the visible half of that
+   pair is rendered here. */
+.slideNext {
+  animation: slide-next var(--duration-medium) var(--ease-standard) both;
+}
+
+.slidePrev {
+  animation: slide-prev var(--duration-medium) var(--ease-standard) both;
+}
+
+@keyframes slide-next {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+
+@keyframes slide-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slideNext,
+  .slidePrev {
+    animation: none;
+  }
 }
