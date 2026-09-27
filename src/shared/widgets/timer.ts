@@ -8,10 +8,22 @@ export const TIMER_PREF: Pref = { cols: 3, rows: 3, resizable: false, priority: 
  * promise a paragraph, and a real `dial` shape is out of scope here. */
 export const TIMER_SKELETON: SkeletonShape = 'chart';
 
-/** Duration string: minutes ("25m"), hours ("1h"), or "hh:mm[:ss]". */
+/** Duration string: one or more unit groups ("25m", "1h", "90s", "1h30m",
+ * "1h 30m") or "mm:ss[:ss]".
+ *
+ * The unit alternative is a `+` group, not a single group. As a single group
+ * it matched exactly one `\d+\s*(h|m|s)`, so it rejected `1h30m` — the exact
+ * form the message printed beside it offered, and the form `parseDuration`
+ * below has always read correctly via `matchAll`. A user was told to write a
+ * string the schema refused.
+ *
+ * The schema stays stricter than the parser on purpose. `parseDuration` sums
+ * whatever unit groups it finds and ignores everything else, so it would read
+ * `1h nonsense` as 3600; anchoring both alternatives rejects that instead of
+ * silently running the wrong duration. */
 const durationString = z
   .string()
-  .regex(/^\s*(\d+\s*(h|m|s)|\d{1,2}:\d{2}(:\d{2})?)\s*$/, 'expected "25m", "1h30m", "90s" or "mm:ss"')
+  .regex(/^\s*(?:(?:\d+\s*[hms]\s*)+|\d{1,2}:\d{2}(?::\d{2})?)\s*$/, 'expected "25m", "1h30m", "90s" or "mm:ss"')
   .default(() => TIMER_DEFAULTS.duration);
 
 export const timerSchema = z.object({
