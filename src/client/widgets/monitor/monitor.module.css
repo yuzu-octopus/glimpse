@@ -6,7 +6,7 @@
    the ladder was a brand violation (no entrance choreography), not a lookalike. */
 
 .row {
-  padding-block: 4px;
+  padding-block: 2px;
 }
 
 .row + .row {
@@ -46,6 +46,10 @@
 .title {
   flex-shrink: 1;
   min-width: 0;
+  /* WCAG 2.5.8: a site title is one 20px line box, so without a floor the
+   * link is a 20px target. The row gives back the 4px it took in padding
+   * above, so the row height is unchanged. */
+  min-height: 24px;
 }
 
 .url {
