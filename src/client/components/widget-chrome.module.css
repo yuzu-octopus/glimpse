@@ -2,20 +2,6 @@
   min-width: 0;
 }
 
-.bodyCard {
-  /* glance widgets.css .widget-content frame — flat border only, no shadow */
-  background: var(--color-widget-background);
-  border: 1px solid var(--color-widget-content-border);
-  border-radius: var(--border-radius);
-  padding: 0;
-  /* override Astryx Card's withBorder padding-inset math */
-  --container-padding-inline-start: 0px;
-  --container-padding-inline-end: 0px;
-  --container-padding-block-start: 0px;
-  --container-padding-block-end: 0px;
-}
-
-
 /* glance widgets.css .widget-header — sits ABOVE the bordered content box,
    not inside it. Left-aligned, uppercase, mono. The title's size comes from
    the Heading level (3), not from here — two-tier hierarchy owns type. */
@@ -52,10 +38,9 @@
   z-index: -1;
 }
 
+/* The kit Stack owns the row itself; all the title needs is a box that is
+   allowed to shrink so its ellipsis can take over. */
 .titleRow {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
   min-width: 0;
 }
 
@@ -87,7 +72,6 @@
 }
 
 .body {
-  padding: var(--widget-content-vertical) var(--widget-content-horizontal);
   min-width: 0;
 }
 
@@ -113,20 +97,15 @@
   gap: 8px;
 }
 
-.listRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
+/* A skeleton line's text block fills the row and keeps shrinking. */
 .listLines {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
   flex: 1;
   min-width: 0;
 }
 
+/* Legacy raw-button lookalike, kept only for the widgets that still hand-roll
+   their own collapse toggle (rss, twitch-channels, twitch-top-games). The
+   shared chrome uses the kit Button below — delete this block with them. */
 /* glance utils.css .expand-toggle-button — a tappable action, so hover dims
    12% and press dims 20% through the overlay tokens. */
 .more {
@@ -152,19 +131,35 @@
   background-color: var(--color-overlay-pressed);
 }
 
-/* glance utils.css .expand-toggle-button-icon — chevron right of the label,
-   pointing down when collapsed, up when expanded. Rotation is the expand
-   action answering, which motion is for. */
+/* The chevron beside a toggle's label, collapsed (down). The rotation is the
+   expand action answering, which motion is for. */
 .chevron {
-  display: inline-block;
-  margin-left: 10px;
   position: relative;
   top: -2px;
+  flex-shrink: 0;
   transform: rotate(90deg);
   transition: transform var(--duration-fast) var(--ease-standard);
-  flex-shrink: 0;
 }
 
-.moreExpanded .chevron {
+/* Raw buttons carry no flex gap, so the legacy ones need the spacing the kit
+   Button gets from its own gap. */
+.more .chevron {
+  display: inline-block;
+  margin-left: 10px;
+}
+
+.moreExpanded .chevron,
+.chevronExpanded {
   transform: rotate(-90deg);
 }
+
+/* The shared chrome's toggle is the kit's ghost Button: the kit owns the
+   hover/press dim, the focus ring, and the label's type. These three are the
+   glance block shape it does not — full-bleed, start-aligned, and the
+   widget's own vertical padding as the hit area. */
+.toggle {
+  justify-content: flex-start;
+  text-transform: uppercase;
+  padding: var(--widget-content-vertical-padding) 0;
+}
+

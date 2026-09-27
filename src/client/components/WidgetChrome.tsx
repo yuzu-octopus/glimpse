@@ -1,10 +1,12 @@
 import { memo, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Banner,
+  Button,
   Card,
   Heading,
   Link,
   Skeleton,
+  Stack,
   StatusDot,
 } from '@astryxdesign/core';
 import { ChevronRight } from 'lucide-react';
@@ -83,13 +85,25 @@ export const WidgetChrome = memo(function WidgetChrome({
     cardRef.current?.scrollIntoView?.({ block: 'nearest' });
   };
 
+  // One handler for the two-way toggle: expanding is a plain state flip,
+  // collapsing also brings the card back into view.
+  const toggle = () => {
+    if (expanded) collapse();
+    else setExpanded(true);
+  };
+
   return (
     <div className={styles.widget}>
       {!effectiveHide && title ? (
         <div
           className={loud ? `${styles.header} ${styles.errorHeader}` : styles.header}
         >
-          <span className={styles.titleRow}>
+          <Stack
+            direction="horizontal"
+            vAlign="center"
+            gap={1.5}
+            className={styles.titleRow}
+          >
             {titleUrl ? (
               // Purple = tappable: only a linked title wears the accent.
               <Heading
@@ -115,22 +129,22 @@ export const WidgetChrome = memo(function WidgetChrome({
                 data-testid="widget-error-dot"
               />
             ) : null}
-          </span>
+          </Stack>
         </div>
       ) : null}
-      <Card ref={cardRef} className={cssClass ? `${styles.bodyCard} ${cssClass}` : styles.bodyCard} padding={0}>
+      <Card ref={cardRef} className={cssClass} padding={4}>
         <div className={styles.body} data-testid="widget-body">
           {isLoading ? (
             <div className={`${styles.skeleton} ${shapeClass}`} data-testid="widget-loading">
               {shape === 'list' ? (
                 Array.from({ length: 5 }, (_, i) => (
-                  <div key={i} className={styles.listRow}>
+                  <Stack key={i} direction="horizontal" vAlign="center" gap={2}>
                     <Skeleton width={24} height={24} radius="rounded" />
-                    <div className={styles.listLines}>
+                    <Stack direction="vertical" gap={1.5} className={styles.listLines}>
                       <Skeleton width="70%" height={12} />
                       <Skeleton width="45%" height={10} />
-                    </div>
-                  </div>
+                    </Stack>
+                  </Stack>
                 ))
               ) : shape === 'stat' ? (
                 <>
@@ -153,25 +167,23 @@ export const WidgetChrome = memo(function WidgetChrome({
             <>
               {visible}
               {has ? (
-                expanded ? (
-                  <button
-                    type="button"
-                    className={`${styles.more} ${styles.moreExpanded}`}
-                    onClick={collapse}
-                  >
-                    Show less
-                    <ChevronRight size={12} className={styles.chevron} />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className={styles.more}
-                    onClick={() => setExpanded(true)}
-                  >
-                    {`Show more (${list.length - n})`}
-                    <ChevronRight size={12} className={styles.chevron} />
-                  </button>
-                )
+                <Button
+                  variant="ghost"
+                  width="100%"
+                  className={styles.toggle}
+                  label={expanded ? 'Show less' : `Show more (${list.length - n})`}
+                  endContent={
+                    <ChevronRight
+                      size={12}
+                      className={
+                        expanded
+                          ? `${styles.chevron} ${styles.chevronExpanded}`
+                          : styles.chevron
+                      }
+                    />
+                  }
+                  onClick={toggle}
+                />
               ) : null}
             </>
           )}
