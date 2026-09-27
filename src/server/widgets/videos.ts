@@ -265,7 +265,7 @@ const WEB_CLIENT_VERSION = '2.20260708.00.00';
 const HANDLE_TTL_MS = 24 * 60 * 60 * 1000;
 
 /** resolve_url's answer, in the two shapes it is read in: the documented
- * `response.-`-wrapped one and the top-level one. */
+ * `response.`-wrapped one and the top-level one. */
 interface ResolveEndpoint {
   endpoint?: { browseEndpoint?: { browseId?: unknown } };
   response?: ResolveEndpoint;
@@ -430,6 +430,9 @@ interface FeedSpec {
   pageUrl: string | null;
   /** set when the config value could not be resolved to a feedable id at all */
   resolveError?: string;
+  /** the bare `PL…` when this source is a playlist, so the fetcher can list
+   * the whole playlist when the feed window turns out to be its oldest end */
+  playlistId?: string;
 }
 
 async function feedSpecsForChannels(
@@ -564,6 +567,210 @@ function toVideo(
   };
 }
 
+/** InnerTube `browse` on `VL<playlistId>` returns a playlist's WHOLE listing,
+ * keyless: no API key, no cookie, no PO token (report §Findings — PO tokens
+ * are scoped to video *streaming*, and `_tab.py` does all the listing). This
+ * is the only listing source that is not a positional window. */
+const INNERTUBE_BROWSE = 'https://www.youtube.com/youtubei/v1/browse';
+/** The WEB context the research matrix used. `_tab.py` carries no po_token
+ * reference at all, so no `visitorData`, `authorization` or key is needed. */
+const INNERTUBE_CLIENT = { clientName: 'WEB', clientVersion: '2.20250930.00.00', hl: 'en' };
+
+/** How many `browse` pages one playlist listing may cost. A playlist that
+ * fits answers in one page and its continuation token yields an empty page,
+ * so the cap only bites on a 300+ episode archive — where stopping is far
+ * better than walking a 5000-item list, and the reason says we stopped. */
+const MAX_PLAYLIST_PAGES = 3;
+
+/** One video in the playlist's own order, as `browse` reports it. */
+export interface PlaylistEntry {
+  videoId: string;
+  title: string;
+}
+
+/** Pull the ordered video list out of one `browse` response.
+ *
+ * The payload ships `lockupViewModel` (F5 measured 49 on a 48-video playlist
+ * and **0** `playlistVideoRenderer`), so read the renderer that is actually
+ * there rather than keying on the one that used to be. The same lockups also
+ * appear inside `addToPlaylistCommand` menu blobs, so dedupe by id.
+ *
+ * Throws on anything unreadable: a redesign that moves the listing must reach
+ * the caller as a reason the widget can show, never as an empty playlist.
+ */
+export function parsePlaylistBrowse(raw: string): {
+  entries: PlaylistEntry[];
+  continuation: string | null;
+} {
+  let data: unknown;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    throw new Error(`browse response was not JSON (${raw.length} bytes)`);
+  }
+  const entries: PlaylistEntry[] = [];
+  const seen = new Set<string>();
+  let continuation: string | null = null;
+
+  const visit = (node: unknown): void => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      for (const child of node) visit(child);
+      return;
+    }
+    for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+      if (!value || typeof value !== 'object') continue;
+      const renderer = value as Record<string, unknown>;
+      if (key === 'lockupViewModel') {
+        const id = renderer.contentId;
+        const meta = renderer.metadata as Record<string, unknown> | undefined;
+        const lockupMeta = meta?.lockupMetadataViewModel as Record<string, unknown> | undefined;
+        const title = readText(lockupMeta?.title);
+        if (typeof id === 'string' && isVideoId(id) && title !== '' && !seen.has(id)) {
+          seen.add(id);
+          entries.push({ videoId: id, title });
+        }
+      } else if (key === 'continuationCommand' && continuation === null) {
+        const token = renderer.token;
+        if (typeof token === 'string') continuation = token;
+      }
+      visit(value);
+    }
+  };
+  visit(data);
+  return { entries, continuation };
+}
+
+/** The whole playlist in the owner's order, following continuation tokens
+ * until the listing runs out. `capped` is true when a token was still on the
+ * table when the page budget ran out, so the caller knows the tail it holds
+ * is not the playlist's end. */
+async function playlistListing(
+  ctx: WidgetFetchContext,
+  playlistId: string,
+  retry: RetryOptions,
+): Promise<{ entries: PlaylistEntry[]; capped: boolean }> {
+  const entries: PlaylistEntry[] = [];
+  const seen = new Set<string>();
+  let continuation: string | null = null;
+  let pages = 0;
+  for (;;) {
+    const body: Record<string, unknown> = continuation
+      ? { context: { client: INNERTUBE_CLIENT }, continuation }
+      : { context: { client: INNERTUBE_CLIENT }, browseId: `VL${playlistId}` };
+    const raw = await fetchText(
+      ctx,
+      INNERTUBE_BROWSE,
+      { method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': YT_UA }, body: JSON.stringify(body) },
+      // The first page is the only route to correct data, so it spends the
+      // configured budget. Continuation pages are depth, not a rescue: they
+      // get one look each, like the page fallback.
+      pages === 0 ? retry : { ...retry, retries: 0 },
+    );
+    const page = parsePlaylistBrowse(raw);
+    for (const entry of page.entries) {
+      if (seen.has(entry.videoId)) continue;
+      seen.add(entry.videoId);
+      entries.push(entry);
+    }
+    continuation = page.continuation;
+    pages++;
+    if (!continuation || page.entries.length === 0 || pages >= MAX_PLAYLIST_PAGES) break;
+  }
+  return { entries, capped: continuation !== null };
+}
+
+/** True when the feed's entries run oldest→newest in the order the feed
+ * listed them — the fingerprint of an owner-ordered oldest-first playlist.
+ *
+ * `playlist_id=` is a POSITIONAL window of the first 15 slots in playlist
+ * order, not the 15 most recent (report §Playlists: a 28-item playlist
+ * returned exactly its first 15; a chronological 48-item one returned its
+ * 14 oldest). So the window's own publish dates say which way the playlist
+ * runs, for free: a newest-first playlist yields non-increasing dates and
+ * can never trip this, and a window that never steps down but steps up at
+ * least once can only be an oldest-first playlist — where those 15 videos
+ * are the OLDEST and never change. No threshold, no extra request, and no
+ * way for a healthy newest-first playlist to be mistaken for a stale one.
+ */
+function runsOldestFirst(items: Array<Record<string, unknown>>): boolean {
+  const times: number[] = [];
+  for (const item of items) {
+    const raw =
+      (typeof item.published === 'string' ? item.published : undefined) ??
+      (typeof item.updated === 'string' ? item.updated : undefined);
+    if (typeof raw !== 'string') continue;
+    const t = Date.parse(raw);
+    if (Number.isFinite(t)) times.push(t);
+  }
+  if (times.length < 2) return false;
+  let steppedUp = false;
+  for (let i = 1; i < times.length; i++) {
+    if (times[i] < times[i - 1]) return false;
+    if (times[i] > times[i - 1]) steppedUp = true;
+  }
+  return steppedUp;
+}
+
+/** A listing entry has no publish date to carry — only the feed has those,
+ * and only for the head it listed. `channel` and the URL template come from
+ * the config, so a corrected row looks like every other row except that it
+ * has no age, and the issue beside it says why. */
+function entryToVideo(entry: PlaylistEntry, channel: string, template: string | undefined): Video {
+  const link = `https://www.youtube.com/watch?v=${entry.videoId}`;
+  return {
+    title: entry.title,
+    url: videoUrlFor(link, template),
+    channel,
+    published: null,
+    thumbnail: `https://i.ytimg.com/vi/${entry.videoId}/hqdefault.jpg`,
+  };
+}
+
+/** The newest end of a playlist whose feed window was provably its oldest.
+ *
+ * The feed is kept as the primary source (it is the one endpoint measured
+ * 379/379, and it is the only one carrying publish dates); the listing is
+ * consulted only to prove the window stale AND to find the videos the window
+ * was hiding. An oldest-first playlist appends new entries at its end, so
+ * that end is the newest — reversed, so the newest lands first.
+ *
+ * Returns null when the listing shows the feed already held every entry:
+ * nothing about that playlist was stale, and the caller keeps them.
+ */
+async function correctOldestFirstPlaylist(
+  ctx: WidgetFetchContext,
+  playlistId: string,
+  feed: { title?: string; items: Array<Record<string, unknown>> },
+  opts: { source: string; limit: number; template: string | undefined; retry: RetryOptions },
+  cache: { get: () => Video[] | undefined; set: (videos: Video[]) => void },
+): Promise<SourceOutcome | null> {
+  const channel = feed.title ?? opts.source;
+  try {
+    const { entries, capped } = await playlistListing(ctx, playlistId, opts.retry);
+    // The feed had the whole playlist: its order is the owner's order and
+    // there is nothing stale to correct.
+    if (entries.length <= feed.items.length) return null;
+    const newest = entries.slice(-opts.limit).reverse();
+    const videos = newest.map((entry) => entryToVideo(entry, channel, opts.template));
+    if (videos.length === 0) return null;
+    cache.set(videos);
+    const total = capped ? `the first ${entries.length} listed` : `${entries.length}`;
+    return {
+      videos,
+      issue: { source: opts.source, reason: `oldest-first playlist: newest ${videos.length} of ${total}` },
+    };
+  } catch (err) {
+    // We know the window is the oldest end and we could not list the playlist
+    // properly, so a stale window must not pass as current: name it, and show
+    // what we last knew rather than a fresh window we know to be wrong.
+    return {
+      videos: cache.get() ?? [],
+      issue: { source: opts.source, reason: `oldest-first playlist could not be listed: ${reasonFor(err)}` },
+    };
+  }
+}
+
 /** The second channel, for any source whose RSS feed comes back empty or
  * fails outright: YouTube still serves an empty `videos.xml` for many small
  * channels and playlists, while the channel's own /videos page carries the
@@ -622,12 +829,14 @@ registerWidget('videos', async (ctx, config) => {
       source: p,
       cacheKey: prefixed,
       pageUrl: `https://www.youtube.com/playlist?list=${encodeURIComponent(pid)}`,
+      playlistId: pid,
     };
   });
   const feeds: FeedSpec[] = [...channelFeeds, ...playlistFeeds];
+  const limit = cfg.limit ?? VIDEOS_DEFAULTS.limit;
 
   const settled = await Promise.allSettled(
-    feeds.map(async ({ url, source, cacheKey, pageUrl, resolveError }): Promise<SourceOutcome> => {
+    feeds.map(async ({ url, source, cacheKey, pageUrl, resolveError, playlistId }): Promise<SourceOutcome> => {
       const fullCacheKey = `videos:feed:${cacheKey}::${cfg['video-url-template'] ?? ''}::${includeShorts ? 'shorts' : 'noshorts'}`;
       // TtlCache.set retains a stale copy for 24h internally, so one key suffices.
       const getCached = (): Video[] | undefined =>
@@ -656,6 +865,19 @@ registerWidget('videos', async (ctx, config) => {
           } catch (err) {
             reason = reasonFor(err);
           }
+        }
+        // A playlist whose feed window runs oldest→newest is the positional
+        // feed showing its OLDEST slots — the "frozen forever" bug. List the
+        // playlist properly and show its newest end, or say why we cannot.
+        if (playlistId && runsOldestFirst(parsed.items)) {
+          const corrected = await correctOldestFirstPlaylist(
+            ctx,
+            playlistId,
+            parsed,
+            { source, limit, template: cfg['video-url-template'], retry },
+            { get: getCached, set: setCached },
+          );
+          if (corrected) return corrected;
         }
         const videos = mapItems(parsed.items, parsed.title ?? source);
         setCached(videos);
@@ -712,6 +934,5 @@ registerWidget('videos', async (ctx, config) => {
     return tb - ta;
   });
 
-  const limit = cfg.limit ?? VIDEOS_DEFAULTS.limit;
   return { videos: videos.slice(0, limit), issues } satisfies VideosData;
 });
