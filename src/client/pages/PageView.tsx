@@ -361,6 +361,14 @@ function ContainerWidget({ widget }: { widget: WidgetPayload }) {
   const globalHide = useContext(HideHeadersContext);
   const children = widget.widgets ?? [];
   const [active, setActive] = useState(0);
+  // A group's child list can shrink under it — a config edit, a reload that
+  // drops a child — and nothing reset the selected tab. `active` then pointed
+  // at a Tab that no longer existed: the strip showed no selection and the
+  // panel below rendered nothing at all. Clamping on read rather than in an
+  // effect keeps the strip, the panel and the current-tab highlight reading
+  // one number, so no frame can paint them disagreeing, and a group that
+  // grows back restores the tab the user was on.
+  const activeIndex = Math.min(active, Math.max(0, children.length - 1));
 
   if (widget.type === 'split-column') {
     const wk = widgetKeysFor(children as unknown as WidgetLike[]);
@@ -400,13 +408,13 @@ function ContainerWidget({ widget }: { widget: WidgetPayload }) {
   return (
     <Card padding={0}>
       <TabList
-        value={String(active)}
+        value={String(activeIndex)}
         className={styles.groupTabs}
         aria-label="Group tabs"
         onChange={(v) => {
           const next = Number(v);
           // glance: clicking the already-active tab opens the group title-url
-          if (next === active && groupTitleUrl) {
+          if (next === activeIndex && groupTitleUrl) {
             window.open(groupTitleUrl, '_blank', 'noopener,noreferrer');
           } else {
             setActive(next);
@@ -420,13 +428,13 @@ function ContainerWidget({ widget }: { widget: WidgetPayload }) {
               key={wk[i]}
               value={String(i)}
               label={widgetTitle(w) ?? `Tab ${i + 1}`}
-              className={i === active ? styles.groupTabCurrent : undefined}
+              className={i === activeIndex ? styles.groupTabCurrent : undefined}
             />
           ));
         })()}
       </TabList>
       <div className={styles.tabContent}>
-        {children[active] ? <WidgetSlot widget={children[active]} /> : null}
+        {children[activeIndex] ? <WidgetSlot widget={children[activeIndex]} /> : null}
       </div>
     </Card>
   );
