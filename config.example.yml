@@ -1,5 +1,7 @@
 # Glimpse — curated demo (5 pages, hide-headers, Singapore).
 # Tiling: Home/Dev/Lab/Media = columns (12-col spans), Social = collage (place()-driven bento).
+# Columns are balanced so every column on a page ends near the same height —
+# a short column next to a tall one reads as a broken page, not a sparse one.
 # New widgets: server-stats / dns-stats / docker-containers (all homelab, on
 # Lab) and the media stack immich / jellyfin / qbittorrent / transmission (Media).
 #
@@ -43,15 +45,12 @@ pages:
                 label: New York
               - timezone: America/Los_Angeles
                 label: California
-          - type: weather
-            location: Singapore
-            units: metric
+          - type: calendar
+            first-day-of-week: monday
           - type: weather-radar
             title: Rain radar
             location: Singapore
             zoom: 7
-          - type: calendar
-            first-day-of-week: monday
           - type: events-calendar
             title: Holidays
             urls:
@@ -62,11 +61,11 @@ pages:
             id: home-timer
             duration: 25m
             notes: true
-          - type: notepad
-            id: home-notes
-            placeholder: Scratch notes…
       - span: 6
         widgets:
+          - type: weather
+            location: Singapore
+            units: metric
           - type: rss
             limit: 10
             collapse-after: 5
@@ -78,14 +77,6 @@ pages:
                 title: The Verge
               - url: https://lobste.rs/rss
                 title: Lobsters
-          - type: monitor
-            sites:
-              - url: https://github.com
-                title: GitHub
-              - url: https://duckduckgo.com
-                title: DuckDuckGo
-              - url: https://example.com
-                title: example.com
           - type: hacker-news
             limit: 8
             sort-by: top
@@ -95,6 +86,14 @@ pages:
         widgets:
           - type: todo
             id: home-todo
+          - type: monitor
+            sites:
+              - url: https://github.com
+                title: GitHub
+              - url: https://duckduckgo.com
+                title: DuckDuckGo
+              - url: https://example.com
+                title: example.com
           - type: markets
             markets:
               - symbol: SPY
@@ -121,31 +120,14 @@ pages:
                     url: https://duckduckgo.com
                   - title: Notion
                     url: https://notion.so
+          - type: notepad
+            id: home-notes
+            placeholder: Scratch notes…
 
   - name: Dev
     slug: dev
     hide-headers: true
     columns:
-      - span: 4
-        widgets:
-          - type: releases
-            repositories:
-              - glanceapp/glance
-              - sharkdp/bat
-              - BurntSushi/ripgrep
-            show-source-icon: true
-            limit: 10
-          - type: videos
-            title: Tech — recent
-            limit: 9
-            style: grid-cards
-            channels:
-              - "@Fireship"
-              - "@ByCloud"
-              - "@BetterStack"
-              - "@Bug-I"
-              - "@CalebWritesCode"
-              - "@AZisk"
       - span: 4
         widgets:
           - type: custom-api
@@ -172,6 +154,26 @@ pages:
               url: $.html_url
               value: $.stargazers_count
               icon: $.owner.avatar_url
+          - type: releases
+            repositories:
+              - glanceapp/glance
+              - sharkdp/bat
+              - BurntSushi/ripgrep
+            show-source-icon: true
+            limit: 10
+          - type: videos
+            title: Tech — recent
+            limit: 9
+            style: grid-cards
+            channels:
+              - "@Fireship"
+              - "@ByCloud"
+              - "@BetterStack"
+              - "@Bug-I"
+              - "@CalebWritesCode"
+              - "@AZisk"
+      - span: 4
+        widgets:
           - type: repository
             repository: glanceapp/glance
             pull-requests-limit: 5
@@ -269,16 +271,6 @@ pages:
             sort-by: hot
             collapse-after: 5
             source-header: true
-          - type: bookmarks
-            groups:
-              - title: Social
-                links:
-                  - title: Reddit
-                    url: https://reddit.com
-                  - title: Lobsters
-                    url: https://lobste.rs
-                  - title: Twitch
-                    url: https://twitch.tv
       - span: 8
         widgets:
           - type: videos
@@ -295,11 +287,22 @@ pages:
               - "@TheNamesSX"
           - type: todo
             id: social-todo
+          - type: bookmarks
+            groups:
+              - title: Social
+                links:
+                  - title: Reddit
+                    url: https://reddit.com
+                  - title: Lobsters
+                    url: https://lobste.rs
+                  - title: Twitch
+                    url: https://twitch.tv
   - name: Lab
     slug: lab
     hide-headers: true
-    # Homelab showcase — columns so small stays 300px, full is the main stage.
-    # New homelab widgets (server-stats / dns-stats / docker-containers) live here.
+    # Homelab showcase — 3/6/3: the service rail, the main stage, then
+    # community + releases. New homelab widgets (server-stats / dns-stats /
+    # docker-containers) live in the left rail.
     columns:
       - span: 3
         widgets:
@@ -371,9 +374,6 @@ pages:
           # hosts — immich / jellyfin / qbittorrent / transmission.
           - type: todo
             id: lab-todo
-          - type: weather
-            location: Singapore
-            units: metric
       - span: 6
         widgets:
           - type: videos
@@ -529,6 +529,9 @@ pages:
             title: Grafana
             source: https://grafana.lab/d/000000001/homelab?orgId=1&kiosk
             height: 420
+          - type: weather
+            location: Singapore
+            units: metric
 
   - name: Media
     slug: media
@@ -551,18 +554,6 @@ pages:
             url: https://jellyfin.lab
             # `user-id` is optional — /Items/Latest resolves the first user.
             limit: 12
-      - span: 3
-        widgets:
-          - type: qbittorrent
-            title: Downloads
-            url: http://qb.lab:8080
-            limit: 8
-          - type: transmission
-            title: Torrents
-            url: http://transmission.lab:9091
-            limit: 8
-      - span: 3
-        widgets:
           - type: bookmarks
             # `hide-arrow` and `target` are group- or link-level and the link
             # wins: `target` overrides `same-tab` and takes any target string,
@@ -586,6 +577,16 @@ pages:
                   - title: Transmission
                     url: http://transmission.lab:9091
                     icon: si:transmission
+      - span: 6
+        widgets:
+          - type: qbittorrent
+            title: Downloads
+            url: http://qb.lab:8080
+            limit: 8
+          - type: transmission
+            title: Torrents
+            url: http://transmission.lab:9091
+            limit: 8
           - type: todo
             id: media-todo
 
