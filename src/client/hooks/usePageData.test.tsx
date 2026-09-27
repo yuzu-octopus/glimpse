@@ -26,6 +26,9 @@ function makePayload(overrides: Partial<PagePayload> = {}): PagePayload {
 // capture the module before the stub is installed (test boundary).
 let usePageData: typeof UsePageDataHook;
 
+/** Reason the stream-end reconciliation stamps on an unanswered widget. */
+let NO_RESPONSE: string;
+
 describe('usePageData stale-while-revalidate', () => {
   beforeEach(async () => {
     vi.useFakeTimers();
@@ -33,6 +36,7 @@ describe('usePageData stale-while-revalidate', () => {
     const mod: any = await import('./usePageData');
     usePageData = mod.usePageData;
     if (typeof mod.__clearCacheForTests === 'function') mod.__clearCacheForTests();
+    NO_RESPONSE = mod.NO_RESPONSE_ERROR;
   });
 
   afterEach(() => {
@@ -559,5 +563,281 @@ describe('usePageData stale-while-revalidate', () => {
       await vi.advanceTimersByTimeAsync(0);
     });
     expect(result.current.isValidating).toBe(false);
+  });
+
+  // ── End-of-stream reconciliation ─────────────────────────────────────────
+  // A truncated stream used to be indistinguishable from a slow widget: the
+  // skeleton base simply stayed at `data: null` with no error and shimmered
+  // forever. The stream closing is the boundary — past it no frame can still
+  // arrive, so anything unanswered there is failed honestly.
+
+  it('truncated stream fails the widgets the server never answered', async () => {
+    const SKELETON: PagePayload = {
+      slug: 'home',
+      name: 'Home',
+      width: 'default',
+      tiling: 'columns',
+      minColumnWidth: 300,
+      headWidgets: [{ type: 'rss', config: { type: 'rss', title: 'Head' }, data: null, error: undefined }],
+      columns: [
+        {
+          size: 'full',
+          widgets: [
+            { type: 'rss', config: { type: 'rss', title: 'Col' }, data: null, error: undefined },
+            // config-only: `data: null` is its final state, never a failure
+            { type: 'todo', config: { type: 'todo', title: 'Todo' }, data: null, error: undefined },
+          ],
+        },
+      ],
+    };
+
+    let controller!: ReadableStreamDefaultController<Uint8Array>;
+    const enc = new TextEncoder();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(new ReadableStream<Uint8Array>({ start(c) { controller = c; } }), { headers: { 'content-type': 'application/x-ndjson' } })),
+    );
+    vi.resetModules();
+    ({ usePageData } = await import('./usePageData'));
+    const { result } = renderHook(() => usePageData('home'));
+
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    controller.enqueue(enc.encode(JSON.stringify({ path: '$skeleton', payload: SKELETON }) + '\n'));
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    // mid-stream the widgets really are still shimmering — no error yet
+    expect(result.current.data?.headWidgets[0].error).toBeUndefined();
+    expect(result.current.data?.columns[0].widgets[0].error).toBeUndefined();
+
+    controller.close(); // truncated: no frame ever arrives for either rss
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(result.current.data?.headWidgets[0].error).toBe(NO_RESPONSE);
+    expect(result.current.data?.headWidgets[0].data).toBeNull();
+    expect(result.current.data?.columns[0].widgets[0].error).toBe(NO_RESPONSE);
+    expect(result.current.data?.columns[0].widgets[0].data).toBeNull();
+    // untouched: a config-only widget's null data is not a failure
+    expect(result.current.data?.columns[0].widgets[1].error).toBeUndefined();
+    expect(result.current.isValidating).toBe(false);
+  });
+
+  it('complete stream leaves a slow widget that answered before the close alone', async () => {
+    const SKELETON: PagePayload = {
+      slug: 'home',
+      name: 'Home',
+      width: 'default',
+      tiling: 'columns',
+      minColumnWidth: 300,
+      headWidgets: [],
+      columns: [
+        {
+          size: 'full',
+          widgets: [
+            { type: 'rss', config: { type: 'rss', title: 'Fast' }, data: null, error: undefined },
+            { type: 'rss', config: { type: 'rss', title: 'Slow' }, data: null, error: undefined },
+          ],
+        },
+      ],
+    };
+    const FAST = { type: 'rss', config: { type: 'rss', title: 'Fast' }, data: { items: [1] }, error: undefined };
+    const SLOW = { type: 'rss', config: { type: 'rss', title: 'Slow' }, data: { items: [2] }, error: undefined };
+
+    let controller!: ReadableStreamDefaultController<Uint8Array>;
+    const enc = new TextEncoder();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(new ReadableStream<Uint8Array>({ start(c) { controller = c; } }), { headers: { 'content-type': 'application/x-ndjson' } })),
+    );
+    vi.resetModules();
+    ({ usePageData } = await import('./usePageData'));
+    const { result } = renderHook(() => usePageData('home'));
+
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    controller.enqueue(enc.encode(JSON.stringify({ path: '$skeleton', payload: SKELETON }) + '\n'));
+    controller.enqueue(enc.encode(JSON.stringify({ path: 'columns[0].widgets[0]', payload: FAST }) + '\n'));
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    // the slow widget is still pending, 2s in, stream still open
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+    expect(result.current.data?.columns[0].widgets[1].data).toBeNull();
+    expect(result.current.data?.columns[0].widgets[1].error).toBeUndefined();
+
+    controller.enqueue(enc.encode(JSON.stringify({ path: 'columns[0].widgets[1]', payload: SLOW }) + '\n'));
+    controller.close();
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    // every widget answered before the close: nothing is failed, nothing moved
+    expect(result.current.data?.columns[0].widgets[0].data).toEqual({ items: [1] });
+    expect(result.current.data?.columns[0].widgets[0].error).toBeUndefined();
+    expect(result.current.data?.columns[0].widgets[1].data).toEqual({ items: [2] });
+    expect(result.current.data?.columns[0].widgets[1].error).toBeUndefined();
+  });
+
+  it('keeps a server-side error instead of re-labelling it as no response', async () => {
+    const SKELETON: PagePayload = {
+      slug: 'home',
+      name: 'Home',
+      width: 'default',
+      tiling: 'columns',
+      minColumnWidth: 300,
+      headWidgets: [],
+      columns: [
+        { size: 'full', widgets: [{ type: 'rss', config: { type: 'rss', title: 'Col' }, data: null, error: undefined }] },
+      ],
+    };
+    const FAILED = { type: 'rss', config: { type: 'rss', title: 'Col' }, data: null, error: 'upstream exploded' };
+
+    let controller!: ReadableStreamDefaultController<Uint8Array>;
+    const enc = new TextEncoder();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(new ReadableStream<Uint8Array>({ start(c) { controller = c; } }), { headers: { 'content-type': 'application/x-ndjson' } })),
+    );
+    vi.resetModules();
+    ({ usePageData } = await import('./usePageData'));
+    const { result } = renderHook(() => usePageData('home'));
+
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    controller.enqueue(enc.encode(JSON.stringify({ path: '$skeleton', payload: SKELETON }) + '\n'));
+    controller.enqueue(enc.encode(JSON.stringify({ path: 'columns[0].widgets[0]', payload: FAILED }) + '\n'));
+    controller.close();
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    // it was answered — with a failure. That is a truer reason than "no response".
+    expect(result.current.data?.columns[0].widgets[0].error).toBe('upstream exploded');
+  });
+
+  it('a dropped container frame fails its children', async () => {
+    const SKELETON: PagePayload = {
+      slug: 'home',
+      name: 'Home',
+      width: 'default',
+      tiling: 'columns',
+      minColumnWidth: 300,
+      headWidgets: [],
+      columns: [
+        {
+          size: 'full',
+          widgets: [
+            {
+              type: 'group',
+              config: { type: 'group' },
+              data: null,
+              error: undefined,
+              widgets: [
+                { type: 'rss', config: { type: 'rss', title: 'A' }, data: null, error: undefined },
+                { type: 'rss', config: { type: 'rss', title: 'B' }, data: null, error: undefined },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    let controller!: ReadableStreamDefaultController<Uint8Array>;
+    const enc = new TextEncoder();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(new ReadableStream<Uint8Array>({ start(c) { controller = c; } }), { headers: { 'content-type': 'application/x-ndjson' } })),
+    );
+    vi.resetModules();
+    ({ usePageData } = await import('./usePageData'));
+    const { result } = renderHook(() => usePageData('home'));
+
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    controller.enqueue(enc.encode(JSON.stringify({ path: '$skeleton', payload: SKELETON }) + '\n'));
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    controller.close(); // the group's own frame never arrives
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    const group = result.current.data?.columns[0].widgets[0];
+    // the container itself is config-only, but its children stream inside its
+    // frame — a dropped frame strands them just as surely
+    expect(group?.error).toBeUndefined();
+    expect(group?.widgets?.[0].error).toBe(NO_RESPONSE);
+    expect(group?.widgets?.[1].error).toBe(NO_RESPONSE);
+  });
+
+  it('flat page: failed widgets land on a new widgets array (BentoGrid memo needs it)', async () => {
+    const FLAT_SKELETON: PagePayload = {
+      slug: 'lab',
+      name: 'Lab',
+      width: 'default',
+      tiling: 'collage',
+      minColumnWidth: 300,
+      headWidgets: [],
+      columns: [],
+      widgets: [
+        { type: 'rss', config: { type: 'rss', title: 'A' }, data: null, error: undefined },
+        { type: 'rss', config: { type: 'rss', title: 'B' }, data: null, error: undefined },
+      ],
+    };
+    const W0 = { type: 'rss', config: { type: 'rss', title: 'A' }, data: { items: [1] }, error: undefined };
+
+    let controller!: ReadableStreamDefaultController<Uint8Array>;
+    const enc = new TextEncoder();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(new ReadableStream<Uint8Array>({ start(c) { controller = c; } }), { headers: { 'content-type': 'application/x-ndjson' } })),
+    );
+    vi.resetModules();
+    ({ usePageData } = await import('./usePageData'));
+    const { result } = renderHook(() => usePageData('lab'));
+
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    controller.enqueue(enc.encode(JSON.stringify({ path: '$skeleton', payload: FLAT_SKELETON }) + '\n'));
+    controller.enqueue(enc.encode(JSON.stringify({ path: 'widgets[0]', payload: W0 }) + '\n'));
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    const beforeClose = result.current.data?.widgets;
+
+    controller.close();
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(result.current.data?.widgets?.[0].data).toEqual({ items: [1] });
+    expect(result.current.data?.widgets?.[0].error).toBeUndefined();
+    expect(result.current.data?.widgets?.[1].error).toBe(NO_RESPONSE);
+    expect(result.current.data?.widgets).not.toBe(beforeClose);
   });
 });

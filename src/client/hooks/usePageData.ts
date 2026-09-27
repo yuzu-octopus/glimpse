@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import type { PagePayload, WidgetPayload } from '../../shared/api';
 import { LIVE_POLL_MS, LIVE_TYPES } from '../../shared/live';
+import { CONFIG_ONLY } from '../../shared/widgets';
 import { scheduleWidgetPreload } from '../widgets';
 
 export type PageDataResult = {
@@ -124,6 +125,82 @@ function reconcileWithCached(skeleton: PagePayload, cached: PagePayload): PagePa
   return base;
 }
 
+/**
+ * Reason stamped on a widget the stream never answered. Deliberately claims
+ * nothing about the upstream — only that it never spoke.
+ */
+export const NO_RESPONSE_ERROR =
+  'No response received — the update stream closed before this widget reported.';
+
+/**
+ * Copy-on-write reconciliation of one widget list: a new list when something
+ * changed, `undefined` when it was already honest. Copy-on-write (never
+ * mutation) because `applyChunk` only ever swaps whole widget objects and the
+ * memo'd slots key off object *and* array identity.
+ */
+function reconcileList(list: WidgetPayload[] | undefined): WidgetPayload[] | undefined {
+  if (!list) return undefined;
+  let next: WidgetPayload[] | undefined;
+  for (let i = 0; i < list.length; i++) {
+    const w = list[i];
+    // Containers are config-only, but their children stream inside the
+    // container's own frame: a dropped group frame strands every child.
+    const kids = reconcileList(w.widgets);
+    // Left exactly as they are: a config-only type is `data: null` by design,
+    // and a widget carrying data or an error was answered (or failed) already.
+    const unanswered = CONFIG_ONLY[w.type] !== true && w.data == null && w.error == null;
+    if (!kids && !unanswered) continue;
+    next ??= list.slice();
+    const replacement: WidgetPayload = { ...w };
+    if (kids) replacement.widgets = kids;
+    if (unanswered) replacement.error = NO_RESPONSE_ERROR;
+    next[i] = replacement;
+  }
+  return next;
+}
+
+/**
+ * End-of-stream reconciliation.
+ *
+ * The stream closing IS the boundary: once the reader is done no further frame
+ * can arrive, so a widget still at `data: null` with no error is a truncated
+ * stream rather than a slow one. A slow widget that answers *before* the close
+ * keeps its data untouched, and a page where every widget answered returns
+ * unchanged — no copy, no re-render, no cache difference.
+ *
+ * Only the streaming paths call this. A plain JSON body is a whole page in one
+ * verified HTTP response; there is nothing there to be truncated.
+ */
+function reconcileStreamEnd(
+  base: PagePayload,
+  signal: AbortSignal,
+  onProgress?: (p: PagePayload) => void,
+): void {
+  // An abort means the caller walked away. The partial payload is what today's
+  // code already caches in that case, and stamping "no response" on it would
+  // poison the next load of this slug.
+  if (signal.aborted) return;
+  let changed = false;
+  const head = reconcileList(base.headWidgets);
+  if (head) {
+    base.headWidgets = head;
+    changed = true;
+  }
+  for (const col of base.columns) {
+    const list = reconcileList(col.widgets);
+    if (list) {
+      col.widgets = list;
+      changed = true;
+    }
+  }
+  const flat = reconcileList(base.widgets);
+  if (flat) {
+    base.widgets = flat;
+    changed = true;
+  }
+  if (changed) onProgress?.({ ...base });
+}
+
 async function fetchPage(
   slug: string,
   signal: AbortSignal,
@@ -199,6 +276,7 @@ async function fetchPage(
       }
       for (const line of text.split('\n')) handleLine(line);
       if (!base) throw new Error('empty stream');
+      reconcileStreamEnd(base, signal, onProgress);
       setCache(slug, base);
       return base;
     }
@@ -237,6 +315,7 @@ async function fetchPage(
       }
     }
     if (!base) throw new Error('empty stream');
+    reconcileStreamEnd(base, signal, onProgress);
     setCache(slug, base);
     return base;
   })();
