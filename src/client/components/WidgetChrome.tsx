@@ -37,6 +37,124 @@ interface WidgetChromeProps {
   children?: ReactNode;
 }
 
+type SkeletonShape = NonNullable<WidgetChromeProps['skeletonShape']>;
+
+/** One lookup instead of a ternary chain: the shape picks the class, the
+ *  branch that fills the shape lives in <ChromeSkeleton>. */
+const SHAPE_CLASS: Record<SkeletonShape, string> = {
+  list: styles.shapeList,
+  stat: styles.shapeStat,
+  chart: styles.shapeChart,
+  rows: styles.shapeRows,
+};
+
+/** glance semantics: only a non-negative `collapseAfter` truncates, and only
+ *  when there is actually something hidden behind the toggle. */
+function canCollapse(collapseAfter: number | undefined, total: number): boolean {
+  return typeof collapseAfter === 'number' && collapseAfter >= 0 && total > collapseAfter;
+}
+
+/** Purple = tappable: only a linked title wears the accent. Status goes to
+ *  StatusDot, not a hand-rolled box: the kit owns the shape, the accessible
+ *  name, and the hover explanation. */
+function ChromeHeader({
+  title,
+  titleUrl,
+  error,
+  loud,
+}: {
+  title: string;
+  titleUrl?: string;
+  error?: string;
+  loud: boolean;
+}) {
+  const failLabel = title ? `${title} failed to load` : 'This widget failed to load';
+  return (
+    <div className={loud ? `${styles.header} ${styles.errorHeader}` : styles.header}>
+      <Stack direction="horizontal" vAlign="center" gap={1.5} className={styles.titleRow}>
+        {titleUrl ? (
+          <Heading level={3} className={`${styles.title} ${styles.titleLink}`}>
+            <Link href={titleUrl} hasUnderline={false}>
+              {title}
+            </Link>
+          </Heading>
+        ) : (
+          <Heading level={3} className={styles.title}>
+            {title}
+          </Heading>
+        )}
+        {error ? (
+          <StatusDot
+            variant="error"
+            label={failLabel}
+            tooltip={failLabel}
+            data-testid="widget-error-dot"
+          />
+        ) : null}
+      </Stack>
+    </div>
+  );
+}
+
+/** The four skeleton fills, one per declared shape — the shape is data, not
+ *  a nest of ternaries inside the chrome's render. */
+function ChromeSkeleton({ shape }: { shape: SkeletonShape }) {
+  return (
+    <div className={`${styles.skeleton} ${SHAPE_CLASS[shape]}`} data-testid="widget-loading">
+      {shape === 'list' ? (
+        Array.from({ length: 5 }, (_, i) => (
+          <Stack key={i} direction="horizontal" vAlign="center" gap={2}>
+            <Skeleton width={24} height={24} radius="rounded" />
+            <Stack direction="vertical" gap={1.5} className={styles.listLines}>
+              <Skeleton width="70%" height={12} />
+              <Skeleton width="45%" height={10} />
+            </Stack>
+          </Stack>
+        ))
+      ) : shape === 'stat' ? (
+        <>
+          <Skeleton width="100%" height={48} />
+          <Skeleton width="40%" height={12} />
+        </>
+      ) : shape === 'chart' ? (
+        <Skeleton width="100%" height={120} />
+      ) : (
+        <>
+          <Skeleton width="100%" height={14} />
+          <Skeleton width="92%" height={14} />
+          <Skeleton width="97%" height={14} />
+        </>
+      )}
+    </div>
+  );
+}
+
+function ShowMoreButton({
+  expanded,
+  hiddenCount,
+  onToggle,
+}: {
+  expanded: boolean;
+  hiddenCount: number;
+  onToggle: () => void;
+}) {
+  return (
+    <Button
+      variant="ghost"
+      width="100%"
+      className={styles.toggle}
+      label={expanded ? 'Show less' : `Show more (${hiddenCount})`}
+      endContent={
+        <ChevronRight
+          size={12}
+          className={expanded ? `${styles.chevron} ${styles.chevronExpanded}` : styles.chevron}
+        />
+      }
+      onClick={onToggle}
+    />
+  );
+}
+
 /** Shared card chrome for every widget: header, loading, error, collapse.
  * Memo'd — polls that leave a widget's props untouched skip re-render. */
 export const WidgetChrome = memo(function WidgetChrome({
@@ -54,14 +172,6 @@ export const WidgetChrome = memo(function WidgetChrome({
   children,
 }: WidgetChromeProps) {
   const shape = skeletonShape ?? 'rows';
-  const shapeClass =
-    shape === 'list'
-      ? styles.shapeList
-      : shape === 'stat'
-        ? styles.shapeStat
-        : shape === 'chart'
-          ? styles.shapeChart
-          : styles.shapeRows;
   const globalHide = useContext(HideHeadersContext);
   const effectiveHide = hideHeader || globalHide;
   const [expanded, setExpanded] = useState(false);
@@ -73,9 +183,8 @@ export const WidgetChrome = memo(function WidgetChrome({
   // `show-errors: false` mutes the widget: no Banner, no error text, no red
   // header wash. The status dot beside the title is the whole report.
   const loud = Boolean(error) && showErrors !== false;
-  const failLabel = title ? `${title} failed to load` : 'This widget failed to load';
   const n = collapseAfter ?? 0;
-  const has = typeof collapseAfter === 'number' && n >= 0 && list.length > n;
+  const has = canCollapse(collapseAfter, list.length);
   // Stable slice identity across renders so the memo wrapper (and row
   // reconcilers downstream) isn't defeated by a fresh array each pass.
   const visible = useMemo(
@@ -83,59 +192,27 @@ export const WidgetChrome = memo(function WidgetChrome({
     [has, expanded, list, n],
   );
 
-  const collapse = () => {
-    setExpanded(false);
-    // Bring the widget's card back into view (e.g. its "Show more" button
-    // scrolled it out of sight) — jsdom lacks scrollIntoView, hence the ?.
-    cardRef.current?.scrollIntoView?.({ block: 'nearest' });
-  };
-
   // One handler for the two-way toggle: expanding is a plain state flip,
-  // collapsing also brings the card back into view.
+  // collapsing also brings the card back into view — jsdom lacks
+  // scrollIntoView, hence the ?.
   const toggle = () => {
-    if (expanded) collapse();
-    else setExpanded(true);
+    if (!expanded) {
+      setExpanded(true);
+      return;
+    }
+    setExpanded(false);
+    cardRef.current?.scrollIntoView?.({ block: 'nearest' });
   };
 
   return (
     <div className={styles.widget}>
       {!effectiveHide && title ? (
-        <div
-          className={loud ? `${styles.header} ${styles.errorHeader}` : styles.header}
-        >
-          <Stack
-            direction="horizontal"
-            vAlign="center"
-            gap={1.5}
-            className={styles.titleRow}
-          >
-            {titleUrl ? (
-              // Purple = tappable: only a linked title wears the accent.
-              <Heading
-                level={3}
-                className={`${styles.title} ${styles.titleLink}`}
-              >
-                <Link href={titleUrl} hasUnderline={false}>
-                  {title}
-                </Link>
-              </Heading>
-            ) : (
-              <Heading level={3} className={styles.title}>
-                {title}
-              </Heading>
-            )}
-            {error ? (
-              // Status goes to StatusDot, not a hand-rolled box: the kit owns
-              // the shape, the accessible name, and the hover explanation.
-              <StatusDot
-                variant="error"
-                label={failLabel}
-                tooltip={failLabel}
-                data-testid="widget-error-dot"
-              />
-            ) : null}
-          </Stack>
-        </div>
+        <ChromeHeader
+          title={title}
+          titleUrl={titleUrl}
+          error={error}
+          loud={loud}
+        />
       ) : null}
       <Card ref={cardRef} className={cssClass} padding={4}>
         {/* The notice sits outside the body: a body its widget turned into a
@@ -145,54 +222,17 @@ export const WidgetChrome = memo(function WidgetChrome({
         {notice && !loud ? <div className={styles.notice}>{notice}</div> : null}
         <div className={styles.body} data-testid="widget-body">
           {isLoading ? (
-            <div className={`${styles.skeleton} ${shapeClass}`} data-testid="widget-loading">
-              {shape === 'list' ? (
-                Array.from({ length: 5 }, (_, i) => (
-                  <Stack key={i} direction="horizontal" vAlign="center" gap={2}>
-                    <Skeleton width={24} height={24} radius="rounded" />
-                    <Stack direction="vertical" gap={1.5} className={styles.listLines}>
-                      <Skeleton width="70%" height={12} />
-                      <Skeleton width="45%" height={10} />
-                    </Stack>
-                  </Stack>
-                ))
-              ) : shape === 'stat' ? (
-                <>
-                  <Skeleton width="100%" height={48} />
-                  <Skeleton width="40%" height={12} />
-                </>
-              ) : shape === 'chart' ? (
-                <Skeleton width="100%" height={120} />
-              ) : (
-                <>
-                  <Skeleton width="100%" height={14} />
-                  <Skeleton width="92%" height={14} />
-                  <Skeleton width="97%" height={14} />
-                </>
-              )}
-            </div>
+            <ChromeSkeleton shape={shape} />
           ) : loud ? (
             <Banner status="error" title={error} />
           ) : (
             <>
               {visible}
               {has ? (
-                <Button
-                  variant="ghost"
-                  width="100%"
-                  className={styles.toggle}
-                  label={expanded ? 'Show less' : `Show more (${list.length - n})`}
-                  endContent={
-                    <ChevronRight
-                      size={12}
-                      className={
-                        expanded
-                          ? `${styles.chevron} ${styles.chevronExpanded}`
-                          : styles.chevron
-                      }
-                    />
-                  }
-                  onClick={toggle}
+                <ShowMoreButton
+                  expanded={expanded}
+                  hiddenCount={list.length - n}
+                  onToggle={toggle}
                 />
               ) : null}
             </>
