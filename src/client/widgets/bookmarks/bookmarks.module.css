@@ -1,6 +1,10 @@
 /* Glance bookmarks look: group headers + flat list rows (flex row, left-aligned). */
 
 .group {
+  /* glance .bookmarks-group: one colour per group, shared by the title and
+   * the link arrows. A named accent overrides it on the group element, so it
+   * reaches both. */
+  --bookmarks-group-color: var(--color-primary);
   margin-bottom: 12px;
 }
 
@@ -10,7 +14,7 @@
 
 .groupTitle {
   font-size: var(--font-size-h3);
-  color: var(--color-primary);
+  color: var(--bookmarks-group-color);
   margin-bottom: 3px;
 }
 
@@ -42,6 +46,23 @@
   min-height: 24px;
   text-decoration: none;
   min-width: 0;
+}
+
+/* glance .bookmarks-link::after — the ↗ that says "this leaves the dashboard".
+   A flex item of its own, so it never squeezes the ellipsised title, and
+   flex-shrink: 0 keeps it whole in a narrow card. */
+.linkCard::after {
+  content: '↗';
+  margin-left: 0.5em;
+  position: relative;
+  top: 0.15em;
+  color: var(--bookmarks-group-color);
+  flex-shrink: 0;
+}
+
+/* glance .bookmarks-link-no-arrow: hide-arrow on the link or its group. */
+.linkNoArrow::after {
+  content: none;
 }
 
 /* flatten Astryx Text wrapper so icon + title become direct flex children */
@@ -78,12 +99,13 @@
 /* Group title accents: the schema admits only these six names, so the hue is
  * a class from the kit's tag vocabulary rather than an arbitrary CSS colour
  * string. The title keeps --color-primary as its default (a title is a
- * tappable-ish surface), and an explicit accent overrides it. */
-.titleAccentGreen { color: var(--color-tag-green); }
-.titleAccentCyan { color: var(--color-tag-cyan); }
-.titleAccentYellow { color: var(--color-tag-yellow); }
-.titleAccentOrange { color: var(--color-tag-orange); }
-.titleAccentPink { color: var(--color-tag-pink); }
+ * tappable-ish surface), and an explicit accent overrides it — for the whole
+ * group, so the arrows follow the title. */
+.titleAccentGreen { --bookmarks-group-color: var(--color-tag-green); }
+.titleAccentCyan { --bookmarks-group-color: var(--color-tag-cyan); }
+.titleAccentYellow { --bookmarks-group-color: var(--color-tag-yellow); }
+.titleAccentOrange { --bookmarks-group-color: var(--color-tag-orange); }
+.titleAccentPink { --bookmarks-group-color: var(--color-tag-pink); }
 
 .icon {
   display: block;

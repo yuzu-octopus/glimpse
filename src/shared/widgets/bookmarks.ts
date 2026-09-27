@@ -28,10 +28,14 @@ export const bookmarksSchema = z.object({
               description: z.string().optional(),
               icon: z.string().optional(),
               'same-tab': z.boolean().optional(),
+              'hide-arrow': z.boolean().optional(),
+              target: z.string().optional(),
             }),
           )
           .default([]),
         'same-tab': z.boolean().optional(),
+        'hide-arrow': z.boolean().optional(),
+        target: z.string().optional(),
       }),
     )
     .default([...BOOKMARKS_DEFAULTS.groups]),
