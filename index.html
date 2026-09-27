@@ -1,5 +1,7 @@
 <!doctype html>
-<html lang="en">
+<!-- One brand theme (astryx-dracula), so the pre-CSS first paint is a fact,
+     not a guess: these are the kit's --color-background / --color-text-base. -->
+<html lang="en" style="background-color: #282a36; color: #9aa1bc; color-scheme: dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -19,16 +21,6 @@
       crossorigin
       href="/fonts/JetBrainsMono-SemiBold.woff2"
     />
-    <script>
-      try {
-        var s = JSON.parse(localStorage.getItem('glimpse.paint.v1') || 'null');
-        if (s && s.scheme && s.bg && s.fg) {
-          document.documentElement.style.colorScheme = s.scheme;
-          document.documentElement.style.backgroundColor = s.bg;
-          document.documentElement.style.color = s.fg;
-        }
-      } catch (e) {}
-    </script>
     <title>Glimpse</title>
   </head>
   <body>

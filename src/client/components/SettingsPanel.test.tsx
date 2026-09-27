@@ -1,48 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { presetById, type Preset } from '../../shared/theme/presets';
-import { useThemeSettings, type ThemeSettings } from '../theme/GlimpseThemeProvider';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { SettingsPanel } from './SettingsPanel';
 import styles from './settings-panel.module.css';
 
-vi.mock('../theme/GlimpseThemeProvider', () => ({
-  useThemeSettings: vi.fn(),
-}));
-
-const STORAGE_KEY = 'glimpse.theme.v1';
-const mockedUseThemeSettings = vi.mocked(useThemeSettings);
-
-const mocha = presetById('catppuccin-mocha');
-const gruvbox = presetById('gruvbox-dark-hard');
-const github = presetById('github'); // light variant
-
-/** jsdom normalizes inline `color: #rrggbb` to `rgb(r, g, b)`. */
-function rgb(hex: string): string {
-  const n = parseInt(hex.slice(1), 16);
-  return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
-}
-
-/**
- * Context mock mirroring GlimpseThemeProvider's persistence contract:
- * setPresetId writes { mode, presetId } to `glimpse.theme.v1`.
- */
-function makeSettings(presetId = mocha.id, configPresets: Preset[] = []): ThemeSettings {
-  const state = { mode: 'system' as const, presetId };
-  return {
-    mode: state.mode,
-    presetId,
-    configPresets,
-    setMode: vi.fn((mode) => {
-      state.mode = mode;
-    }),
-    setPresetId: vi.fn((id: string) => {
-      state.presetId = id;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ mode: state.mode, presetId: id }));
-    }),
-  };
-}
+const stylesheet = readFileSync(resolve('src/client/components/settings-panel.module.css'), 'utf8');
 
 /**
  * jsdom does not implement the <dialog> modal methods; Astryx Dialog calls
@@ -74,22 +37,24 @@ function stubDialogModal() {
   });
 }
 
-function presetCard(name: string): HTMLElement {
-  return screen.getByText(name).closest('[data-testid="preset-card"]') as HTMLElement;
-}
-
-function groupLabels(): string[] {
-  const panel = screen.getByTestId('settings-panel');
-  return Array.from(panel.querySelectorAll(`.${styles.groupLabel}`)).map((el) => el.textContent ?? '');
+function stubConfigApi(overrides: Record<string, unknown> = {}) {
+  const fetchMock = vi.fn().mockResolvedValue({
+    ok: true,
+    json: () =>
+      Promise.resolve({
+        ok: true,
+        config: {},
+        configPath: '/etc/glimpse/config.yml',
+        version: '9.9.9',
+        ...overrides,
+      }),
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
 }
 
 beforeAll(() => {
   stubDialogModal();
-});
-
-beforeEach(() => {
-  localStorage.clear();
-  mockedUseThemeSettings.mockReset();
 });
 
 afterEach(() => {
@@ -97,206 +62,105 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('SettingsPanel theme gallery', () => {
-  it('renders Dark and Light groups as glance swatch grids', () => {
-    mockedUseThemeSettings.mockReturnValue(makeSettings());
-    const { container } = render(<SettingsPanel />);
-
-    expect(groupLabels()).toContain('Dark');
-    expect(groupLabels()).toContain('Light');
-    expect(groupLabels()).not.toContain('Custom'); // no config presets
-
-    const grids = container.querySelectorAll(`.${styles.grid}`);
-    expect(grids.length).toBeGreaterThanOrEqual(2);
-
-    // every preset is a card: name + 3 palette swatches
-    expect(presetCard(mocha.name)).toHaveClass(styles.card);
-    expect(presetCard(gruvbox.name)).toHaveClass(styles.card);
-  });
-
-  it('marks the active preset with the current-state border', () => {
-    mockedUseThemeSettings.mockReturnValue(makeSettings());
-    render(<SettingsPanel />);
-
-    // current preset: primary-colored border; others: none
-    expect(presetCard(mocha.name).getAttribute('style')).toContain('var(--color-primary)');
-    expect(presetCard(mocha.name).getAttribute('data-selected')).toBe('true');
-    expect(presetCard(gruvbox.name).getAttribute('style')).toBeNull();
-    expect(presetCard(gruvbox.name).getAttribute('data-selected')).toBe('false');
-  });
-
-  it('renders the preset palette in the swatches (base00, base0D, base08)', () => {
-    mockedUseThemeSettings.mockReturnValue(makeSettings());
-    render(<SettingsPanel />);
-
-    const card = presetCard(mocha.name);
-    const swatches = card.querySelectorAll(`.${styles.swatch}`);
-    expect(swatches).toHaveLength(3);
-    expect(swatches[0].getAttribute('style')).toContain(rgb(mocha.dark.base00));
-    expect(swatches[1].getAttribute('style')).toContain(rgb(mocha.dark.base0D));
-    expect(swatches[2].getAttribute('style')).toContain(rgb(mocha.dark.base08));
-    expect(card.querySelector(`.${styles.name}`)?.textContent).toBe(mocha.name);
-    expect(card.querySelector(`.${styles.tag}`)?.textContent).toBe('dark');
-  });
-
-  it('shows the light palette for light-variant presets', () => {
-    mockedUseThemeSettings.mockReturnValue(makeSettings(github.id));
-    render(<SettingsPanel />);
-
-    const card = presetCard(github.name);
-    const swatches = card.querySelectorAll(`.${styles.swatch}`);
-    expect(swatches[0].getAttribute('style')).toContain(rgb(github.light!.base00));
-    expect(swatches[1].getAttribute('style')).toContain(rgb(github.light!.base0D));
-    expect(swatches[2].getAttribute('style')).toContain(rgb(github.light!.base08));
-    expect(card.querySelector(`.${styles.tag}`)?.textContent).toBe('light');
-  });
-
-  it('renders config presets in a Custom group with the same swatch cards', () => {
-    const custom: Preset = { ...mocha, id: 'brand-sunset', name: 'Brand Sunset' };
-    mockedUseThemeSettings.mockReturnValue(makeSettings('brand-sunset', [custom]));
-    render(<SettingsPanel />);
-
-    expect(groupLabels()).toContain('Custom');
-    expect(presetCard('Brand Sunset').getAttribute('style')).toContain('var(--color-primary)');
-    expect(presetCard('Brand Sunset').getAttribute('data-selected')).toBe('true');
-  });
-});
-
 describe('SettingsPanel section sidebar', () => {
-  it('renders a nav with Appearance (active) and About', () => {
-    mockedUseThemeSettings.mockReturnValue(makeSettings());
+  it('opens on About and lists exactly About and Docs', () => {
+    stubConfigApi();
     render(<SettingsPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
 
     const nav = screen.getByTestId('settings-nav');
-    const appearance = within(nav).getByText('Appearance');
     const about = within(nav).getByText('About');
+    const docs = within(nav).getByText('Docs');
 
-    expect(appearance.closest('button')).toHaveClass(styles.navItemActive);
-    expect(appearance.closest('button')?.getAttribute('aria-selected')).toBe('true');
-    expect(appearance.closest('button')?.getAttribute('role')).toBe('tab');
-    expect(about.closest('button')).not.toHaveClass(styles.navItemActive);
-    expect(about.closest('button')?.getAttribute('aria-selected')).toBe('false');
+    expect(about.closest('button')).toHaveClass(styles.navItemActive);
+    expect(about.closest('button')?.getAttribute('aria-selected')).toBe('true');
+    expect(about.closest('button')?.getAttribute('role')).toBe('tab');
+    expect(docs.closest('button')).not.toHaveClass(styles.navItemActive);
+    expect(docs.closest('button')?.getAttribute('aria-selected')).toBe('false');
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('id', 'settings-panel-about');
   });
 
-  it('switches between the Appearance gallery and the About pane', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            ok: true,
-            config: {},
-            configPath: '/etc/glimpse/config.yml',
-            version: '9.9.9',
-          }),
-      }),
-    );
-    mockedUseThemeSettings.mockReturnValue(makeSettings());
+  it('offers no theme picker — the brand theme is not a user setting', () => {
+    stubConfigApi();
     render(<SettingsPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
 
-    const nav = screen.getByTestId('settings-nav');
-    const about = within(nav).getByText('About');
+    // The astryx-dracula collapse: no Appearance section, no preset cards,
+    // no light/dark mode control anywhere in the dialog.
+    expect(screen.queryByText('Appearance')).toBeNull();
+    expect(screen.queryByTestId('preset-card')).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Color mode' })).toBeNull();
+    expect(screen.queryByText('Light')).toBeNull();
+    expect(screen.queryByText('System')).toBeNull();
+  });
 
-    fireEvent.click(about);
-    expect(within(nav).getByText('About').closest('button')).toHaveClass(styles.navItemActive);
-    expect(screen.getByText('Glimpse — a glance-style dashboard for your homelab.')).toBeInTheDocument();
-    expect(screen.getByText('Version')).toBeInTheDocument();
+  it('loads the app facts from /api/config when the dialog opens', async () => {
+    const fetchMock = stubConfigApi();
+    render(<SettingsPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+
     expect(await screen.findByText('9.9.9')).toBeInTheDocument();
-    expect(screen.getByText('Config file')).toBeInTheDocument();
-    expect(await screen.findByText('/etc/glimpse/config.yml')).toBeInTheDocument();
-    // gallery is unmounted while About is shown
-    expect(screen.queryByText(gruvbox.name)).toBeNull();
-
-    fireEvent.click(within(nav).getByText('Appearance'));
-    expect(presetCard(gruvbox.name)).toBeInTheDocument();
-    expect(screen.queryByText('/etc/glimpse/config.yml')).toBeNull();
+    expect(screen.getByText('/etc/glimpse/config.yml')).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith('/api/config');
   });
 
-  it('keeps the same fixed-height content pane across tabs', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ ok: true, config: {}, version: '1.0.0' }),
-      }),
-    );
-    mockedUseThemeSettings.mockReturnValue(makeSettings());
+  it('falls back to unknown facts when /api/config fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }));
     render(<SettingsPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+
+    expect((await screen.findAllByText('unknown')).length).toBeGreaterThan(0);
+  });
+
+  it('switches to the Docs pane without remounting the content box', async () => {
+    stubConfigApi();
+    render(<SettingsPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    await screen.findByText('9.9.9');
 
     const pane = document.querySelector(`.${styles.content}`);
     expect(pane).not.toBeNull();
 
-    fireEvent.click(within(screen.getByTestId('settings-nav')).getByText('About'));
-    await screen.findByText('1.0.0'); // flush the about fetch inside act
+    fireEvent.click(within(screen.getByTestId('settings-nav')).getByText('Docs'));
 
-    // tab switches swap only the inner section — the content pane box (the
-    // element carrying the fixed-height rule) stays mounted, so the dialog
-    // never resizes between Appearance and About
-    const paneAfter = document.querySelector(`.${styles.content}`);
-    expect(paneAfter).toBe(pane);
-    expect(paneAfter).toHaveClass(styles.content);
+    // tab switches swap only the inner section — the element carrying the
+    // fixed-height rule stays mounted, so the dialog never resizes
+    expect(document.querySelector(`.${styles.content}`)).toBe(pane);
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('id', 'settings-panel-docs');
+    expect(screen.queryByText('9.9.9')).toBeNull();
+    expect(screen.getByRole('link', { name: 'helium.computer/bangs' })).toHaveAttribute(
+      'href',
+      'https://helium.computer/bangs',
+    );
   });
 });
 
 describe('SettingsPanel layout contract', () => {
-  it('pins the fixed content-pane height and border-based selection in the stylesheet', () => {
-    const css = readFileSync(resolve('src/client/components/settings-panel.module.css'), 'utf8');
-
-    // content pane height is fixed (85vh minus dialog chrome), not
-    // max-height, so switching tabs never changes the dialog size
-    expect(css).toMatch(/\.content\s*\{[^}]*height:\s*calc\(85vh - 96px\)/);
-
-    // hover uses muted accent (primary 55% mix) on the border, distinct from
-    // the selected solid primary — no background lightening, no ring shadow
-    const hoverRule = css.match(/\.card:hover[^{]*\{[^}]*\}/)?.[0] ?? '';
-    expect(hoverRule).toContain('color-mix');
-    expect(hoverRule).toContain('var(--color-primary)');
-    expect(hoverRule).toContain('55%');
-    expect(hoverRule).toContain('border-color');
-    expect(hoverRule).not.toContain('var(--color-widget-background-highlight)');
+  it('pins the fixed content-pane height so tab switches never resize the dialog', () => {
+    expect(stylesheet).toMatch(/\.content\s*\{[^}]*height:\s*calc\(85vh - 96px\)/);
   });
 
-  it('carries no shadow-based depth — borders only', () => {
-    const css = readFileSync(resolve('src/client/components/settings-panel.module.css'), 'utf8');
-    for (const value of css.matchAll(/box-shadow\s*:\s*([^;]+);/g)) {
+  it('carries no shadow-based depth and no pills', () => {
+    for (const value of stylesheet.matchAll(/box-shadow\s*:\s*([^;]+);/g)) {
       expect(value[1].trim().startsWith('none')).toBe(true);
     }
-    // No pills.
-    expect(css).not.toMatch(/border-radius\s*:\s*(50%|999)/);
+    expect(stylesheet).not.toMatch(/border-radius\s*:\s*(50%|999)/);
   });
 
   it('section title and docs sub-heading sit on distinct heading tiers', () => {
-    mockedUseThemeSettings.mockReturnValue(makeSettings());
+    stubConfigApi();
     render(<SettingsPanel />);
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     fireEvent.click(within(screen.getByTestId('settings-nav')).getByText('Docs'));
-    // h2 section title over h3 sub-heading — never two same-size tiers.
+
     expect(screen.getByRole('heading', { level: 2, name: 'Docs' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 3, name: 'Shebang' })).toBeInTheDocument();
   });
 });
 
-describe('SettingsPanel interaction', () => {
-  it('selecting a preset calls setPresetId and persists to localStorage', () => {
-    const settings = makeSettings();
-    mockedUseThemeSettings.mockReturnValue(settings);
-    render(<SettingsPanel />);
-
-    fireEvent.click(screen.getByText(gruvbox.name));
-
-    expect(settings.setPresetId).toHaveBeenCalledWith(gruvbox.id);
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as {
-      mode?: string;
-      presetId?: string;
-    };
-    expect(stored).toEqual({ mode: 'system', presetId: gruvbox.id });
-  });
-});
-
 describe('SettingsPanel trigger and dialog', () => {
   it('the gear button opens the settings dialog and the close button closes it', () => {
-    mockedUseThemeSettings.mockReturnValue(makeSettings());
+    stubConfigApi();
     render(<SettingsPanel />);
 
     const trigger = screen.getByRole('button', { name: 'Settings' });
@@ -305,8 +169,7 @@ describe('SettingsPanel trigger and dialog', () => {
 
     fireEvent.click(trigger);
     expect(document.querySelector('dialog')?.open).toBe(true);
-    // the pane opens on Appearance, showing the section title and the nav
-    expect(screen.getAllByText('Appearance').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByTestId('settings-panel')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(document.querySelector('dialog')?.open).toBe(false);

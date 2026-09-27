@@ -89,7 +89,7 @@
 
 /* Right content pane — generous padding, scrolls independently of the nav.
  * Fixed height (85vh minus dialog header + body chrome) so switching tabs
- * never resizes the dialog: About stays as tall as the Appearance gallery. */
+ * never resizes the dialog: the Docs table stays as tall as About. */
 .content {
   flex: 1;
   min-width: 0;
@@ -114,163 +114,6 @@
 .sectionTitle {
   margin: 0;
   color: var(--color-text-highlight);
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* glance .theme-choices label styling — the supporting tier under the
-   section heading (rendered as Text type="supporting"). */
-.groupLabel {
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-text-subdue);
-}
-
-.modeRow {
-  display: inline-flex;
-  border: 1px solid var(--color-widget-content-border);
-  border-radius: var(--border-radius);
-  overflow: hidden;
-  align-self: flex-start;
-}
-
-.modeButton {
-  padding: 6px 14px;
-  border: 1px solid transparent;
-  border-right-color: var(--color-widget-content-border);
-  background: var(--color-widget-background);
-  color: var(--color-text-base);
-  font-family: inherit;
-  font-size: var(--font-size-base);
-  cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-standard),
-    color var(--duration-fast) var(--ease-standard),
-    border-color var(--duration-fast) var(--ease-standard);
-}
-
-.modeButton:hover {
-  color: var(--color-text-highlight);
-  background-color: var(--color-overlay-hover);
-}
-
-.modeButton:active {
-  background-color: var(--color-overlay-pressed);
-}
-
-.modeButton:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
-}
-
-/* Selected segment: quiet selection surface plus an accent border —
-   depth comes from a border, never an inset shadow. */
-.modeButtonActive,
-.modeButtonActive:hover,
-.modeButtonActive:active {
-  background-color: var(--color-widget-background-highlight);
-  color: var(--color-text-highlight);
-  border-color: var(--color-primary);
-}
-
-.group {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 0;
-}
-
-.gallery {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  min-width: 0;
-}
-
-/* glance .theme-choices: 3 columns, roomier cards. min-width:0 chain prevents flex overflow cutoff. */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  min-width: 0;
-}
-
-/* glance .theme-preset: swatch-row card. min-width:0 + overflow:hidden lets .name ellipsis work. */
-.card {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--color-widget-content-border);
-  border-radius: var(--border-radius);
-  background-color: var(--color-widget-background);
-  min-width: 0;
-  overflow: hidden;
-  cursor: pointer;
-  /* Astryx SelectableCard expresses selection as an inset ring shadow
-     (--_card-ring). Selection is a border here — flat and crisp, depth from
-     borders, never a shadow. (!important beats StyleX's selected rule.) */
-  --_card-ring: 0 0 transparent !important;
-}
-
-/* Hover — a muted accent border, distinct from the selected solid accent.
-   Depth comes from the border, not a ring shadow; no background lighten. */
-.card:hover:not([data-selected='true']) {
-  border-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
-}
-
-.card:active:not([data-selected='true']) {
-  border-color: var(--color-primary);
-}
-
-.card:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-/* Selected preset: solid accent border, replacing the inset ring shadow. */
-.card[data-selected='true'] {
-  border-color: var(--color-primary);
-}
-
-/* Astryx SelectableCard paints an opaque --color-overlay-hover ::after over
-   the card on hover/press, which covers the swatches ("censored" look).
-   Kill the overlay; our border carries the hover affordance.
-   (!important — StyleX hover rule stacks .x.x:hover + 7x :not(#\#)). */
-.card::after,
-.card:hover::after,
-.card:active::after {
-  display: none !important;
-}
-
-/* glance .theme-color */
-.swatch {
-  background-color: var(--color);
-  width: 14px;
-  height: 14px;
-  border-radius: var(--radius-inner);
-  flex-shrink: 0;
-}
-
-.name {
-  flex: 1;
-  min-width: 0;
-  font-size: var(--font-size-base);
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--color-text-base);
-}
-
-.tag {
-  flex-shrink: 0;
-  font-size: 10px;
-  text-transform: capitalize;
-  color: var(--color-text-subdue);
 }
 
 /* About pane. */
@@ -363,13 +206,6 @@
   word-break: break-all;
 }
 
-/* Responsive grid: 3 -> 2 columns before dialog gets tight; 1 col on small phones. */
-@media (max-width: 960px) {
-  .grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 /* Narrow screens: stack the nav above the content. */
 @media (max-width: 720px) {
   .body {
@@ -398,11 +234,5 @@
   .content {
     padding: 20px;
     height: 60vh;
-  }
-}
-
-@media (max-width: 520px) {
-  .grid {
-    grid-template-columns: 1fr;
   }
 }

@@ -1,18 +1,15 @@
-import { useMemo, useState, type CSSProperties } from 'react';
-import { Dialog, DialogHeader, Heading, SelectableCard, Text } from '@astryxdesign/core';
-import { BookOpen, Info, Palette, Settings } from 'lucide-react';
-import { presets, type Preset } from '../../shared/theme/presets';
+import { useState } from 'react';
+import { Dialog, DialogHeader, Heading } from '@astryxdesign/core';
+import { BookOpen, Info, Settings } from 'lucide-react';
 import type { ConfigResponse } from '../../shared/api';
-import { useThemeSettings } from '../theme/GlimpseThemeProvider';
 import { bangs } from '../../shared/widgets/bangs';
 import styles from './settings-panel.module.css';
-// Settings dialog: section sidebar + spacious content pane. Appearance holds
-// the mode control and the glance theme gallery (swatches = base00 bg,
-// base0D primary, base08 negative); About lists app + config facts from
-// /api/config (loaded on first open, fallbacks to glance's documented
-// defaults while loading or on failure).
+// Settings dialog: section sidebar + spacious content pane. About lists app +
+// config facts from /api/config (loaded on first open, falling back to
+// glance's documented defaults while loading or on failure); Docs covers
+// bangs. The theme itself is not a setting — it is the astryx-dracula brand.
 
-type SettingsSection = 'appearance' | 'about' | 'docs';
+type SettingsSection = 'about' | 'docs';
 
 interface AboutInfo {
   version: string;
@@ -20,9 +17,8 @@ interface AboutInfo {
 }
 
 export function SettingsPanel() {
-  const { presetId, setPresetId, configPresets, mode, setMode } = useThemeSettings();
   const [open, setOpen] = useState(false);
-  const [section, setSection] = useState<SettingsSection>('appearance');
+  const [section, setSection] = useState<SettingsSection>('about');
   const [about, setAbout] = useState<AboutInfo | null>(null);
 
   const openAbout = () => {
@@ -42,70 +38,16 @@ export function SettingsPanel() {
       .catch(() => setAbout({ version: 'unknown', configPath: 'config.yml' }));
   };
 
-  const { dark, light } = useMemo(() => {
-    // config presets win over same-id library presets (glance's
-    // default-dark/default-light override semantics)
-    const staticPresets = presets.filter((p) => !configPresets.some((c) => c.id === p.id));
-    return {
-      dark: staticPresets.filter((p) => p.variant === 'dark'),
-      light: staticPresets.filter((p) => p.variant === 'light'),
-    };
-  }, [configPresets]);
-
-  const renderGroup = (label: string, group: Preset[]) =>
-    group.length > 0 ? (
-      <div key={label} className={styles.group}>
-        <div className={styles.groupLabel}>
-          <Text type="supporting">{label}</Text>
-        </div>
-        <div className={styles.grid}>
-          {group.map((p) => {
-            const current = p.id === presetId;
-            // swatches show the preset's authored side: light palettes for
-            // light-variant presets, dark palettes otherwise
-            const palette = p.variant === 'light' && p.light ? p.light : p.dark;
-            return (
-              <SelectableCard
-                key={p.id}
-                label={p.name}
-                isSelected={current}
-                onChange={(selected) => {
-                  if (selected) {
-                    setPresetId(p.id);
-                    // light-dark() vars resolve via color-scheme, which
-                    // follows mode — a light preset under dark mode paints
-                    // dark-side text on the light background (washed-out
-                    // top bar, invisible scrollbar). Sync mode to variant.
-                    setMode(p.variant);
-                  }
-                }}
-                className={styles.card}
-                style={current ? ({ borderColor: 'var(--color-primary)' } as CSSProperties) : undefined}
-                variant="transparent"
-                padding={1.5}
-                data-testid="preset-card"
-                data-preset-id={p.id}
-                data-selected={current}
-              >
-                <span className={styles.swatch} style={{ backgroundColor: palette.base00 }} />
-                <span className={styles.swatch} style={{ backgroundColor: palette.base0D }} />
-                <span className={styles.swatch} style={{ backgroundColor: palette.base08 }} />
-                <span className={styles.name}>{p.name}</span>
-                <span className={styles.tag}>{p.variant}</span>
-              </SelectableCard>
-            );
-          })}
-        </div>
-      </div>
-    ) : null;
-
   return (
     <>
       <button
         type="button"
         aria-label="Settings"
         className={styles.trigger}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpen(true);
+          openAbout();
+        }}
       >
         <Settings size={18} aria-hidden="true" />
       </button>
@@ -123,22 +65,6 @@ export function SettingsPanel() {
             data-testid="settings-nav"
             role="tablist"
           >
-            <button
-              type="button"
-              id="settings-tab-appearance"
-              role="tab"
-              aria-selected={section === 'appearance'}
-              aria-controls="settings-panel-appearance"
-              className={
-                section === 'appearance'
-                  ? `${styles.navItem} ${styles.navItemActive}`
-                  : styles.navItem
-              }
-              onClick={() => setSection('appearance')}
-            >
-              <Palette size={16} aria-hidden="true" />
-              Appearance
-            </button>
             <button
               type="button"
               id="settings-tab-about"
@@ -165,43 +91,7 @@ export function SettingsPanel() {
             </button>
           </nav>
           <div className={styles.content}>
-            {section === 'appearance' ? (
-              <section
-                className={styles.section}
-                id="settings-panel-appearance"
-                role="tabpanel"
-                aria-labelledby="settings-tab-appearance"
-              >
-                <Heading level={2} className={styles.sectionTitle}>
-                  Appearance
-                </Heading>
-                <div className={styles.field}>
-                  <div className={styles.groupLabel}>
-                    <Text type="supporting">Mode</Text>
-                  </div>
-                  <div className={styles.modeRow} role="group" aria-label="Color mode">
-                    {(['system', 'light', 'dark'] as const).map((m) => (
-                      <button
-                        key={m}
-                        type="button"
-                        aria-pressed={mode === m}
-                        data-testid={`mode-${m}`}
-                        data-active={mode === m}
-                        className={mode === m ? `${styles.modeButton} ${styles.modeButtonActive}` : styles.modeButton}
-                        onClick={() => setMode(m)}
-                      >
-                        {m[0].toUpperCase() + m.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className={styles.gallery}>
-                  {renderGroup('Dark', dark)}
-                  {renderGroup('Light', light)}
-                  {renderGroup('Custom', configPresets)}
-                </div>
-              </section>
-            ) : section === 'about' ? (
+            {section === 'about' ? (
               <section
                 className={styles.section}
                 id="settings-panel-about"
