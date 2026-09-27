@@ -124,15 +124,17 @@ describe('bookmarks widget', () => {
   });
 
   it('maps a named group colour onto an accent class, not an inline colour', () => {
-    render(
+    const { container } = render(
       <Bookmarks
         data={null}
         config={{ type: 'bookmarks', groups: [{ title: 'Dev', color: 'cyan', links: [] }] }}
       />,
     );
-    const title = screen.getByText('Dev');
-    expect(title.className).toContain(styles.titleAccentCyan);
-    expect(title.style.color).toBe('');
+    // the accent rides on the group, so the link arrows inherit it too
+    const group = container.querySelector(`.${styles.group}`)!;
+    expect(group.className).toContain(styles.titleAccentCyan);
+    expect((group as HTMLElement).style.color).toBe('');
+    expect(screen.getByText('Dev')).toBeInTheDocument();
   });
 
   it('rejects a free-form group colour, so a title can never be painted purple', () => {
@@ -140,6 +142,76 @@ describe('bookmarks widget', () => {
     expect(bookmarksSchema.safeParse({ type: 'bookmarks', groups: [{ ...group, color: 'cyan' }] }).success).toBe(true);
     expect(bookmarksSchema.safeParse({ type: 'bookmarks', groups: [{ ...group, color: 'purple' }] }).success).toBe(false);
     expect(bookmarksSchema.safeParse({ type: 'bookmarks', groups: [{ ...group, color: '#BD93F9' }] }).success).toBe(false);
+  });
+
+  it('shows the arrow by default and drops it for hide-arrow, group or link', () => {
+    render(
+      <Bookmarks
+        data={null}
+        config={{
+          type: 'bookmarks',
+          groups: [
+            {
+              title: 'Plain',
+              links: [{ title: 'A', url: 'https://a.example' }],
+            },
+            {
+              title: 'Grouped',
+              'hide-arrow': true,
+              links: [
+                { title: 'B', url: 'https://b.example' },
+                { title: 'C', url: 'https://c.example', 'hide-arrow': false },
+              ],
+            },
+          ],
+        }}
+      />,
+    );
+    const shown = (name: string) => screen.getByRole('link', { name }).className;
+    expect(shown('A')).not.toContain(styles.linkNoArrow);
+    expect(shown('B')).toContain(styles.linkNoArrow);
+    // a link overrides its group, in both directions
+    expect(shown('C')).not.toContain(styles.linkNoArrow);
+  });
+
+  it('lets target override same-tab, and the group fill in for its links', () => {
+    render(
+      <Bookmarks
+        data={null}
+        config={{
+          type: 'bookmarks',
+          groups: [
+            {
+              title: 'Dev',
+              'same-tab': true,
+              links: [
+                { title: 'Inherits', url: 'https://a.example' },
+                { title: 'Own target', url: 'https://b.example', target: '_parent' },
+                { title: 'Own tab', url: 'https://c.example', 'same-tab': false },
+              ],
+            },
+          ],
+        }}
+      />,
+    );
+    const target = (name: string) => screen.getByRole('link', { name }).getAttribute('target');
+    expect(target('Inherits')).toBeNull();
+    // target wins over the group's same-tab: true
+    expect(target('Own target')).toBe('_parent');
+    expect(target('Own tab')).toBe('_blank');
+  });
+
+  it('applies a group target to its links, the way glance does', () => {
+    render(
+      <Bookmarks
+        data={null}
+        config={{
+          type: 'bookmarks',
+          groups: [{ title: 'Dev', target: '_top', links: [{ title: 'A', url: 'https://a.example' }] }],
+        }}
+      />,
+    );
+    expect(screen.getByRole('link', { name: 'A' })).toHaveAttribute('target', '_top');
   });
 
   it('shows an empty message when no groups are configured', () => {

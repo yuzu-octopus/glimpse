@@ -23,6 +23,26 @@ const TITLE_ACCENT_CLASS: Record<NonNullable<BookmarksConfig['groups'][number]['
   pink: styles.titleAccentPink,
 };
 
+/** glance widget-bookmarks.go:44-66 — a link overrides its group, and
+ * `target` overrides `same-tab` (which is why the two are resolved apart).
+ * Glimpse adds a widget-wide `same-tab` at the lowest precedence. */
+interface LinkProps {
+  target: string | undefined;
+  hideArrow: boolean;
+}
+
+function resolveLink(
+  link: NonNullable<BookmarksConfig['groups'][number]['links']>[number],
+  group: NonNullable<BookmarksConfig['groups'][number]>,
+  widgetSameTab: boolean | undefined,
+): LinkProps {
+  const sameTab = link['same-tab'] ?? group['same-tab'] ?? widgetSameTab ?? false;
+  return {
+    target: link.target || group.target || (sameTab ? undefined : '_blank'),
+    hideArrow: link['hide-arrow'] ?? group['hide-arrow'] ?? false,
+  };
+}
+
 // A bad or unreachable icon URL must cost the icon, not the row: the tile is
 // dropped whole so the link keeps its text and the page never paints a
 // broken-image glyph.
@@ -58,29 +78,33 @@ function Bookmarks({ config }: WidgetComponentProps) {
       {groups.map((group) => {
         const links = group.links ?? [];
         return (
-          <div key={`${group.title ?? ''}::${links[0]?.url ?? ''}::${links.length}`} className={styles.group}>
-            {group.title ? (
-              <div className={`${styles.groupTitle} ${group.color ? TITLE_ACCENT_CLASS[group.color] : ''}`}>
-                {group.title}
-              </div>
-            ) : null}
+          <div
+            key={`${group.title ?? ''}::${links[0]?.url ?? ''}::${links.length}`}
+            // The accent rides on the group so the arrow picks it up too:
+            // glance paints both from --bookmarks-group-color.
+            className={`${styles.group} ${group.color ? TITLE_ACCENT_CLASS[group.color] : ''}`}
+          >
+            {group.title ? <div className={styles.groupTitle}>{group.title}</div> : null}
             <ul className={styles.links}>
-              {links.map((link) => (
-                <li key={`${link.title}::${link.url}::${link.description ?? ''}`} className={styles.linkItem}>
-                  <Link
-                    href={link.url}
-                    target={link['same-tab'] || group['same-tab'] || cfg['same-tab'] ? undefined : '_blank'}
-                    className={styles.linkCard}
-                    hasUnderline={false}
-                  >
-                    {link.icon ? (
-                      <BookmarkIcon icon={link.icon} accent={tagAccent(link.url)} />
-                    ) : null}
-                    <span className={styles.linkTitle}>{link.title}</span>
-                  </Link>
-                  {link.description ? <span className={styles.linkDesc}>{link.description}</span> : null}
-                </li>
-              ))}
+              {links.map((link) => {
+                const { target, hideArrow } = resolveLink(link, group, cfg['same-tab']);
+                return (
+                  <li key={`${link.title}::${link.url}::${link.description ?? ''}`} className={styles.linkItem}>
+                    <Link
+                      href={link.url}
+                      target={target}
+                      className={hideArrow ? `${styles.linkCard} ${styles.linkNoArrow}` : styles.linkCard}
+                      hasUnderline={false}
+                    >
+                      {link.icon ? (
+                        <BookmarkIcon icon={link.icon} accent={tagAccent(link.url)} />
+                      ) : null}
+                      <span className={styles.linkTitle}>{link.title}</span>
+                    </Link>
+                    {link.description ? <span className={styles.linkDesc}>{link.description}</span> : null}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         );
