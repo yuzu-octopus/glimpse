@@ -108,7 +108,8 @@
   color: var(--color-text-base);
 }
 
-.card:hover .cardTitle {
+/* The card is the anchor, so the title's resolve follows the card's focus. */
+.card:is(:hover, :focus-visible) .cardTitle {
   color: var(--color-text-highlight);
 }
 
