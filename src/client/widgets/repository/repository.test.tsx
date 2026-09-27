@@ -44,6 +44,38 @@ describe('repository widget', () => {
     expect(screen.getByText('user/other')).toBeInTheDocument();
   });
 
+  it('renders a commits sub-list with the short sha as the lead', () => {
+    render(
+      <Repository
+        config={{ type: 'repository', repository: 'user/glimpse' }}
+        data={{
+          ...repo,
+          commits: [
+            {
+              sha: 'a1b2c3d',
+              message: 'Ship it',
+              author: 'Robin',
+              date: '2024-01-01T10:00:00Z',
+              url: 'https://github.com/user/glimpse/commit/a1b2c3d',
+            },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText('Commits')).toBeInTheDocument();
+    expect(screen.getByText('a1b2c3d')).toBeInTheDocument();
+    expect(screen.getByText('Ship it')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Ship it/ })).toHaveAttribute(
+      'href',
+      'https://github.com/user/glimpse/commit/a1b2c3d',
+    );
+  });
+
+  it('shows no commits section when the payload carries none', () => {
+    render(<Repository config={{ type: 'repository', repository: 'user/glimpse' }} data={repo} />);
+    expect(screen.queryByText('Commits')).toBeNull();
+  });
+
   it('surfaces a fetch error via the widget chrome', () => {
     render(
       <Repository config={{ type: 'repository', title: 'Repo', repository: 'user/other' }} data={null} error="GitHub API unavailable" />,

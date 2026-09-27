@@ -133,6 +133,15 @@ export interface RepoPull {
   url: string;
 }
 
+export interface RepoCommit {
+  /** Abbreviated to 7 characters, the way git and GitHub's own UI show it. */
+  sha: string;
+  message: string;
+  author: string;
+  date: string | null;
+  url: string;
+}
+
 export interface RepositoryData {
   name: string;
   description: string | null;
@@ -140,6 +149,8 @@ export interface RepositoryData {
   url: string;
   pulls: RepoPull[];
   issues: RepoPull[];
+  /** Absent unless `commits-limit` is above 0 — glance's default is -1. */
+  commits?: RepoCommit[];
 }
 
 export interface SystemStatsData {

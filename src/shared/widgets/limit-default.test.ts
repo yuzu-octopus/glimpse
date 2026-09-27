@@ -28,4 +28,8 @@ describe('limit 5 defaults', () => {
     expect(cfg['pull-requests-limit']).toBe(5);
     expect(cfg['issues-limit']).toBe(5);
   });
+
+  it('repository shows no commits by default, matching glance', () => {
+    expect(repositorySchema.parse({ type: 'repository', repository: 'owner/repo' })['commits-limit']).toBe(-1);
+  });
 });
