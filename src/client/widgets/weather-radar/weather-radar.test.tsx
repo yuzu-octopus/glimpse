@@ -16,7 +16,7 @@ const DATA: RadarData = {
   lat: 51.5,
   lon: -0.12,
   zoom: 7,
-  tileUrlTemplate: 'https://tilecache.rainviewer.com/v2/radar/1700000600/{z}/{x}/{y}/2/1_1.png',
+  tileUrlTemplate: 'https://tilecache.rainviewer.com/v2/radar/1700000600/256/{z}/{x}/{y}/4/1_1.png',
   frameTime: 1700000600,
 };
 
@@ -44,23 +44,42 @@ describe('weather-radar widget', () => {
     const overlays = container.querySelectorAll<HTMLImageElement>('img.overlay');
     expect(overlays).toHaveLength(4);
     for (const img of overlays) {
-      expect(img.src).toContain('/v2/radar/1700000600/7/');
-      expect(img.src).toContain('/2/1_1.png');
+      expect(img.src).toContain('/v2/radar/1700000600/256/7/');
+      expect(img.src).toContain('/4/1_1.png');
     }
     const xs = [...overlays].map((i) => Number(i.src.match(/\/7\/(\d+)\//)![1]));
     const ys = [...overlays].map((i) => Number(i.src.match(/\/7\/\d+\/(\d+)\//)![1]));
     expect(xs.slice().sort()).toEqual([62, 62, 63, 63]);
     expect(ys.slice().sort()).toEqual([41, 41, 42, 42]);
+
     const bases = [...container.querySelectorAll<HTMLImageElement>('img.base')];
     expect(bases).toHaveLength(4);
     expect(bases[0].src).toContain('tile.openstreetmap.org/7/');
+  });
+
+  it('clamps a payload zoom to the range RainViewer publishes', () => {
+    // z 8+ is not served — the API returns 200 with a "Zoom level not
+    // supported" placeholder — so a stale or hand-edited zoom must not
+    // reach the tile URL. Both layers clamp to the same level, or the
+    // overlay would sit on the wrong base tiles.
+    const { container } = render(
+      <WeatherRadar config={{ type: 'weather-radar', location: 'London' }} data={{ ...DATA, zoom: 10 }} />,
+    );
+    for (const img of container.querySelectorAll<HTMLImageElement>('img')) {
+      expect(img.src).toContain('/7/');
+      expect(img.src).not.toContain('/10/');
+    }
+    const xs = [...container.querySelectorAll<HTMLImageElement>('img.overlay')].map((i) =>
+      Number(i.src.match(/\/7\/(\d+)\//)![1]),
+    );
+    expect(xs.slice().sort()).toEqual([62, 62, 63, 63]);
   });
 
   it('places the 2x2 grid around the exact-boundary coordinate', () => {
     const { container } = render(<WeatherRadar config={{ type: 'weather-radar', location: 'X' }} data={EQUATOR} />);
     const overlays = [...container.querySelectorAll<HTMLImageElement>('img.overlay')];
     const cells = overlays.map((i) => {
-      const m = i.src.match(/\/3\/(\d+)\/(\d+)\/2\/1_1\.png$/);
+      const m = i.src.match(/\/3\/(\d+)\/(\d+)\/4\/1_1\.png$/);
       return m ? `${m[1]}/${m[2]}` : i.src;
     });
     expect(cells.sort()).toEqual(['3/3', '3/4', '4/3', '4/4']);
