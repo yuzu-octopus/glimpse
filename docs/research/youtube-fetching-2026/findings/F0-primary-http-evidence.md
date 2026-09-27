@@ -148,7 +148,7 @@ work".
 
 ### C6 — InnerTube is NOT globally PO-token gated, but `@handle` as a `browseId` is REJECTED.
 With a freshly harvested public `INNERTUBE_API_KEY` + `visitorData` from the homepage
-(`AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8`, clientVersion `2.20260925.01.00`):
+(`AIza…<redacted: public InnerTube web constant, see youtube.com/YouTube.js or a maintained client lib>`, clientVersion `2.20260925.01.00`):
 
 | call | result |
 |---|---|
