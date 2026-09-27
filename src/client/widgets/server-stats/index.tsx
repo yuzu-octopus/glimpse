@@ -1,4 +1,4 @@
-import { Text } from '@astryxdesign/core';
+import { Stack, Text } from '@astryxdesign/core';
 import { Cpu, HardDrive, MemoryStick, Monitor, Server, Thermometer } from 'lucide-react';
 import type { ServerStatsConfig } from '../../../shared/widgets/server-stats';
 import type { ServerInfo, ServerStatsData } from '../../../shared/widgets/payloads';
@@ -39,27 +39,26 @@ function Row({
   const isHigh = p >= 85;
   const isCritical = p >= 95;
   return (
-    <div className={styles.row} data-testid="server-row">
-      <div className={styles.rowHead}>
+    <Stack gap={1} data-testid="server-row">
+      <Stack direction="horizontal" gap={1.5} vAlign="center">
         <Icon size={14} className={styles.rowIcon} aria-hidden />
         <Text as="span" size="sm" weight="semibold" className={styles.rowLabel}>
           {label}
         </Text>
         {detail ? (
-          <span className={styles.rowDetail} title={detail}>
+          <Text as="span" type="supporting" maxLines={1} className={styles.rowDetail}>
             · {detail}
-          </span>
+          </Text>
         ) : null}
-        <span className={styles.rowSpacer} />
-        <Text as="span" size="sm" className={`${styles.rowValue} ${available ? '' : styles.statUnavailable}`}>
+        <Text as="span" type="supporting" hasTabularNumbers className={styles.rowValue}>
           {available ? value : 'n/a'}
         </Text>
         {temp != null ? (
-          <span className={styles.rowTemp} title={`${Math.round(temp)}°C`}>
-            <Thermometer size={12} aria-hidden /> {Math.round(temp)}°
-          </span>
+          <Text as="span" type="supporting" hasTabularNumbers className={styles.rowTemp}>
+            <Thermometer size={12} aria-hidden /> {Math.round(temp)}°C
+          </Text>
         ) : null}
-      </div>
+      </Stack>
       <meter
         className={`${styles.bar} ${available ? '' : styles.barUnavailable}`}
         data-high={isHigh || undefined}
@@ -71,7 +70,7 @@ function Row({
         aria-valuenow={available ? p : undefined}
         aria-label={label}
       />
-    </div>
+    </Stack>
   );
 }
 
@@ -82,16 +81,21 @@ function ServerCard({ server }: { server: ServerInfo }) {
   const diskPct = disk ? pct(disk.used, disk.total) : 0;
   const gpu = server.gpu?.[0] ?? null;
   return (
-    <section className={`${styles.server} ${server.isReachable ? '' : styles.serverDown}`} data-testid="server-card">
-      <header className={styles.serverHeader}>
+    <Stack
+      as="section"
+      gap={2}
+      className={`${styles.server} ${server.isReachable ? '' : styles.serverDown}`}
+      data-testid="server-card"
+    >
+      <Stack direction="horizontal" gap={2} vAlign="center" as="header">
         <Server size={15} className={server.isReachable ? styles.serverIconUp : styles.serverIconDown} aria-hidden />
-        <Text as="h3" size="lg" weight="semibold" className={styles.serverName}>
+        <Text as="h3" size="lg" weight="semibold" maxLines={1} className={styles.serverName}>
           <span title={server.hostname || server.name}>{server.hostname || server.name}</span>
         </Text>
-        {age ? <span className={styles.uptime}>{age}</span> : null}
-      </header>
+        {age ? <Text type="supporting" hasTabularNumbers className={styles.uptime}>{age}</Text> : null}
+      </Stack>
       {server.isReachable ? (
-        <div style={{ display: 'grid', gap: '10px' }}>
+        <Stack gap={2}>
           <Row
             icon={Cpu}
             label="CPU"
@@ -133,11 +137,11 @@ function ServerCard({ server }: { server: ServerInfo }) {
               available={true}
             />
           ) : null}
-        </div>
+        </Stack>
       ) : (
-        <p className={styles.unreachable}>Unreachable</p>
+        <Text as="p" type="body" className={styles.unreachable}>Unreachable</Text>
       )}
-    </section>
+    </Stack>
   );
 }
 
