@@ -178,6 +178,62 @@ async function fetchPiholeV5(
   };
 }
 
+/** A URL embedded in third-party prose. Excludes whitespace and the
+ * delimiters that normally surround one, so trailing prose stays out. */
+const EMBEDDED_URL = /\b[a-z][a-z\d+.-]*:\/\/[^\s"'`<>()[\],;]+/gi;
+/** Control characters, including the newlines a Banner must never render. */
+const CONTROL = /[\s\u0000-\u001f\u007f]+/g;
+/** Cap on a single reason. The docs' hint is one short sentence; anything
+ * far past this is a server bug, not a diagnosis. */
+const MAX_REASON = 160;
+
+/** FTL's `hint` and `message` are server-supplied free text from a third
+ * party, and the reason they end up in reaches the browser, the page cache
+ * and the service worker's Cache Storage (see AGENTS.md). Flatten to one
+ * line, cap the length so a huge hint cannot flood the Banner, and
+ * `sanitizeUrl` every embedded URL — a query string there can carry a
+ * session id or a token. Sanitizing happens *before* the cap, so
+ * truncation can never re-expose a query the sanitizer already removed.
+ * Non-URL prose is left alone: `sanitizeUrl`'s USERINFO strip would eat
+ * everything up to an `@`, mangling an ordinary sentence. */
+function safeReason(text: string): string {
+  const one = text.replace(CONTROL, ' ').replace(EMBEDDED_URL, (u) => sanitizeUrl(u)).trim();
+  return one.length > MAX_REASON ? `${one.slice(0, MAX_REASON - 1).trimEnd()}…` : one;
+}
+
+/** FTL wraps every v6 failure in `{ error: { key, message, hint }, took }`
+ * (docs.pi-hole.net/api/auth) — an object, never a string. Prefer `hint`:
+ * it is where FTL puts the actionable part, and the docs' own example is
+ * "The API is hosted at pi.hole/api, not pi.hole/admin/api". Fall back to
+ * `message`, which is usually just a restatement of the status
+ * ("Unauthorized"). `key` is redundant with the status the message already
+ * carries, so it never reaches the Banner. Anything that is not the
+ * documented shape yields null and the bare status stands on its own. */
+function v6Reason(body: unknown): string | null {
+  const error = (body as { error?: unknown } | null)?.error;
+  if (!error || typeof error !== 'object') return null;
+  const { hint, message } = error as { hint?: unknown; message?: unknown };
+  return (
+    (typeof hint === 'string' ? safeReason(hint) : '') ||
+    (typeof message === 'string' ? safeReason(message) : '') ||
+    null
+  );
+}
+
+/** Every v6 endpoint reports failure this way, so auth and summary build
+ * the message identically. A body that is absent, not JSON, or not the
+ * documented envelope leaves the message exactly as it was — the status is
+ * still true, and a parse failure must never mask the error it explains. */
+async function v6HttpError(res: Response, what: string): Promise<Error> {
+  let reason: string | null = null;
+  try {
+    reason = v6Reason(await res.json());
+  } catch {
+    // No JSON body at all: a reverse proxy's HTML error page, an empty 502.
+  }
+  return new Error(`Pi-hole v6 ${what} HTTP ${res.status}${reason ? `: ${reason}` : ''}`);
+}
+
 async function fetchPiholeV6(
   ctx: Parameters<Parameters<typeof registerWidget>[1]>[0],
   base: string,
@@ -193,10 +249,15 @@ async function fetchPiholeV6(
     body: JSON.stringify({ password }),
     signal: AbortSignal.timeout(15_000),
   });
-  if (!authRes.ok) throw new Error(`Pi-hole v6 auth HTTP ${authRes.status}`);
-  const authJson = (await authRes.json()) as { session?: { sid?: string }; error?: string };
+  if (!authRes.ok) throw await v6HttpError(authRes, 'auth');
+  const authJson = (await authRes.json()) as { session?: { sid?: string } };
   const sid = authJson.session?.sid;
-  if (!sid) throw new Error('Pi-hole v6 auth: missing sid');
+  if (!sid) {
+    // Same envelope, no status to lean on: `missing sid` on its own leaves
+    // the user with nothing to act on.
+    const reason = v6Reason(authJson);
+    throw new Error(`Pi-hole v6 auth: missing sid${reason ? `: ${reason}` : ''}`);
+  }
 
   const sidHeader = { 'x-ftl-sid': sid } as Record<string, string>;
 
@@ -204,7 +265,7 @@ async function fetchPiholeV6(
     headers: sidHeader,
     signal: AbortSignal.timeout(15_000),
   });
-  if (!summaryRes.ok) throw new Error(`Pi-hole v6 summary HTTP ${summaryRes.status}`);
+  if (!summaryRes.ok) throw await v6HttpError(summaryRes, 'summary');
   const summary = (await summaryRes.json()) as {
     queries: { total: number; blocked: number; percent_blocked: number };
     gravity: { domains_being_blocked: number };
@@ -378,8 +439,10 @@ registerWidget('dns-stats', async (ctx, config) => {
         // broke first. api.ts copies `e.message` and nothing else into
         // `payload.error`, so the v6 cause has to ride in the message — an
         // Error `cause` chain would be dropped before the Banner ever sees it.
-        // Both messages are widget-local and already sanitized: the v6 ones
-        // carry only a status, the v5 one a `sanitizeUrl`-ed URL.
+        // Both halves are widget-local and already sanitized: the v6 one
+        // carries a status plus an FTL reason run through `safeReason`, the
+        // v5 one a `sanitizeUrl`-ed URL. Each stays a single clause, so the
+        // `;` join reads as two facts rather than one garbled sentence.
         const v6Why = v6Error instanceof Error ? v6Error.message : String(v6Error);
         const v5Why = v5Error instanceof Error ? v5Error.message : String(v5Error);
         throw new Error(`${v6Why}; the v5 fallback failed too: ${v5Why}`, { cause: v6Error });

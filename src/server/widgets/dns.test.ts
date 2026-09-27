@@ -13,8 +13,8 @@ function makeCtx(
     const hit = typeof routes === 'function' ? (routes as (u: string, i?: RequestInit) => unknown)(url, init) : routes[url];
     if (hit === undefined) return new Response(JSON.stringify({ error: 'not found' }), { status: 404 });
     if (hit && typeof hit === 'object' && '__status' in (hit as Record<string, unknown>)) {
-      const { __status, __body } = hit as { __status: number; __body: unknown };
-      return new Response(JSON.stringify(__body), { status: __status });
+      const { __status, __body, __raw } = hit as { __status: number; __body?: unknown; __raw?: string };
+      return new Response(__raw ?? JSON.stringify(__body), { status: __status });
     }
     return new Response(JSON.stringify(hit), { status: 200 });
   };
@@ -409,5 +409,136 @@ describe('Pi-hole v6 → v5 fallback keeps the v6 diagnosis', () => {
       fetcher()(ctx, { type: 'dns-stats', service: 'pihole', url: 'http://pihole.local' }),
     );
     expect(msg).toBe('Pi-hole v5 HTTP 401 for http://pihole.local/admin/api.php?…');
+  });
+});
+
+// FTL's v6 error body is an object, not a string: `{ error: { key, message,
+// hint }, took }` (docs.pi-hole.net/api/auth). A bare status says what went
+// wrong and never why, and the `hint` is the actionable half — the docs'
+// own 400 example is a misrouted-endpoint hint naming the fix.
+describe('Pi-hole v6 surfaces the FTL error reason', () => {
+  const V6_PASSWORD = 'pihole-pw-2b9f_secret';
+  const v6 = (routes: Parameters<typeof makeCtx>[0], env = { PIHOLE_PASSWORD: V6_PASSWORD }) =>
+    messageOf(fetcher()(makeCtx(routes, env), { type: 'dns-stats', service: 'pihole', url: 'http://pihole.local' }));
+
+  it('falls back to `message` when the 401 carries no hint', async () => {
+    const msg = await v6(() => ({
+      __status: 401,
+      __body: { error: { key: 'unauthorized', message: 'Unauthorized', hint: null }, took: 0.003 },
+    }));
+    expect(msg).toBe('Pi-hole v6 auth HTTP 401: Unauthorized');
+  });
+
+  it("prefers the hint on a 400, the docs' own misrouted-endpoint example", async () => {
+    const msg = await v6(() => ({
+      __status: 400,
+      __body: {
+        error: {
+          key: 'bad_request',
+          message: 'Bad request',
+          hint: 'The API is hosted at pi.hole/api, not pi.hole/admin/api',
+        },
+        took: 0.0001,
+      },
+    }));
+    expect(msg).toBe('Pi-hole v6 auth HTTP 400: The API is hosted at pi.hole/api, not pi.hole/admin/api');
+  });
+
+  it('carries the reason from the summary stage, not just auth', async () => {
+    const msg = await v6((url: string) => {
+      if (url.endsWith('/api/auth')) return { session: { sid: 'sid-2f8b41c9d7' } };
+      if (url.includes('/api/stats/summary')) {
+        return { __status: 401, __body: { error: { key: 'unauthorized', message: 'Session invalid', hint: null } } };
+      }
+      return undefined;
+    });
+    expect(msg).toBe('Pi-hole v6 summary HTTP 401: Session invalid');
+  });
+
+  it('carries the reason when a 200 auth body has no session', async () => {
+    const msg = await v6(() => ({ error: { key: 'not_found', message: 'No session', hint: 'Re-run setup' } }));
+    expect(msg).toBe('Pi-hole v6 auth: missing sid: Re-run setup');
+  });
+
+  // FTL is third-party and a 401 also comes from reverse proxies, so a body
+  // that is absent, not JSON, or not the documented envelope must degrade to
+  // the bare status rather than throw and mask the real failure.
+  it.each([
+    ['a string error, the shape the type claimed', { error: 'nope' }],
+    ['an error with no usable fields', { error: { key: 'unauthorized' } }],
+    ['fields of the wrong type', { error: { key: 'x', message: 42, hint: { text: 'no' } } }],
+    ['no error at all', { took: 0.01 }],
+    ['a JSON array', [1, 2, 3]],
+    ['a bare JSON string', 'Unauthorized'],
+  ])('degrades to the exact bare status for %s', async (_label, body) => {
+    expect(await v6(() => ({ __status: 401, __body: body }))).toBe('Pi-hole v6 auth HTTP 401');
+  });
+
+  it('degrades to the bare status when the body is not JSON at all', async () => {
+    const msg = await v6(() => ({ __status: 502, __raw: '<html><body>502 Bad Gateway</body></html>' }));
+    expect(msg).toBe('Pi-hole v6 auth HTTP 502');
+  });
+
+  it('degrades to the bare status when the body is empty', async () => {
+    expect(await v6(() => ({ __status: 500, __body: undefined }))).toBe('Pi-hole v6 auth HTTP 500');
+  });
+
+  // The hint is server-supplied free text and this message reaches the
+  // browser, the page cache and the service worker's Cache Storage (see
+  // AGENTS.md), so a URL in it is sanitized like any other.
+  it('sanitizes a query string embedded in the hint', async () => {
+    const SECRET = 'ftl_sid_9f3c1d7b4e6a02f8';
+    const msg = await v6(() => ({
+      __status: 401,
+      __body: {
+        error: {
+          key: 'unauthorized',
+          message: 'Unauthorized',
+          hint: `Session http://pihole.local/api/auth?sid=${SECRET} has expired`,
+        },
+      },
+    }));
+    expect(msg).toBe('Pi-hole v6 auth HTTP 401: Session http://pihole.local/api/auth?… has expired');
+    expect(msg).not.toContain(SECRET);
+  });
+
+  it('leaves prose that merely looks URL-ish alone', async () => {
+    const msg = await v6(() => ({
+      __status: 400,
+      __body: { error: { key: 'bad_request', message: 'Bad request', hint: 'use pi.hole/api, not pi.hole/admin/api' } },
+    }));
+    expect(msg).toBe('Pi-hole v6 auth HTTP 400: use pi.hole/api, not pi.hole/admin/api');
+  });
+
+  it('caps an oversized hint so it cannot flood the Banner', async () => {
+    const msg = await v6(() => ({ __status: 500, __body: { error: { key: 'e', message: 'm', hint: 'x'.repeat(300) } } }));
+    const reason = msg.slice('Pi-hole v6 auth HTTP 500: '.length);
+    expect(reason).toHaveLength(160);
+    expect(reason.endsWith('…')).toBe(true);
+  });
+
+  it('flattens newlines so the reason stays one clause', async () => {
+    const msg = await v6(() => ({
+      __status: 400,
+      __body: { error: { key: 'bad_request', message: 'm', hint: 'first line\nsecond line\r\nthird' } },
+    }));
+    expect(msg).toBe('Pi-hole v6 auth HTTP 400: first line second line third');
+  });
+
+  // cee455a joins the two attempts with `;` into one message because api.ts
+  // copies `e.message` alone into `payload.error`. A reason on the v6 half
+  // must not double up or garble that join.
+  it('composes with the v5 fallback join without doubling the clause', async () => {
+    const msg = await v6(
+      () => ({
+        __status: 400,
+        __body: { error: { key: 'bad_request', message: 'Bad request', hint: 'The API is hosted at pi.hole/api' } },
+      }),
+      { PIHOLE_PASSWORD: V6_PASSWORD, PIHOLE_TOKEN: 'pi_9f3c1d7b4e6a02f8_secret' },
+    );
+    expect(msg).toBe(
+      'Pi-hole v6 auth HTTP 400: The API is hosted at pi.hole/api' +
+        '; the v5 fallback failed too: Pi-hole v5 HTTP 400 for http://pihole.local/admin/api.php?…',
+    );
   });
 });
