@@ -1,11 +1,12 @@
 import { Link } from '@astryxdesign/core';
 import styles from './feed.module.css';
+import { tagAccent, type TagAccent } from './tag-accent';
 
 /**
  * Generic flat feed module — deep module, small interface.
  * One row per item, consistent flat glance styling:
  * - hover: text-highlight (title -> primary), row backdrop
- * - meta subdued, tags vibrant nth-child cycle, image thumbnail
+ * - meta subdued, tags take a hue hashed from the tag text, image thumbnail
  *
  * Callers map their domain payload to FeedItem; Feed owns layout/colour/hover.
  */
@@ -33,6 +34,13 @@ export interface FeedProps {
   /** when true titles truncate single line; else 2-line clamp (rss single-line-titles) */
   singleLine?: boolean;
 }
+
+const ACCENT_CLASS: Record<TagAccent, string> = {
+  green: styles.chipAccentGreen,
+  cyan: styles.chipAccentCyan,
+  pink: styles.chipAccentPink,
+  orange: styles.chipAccentOrange,
+};
 
 function chipsFor(item: FeedItem): string[] {
   if (item.tags && item.tags.length > 0) return item.tags;
@@ -66,7 +74,7 @@ export function Feed({ items, layout = 'list', singleLine }: FeedProps) {
               {chips.length > 0 ? (
                 <div className={styles.chips}>
                   {chips.map((c) => (
-                    <span key={c} className={styles.chip}>
+                    <span key={c} className={`${styles.chip} ${ACCENT_CLASS[tagAccent(c)]}`}>
                       {c}
                     </span>
                   ))}

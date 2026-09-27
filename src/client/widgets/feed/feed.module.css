@@ -145,7 +145,10 @@
   overflow: hidden;
 }
 
-/* chips / tags — glance .attachments cycle, vibrant */
+/* chips / tags. Hue comes from a hash of the tag text (see tag-accent.ts), not
+ * from DOM position, so a category keeps one colour across every row. Yellow is
+ * the tag hue and the default, carried by .chip itself. The accent set
+ * deliberately omits --color-tag-blue, which is #BD93F9 in this kit — purple. */
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -154,35 +157,17 @@
 }
 
 .chip {
+  --chip-hue: var(--color-tag-yellow);
   border-radius: var(--border-radius);
   padding: 1px 5px;
   font-size: var(--font-size-h6);
-  border: 1px solid color-mix(in srgb, var(--color-tag-blue) 28%, transparent);
-  background-color: color-mix(in srgb, var(--color-tag-blue) 22%, transparent);
-  color: var(--color-tag-blue);
+  color: var(--chip-hue);
+  background-color: color-mix(in srgb, var(--chip-hue) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--chip-hue) 28%, transparent);
   line-height: 1.4;
 }
 
-.chip:nth-child(5n+2) {
-  background-color: color-mix(in srgb, var(--color-tag-green) 22%, transparent);
-  color: var(--color-tag-green);
-  border-color: color-mix(in srgb, var(--color-tag-green) 28%, transparent);
-}
-
-.chip:nth-child(5n+3) {
-  background-color: color-mix(in srgb, var(--color-tag-yellow) 22%, transparent);
-  color: var(--color-tag-yellow);
-  border-color: color-mix(in srgb, var(--color-tag-yellow) 28%, transparent);
-}
-
-.chip:nth-child(5n+4) {
-  background-color: color-mix(in srgb, var(--color-tag-cyan) 22%, transparent);
-  color: var(--color-tag-cyan);
-  border-color: color-mix(in srgb, var(--color-tag-cyan) 28%, transparent);
-}
-
-.chip:nth-child(5n+5) {
-  background-color: color-mix(in srgb, var(--color-tag-pink) 22%, transparent);
-  color: var(--color-tag-pink);
-  border-color: color-mix(in srgb, var(--color-tag-pink) 28%, transparent);
-}
+.chipAccentGreen { --chip-hue: var(--color-tag-green); }
+.chipAccentCyan { --chip-hue: var(--color-tag-cyan); }
+.chipAccentPink { --chip-hue: var(--color-tag-pink); }
+.chipAccentOrange { --chip-hue: var(--color-tag-orange); }
