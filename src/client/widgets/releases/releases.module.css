@@ -12,6 +12,13 @@
   margin-top: 4px;
 }
 
+/* WCAG 2.5.8: the release name is one 20px line box, so the anchor needs its
+   own floor. The 28px chevron beside it already sets the row's height, so
+   the link grows inside the row and the row does not move. */
+.title {
+  min-height: 24px;
+}
+
 /* Core Badge ships a 9999px pill; brand principle 7 is "flat and crisp, 5px
    radii, no pills". Visual-over-spec deviation, recorded at the site of the
    choice: keep the Badge's yellow tag wash, drop the pill and the
@@ -20,22 +27,6 @@
   border-radius: var(--radius-element);
   padding-inline: 4px;
   line-height: 1.4;
-}
-
-/* entire card is expandable when notes exist — flat, no shadow.
-   4px bleed so the focus ring has room inside the outer card inset. */
-.rowExpandable {
-  cursor: pointer;
-  border-radius: var(--border-radius);
-  margin-left: -4px;
-  margin-right: -4px;
-  padding-left: 4px;
-  padding-right: 4px;
-}
-
-.rowExpandable:focus-visible {
-  outline: 1px solid var(--color-primary);
-  outline-offset: 1px;
 }
 
 /* The chevron rotation is motion answering the expand action, which is what

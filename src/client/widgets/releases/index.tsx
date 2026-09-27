@@ -47,28 +47,12 @@ function ReleaseRow({
   const trimmed = release.notes?.trim() ?? '';
   const hasNotes = trimmed.length > 0;
 
-  const toggle = () => {
-    if (hasNotes) onToggle();
-  };
-
+  /* The row is a plain container, not a button: it holds the release link
+     and the disclosure button, and a role="button" host around both is a
+     nested-interactive defect (WCAG 4.1.2). The chevron button is the only
+     expander, so it carries aria-expanded. */
   return (
-    <div
-      className={`${styles.row} ${hasNotes ? styles.rowExpandable : ''}`}
-      onClick={hasNotes ? toggle : undefined}
-      role={hasNotes ? 'button' : undefined}
-      tabIndex={hasNotes ? 0 : undefined}
-      aria-expanded={hasNotes ? open : undefined}
-      onKeyDown={
-        hasNotes
-          ? (e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                toggle();
-              }
-            }
-          : undefined
-      }
-    >
+    <div className={styles.row}>
       <HStack gap={1} vAlign="center">
         <Link
           href={release.url}
@@ -76,7 +60,7 @@ function ReleaseRow({
           type="body"
           maxLines={1}
           hasUnderline={false}
-          onClick={(e) => e.stopPropagation()}
+          className={styles.title}
         >
           {release.name || release.tag}
         </Link>
@@ -87,10 +71,7 @@ function ReleaseRow({
             icon={<ChevronDown size={14} className={open ? styles.chevronOpen : styles.chevron} />}
             variant="secondary"
             size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggle();
-            }}
+            onClick={onToggle}
           />
         ) : null}
       </HStack>
