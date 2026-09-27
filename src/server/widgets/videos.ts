@@ -163,6 +163,17 @@ function isChannelId(channel: string): boolean {
   return /^UC[A-Za-z0-9_-]{22}$/.test(channel);
 }
 
+/** The public page a source can be scraped from when its feed comes back
+ * empty. A handle and a raw `UC…` both have one — gating the fallback on
+ * `@handle` meant a channel configured by id had no second channel at all and
+ * simply vanished whenever its RSS feed died. Each path segment is encoded on
+ * its own; the whole path never is. */
+function videosPageUrl(source: string): string | null {
+  if (source.startsWith('@')) return `https://www.youtube.com/${encodeURIComponent(source)}/videos`;
+  if (source.startsWith('UC')) return `https://www.youtube.com/channel/${encodeURIComponent(source)}/videos`;
+  return null;
+}
+
 export function extractChannelId(html: string): string | null {
   const patterns = [
     /"externalId"\s*:\s*"(UC[A-Za-z0-9_-]{22})"/,
@@ -255,10 +266,7 @@ async function feedSpecsForChannels(
         url: feedUrlForId(id, includeShorts),
         source,
         cacheKey: id,
-        // A resolved handle has a public /videos page to fall back to. Each
-        // path segment is encoded on its own — never the whole path — so a
-        // non-ASCII handle still resolves to a real URL.
-        pageUrl: source.startsWith('@') ? `https://www.youtube.com/${encodeURIComponent(source)}/videos` : null,
+        pageUrl: videosPageUrl(source),
       };
     }),
   );

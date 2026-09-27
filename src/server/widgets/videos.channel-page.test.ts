@@ -285,4 +285,56 @@ describe('videos: channel-page fallback', () => {
       { source: '@Fireship', reason: expect.stringContaining('markup changed: no ytInitialData') },
     ]);
   });
+
+  // A raw `UC…` in config used to have no page fallback at all: the feed came
+  // back empty and the channel simply disappeared. It has exactly the same
+  // second channel a handle has — youtube.com/channel/<UC>/videos.
+  it('a UC… channel whose feed is empty falls back to its own /videos page', async () => {
+    const seen: string[] = [];
+    const ctx = {
+      fetch: vi.fn(async (url: string) => {
+        seen.push(url);
+        if (url.includes('/channel/UCsBjURrPoezykLs9EqgamOA/videos')) {
+          return new Response(CHANNEL_PAGE, { status: 200 });
+        }
+        return new Response(EMPTY_FEED, { status: 200 });
+      }) as unknown as typeof fetch,
+      env: {},
+      cache: new TtlCache(),
+      singleflight: new Singleflight(),
+    } satisfies WidgetFetchContext;
+
+    const data = (await videosFetcher()(ctx, {
+      type: 'videos',
+      channels: ['UCsBjURrPoezykLs9EqgamOA'],
+    })) as { videos: Video[]; issues: unknown[] };
+
+    expect(seen).toEqual([
+      'https://www.youtube.com/feeds/videos.xml?channel_id=UCsBjURrPoezykLs9EqgamOA',
+      'https://www.youtube.com/channel/UCsBjURrPoezykLs9EqgamOA/videos',
+    ]);
+    expect(data.videos.map((v) => v.title)).toContain(
+      'Meta is pivoting again... everything you missed from Connect 2026',
+    );
+    expect(data.issues).toEqual([]);
+  });
+
+  it('the handle page is still scraped through the encoded handle segment', async () => {
+    const seen: string[] = [];
+    const ctx = {
+      fetch: vi.fn(async (url: string) => {
+        seen.push(url);
+        if (url.includes('/videos')) return new Response(CHANNEL_PAGE, { status: 200 });
+        if (url.includes('/@Fireship')) return new Response(HANDLE_PAGE, { status: 200 });
+        return new Response(EMPTY_FEED, { status: 200 });
+      }) as unknown as typeof fetch,
+      env: {},
+      cache: new TtlCache(),
+      singleflight: new Singleflight(),
+    } satisfies WidgetFetchContext;
+
+    await videosFetcher()(ctx, { type: 'videos', channels: ['@Fireship'] });
+
+    expect(seen).toContain('https://www.youtube.com/%40Fireship/videos');
+  });
 });
