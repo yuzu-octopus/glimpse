@@ -9,9 +9,26 @@ function Trending({ config, data, error, isLoading }: WidgetComponentProps) {
   const d = data as TrendingData | null;
   const items = d ?? [];
   const loading = isLoading ?? (data == null && !error);
-  if (error) return <WidgetChrome title={cfg.title ?? 'Trending'} error={String(error)} showErrors={cfg['show-errors']} />;
+  if (error) {
+    return (
+      <WidgetChrome
+        title={cfg.title ?? 'Trending'}
+        titleUrl={cfg['title-url']}
+        hideHeader={cfg['hide-header']}
+        cssClass={cfg['css-class']}
+        error={String(error)}
+        showErrors={cfg['show-errors']}
+      />
+    );
+  }
   return (
-    <WidgetChrome title={cfg.title ?? 'Trending'} isLoading={!!loading}>
+    <WidgetChrome
+      title={cfg.title ?? 'Trending'}
+      titleUrl={cfg['title-url']}
+      hideHeader={cfg['hide-header']}
+      cssClass={cfg['css-class']}
+      isLoading={!!loading}
+    >
       {items.length === 0 && !loading ? <div className={styles.empty}>No trending repos</div> : null}
       <ul className={styles.list}>
         {items.map((r) => (

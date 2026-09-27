@@ -53,6 +53,45 @@ describe('change-detection widget', () => {
     render(<ChangeDetection config={{ type: 'change-detection' }} data={null} error="boom" />);
     expect(screen.getByText(/boom/)).toBeInTheDocument();
   });
+
+  it('links the header when title-url is set, and only then', () => {
+    const linked = render(
+      <ChangeDetection
+        config={{ type: 'change-detection', title: 'Watches', 'title-url': 'https://example.com/dash' }}
+        data={UNCHANGED}
+      />,
+    );
+    expect(screen.getByRole('link', { name: 'Watches' })).toHaveAttribute('href', 'https://example.com/dash');
+    linked.unmount();
+
+    render(<ChangeDetection config={{ type: 'change-detection', title: 'Watches' }} data={UNCHANGED} />);
+    expect(screen.queryByRole('link', { name: 'Watches' })).toBeNull();
+  });
+
+  it('honours hide-header, so title-url and css-class go with it', () => {
+    const { container } = render(
+      <ChangeDetection
+        config={{ type: 'change-detection', title: 'Watches', 'hide-header': true, 'css-class': 'mine' }}
+        data={UNCHANGED}
+      />,
+    );
+    expect(screen.queryByText('Watches')).toBeNull();
+    expect(container.querySelector('.mine')).not.toBeNull();
+  });
+
+  it('fails quietly when show-errors is false, but still reports the failure', () => {
+    render(
+      <ChangeDetection
+        config={{ type: 'change-detection', title: 'Watches', 'show-errors': false }}
+        data={null}
+        error="upstream exploded"
+      />,
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByText(/upstream exploded/)).toBeNull();
+    // quiet is never invisible
+    expect(screen.getByTestId('widget-error-dot')).toBeInTheDocument();
+  });
 });
 
 describe('change-detection chip geometry', () => {

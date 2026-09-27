@@ -14,9 +14,26 @@ function Network({ config, data, error, isLoading }: WidgetComponentProps) {
     if (d?.pingMs != null) setHistory((h) => [...h.slice(-19), d.pingMs as number]);
   }, [d?.pingMs]);
   const loading = isLoading ?? (data == null && !error);
-  if (error) return <WidgetChrome title={cfg.title ?? 'Network'} error={String(error)} showErrors={cfg['show-errors']} />;
+  if (error) {
+    return (
+      <WidgetChrome
+        title={cfg.title ?? 'Network'}
+        titleUrl={cfg['title-url']}
+        hideHeader={cfg['hide-header']}
+        cssClass={cfg['css-class']}
+        error={String(error)}
+        showErrors={cfg['show-errors']}
+      />
+    );
+  }
   return (
-    <WidgetChrome title={cfg.title ?? 'Network'} isLoading={!!loading}>
+    <WidgetChrome
+      title={cfg.title ?? 'Network'}
+      titleUrl={cfg['title-url']}
+      hideHeader={cfg['hide-header']}
+      cssClass={cfg['css-class']}
+      isLoading={!!loading}
+    >
       <Grid columns={3} gap={2}>
         <Stack gap={0.5}>
           <Text type="label">Local</Text>

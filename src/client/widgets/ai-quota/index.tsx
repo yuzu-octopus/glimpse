@@ -17,13 +17,36 @@ export function AiQuota({ config, data, error, isLoading }: WidgetComponentProps
   const cfg = config as unknown as AiQuotaConfig;
   const loading = isLoading ?? ((data as unknown) == null && !error);
   useNow(); // re-render each shared 60s tick so reset countdowns stay live
-  if (loading) return <WidgetChrome title={cfg.title} isLoading />;
-  if (error) return <WidgetChrome title={cfg.title} error={error} showErrors={cfg['show-errors']} />;
+  if (loading) {
+    return (
+      <WidgetChrome
+        title={cfg.title}
+        titleUrl={cfg['title-url']}
+        hideHeader={cfg['hide-header']}
+        cssClass={cfg['css-class']}
+        isLoading
+      />
+    );
+  }
+  if (error) {
+    return (
+      <WidgetChrome
+        title={cfg.title}
+        titleUrl={cfg['title-url']}
+        hideHeader={cfg['hide-header']}
+        cssClass={cfg['css-class']}
+        error={error}
+        showErrors={cfg['show-errors']}
+      />
+    );
+  }
   const d = data as AiQuotaData;
   return (
     <WidgetChrome
       title={cfg.title ?? `${d.provider} quota`}
+      titleUrl={cfg['title-url']}
       hideHeader={cfg['hide-header']}
+      cssClass={cfg['css-class']}
     >
       <Stack gap={2}>
         {/* The plan is a tag, not a link and not a value: yellow owns chips, so
