@@ -1,5 +1,5 @@
 import { marketsSchema } from '../../shared/widgets/keyed';
-import { fetchJson } from './http';
+import { fetchJson, retryOptionsFrom } from './http';
 import { registerWidget } from './registry';
 import type { Market } from '../../shared/widgets/payloads';
 
@@ -24,13 +24,14 @@ const YAHOO_HEADERS = {
 
 registerWidget('markets', async (ctx, config) => {
   const cfg = marketsSchema.parse(config);
+  const retry = retryOptionsFrom(cfg);
 
   const settled = await Promise.allSettled(
     cfg.markets.map(async (m) => {
       const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(m.symbol)}?range=1mo&interval=1d`;
       const payload = await fetchJson<YahooChartResponse>(ctx, url, {
         headers: YAHOO_HEADERS,
-      });
+      }, retry);
       const meta = payload.chart?.result?.[0]?.meta ?? {};
       const price = meta.regularMarketPrice ?? null;
       const prevClose = meta.chartPreviousClose;

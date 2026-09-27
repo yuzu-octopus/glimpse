@@ -1,6 +1,6 @@
 import { qbittorrentSchema } from '../../shared/widgets/media';
 import type { TorrentData, TorrentItem } from '../../shared/widgets/payloads';
-import { fetchJson } from './http';
+import { fetchJson, retryOptionsFrom } from './http';
 import { registerWidget } from './registry';
 
 interface QbitTorrent {
@@ -40,8 +40,11 @@ registerWidget('qbittorrent', async (ctx, config): Promise<TorrentData> => {
   const body = await login.text();
   if (!login.ok || body === 'Fails.') throw new Error('qbittorrent: login failed (check username/password)');
   const cookie = login.headers.get('set-cookie')?.split(';')[0] ?? '';
-  const torrents = await fetchJson<QbitTorrent[]>(ctx, `${base}/api/v2/torrents/info`, {
-    headers: cookie ? { cookie } : undefined,
-  });
+  const torrents = await fetchJson<QbitTorrent[]>(
+    ctx,
+    `${base}/api/v2/torrents/info`,
+    { headers: cookie ? { cookie } : undefined },
+    retryOptionsFrom(cfg),
+  );
   return { torrents: (Array.isArray(torrents) ? torrents : []).slice(0, cfg.limit).map(toItem) };
 });

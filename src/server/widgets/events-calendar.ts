@@ -1,6 +1,6 @@
 import { eventsCalendarSchema } from '../../shared/widgets/calendar';
 import type { CalendarEvent } from '../../shared/widgets/payloads';
-import { fetchText } from './http';
+import { fetchText, retryOptionsFrom } from './http';
 import { registerWidget, type WidgetFetchContext } from './registry';
 
 const DAY_MS = 86_400_000;
@@ -127,11 +127,12 @@ function collectEvents(text: string, now: number, windowEnd: number): CalendarEv
 
 registerWidget('events-calendar', async (ctx: WidgetFetchContext, config) => {
   const cfg = eventsCalendarSchema.parse(config);
+  const retry = retryOptionsFrom(cfg);
   const urls = [...(cfg.urls ?? []), ...(cfg['ics-url'] ? [cfg['ics-url']] : [])];
   const now = Date.now();
   const windowEnd = now + cfg.days * DAY_MS;
   const results = await Promise.allSettled(
-    urls.map((u) => fetchText(ctx, u, { headers: { Accept: 'text/calendar' } })),
+    urls.map((u) => fetchText(ctx, u, { headers: { Accept: 'text/calendar' } }, retry)),
   );
   const fulfilled = results.filter((r) => r.status === 'fulfilled');
   if (fulfilled.length === 0) {

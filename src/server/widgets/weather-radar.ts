@@ -1,6 +1,6 @@
 import { RADAR_DEFAULTS, radarSchema } from '../../shared/widgets/radar';
 import type { RadarData } from '../../shared/widgets/payloads';
-import { fetchJson } from './http';
+import { fetchJson, retryOptionsFrom } from './http';
 import { registerWidget } from './registry';
 import { geocodeLocation } from './weather';
 
@@ -19,10 +19,10 @@ interface RainViewerMaps {
 registerWidget('weather-radar', async (ctx, config) => {
   const cfg = radarSchema.parse(config);
   const zoom = cfg.zoom ?? RADAR_DEFAULTS.zoom;
-  const place = await geocodeLocation(ctx, cfg.location);
+  const place = await geocodeLocation(ctx, cfg.location, retryOptionsFrom(cfg));
 
   // eslint-disable-next-line react-doctor/server-sequential-independent-await -- place needed for error precedence (location 404 should win over radar 404)
-  const maps = await fetchJson<RainViewerMaps>(ctx, 'https://api.rainviewer.com/public/weather-maps.json');
+  const maps = await fetchJson<RainViewerMaps>(ctx, 'https://api.rainviewer.com/public/weather-maps.json', {}, retryOptionsFrom(cfg));
   const past = maps.radar?.past ?? [];
   const last = past[past.length - 1];
   if (!last) throw new Error('no radar frames available');

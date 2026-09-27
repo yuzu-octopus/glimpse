@@ -1,5 +1,5 @@
 import { REPOSITORY_DEFAULTS, repositorySchema } from '../../shared/widgets/keyed';
-import { fetchJson } from './http';
+import { fetchJson, retryOptionsFrom } from './http';
 import { getGitHubToken } from '../github-token';
 import { registerWidget } from './registry';
 import type { RepoPull } from '../../shared/widgets/payloads';
@@ -28,6 +28,7 @@ function mapIssue(p: GitHubIssueLike): RepoPull {
 
 registerWidget('repository', async (ctx, config) => {
   const cfg = repositorySchema.parse(config);
+  const retry = retryOptionsFrom(cfg);
   const base = `https://api.github.com/repos/${cfg.repository}`;
   const token = cfg.token ?? (await getGitHubToken(ctx.env));
   const headers: Record<string, string> = {
@@ -38,16 +39,18 @@ registerWidget('repository', async (ctx, config) => {
   };
 
   const [repo, pulls, issues] = await Promise.all([
-    fetchJson<GitHubRepo>(ctx, base, { headers }),
+    fetchJson<GitHubRepo>(ctx, base, { headers }, retry),
     fetchJson<GitHubIssueLike[]>(
       ctx,
       `${base}/pulls?state=open&per_page=${cfg['pull-requests-limit'] ?? REPOSITORY_DEFAULTS['pull-requests-limit']}`,
       { headers },
+      retry,
     ),
     fetchJson<GitHubIssueLike[]>(
       ctx,
       `${base}/issues?state=open&per_page=${cfg['issues-limit'] ?? REPOSITORY_DEFAULTS['issues-limit']}`,
       { headers },
+      retry,
     ),
   ]);
 

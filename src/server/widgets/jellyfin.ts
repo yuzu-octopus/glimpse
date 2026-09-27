@@ -1,6 +1,6 @@
 import { jellyfinSchema } from '../../shared/widgets/media';
 import type { MediaData, MediaItem } from '../../shared/widgets/payloads';
-import { fetchJson } from './http';
+import { fetchJson, retryOptionsFrom } from './http';
 import { registerWidget } from './registry';
 
 interface JellyfinUser {
@@ -39,13 +39,14 @@ function toItem(base: string, item: JellyfinItem): MediaItem {
 
 registerWidget('jellyfin', async (ctx, config): Promise<MediaData> => {
   const cfg = jellyfinSchema.parse(config);
+  const retry = retryOptionsFrom(cfg);
   const key = cfg['api-key'] ?? ctx.env.JELLYFIN_API_KEY;
   if (!key) throw new Error('jellyfin: missing api-key (set api-key or JELLYFIN_API_KEY)');
   const base = cfg.url.replace(/\/+$/, '');
   const headers = { 'X-Emby-Token': key, accept: 'application/json' };
   let userId = cfg['user-id'];
   if (!userId) {
-    const users = await fetchJson<JellyfinUser[]>(ctx, `${base}/Users`, { headers });
+    const users = await fetchJson<JellyfinUser[]>(ctx, `${base}/Users`, { headers }, retry);
     userId = users[0]?.Id;
     if (!userId) throw new Error('jellyfin: no users found on instance');
   }
@@ -53,6 +54,7 @@ registerWidget('jellyfin', async (ctx, config): Promise<MediaData> => {
     ctx,
     `${base}/Users/${encodeURIComponent(userId)}/Items/Latest?Limit=${cfg.limit}&IncludeItemTypes=Movie,Episode,Series,Season`,
     { headers },
+    retry,
   );
   return { items: (Array.isArray(items) ? items : []).slice(0, cfg.limit).map((i) => toItem(base, i)) };
 });

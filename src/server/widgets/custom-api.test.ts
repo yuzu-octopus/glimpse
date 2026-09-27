@@ -199,4 +199,29 @@ describe('custom-api fetcher', () => {
     expect(data.items[0].title).toBe('Item 0');
     expect(data.items[2].title).toBe('Item 2');
   });
+
+  // Proves the widget's parsed `retries` config reaches fetchWithRetry, not
+  // just the default budget: 0 must mean exactly one attempt against a
+  // retryable 500, 2 must mean three. Real backoff runs here (no fake timers),
+  // so this costs ~1.6s of wall clock on the retries:2 leg.
+  it('spends exactly the configured retries budget on a failing endpoint', async () => {
+    let attempts = 0;
+    const failing = async (): Promise<Response> => {
+      attempts++;
+      return new Response('nope', { status: 500 });
+    };
+    const config = (retries: number) => ({
+      type: 'custom-api' as const,
+      url: 'https://api.example.com/boom',
+      retries,
+      options: { path: '$.results[*]' },
+    });
+
+    await expect(customApiFetcher()(makeCtx(failing), config(0))).rejects.toThrow('HTTP 500');
+    expect(attempts).toBe(1);
+
+    attempts = 0;
+    await expect(customApiFetcher()(makeCtx(failing), config(2))).rejects.toThrow('HTTP 500');
+    expect(attempts).toBe(3);
+  });
 });
