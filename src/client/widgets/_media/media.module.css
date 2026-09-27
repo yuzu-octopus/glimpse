@@ -53,3 +53,11 @@
 .fill [data-variant='accent'] {
   background: var(--color-data-categorical-cyan);
 }
+
+/* Size, both rates and the eta share one trailing line. It has to be allowed
+   to shrink and clip, or a long name plus four values overflows the card. */
+.torrentMeta {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}

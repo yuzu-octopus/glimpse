@@ -21,6 +21,30 @@ describe('qbittorrent widget', () => {
     expect(screen.getByText('100%')).toBeInTheDocument();
   });
 
+  it('shows both rates, each with its direction', () => {
+    const { container } = render(<Qbittorrent config={{ type: 'qbittorrent' }} data={data} />);
+    // The seeder's rate was fetched and thrown away; two bare speeds with no
+    // direction read as one, so each carries its arrow.
+    expect(screen.getByText('11.4 MB/s')).toBeInTheDocument();
+    expect(screen.getByText('488 KB/s')).toBeInTheDocument();
+    expect(container.querySelectorAll('svg.lucide-arrow-down')).toHaveLength(2);
+    expect(container.querySelectorAll('svg.lucide-arrow-up')).toHaveLength(2);
+  });
+
+  it('omits a rate the client never reported', () => {
+    const { container } = render(
+      <Qbittorrent
+        config={{ type: 'qbittorrent' }}
+        data={{ torrents: [{ ...data.torrents[0]!, downloadSpeed: null, uploadSpeed: null }] }}
+      />,
+    );
+    expect(container.querySelector('svg.lucide-arrow-down')).toBeNull();
+    expect(container.querySelector('svg.lucide-arrow-up')).toBeNull();
+    // the parts we do have are still there
+    expect(screen.getByText('3.7 GB')).toBeInTheDocument();
+    expect(screen.getByText('5m left')).toBeInTheDocument();
+  });
+
   it('shows a placeholder when empty', () => {
     render(<Qbittorrent config={{ type: 'qbittorrent' }} data={{ torrents: [] }} />);
     expect(screen.getByText(/No torrents/)).toBeInTheDocument();
