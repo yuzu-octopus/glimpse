@@ -403,7 +403,12 @@ async function scrapeChannelPage(
   pageUrl: string,
   retry: RetryOptions,
 ): Promise<{ title?: string; items: Array<Record<string, unknown>> }> {
-  const html = await fetchText(ctx, pageUrl, { headers: { 'User-Agent': YT_UA } }, retry);
+  // The rescue gets no retry budget of its own. The feed has already spent the
+  // configured one, and a source that is down should cost one look, not two
+  // full backoff ladders — that doubles the worst-case latency of a dead
+  // source for half a second of extra odds. A blip is covered by the stale
+  // cache and by the next poll.
+  const html = await fetchText(ctx, pageUrl, { headers: { 'User-Agent': YT_UA } }, { ...retry, retries: 0 });
   return parseChannelPage(html);
 }
 
