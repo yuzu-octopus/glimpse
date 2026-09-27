@@ -1,5 +1,15 @@
 /* Settings dialog — section sidebar + spacious content pane. */
 
+/* The <dialog> element is portalled to <body>, outside #root, and Chromium's
+   UA stylesheet paints it `color: canvastext` — pure white. Neither Astryx
+   core nor the kit declares a colour for it, so every descendant without its
+   own rule inherited #fff. Declaring the foreground here re-seats the dialog
+   on the same text step <body> uses, so unstyled rows (the Docs table cells)
+   read as page copy instead of a white-text leak. */
+.dialog {
+  color: var(--color-text-base);
+}
+
 /* Gear trigger; fills the header/mobile-nav bar height so the icon centers
  * in the 45px header row (align-items: center on the row). */
 .trigger {

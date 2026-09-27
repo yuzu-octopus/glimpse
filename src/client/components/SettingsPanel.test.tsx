@@ -174,4 +174,19 @@ describe('SettingsPanel trigger and dialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(document.querySelector('dialog')?.open).toBe(false);
   });
+
+  // <dialog> is portalled outside #root and Chromium's UA stylesheet paints it
+  // `color: canvastext`; neither Astryx core nor the kit overrides that, so
+  // every descendant without its own rule inherited pure white.
+  it('seats the portalled dialog on a text token instead of the UA canvastext', () => {
+    expect(stylesheet).toMatch(/\.dialog\s*\{[^}]*color:\s*var\(--color-text-[a-z-]+\)/);
+
+    stubConfigApi();
+    render(<SettingsPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+
+    const dialog = document.querySelector('dialog');
+    expect(dialog).not.toBeNull();
+    expect(dialog?.className).toContain(styles.dialog);
+  });
 });

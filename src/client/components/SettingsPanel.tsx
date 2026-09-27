@@ -56,6 +56,7 @@ export function SettingsPanel() {
         onOpenChange={setOpen}
         width="min(960px, calc(100vw - 32px))"
         maxHeight="85vh"
+        className={styles.dialog}
       >
         <DialogHeader title="Settings" onOpenChange={setOpen} />
         <div className={styles.body} data-testid="settings-panel">
