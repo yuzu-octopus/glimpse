@@ -22,20 +22,28 @@
   overflow: hidden;
 }
 
-/* glance .thumbnail — desaturated at rest, full colour on hover. */
 .cardThumb {
   display: block;
   width: 100%;
   height: 80px;
   object-fit: cover;
-  filter: grayscale(0.2) contrast(0.9);
-  opacity: 0.8;
-  transition: filter 0.2s, opacity 0.2s;
 }
 
-.card:hover .cardThumb {
-  filter: none;
-  opacity: 1;
+/* glance .thumbnail — desaturated at rest, full colour on hover. The dim is
+ * gated on a real pointer — a touch device can never fire :hover, so an
+ * ungated dim would leave the tiles permanently greyed. :focus-within is the
+ * keyboard's equivalent channel. */
+@media (hover: hover) {
+  .cardThumb {
+    filter: grayscale(0.2) contrast(0.9);
+    opacity: 0.8;
+    transition: filter 0.2s, opacity 0.2s;
+  }
+
+  .card:is(:hover, :focus-within) .cardThumb {
+    filter: none;
+    opacity: 1;
+  }
 }
 
 .cardThumbPlaceholder {
