@@ -54,12 +54,12 @@ describe('T4 TDD failing', () => {
     });
     const ctx: WidgetFetchContext = {
       fetch: fetchMock as unknown as typeof fetch,
-      env: {},
+      env: { REDDIT_CLIENT_ID: 'id', REDDIT_CLIENT_SECRET: 'sec' },
       cache: new TtlCache(),
       singleflight: new Singleflight(),
     };
     const fetcher = serverWidgets.get('reddit')!;
-    const cfg = { type: 'reddit', subreddit: 'selfhosted', 'app-auth': { id: 'id', secret: 'sec' } } as unknown as Record<string, unknown>;
+    const cfg = { type: 'reddit', subreddit: 'selfhosted' } as unknown as Record<string, unknown>;
     await Promise.all([fetcher(ctx, cfg), fetcher(ctx, cfg), fetcher(ctx, cfg)]);
     expect(tokenCalls).toBe(1);
   });
