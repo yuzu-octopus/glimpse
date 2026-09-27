@@ -58,6 +58,34 @@ const HINTS: Record<string, string> = {
   'Page needs': 'hint: every page needs `columns:` or a flat `widgets:` list',
 };
 
+/** Widget options Glimpse used to read a credential from. The config is served
+ * to the browser verbatim, so a key in the file was a key in the page — the
+ * fields moved to the environment and are named here so an existing config
+ * says what to do instead of silently losing its credential. Keyed by widget
+ * type, then option; nested frames inherit the widget's type. */
+const REMOVED_CREDENTIALS: Record<string, Record<string, string>> = {
+  immich: { 'api-key': 'IMMICH_API_KEY' },
+  jellyfin: { 'api-key': 'JELLYFIN_API_KEY' },
+  qbittorrent: { username: 'QBITTORRENT_USERNAME', password: 'QBITTORRENT_PASSWORD' },
+  transmission: { username: 'TRANSMISSION_USERNAME', password: 'TRANSMISSION_PASSWORD' },
+  tailscale: { 'api-key': 'TS_API_KEY' },
+  'home-assistant': { token: 'HA_TOKEN' },
+  'ai-quota': { token: 'the provider env var (CODEX_TOKEN, ANTHROPIC_API_KEY, …) or tokenFile' },
+  'contribution-graph': { token: 'nothing — the widget fetches public pages anonymously' },
+  'dns-stats': {
+    token: 'PIHOLE_TOKEN or TECHNITIUM_TOKEN',
+    password: 'PIHOLE_PASSWORD or ADGUARD_PASSWORD',
+    username: 'ADGUARD_USERNAME',
+  },
+  reddit: { 'app-auth': 'REDDIT_CLIENT_ID + REDDIT_CLIENT_SECRET' },
+  releases: { token: 'GITHUB_TOKEN', 'gitlab-token': 'GITLAB_TOKEN' },
+  repository: { token: 'GITHUB_TOKEN' },
+};
+
+function removedCredential(type: string | undefined, key: string): string | undefined {
+  return type === undefined ? undefined : REMOVED_CREDENTIALS[type]?.[key];
+}
+
 function hintFor(error: string): string | null {
   if (/discriminator|did you mean/i.test(error)) {
     return 'hint: check the widget `type:` spelling (see suggestions below)';
@@ -205,7 +233,16 @@ function unsupportedOptions(lines: string[]): string[] {
     }
 
     const keyPath = base === '' ? key : `${base}.${key}`;
-    if (frame.warn && frame.shape && !(key in frame.shape)) {
+    const known = !frame.shape || key in frame.shape;
+    const env = known ? undefined : removedCredential(frame.type, key);
+    // Checked before the generic "unsupported option": a removed credential
+    // needs the env var name, not a shrug. Warned even on a `.loose()` frame,
+    // where the generic pass stays quiet because nothing is stripped there.
+    if (env) {
+      out.push(
+        `line ${i + 1}: "${key}" is no longer read from the config${frame.type ? ` of the ${frame.type} widget` : ''} (${keyPath}) — secrets must not live in a file the server hands to the browser; set ${env} in the environment instead`,
+      );
+    } else if (frame.warn && frame.shape && !known) {
       out.push(
         `line ${i + 1}: "${key}" is not a supported option${frame.type ? ` of the ${frame.type} widget` : ''} (${keyPath}) — Glimpse ignores it`,
       );

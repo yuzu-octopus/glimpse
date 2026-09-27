@@ -80,3 +80,25 @@ describe('check-config unsupported options', () => {
     expect(out).toContain('"content" is not a supported option');
   });
 });
+
+describe('check-config removed credentials', () => {
+  it('names the env var a removed credential moved to', () => {
+    const file = fixture(
+      'pages:\n  - name: T\n    columns:\n      - span: 12\n        widgets:\n          - type: immich\n            url: https://immich.lab\n            api-key: hunter2\n',
+    );
+    const { code, out } = run(file);
+    expect(code).toBe(0);
+    expect(out).toContain('"api-key" is no longer read from the config of the immich widget');
+    expect(out).toContain('set IMMICH_API_KEY in the environment instead');
+  });
+
+
+  it('stays quiet when the credential was never in the file', () => {
+    const file = fixture(
+      'pages:\n  - name: T\n    columns:\n      - span: 12\n        widgets:\n          - type: immich\n            url: https://immich.lab\n            limit: 5\n',
+    );
+    const { code, out } = run(file);
+    expect(code).toBe(0);
+    expect(out).not.toContain('no longer read from the config');
+  });
+});
