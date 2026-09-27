@@ -237,7 +237,6 @@ export interface AiQuotaData {
   plan?: string;
   windows: AiQuotaWindow[];
   balance?: number;
-  error?: string;
 }
 
 export interface ContributionDay {
@@ -285,6 +284,63 @@ export interface ChangeDetectionItem {
   diffSnippet?: string;
 }
 export type ChangeDetectionData = ChangeDetectionItem[];
+
+/**
+ * Availability of one OpenRouter endpoint (one provider serving one model).
+ * `health` is the derived signal; `status` is the raw upstream code kept for
+ * the row tooltip.
+ */
+export type EndpointHealth = 'up' | 'degraded' | 'down' | 'unknown';
+
+// A type alias, not an interface: the kit's `Table` constrains its row type to
+// `Record<string, unknown>`, and only a type alias gets the implicit index
+// signature that satisfies it.
+export type ModelEndpointRow = {
+  /** Model slug, e.g. `anthropic/claude-sonnet-4.5`. */
+  model: string;
+  modelName: string;
+  /** Provider display name, e.g. `Fireworks`. */
+  provider: string;
+  /** OpenRouter provider tag, e.g. `fireworks/ai-fp8`. */
+  tag: string;
+  health: EndpointHealth;
+  /** Raw OpenRouter endpoint status (0 healthy, negative deranked). */
+  status: number | null;
+  /** Uptime percentages, null when the upstream has no sample. */
+  uptime5m: number | null;
+  uptime30m: number | null;
+  uptime1d: number | null;
+  /** Canonical model page — the row's tappable target. */
+  url: string;
+};
+
+/** Per-model rollup across every endpoint returned for it. */
+export interface ModelEndpointModel {
+  model: string;
+  name: string;
+  /** Worst health among the model's endpoints: what "is this model working?" means. */
+  health: EndpointHealth;
+  providers: number;
+  up: number;
+ degraded: number;
+  down: number;
+  /** True when no endpoint is fully up — the model is unservable as routed. */
+  unavailable: boolean;
+  url: string;
+}
+
+export interface ModelEndpointsData {
+  models: ModelEndpointModel[];
+  /** Endpoint rows after the provider filter, health filter and `limit` cap. */
+  rows: ModelEndpointRow[];
+  /** Rows before the `limit` cap, so the UI can say "8 of 27". */
+  total: number;
+  /** Models configured, and how many of them answered. */
+  checked: number;
+  requested: number;
+  /** Slugs whose request failed — the rest still render. */
+  failed: string[];
+}
 
 /** Recently-added library item, shared by the immich + jellyfin widgets. */
 export interface MediaItem {
@@ -337,4 +393,58 @@ export interface TorrentItem {
 
 export interface TorrentData {
   torrents: TorrentItem[];
+}
+
+/** One Home Assistant entity, already resolved to something legible: a
+ *  `binary_sensor` whose raw state is `on` reads as Closed/Open, a `sensor`
+ *  carries its unit. `raw` stays so a config `label` (or a later chart) can
+ *  go back to the untouched value. */
+export interface HomeAssistantEntity {
+  /** The entity_id, e.g. `binary_sensor.front_door` — shown as supporting text. */
+  id: string;
+  /** friendly_name when HA has one, else the id with the domain stripped. */
+  name: string;
+  domain: string;
+  /** Untouched `state` from the API. Empty when the entity is not in the install. */
+  raw: string;
+  /** What the row shows — a word for binary domains, `21.5 °C` for sensors. */
+  value: string;
+  status: HomeAssistantStatus;
+  /** True when `value` starts with a number, so the row sets tabular numerals. */
+  numeric: boolean;
+}
+
+/** `positive` = the state you want to see (closed, on, locked), `negative` =
+ *  the one you don't (open, unlocked, problem), `neutral` = neither. */
+export type HomeAssistantStatus = 'positive' | 'negative' | 'neutral';
+
+export interface HomeAssistantData {
+  entities: HomeAssistantEntity[];
+}
+
+/** One tailnet node, already resolved from Tailscale's device DTO. The API
+ *  has no `online` field — connectivity is `connectedToControl`, and it is
+ *  that flag which decides `online` here. */
+export interface TailscaleDevice {
+  /** `nodeId` when present (the identifier Tailscale asks you to use), else the legacy `id`. */
+  id: string;
+  /** Fully-qualified MagicDNS name, e.g. `nas.home.arpa`. Falls back to the hostname. */
+  name: string;
+  /** Connected to the control plane right now. */
+  online: boolean;
+  os: string | null;
+  clientVersion: string | null;
+  /** The 100.64/10 (CGNAT) IPv4 tailnet address, i.e. the one a human reads. */
+  address: string | null;
+  /** RFC3339 timestamp of the last control-plane contact. Tailscale sends
+   *  `null` while a node is connected, so it is only meaningful when offline. */
+  lastSeen: string | null;
+  /** Has the default route *enabled* (not merely advertised), so it is
+   *  actually carrying exit traffic. */
+  exitNode: boolean;
+}
+
+export interface TailscaleData {
+  /** Online nodes first, then offline, each group by name. */
+  devices: TailscaleDevice[];
 }

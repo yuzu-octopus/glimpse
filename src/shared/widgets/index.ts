@@ -92,6 +92,9 @@ import {
   TRANSMISSION_PREF,
   TRANSMISSION_SKELETON,
 } from './media';
+import { homeAssistantSchema, HOME_ASSISTANT_PREF, HOME_ASSISTANT_SKELETON } from './home-assistant';
+import { modelEndpointsSchema, MODEL_ENDPOINTS_PREF, MODEL_ENDPOINTS_SKELETON } from './model-endpoints';
+import { tailscaleSchema, TAILSCALE_PREF, TAILSCALE_SKELETON } from './tailscale';
 import type { Pref, SkeletonShape } from './shared';
 import { withTypeAliases } from './aliases';
 
@@ -135,6 +138,9 @@ const schemaEntries = [
   transmissionSchema,
   twitchChannelsSchema,
   twitchTopGamesSchema,
+  homeAssistantSchema,
+  modelEndpointsSchema,
+  tailscaleSchema,
 ] as const;
 
 /** Co-located widget metadata: each row pairs the schema with its bento pref
@@ -181,6 +187,9 @@ export const widgetMeta = {
   transmission: { schema: transmissionSchema, pref: TRANSMISSION_PREF, skeleton: TRANSMISSION_SKELETON },
   'twitch-channels': { schema: twitchChannelsSchema, pref: TWITCH_CHANNELS_PREF, skeleton: TWITCH_CHANNELS_SKELETON },
   'twitch-top-games': { schema: twitchTopGamesSchema, pref: TWITCH_TOP_GAMES_PREF, skeleton: TWITCH_TOP_GAMES_SKELETON },
+  'home-assistant': { schema: homeAssistantSchema, pref: HOME_ASSISTANT_PREF, skeleton: HOME_ASSISTANT_SKELETON },
+  'model-endpoints': { schema: modelEndpointsSchema, pref: MODEL_ENDPOINTS_PREF, skeleton: MODEL_ENDPOINTS_SKELETON },
+  'tailscale': { schema: tailscaleSchema, pref: TAILSCALE_PREF, skeleton: TAILSCALE_SKELETON },
 } as const satisfies Record<string, { schema: z.ZodType; pref: Pref; skeleton: SkeletonShape }>;
 
 /** Public widget type union, derived from the schema entries. */

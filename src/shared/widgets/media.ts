@@ -55,16 +55,11 @@ export const qbittorrentSchema = z.object({
 });
 export type QbittorrentConfig = z.infer<typeof qbittorrentSchema>;
 
-export const transmissionSchema = z
-  .object({
-    type: z.literal('transmission'),
-    ...sharedWidgetFields,
-    /** Base URL of Transmission, e.g. http://transmission.lab:9091 */
-    url: z.string(),
-    /** RPC credentials; fall back to TRANSMISSION_USERNAME / TRANSMISSION_PASSWORD. */
-    username: z.string().optional(),
-    password: z.string().optional(),
-    limit: z.number().int().min(0).default(TRANSMISSION_DEFAULTS.limit),
-  })
-  .loose();
+export const transmissionSchema = z.object({
+  type: z.literal('transmission'),
+  ...sharedWidgetFields,
+  /** Base URL of Transmission, e.g. http://transmission.lab:9091 */
+  url: z.string(),
+  limit: z.number().int().min(0).default(TRANSMISSION_DEFAULTS.limit),
+});
 export type TransmissionConfig = z.infer<typeof transmissionSchema>;

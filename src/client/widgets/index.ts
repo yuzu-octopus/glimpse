@@ -44,6 +44,9 @@ export const widgetLoaders: Record<string, Loader> = {
   transmission: () => import('./transmission'),
   'twitch-channels': () => import('./twitch-channels'),
   'twitch-top-games': () => import('./twitch-top-games'),
+  'home-assistant': () => import('./home-assistant'),
+  'model-endpoints': () => import('./model-endpoints'),
+  'tailscale': () => import('./tailscale'),
 };
 
 const widgetPromises = new Map<string, Promise<unknown>>();
