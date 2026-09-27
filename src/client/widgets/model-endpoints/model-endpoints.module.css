@@ -1,0 +1,18 @@
+/* Kit Table + Stack + StatusDot + Link. What the module keeps is only what a
+   prop cannot express: the truncation floor on the model column, and the
+   summary line's place above the table. No colour lives here — the kit owns
+   every hue, and status goes to StatusDot rather than a coloured cell. */
+
+.body {
+  min-width: 0;
+}
+
+/* The model id is a slug, not a word: give the cell room to breathe before it
+   ellipsises, and let the link own the truncation so the tooltip lands on it. */
+.modelCell {
+  min-width: 0;
+}
+
+.model {
+  min-width: 0;
+}
