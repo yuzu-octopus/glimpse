@@ -1,4 +1,5 @@
-import { defineMediaWidget, pickTorrents, TorrentList } from '../_media/media';
+import { defineMediaWidget, pickTorrents } from '../_media/factory';
+import { TorrentList } from '../_media/media';
 
 const Qbittorrent = defineMediaWidget('qbittorrent', {
   defaultTitle: 'qBittorrent',
