@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react';
-import { Badge, Card, HStack, Icon, Link, Text } from '@astryxdesign/core';
+import { Badge, Card, HStack, Icon, IconButton, Link, Text } from '@astryxdesign/core';
 import { ChevronDown, Container, GitBranch } from 'lucide-react';
 import { RELEASES_DEFAULTS, type ReleasesConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
@@ -69,31 +69,31 @@ function ReleaseRow({
           : undefined
       }
     >
-      <div className={styles.rowHeader}>
+      <HStack gap={1} vAlign="center">
         <Link
           href={release.url}
           target="_blank"
-          className={styles.title}
+          type="body"
+          maxLines={1}
           hasUnderline={false}
           onClick={(e) => e.stopPropagation()}
         >
           {release.name || release.tag}
         </Link>
         {hasNotes ? (
-          <button
-            type="button"
-            aria-label={open ? 'Hide release notes' : 'Show release notes'}
+          <IconButton
+            label={open ? 'Hide release notes' : 'Show release notes'}
             aria-expanded={open}
-            className={styles.expandBtn}
+            icon={<ChevronDown size={14} className={open ? styles.chevronOpen : styles.chevron} />}
+            variant="secondary"
+            size="sm"
             onClick={(e) => {
               e.stopPropagation();
               onToggle();
             }}
-          >
-            <ChevronDown size={14} className={open ? styles.chevronOpen : styles.chevron} />
-          </button>
+          />
         ) : null}
-      </div>
+      </HStack>
       {/* Metadata: every edge on the 4px half-step (`gap={1}`), the separator
           as its own item so chip and age get the same beat. Age is metadata. */}
       <HStack gap={1} vAlign="center" wrap="wrap" className={styles.meta}>
