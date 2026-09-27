@@ -60,13 +60,13 @@ describe('rss widget', () => {
     const { rerender } = render(
       <Rss config={{ type: 'rss', 'single-line-titles': true, feeds: [{ url: 'x' }] }} data={{ items }} />,
     );
-    const link = () => screen.getByRole('link', { name: 'First post' });
-    expect(link().className).toContain(feedStyles.titleSingle);
-    expect(link().className).not.toContain(feedStyles.titleClamp);
+    const title = () => screen.getByText('First post');
+    // single-line titles go through the kit's one-line truncation, so no line
+    // clamp is written and the ellipsis is the browser's
+    expect(title().getAttribute('style') ?? '').not.toContain('-webkit-line-clamp');
 
     rerender(<Rss config={{ type: 'rss', feeds: [{ url: 'x' }] }} data={{ items }} />);
-    expect(link().className).toContain(feedStyles.titleClamp);
-    expect(link().className).not.toContain(feedStyles.titleSingle);
+    expect(title()).toHaveStyle({ '-webkit-line-clamp': '2' });
   });
 
   it('renders the first feed title as a source header when enabled and no explicit title', () => {

@@ -50,32 +50,50 @@ describe('Feed (generic)', () => {
     expect(screen.getByText('Tech')).toBeInTheDocument();
     expect(screen.getByText('Pinned')).toBeInTheDocument();
 
-    // rows exist and use flat list class with hover backdrop (text-highlight)
+    // rows exist and use the flat list class
     const rows = container.querySelectorAll(`.${styles.item}`);
     expect(rows).toHaveLength(3);
 
-    // hover is text-highlight on title — verify stylesheet rule exists rather than simulating hover
-    expect(styles.title).toBeDefined();
-    // CSS module will contain row/title/meta/chips etc
-    expect(styles.meta).toBeDefined();
-    expect(styles.chip).toBeDefined();
+    // meta is supporting-tier metadata, the description is body reading copy
+    expect(screen.getByText('example.com • 12 points • 2h')).toHaveAttribute(
+      'data-type',
+      'supporting',
+    );
+    expect(screen.getByText('A short description')).toHaveAttribute('data-type', 'body');
+
+    // the title clamps through the kit, which also gives it a truncate tooltip
+    expect(screen.getByText('First item')).toHaveStyle({ '-webkit-line-clamp': '2' });
   });
 
-  it('gives the same tag the same accent no matter which row it is in', () => {
+  it('clamps titles to one line when the feed asks for single-line titles', () => {
+    render(
+      <Feed items={[{ title: 'Only title', url: 'https://example.com/one' }]} singleLine />,
+    );
+    expect(screen.getByText('Only title').getAttribute('style') ?? '').not.toContain(
+      '-webkit-line-clamp',
+    );
+  });
+
+  // The old chip cycle assigned colour by DOM position, so the same tag was
+  // green on one row and pink on the next. Colour comes from a hash of the tag
+  // text now, so it has to survive a change of row — and it must never resolve
+  // to a tappable or status hue.
+  it('gives the same tag the same Badge variant no matter which row it is in', () => {
     const items = [
       { title: 'a', url: 'https://example.com/a', tags: ['Tech'] },
       { title: 'b', url: 'https://example.com/b', tags: ['News'] },
       { title: 'c', url: 'https://example.com/c', tags: ['Tech'] },
     ];
     render(<Feed items={items} />);
-    const accentOf = (text: string) =>
-      screen
-        .getAllByText(text)
-        .map((el) => el.className.split(' ').filter((c) => c !== styles.chip))
-        .flat();
-    // the same tag in rows 1 and 3 must resolve to the same accent class
-    expect(accentOf('Tech')).toHaveLength(2);
-    expect(accentOf('Tech')[0]).toBe(accentOf('Tech')[1]);
+    const variantOf = (text: string) =>
+      screen.getAllByText(text).map((el) => el.getAttribute('data-variant'));
+    const tech = variantOf('Tech');
+    expect(tech).toHaveLength(2);
+    expect(tech[0]).toBe(tech[1]);
+    for (const variant of [...tech, ...variantOf('News')]) {
+      expect(variant).not.toBe('purple');
+      expect(variant).not.toBe('blue');
+    }
   });
 
   it('renders gracefully with minimal fields (title + url only)', () => {

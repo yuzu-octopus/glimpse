@@ -1,49 +1,37 @@
-/* Generic flat feed — DRY for rss / reddit / hn / lobsters / releases / videos (vertical-list).
+/* Generic flat feed — DRY for rss / reddit / hn / lobsters / videos (vertical-list).
  * Glance flat: 1px border, 5px radius tokens live on card chrome; row is flat, mono, no shadow.
- * Colours: title text-base -> hover primary, meta subdue, tags vibrant nth-child cycle.
- */
+ * Colours: title text-base -> hover primary, meta subdue, tags take the Badge
+ * variant hashed from the tag text (see tag-accent.ts) so a category keeps one
+ * colour in every row.
+ *
+ * The layout shells (list / grid / row) are kit Stack, Grid and HStack — only
+ * the horizontal rail's scroller stays local, the kit scrolls on the y axis. */
 
-/* layout containers — FeedLayout: list (vertical), grid (auto-fill 220), row (horizontal scroll) */
-.list {
-  display: flex;
-  flex-direction: column;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--space-gap);
-}
-
-.row {
-  display: flex;
-  flex-direction: row;
-  gap: var(--space-gap);
+/* horizontal-scroll shell for FeedLayout 'row' */
+.rail {
   overflow-x: auto;
 }
 
 .item {
-  position: relative;
-  isolation: isolate;
   display: flex;
   gap: calc(var(--widget-content-horizontal) - 5px);
   align-items: flex-start;
   min-width: 0;
   padding-block: calc(var(--widget-content-vertical) / 2 - 0.5px);
-  animation: collapsibleItemReveal 0.25s backwards;
 }
 
-/* hover backdrop larger than text — glance utils.css .summary::before */
-.item::before {
-  content: '';
-  position: absolute;
-  inset: -4px -10px;
-  border-radius: var(--border-radius);
-  background-color: var(--color-widget-background-highlight);
-  opacity: 0;
-  transition: opacity 0.2s;
-  z-index: -1;
-  pointer-events: none;
+/* Motion answers action: the kit's overlay dim, straight on the row. The
+ * hand-rolled `::before` backdrop that faded its own opacity was a lookalike
+ * of this and needed the row to be positioned and isolated for a z-index. */
+.item:hover {
+  background-color: var(--color-overlay-hover);
+}
+
+/* The kit Stack has no flex-grow, so the column that takes the leftover width
+   beside the thumbnail stays a one-line local rule. */
+.content {
+  flex: 1;
+  min-width: 0;
 }
 
 .item + .item {
@@ -51,15 +39,7 @@
   border-top: 1px solid var(--color-separator);
 }
 
-.item:nth-child(2) { animation-delay: 30ms; }
-.item:nth-child(3) { animation-delay: 60ms; }
-.item:nth-child(4) { animation-delay: 90ms; }
-.item:nth-child(5) { animation-delay: 120ms; }
-.item:nth-child(6) { animation-delay: 150ms; }
-.item:nth-child(7) { animation-delay: 180ms; }
-.item:nth-child(8) { animation-delay: 210ms; }
-
-/* image — glance .thumbnail-container / rss-detailed-thumbnail, flat, full colour, hover scale — 16:9 like videos cardThumb (16/8.9) */
+/* image — glance .thumbnail-container / rss-detailed-thumbnail, flat, full colour, hover scale — 16:9 */
 .thumbWrap {
   flex-shrink: 0;
   width: 72px;
@@ -83,91 +63,12 @@
   transform: scale(1.02);
 }
 
-.content {
-  flex: 1;
-  min-width: 0;
-}
-
-/* title — glance rss-list: text-base, unvisited primary, hover primary/highlight with underline */
-.title {
-  display: block;
-  font-size: var(--font-size-h4);
-  font-weight: 500;
-  color: var(--color-text-base);
-  text-decoration: none;
-  overflow: hidden;
-}
-
-.title:not(:visited) {
-  color: var(--color-primary);
-}
-
-.title:hover {
-  color: var(--color-primary);
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
-  text-underline-offset: 2px;
-}
-
-.titleSingle {
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.titleClamp {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  white-space: normal;
-}
-
-/* meta — glance .list-horizontal-text, subdued */
-.meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  font-size: var(--font-size-h5);
-  color: var(--color-text-base-muted);
-  margin-top: 1px;
-  min-width: 0;
-}
-
-/* description — glance rss detailed list desc */
-.desc {
-  margin-top: 4px;
-  font-size: var(--font-size-h5);
-  color: var(--color-text-base);
-  opacity: 0.85;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
-}
-
-/* chips / tags. Hue comes from a hash of the tag text (see tag-accent.ts), not
- * from DOM position, so a category keeps one colour across every row. Yellow is
- * the tag hue and the default, carried by .chip itself. The accent set
- * deliberately omits --color-tag-blue, which is #BD93F9 in this kit — purple. */
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 6px;
-}
-
+/* Core Badge ships a 9999px pill at control-scale padding; brand principle 7
+   is flat and crisp at 5px and a tag is not a button. Visual-over-spec
+   deviation, recorded at the site of the choice — the same one
+   releases.module.css records for its tag. */
 .chip {
-  --chip-hue: var(--color-tag-yellow);
-  border-radius: var(--border-radius);
-  padding: 1px 5px;
-  font-size: var(--font-size-h6);
-  color: var(--chip-hue);
-  background-color: color-mix(in srgb, var(--chip-hue) 22%, transparent);
-  border: 1px solid color-mix(in srgb, var(--chip-hue) 28%, transparent);
+  border-radius: var(--radius-element);
+  padding-inline: 4px;
   line-height: 1.4;
 }
-
-.chipAccentGreen { --chip-hue: var(--color-tag-green); }
-.chipAccentCyan { --chip-hue: var(--color-tag-cyan); }
-.chipAccentPink { --chip-hue: var(--color-tag-pink); }
-.chipAccentOrange { --chip-hue: var(--color-tag-orange); }
