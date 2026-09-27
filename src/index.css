@@ -104,6 +104,34 @@ kbd:active {
   box-shadow: 0 0 0 0 var(--color-widget-background-highlight);
 }
 
+/* Astryx Tooltip, repainted for a dark-only app. Upstream core hardcodes an
+   inverted pair with no mode branch (dist/Tooltip/useTooltip.js styles
+   `background-color: var(--color-text-primary)` + `color:
+   var(--color-background-surface)`, under the comment "Inverted color palette:
+   dark background, light text" — true only on a light theme), so every
+   tooltip renders as a near-white #F8F8F2 bubble here. Both are GLOBAL roles
+   read straight from :root, so no token override can fix it without
+   repainting the whole app.
+
+   `.astryx-tooltip` is the kit's own stable seam, not a guess: useTooltip
+   renders `className: themeProps('tooltip').className`, and themeProps builds
+   `stableClassName('tooltip')` -> `astryx-tooltip` from naming.ts's NAMESPACE.
+   themeProps is documented as the consumer-facing target for exactly this.
+   `themeProps('tooltip')` appears in exactly one place in core dist, so this
+   selector matches the tooltip surface and nothing else.
+
+   Both declarations are unlayered (imported after core's @layer astryx-base),
+   so they outrank the kit's `.x19aspcf:not(#\#)...` rule on layer order alone
+   — no !important, no specificity arms race, no global token touched.
+
+   The surface is the kit's popover tier (--color-background-popover, Dracula
+   Background Lighter) rather than a new colour, matching what the visual
+   reference assigns to floating surfaces; text is Dracula foreground. */
+.astryx-tooltip {
+  background-color: var(--color-background-popover);
+  color: var(--color-text-primary);
+}
+
 @keyframes loadingIconSpin {
   to {
     transform: rotate(360deg);
