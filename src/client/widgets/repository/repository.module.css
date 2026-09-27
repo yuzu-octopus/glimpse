@@ -57,11 +57,13 @@
   min-width: 0;
 }
 
+/* A heading, not metadata: the 12px floor applies in full, so it does not
+   drop to the 11px metadata step. */
 .subHeader {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;

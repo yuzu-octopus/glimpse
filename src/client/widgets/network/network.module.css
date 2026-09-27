@@ -1,5 +1,5 @@
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: var(--font-size-base); }
-.label { display: block; font-size: 11px; color: var(--color-text-base-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.label { display: block; font-size: 12px; color: var(--color-text-base-muted); text-transform: uppercase; letter-spacing: 0.04em; }
 /* single series, so one hue for every bar: a sequential-by-magnitude ramp
  * would turn one quantitative series into a rainbow. --font-family-mono is
  * the shipped token; --font-mono never resolved and fell back silently. */

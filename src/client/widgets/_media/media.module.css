@@ -33,7 +33,7 @@
 }
 
 .meta {
-  font-size: 11px;
+  font-size: 12px;
   opacity: 0.65;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -63,7 +63,7 @@
 
 .badge {
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: 12px;
   opacity: 0.7;
 }
 
@@ -86,7 +86,7 @@
   justify-content: space-between;
   gap: 8px;
   margin-top: 2px;
-  font-size: 11px;
+  font-size: 12px;
   opacity: 0.65;
 }
 
