@@ -1,4 +1,5 @@
 import { Link } from '@astryxdesign/core';
+import { useState } from 'react';
 import { VIDEOS_DEFAULTS, type VideosConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
@@ -7,13 +8,24 @@ import type { Video } from '../../../shared/widgets/payloads';
 import styles from './videos.module.css';
 import Feed from '../feed/feed';
 
+// A thumbnail URL that 404s must cost the picture, not the card: YouTube
+// hands out dead `hqdefault.jpg` paths often enough that a bare grey 16:9
+// box reads as a broken widget. The placeholder is the same surface the
+// null-thumbnail case already draws, so a failed load is invisible.
 function Card({ video }: { video: Video }) {
   const rawAge = useAge(video.published);
   const age = rawAge || null;
+  const [thumbFailed, setThumbFailed] = useState(false);
   return (
     <Link href={video.url} target="_blank" className={styles.card} hasUnderline={false} color="inherit">
-      {video.thumbnail ? (
-        <img src={video.thumbnail} alt="" loading="lazy" className={styles.cardThumb} />
+      {video.thumbnail && !thumbFailed ? (
+        <img
+          src={video.thumbnail}
+          alt=""
+          loading="lazy"
+          onError={() => setThumbFailed(true)}
+          className={styles.cardThumb}
+        />
       ) : (
         <div className={styles.cardThumbPlaceholder} />
       )}
