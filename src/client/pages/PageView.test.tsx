@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { PagePayload } from '../../shared/api';
+import type { PagePayload, WidgetPayload } from '../../shared/api';
 import type { Page, WidgetType } from '../../shared/config';
 import App from '../../App';
 import { GlimpseThemeProvider } from '../theme/GlimpseThemeProvider';
@@ -247,6 +247,57 @@ describe('PageView', () => {
     expect(screen.getAllByText('Tab B').length).toBeGreaterThan(0);
     // first tab active by default
     expect(screen.getByTestId('clock-widget')).toBeInTheDocument();
+  });
+
+  /** A glance split-column with N children renders N tracks when max-columns
+   * allows it. The count reaches CSS as a custom property so the narrow-tile
+   * container query and the mobile fallback still own grid-template-columns. */
+  function splitColumnEl(children: WidgetPayload[], maxColumns?: number): Promise<HTMLElement> {
+    renderPage(
+      payload({
+        columns: [
+          {
+            size: 'full',
+            widgets: [
+              {
+                type: 'split-column',
+                config: { type: 'split-column', ...(maxColumns ? { 'max-columns': maxColumns } : {}) },
+                data: null,
+                widgets: children,
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    return screen
+      .findAllByTestId('clock-widget')
+      .then(() => {
+        const el = document.querySelector('[class*="splitColumn"]') as HTMLElement | null;
+        if (!el) throw new Error('split column not rendered');
+        return el;
+      });
+  }
+
+  const clockChild = (title: string): WidgetPayload => ({
+    type: 'clock',
+    config: { type: 'clock', title },
+    data: null,
+  });
+
+  it('renders a 3-up split column and passes the track count to CSS', async () => {
+    const el = await splitColumnEl([clockChild('A'), clockChild('B'), clockChild('C')], 3);
+    expect(el.style.getPropertyValue('--split-cols')).toBe('3');
+  });
+
+  it('defaults a 3-child split column to 2 tracks', async () => {
+    const el = await splitColumnEl([clockChild('A'), clockChild('B'), clockChild('C')]);
+    expect(el.style.getPropertyValue('--split-cols')).toBe('2');
+  });
+
+  it('never renders more tracks than there are children', async () => {
+    const el = await splitColumnEl([clockChild('A'), clockChild('B')], 5);
+    expect(el.style.getPropertyValue('--split-cols')).toBe('2');
   });
 
   it('shows a page-level error when the fetch fails', async () => {

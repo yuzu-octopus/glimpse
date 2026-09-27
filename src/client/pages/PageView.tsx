@@ -356,8 +356,16 @@ function ContainerWidget({ widget }: { widget: WidgetPayload }) {
 
   if (widget.type === 'split-column') {
     const wk = widgetKeysFor(children as unknown as WidgetLike[]);
+    // Track count goes through a custom property, not an inline
+    // grid-template-columns, so the narrow-tile container query and the
+    // mobile fallback below still win and can collapse to one column.
+    const configured = Number(widget.config['max-columns'] ?? 2);
+    const cols = Math.max(2, Math.min(configured, children.length));
     return (
-      <div className={styles.splitColumn}>
+      <div
+        className={styles.splitColumn}
+        style={{ '--split-cols': cols } as React.CSSProperties}
+      >
         {children.map((w, i) => (
           <WidgetSlot key={wk[i]} widget={w} />
         ))}

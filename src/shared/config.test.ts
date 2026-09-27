@@ -655,4 +655,45 @@ describe('ConfigSchema', () => {
     if (w.type !== 'todo') throw new Error('expected a todo widget');
     expect(w.id).toBe('x');
   });
+
+  it('accepts a split-column with more than two children', () => {
+    const r = ConfigSchema.safeParse({
+      pages: [
+        {
+          name: 'H',
+          widgets: [
+            {
+              type: 'split-column',
+              'max-columns': 3,
+              widgets: [{ type: 'clock' }, { type: 'calendar' }, { type: 'todo' }],
+            },
+          ],
+        },
+      ],
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it('still rejects a split-column with a single child', () => {
+    const r = ConfigSchema.safeParse({
+      pages: [{ name: 'H', widgets: [{ type: 'split-column', widgets: [{ type: 'clock' }] }] }],
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it('rejects a max-columns below 2', () => {
+    for (const max of [0, 1, 1.5]) {
+      const r = ConfigSchema.safeParse({
+        pages: [
+          {
+            name: 'H',
+            widgets: [
+              { type: 'split-column', 'max-columns': max, widgets: [{ type: 'clock' }, { type: 'todo' }] },
+            ],
+          },
+        ],
+      });
+      expect(r.success).toBe(false);
+    }
+  });
 });

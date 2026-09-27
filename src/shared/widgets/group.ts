@@ -34,7 +34,9 @@ export const SPLIT_COLUMN_DEFAULTS = {} as const;
 export const splitColumnSchema = z.object({
   type: z.literal('split-column'),
   ...sharedWidgetFields,
-  widgets: z.array(z.lazy(recursiveWidgets)).min(2).max(2),
+  // glance: MaxColumns, min-2 default (widget-split-column.go:14,24)
+  widgets: z.array(z.lazy(recursiveWidgets)).min(2),
+  'max-columns': z.number().int().min(2).optional(),
 });
 export type SplitColumnConfig = z.infer<typeof splitColumnSchema>;
 
