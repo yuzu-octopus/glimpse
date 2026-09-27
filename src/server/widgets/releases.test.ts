@@ -3,8 +3,12 @@ import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './releases';
 import type { Release } from '../../shared/widgets/payloads';
+import { releasesSchema } from '../../shared/widgets/feeds';
 
-function makeCtx(routes: Record<string, unknown>): { ctx: WidgetFetchContext; fetchMock: ReturnType<typeof vi.fn> } {
+function makeCtx(
+  routes: Record<string, unknown>,
+  env: Record<string, string | undefined> = {},
+): { ctx: WidgetFetchContext; fetchMock: ReturnType<typeof vi.fn> } {
   const fetchMock = vi.fn(async (url: string) => {
     const hit = routes[url];
     if (hit === undefined) return new Response('{}', { status: 404 });
@@ -13,7 +17,7 @@ function makeCtx(routes: Record<string, unknown>): { ctx: WidgetFetchContext; fe
   return {
     ctx: {
       fetch: fetchMock as unknown as typeof fetch,
-      env: {},
+      env,
       cache: new TtlCache(),
       singleflight: new Singleflight(),
     },
@@ -48,16 +52,44 @@ describe('releases fetcher', () => {
     expect(data.releases[1].source).toBe('github');
   });
 
-  it('sends the token to GitHub when configured', async () => {
+  it('sends the GITHUB_TOKEN env value to GitHub', async () => {
     const routes = {
       'https://api.github.com/repos/o/r/releases?per_page=5': [],
     };
-    const { ctx, fetchMock } = makeCtx(routes);
-    await releasesFetcher()(ctx, { type: 'releases', repositories: [{ url: 'o/r' }], token: 'sekrit' });
+    const { ctx, fetchMock } = makeCtx(routes, { GITHUB_TOKEN: 'env-sekrit' });
+    await releasesFetcher()(ctx, { type: 'releases', repositories: [{ url: 'o/r' }] });
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(init.headers).toEqual(
-      expect.objectContaining({ Authorization: 'Bearer sekrit' }),
+      expect.objectContaining({ Authorization: 'Bearer env-sekrit' }),
     );
+  });
+
+  it('sends the GITLAB_TOKEN env value to GitLab', async () => {
+    const routes = {
+      'https://gitlab.com/api/v4/projects/o%2Fr/releases?per_page=5': [],
+    };
+    const { ctx, fetchMock } = makeCtx(routes, { GITLAB_TOKEN: 'env-gl' });
+    await releasesFetcher()(ctx, { type: 'releases', repositories: ['gitlab:o/r'] });
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(init.headers).toEqual(expect.objectContaining({ 'PRIVATE-TOKEN': 'env-gl' }));
+  });
+
+  it('takes no token in the config — the schema strips it', async () => {
+    const routes = { 'https://api.github.com/repos/o/r/releases?per_page=5': [] };
+    const { ctx, fetchMock } = makeCtx(routes, { GITHUB_TOKEN: 'env-sekrit' });
+    await releasesFetcher()(ctx, {
+      type: 'releases',
+      repositories: [{ url: 'o/r' }],
+      token: 'leaked',
+      'gitlab-token': 'leaked',
+    });
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.stringify(init.headers)).toContain('env-sekrit');
+    expect(JSON.stringify(init.headers)).not.toContain('leaked');
+    const parsed = releasesSchema.parse({ type: 'releases', repositories: ['o/r'], token: 'leaked', 'gitlab-token': 'leaked' });
+    expect('token' in parsed).toBe(false);
+    expect('gitlab-token' in parsed).toBe(false);
+    expect(JSON.stringify(parsed)).not.toContain('leaked');
   });
 
   it('parses all string repo forms into the right endpoints', async () => {

@@ -51,7 +51,7 @@ registerWidget('repository', async (ctx, config) => {
   const cfg = repositorySchema.parse(config);
   const retry = retryOptionsFrom(cfg);
   const base = `https://api.github.com/repos/${cfg.repository}`;
-  const token = cfg.token ?? (await getGitHubToken(ctx.env));
+  const token = await getGitHubToken(ctx.env);
   const headers: Record<string, string> = {
     Accept: 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28',
