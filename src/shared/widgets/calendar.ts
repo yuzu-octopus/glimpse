@@ -4,7 +4,9 @@ import { sharedWidgetFields, type Pref, type SkeletonShape } from './shared';
 // ── per-widget defaults (file header owns DEFAULTS + Schema + PREF) ──
 export const CALENDAR_DEFAULTS = {} as const;
 export const CALENDAR_PREF: Pref = { cols: 3, rows: 3, resizable: false, priority: 8, zone: 'sidebar', preferredWidth: 340, preferredHeight: 320 };
-export const CALENDAR_SKELETON: SkeletonShape = 'rows';
+/** A 7-column day grid. No shape in the four says "grid", and a solid block
+ * is the only one that is not a stack of text lines. */
+export const CALENDAR_SKELETON: SkeletonShape = 'chart';
 
 export const calendarSchema = z.object({
   type: z.literal('calendar'),

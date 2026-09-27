@@ -20,11 +20,13 @@ export const JELLYFIN_SKELETON: SkeletonShape = 'chart';
 
 export const QBITTORRENT_DEFAULTS = { limit: 10 } as const;
 export const QBITTORRENT_PREF: Pref = { cols: 4, rows: 2, resizable: false, priority: 6, zone: 'main', preferredWidth: 360, preferredHeight: 240 };
-export const QBITTORRENT_SKELETON: SkeletonShape = 'rows';
+/** Torrent rows are name + progress bar + a stats line, not single hairlines. */
+export const QBITTORRENT_SKELETON: SkeletonShape = 'list';
 
 export const TRANSMISSION_DEFAULTS = { limit: 10 } as const;
 export const TRANSMISSION_PREF: Pref = { cols: 4, rows: 2, resizable: false, priority: 6, zone: 'main', preferredWidth: 360, preferredHeight: 240 };
-export const TRANSMISSION_SKELETON: SkeletonShape = 'rows';
+/** Torrent rows are name + progress bar + a stats line, not single hairlines. */
+export const TRANSMISSION_SKELETON: SkeletonShape = 'list';
 
 export const immichSchema = z.object({
   type: z.literal('immich'),

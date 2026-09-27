@@ -4,7 +4,9 @@ import { sharedWidgetFields, type Pref, type SkeletonShape } from './shared';
 // ── per-widget defaults (file header owns DEFAULTS + Schema + PREF) ──
 export const TIMER_DEFAULTS = { duration: '25m' } as const;
 export const TIMER_PREF: Pref = { cols: 3, rows: 3, resizable: false, priority: 5, zone: 'sidebar', preferredWidth: 320, preferredHeight: 300 };
-export const TIMER_SKELETON: SkeletonShape = 'rows';
+/** A filled dial in a 300px tile. Closest of the four; three hairlines
+ * promise a paragraph, and a real `dial` shape is out of scope here. */
+export const TIMER_SKELETON: SkeletonShape = 'chart';
 
 /** Duration string: minutes ("25m"), hours ("1h"), or "hh:mm[:ss]". */
 const durationString = z

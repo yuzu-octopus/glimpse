@@ -17,7 +17,8 @@ export const TAILSCALE_PREF: Pref = {
   preferredWidth: 340,
   preferredHeight: 220,
 };
-export const TAILSCALE_SKELETON: SkeletonShape = 'rows';
+/** One status dot beside a name and a detail line — two lines per device. */
+export const TAILSCALE_SKELETON: SkeletonShape = 'list';
 
 // No credential field: the config is served to the browser verbatim, so a key
 // in the YAML is a key in the page. TS_API_KEY is the only source.

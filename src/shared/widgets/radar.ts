@@ -12,7 +12,8 @@ export const RADAR_PREF: Pref = {
   preferredHeight: 320,
 };
 
-export const RADAR_SKELETON: SkeletonShape = 'rows';
+/** A 2x2 tile grid filling the widget. Closest of the four to a map. */
+export const RADAR_SKELETON: SkeletonShape = 'chart';
 
 export const radarSchema = z.object({
   type: z.literal('weather-radar'),

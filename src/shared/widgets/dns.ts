@@ -9,7 +9,9 @@ import { sharedWidgetFields, type Pref, type SkeletonShape } from './shared';
 // ── per-widget defaults (file header owns DEFAULTS + Schema + PREF) ──
 export const DNS_STATS_DEFAULTS = { service: 'pihole' } as const;
 export const DNS_STATS_PREF: Pref = { cols: 4, rows: 2, resizable: false, priority: 6, zone: 'main', preferredWidth: 340, preferredHeight: 220 };
-export const DNS_STATS_SKELETON: SkeletonShape = 'rows';
+/** Three big value/label blocks over a bar graph. `rows` would promise a
+ * paragraph where numbers land. */
+export const DNS_STATS_SKELETON: SkeletonShape = 'chart';
 
 export const dnsStatsSchema = z.object({
   type: z.literal('dns-stats'),
