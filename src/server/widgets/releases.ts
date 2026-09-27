@@ -1,6 +1,6 @@
 import { RELEASES_DEFAULTS, releasesSchema } from '../../shared/widgets/feeds';
 import { registerWidget, type WidgetFetchContext } from './registry';
-import { fetchJson } from './http';
+import { fetchJson, retryOptionsFrom, type RetryOptions } from './http';
 import { getGitHubToken } from '../github-token';
 import type { Release } from '../../shared/widgets/payloads';
 
@@ -113,6 +113,7 @@ async function fetchReleases(
   req: RepoRequest,
   limit: number,
   token: string | undefined,
+  retry: RetryOptions,
 ): Promise<Release[]> {
   const { source, path } = req;
   if (source === 'github') {
@@ -126,6 +127,7 @@ async function fetchReleases(
       ctx,
       `https://api.github.com/repos/${encodePathSegments(path)}/releases?per_page=${limit}`,
       { headers },
+      retry,
     );
     // glance parity: the `/releases/latest` endpoint excludes prereleases
     // and drafts; the list endpoint returns both, so filter unless requested.
@@ -146,6 +148,8 @@ async function fetchReleases(
     const data = await fetchJson<DockerTags>(
       ctx,
       `https://hub.docker.com/v2/repositories/${encodePathSegments(path)}/tags?page_size=${req.tag ? 100 : limit}`,
+      {},
+      retry,
     );
     const results = (data.results ?? []).filter(
       (r) => !req.tag || r.name === req.tag,
@@ -165,6 +169,7 @@ async function fetchReleases(
     ctx,
     `https://${host}/api/v4/projects/${project}/releases?per_page=${limit}`,
     { headers: token ? { 'PRIVATE-TOKEN': token } : undefined },
+    retry,
   );
   return data.map((r) => ({
     name: r.name || r.tag_name || '',
@@ -179,6 +184,7 @@ async function fetchReleases(
 registerWidget('releases', async (ctx, config) => {
   const cfg = releasesSchema.parse(config);
   const limit = cfg.limit ?? RELEASES_DEFAULTS.limit;
+  const retry = retryOptionsFrom(cfg);
   const githubToken = cfg.token ?? (await getGitHubToken(ctx.env));
 
   const settled = await Promise.allSettled(
@@ -186,7 +192,7 @@ registerWidget('releases', async (ctx, config) => {
       const req = parseRepo(repo);
       const token =
         req.source === 'github' ? githubToken : cfg['gitlab-token'];
-      return fetchReleases(ctx, req, limit, token);
+      return fetchReleases(ctx, req, limit, token, retry);
     }),
   );
   const failed = settled.filter((r) => r.status === 'rejected');

@@ -1,6 +1,6 @@
 import { githubTrendingSchema, TRENDING_DEFAULTS } from '../../shared/widgets/github-trending';
 import type { TrendingData, TrendingRepo } from '../../shared/widgets/payloads';
-import { fetchText } from './http';
+import { fetchText, retryOptionsFrom } from './http';
 import { registerWidget } from './registry';
 
 function parseTrending(html: string, limit: number): TrendingRepo[] {
@@ -30,7 +30,7 @@ registerWidget('github-trending', async (ctx, cfg) => {
   const lang = c.language ? `/${encodeURIComponent(c.language)}` : '';
   const since = c.since ?? TRENDING_DEFAULTS.since;
   const limit = c.limit ?? TRENDING_DEFAULTS.limit;
-  const html = await fetchText(ctx, `https://github.com/trending${lang}?since=${since}`);
+  const html = await fetchText(ctx, `https://github.com/trending${lang}?since=${since}`, {}, retryOptionsFrom(c));
   const data: TrendingData = parseTrending(html, limit);
   return data;
 });

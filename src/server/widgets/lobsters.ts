@@ -1,5 +1,5 @@
 import { LOBSTERS_DEFAULTS, lobstersSchema } from '../../shared/widgets/keyed';
-import { fetchJson } from './http';
+import { fetchJson, retryOptionsFrom } from './http';
 import { registerWidget } from './registry';
 import { widgetLimit } from './runtime';
 import type { LobsterPost } from '../../shared/widgets/payloads';
@@ -21,7 +21,7 @@ registerWidget('lobsters', async (ctx, config) => {
   const feedUrl =
     cfg['custom-url'] ??
     `${trimSlash(cfg['instance-url'] ?? 'https://lobste.rs')}/${cfg['sort-by'] === 'new' ? 'newest' : 'hottest'}.json`;
-  const stories = await fetchJson<LobstersStory[]>(ctx, feedUrl);
+  const stories = await fetchJson<LobstersStory[]>(ctx, feedUrl, {}, retryOptionsFrom(cfg));
 
   const tags = cfg.tags;
   const tagSet = new Set(tags ?? []);

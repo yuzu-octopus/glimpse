@@ -1,6 +1,6 @@
 import { REDDIT_DEFAULTS, redditSchema } from '../../shared/widgets/feeds';
 import { parseCacheDuration } from '../cache';
-import { fetchWithRetry, type HttpOptions } from './http';
+import { fetchWithRetry, retryOptionsFrom, type HttpOptions, type RetryOptions } from './http';
 import { compareEngagement } from './engagement';
 import { registerWidget, type WidgetFetchContext } from './registry';
 import type { RedditPost } from '../../shared/widgets/payloads';
@@ -48,6 +48,7 @@ function redditTokenKey(id: string, secret: string): string {
 async function getAccessToken(
   ctx: WidgetFetchContext,
   appAuth: { id: string; secret: string },
+  retry: RetryOptions,
 ): Promise<string> {
   const key = redditTokenKey(appAuth.id, appAuth.secret);
   const cached = ctx.cache.get<string>(key);
@@ -57,15 +58,20 @@ async function getAccessToken(
     if (again) return again;
     let res: Response;
     try {
-      res = await fetchWithRetry(ctx, 'https://www.reddit.com/api/v1/access_token', {
-        method: 'POST',
-        headers: {
-          Authorization: `Basic ${btoa(`${appAuth.id}:${appAuth.secret}`)}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'User-Agent': USER_AGENT,
+      res = await fetchWithRetry(
+        ctx,
+        'https://www.reddit.com/api/v1/access_token',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Basic ${btoa(`${appAuth.id}:${appAuth.secret}`)}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': USER_AGENT,
+          },
+          body: 'grant_type=client_credentials',
         },
-        body: 'grant_type=client_credentials',
-      });
+        retry,
+      );
     } catch (err) {
       const m = /HTTP (\d+)/.exec(String((err as Error).message));
       if (m) throw new Error(`reddit token: HTTP ${m[1]}`);
@@ -82,6 +88,7 @@ async function getAccessToken(
 
 registerWidget('reddit', async (ctx, config) => {
   const cfg = redditSchema.parse(config);
+  const retry = retryOptionsFrom(cfg);
   const limit = cfg.limit ?? REDDIT_DEFAULTS.limit;
   const sort = cfg['sort-by'] ?? 'hot';
   const period = cfg['top-period'] ?? 'day';
@@ -105,7 +112,7 @@ registerWidget('reddit', async (ctx, config) => {
 
   const headers: Record<string, string> = { 'User-Agent': USER_AGENT };
   if (cfg['app-auth']) {
-    headers.Authorization = `Bearer ${await getAccessToken(ctx, cfg['app-auth'])}`;
+    headers.Authorization = `Bearer ${await getAccessToken(ctx, cfg['app-auth'], retry)}`;
   }
 
   let res: Response;
@@ -118,6 +125,7 @@ registerWidget('reddit', async (ctx, config) => {
         timeoutMs: parseCacheDuration(proxy?.timeout, 15_000),
         ...(proxy ? { proxy: proxy.url } : {}),
       } as unknown as HttpOptions & { proxy?: string },
+      retry,
     );
   } catch (err) {
     const msg = String((err as Error).message);

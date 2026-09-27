@@ -1,6 +1,6 @@
 import { changeDetectionSchema } from '../../shared/widgets/change-detection';
 import type { ChangeDetectionData, ChangeDetectionItem } from '../../shared/widgets/payloads';
-import { fetchText } from './http';
+import { fetchText, retryOptionsFrom } from './http';
 import { registerWidget } from './registry';
 
 /** How long a watched URL's content hash survives in the shared cache. */
@@ -60,13 +60,14 @@ export function extractBySelector(html: string, selector: string): string {
 
 registerWidget('change-detection', async (ctx, config): Promise<ChangeDetectionData> => {
   const cfg = changeDetectionSchema.parse(config);
+  const retry = retryOptionsFrom(cfg);
   const settled = await Promise.allSettled(
     cfg.urls.map(async (url): Promise<ChangeDetectionItem> => {
       const key = `change-detection:${url}:${cfg.selector ?? ''}`;
       const prev = ctx.cache.get<StoredHash>(key);
       let html: string;
       try {
-        html = await fetchText(ctx, url);
+        html = await fetchText(ctx, url, {}, retry);
       } catch {
         // Per-site failure must not clear the stored hash or break siblings.
         return { url, changed: false, changedAt: prev?.changedAt ?? null };

@@ -1,6 +1,6 @@
 import { RSS_DEFAULTS, rssSchema } from '../../shared/widgets/feeds';
 import { registerWidget } from './registry';
-import { fetchText } from './http';
+import { fetchText, retryOptionsFrom } from './http';
 import { widgetLimit } from './runtime';
 import { getBXML } from './xml';
 import type { RssItem } from '../../shared/widgets/payloads';
@@ -124,7 +124,7 @@ registerWidget('rss', async (ctx, config) => {
   const cfg = rssSchema.parse(config);
   const settled = await Promise.allSettled(
     cfg.feeds.map(async (feed) => {
-      const raw = await fetchText(ctx, feed.url, { headers: feed.headers });
+      const raw = await fetchText(ctx, feed.url, { headers: feed.headers }, retryOptionsFrom(cfg));
       const parsed = parseFeed(raw);
       const perFeedLimit = feed.limit ?? widgetLimit(cfg, RSS_DEFAULTS.limit);
       const slice = parsed.items.slice(0, perFeedLimit);

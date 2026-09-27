@@ -1,6 +1,6 @@
 import { weatherSchema } from '../../shared/widgets/feeds';
 import { registerWidget, type WidgetFetchContext } from './registry';
-import { fetchJson } from './http';
+import { fetchJson, retryOptionsFrom, type RetryOptions } from './http';
 import type { WeatherData, WeatherDay } from '../../shared/widgets/payloads';
 
 
@@ -35,10 +35,13 @@ export interface GeocodePlace {
 export async function geocodeLocation(
   ctx: WidgetFetchContext,
   location: string,
+  retry: RetryOptions = retryOptionsFrom(undefined),
 ): Promise<GeocodePlace> {
   const geo = await fetchJson<{ results?: GeocodePlace[] }>(
     ctx,
     `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1`,
+    {},
+    retry,
   );
   const place = geo.results?.[0];
   if (!place || place.latitude == null || place.longitude == null) {
@@ -51,7 +54,7 @@ registerWidget('weather', async (ctx, config) => {
   const cfg = weatherSchema.parse(config);
   const units = cfg.units ?? 'metric';
 
-  const place = await geocodeLocation(ctx, cfg.location);
+  const place = await geocodeLocation(ctx, cfg.location, retryOptionsFrom(cfg));
 
   const tempUnit = units === 'metric' ? 'celsius' : 'fahrenheit';
   const windUnit = units === 'metric' ? 'kmh' : 'mph';
@@ -61,6 +64,8 @@ registerWidget('weather', async (ctx, config) => {
       `&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code` +
       `&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=7` +
       `&temperature_unit=${tempUnit}&wind_speed_unit=${windUnit}&timezone=auto`,
+    {},
+    retryOptionsFrom(cfg),
   );
 
   const area =

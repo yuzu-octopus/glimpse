@@ -1,6 +1,6 @@
 import { HACKER_NEWS_DEFAULTS, hackerNewsSchema } from '../../shared/widgets/feeds';
 import { registerWidget } from './registry';
-import { fetchJson } from './http';
+import { fetchJson, retryOptionsFrom } from './http';
 import { compareEngagement } from './engagement';
 import { widgetLimit } from './runtime';
 import type { HnPost } from '../../shared/widgets/payloads';
@@ -38,12 +38,15 @@ function pLimit(concurrency: number) {
 
 registerWidget('hacker-news', async (ctx, config) => {
   const cfg = hackerNewsSchema.parse(config);
+  const retry = retryOptionsFrom(cfg);
   const sort = cfg['sort-by'] ?? 'top';
   const limit = widgetLimit(cfg, HACKER_NEWS_DEFAULTS.limit);
 
   const ids = await fetchJson<number[]>(
     ctx,
     `https://hacker-news.firebaseio.com/v0/${sort}stories.json`,
+    {},
+    retry,
   );
   const wanted = Math.min(ids.length, Math.max(limit * 2, 30));
   const limit6 = pLimit(6);
@@ -51,7 +54,7 @@ registerWidget('hacker-news', async (ctx, config) => {
     ids.slice(0, wanted).map((id) =>
       limit6(() =>
         ctx.singleflight.run(`hn:item:${id}`, () =>
-          fetchJson<HnItem | null>(ctx, `https://hacker-news.firebaseio.com/v0/item/${id}.json`),
+          fetchJson<HnItem | null>(ctx, `https://hacker-news.firebaseio.com/v0/item/${id}.json`, {}, retry),
         ),
       ),
     ),

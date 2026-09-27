@@ -3,7 +3,7 @@ import {
   contributionGraphSchema,
 } from '../../shared/widgets/contribution';
 import type { ContributionDay, ContributionGraphData } from '../../shared/widgets/payloads';
-import { fetchText } from './http';
+import { fetchText, retryOptionsFrom } from './http';
 import { registerWidget } from './registry';
 
 const TAG = /<[a-z]+[^>]*?\bdata-date="(\d{4}-\d{2}-\d{2})"[^>]*>/g;
@@ -31,11 +31,15 @@ export function parseContributionDays(html: string): ContributionDay[] {
 
 registerWidget('contribution-graph', async (ctx, config): Promise<ContributionGraphData> => {
   const cfg = contributionGraphSchema.parse(config);
+  const retry = retryOptionsFrom(cfg);
   const url = `https://github.com/${encodeURIComponent(cfg.username)}`;
   // fetchWithRetry throws `HTTP <status> for <sanitized-url>` on failure
-  const html = await fetchText(ctx, url, {
-    headers: { Accept: 'text/html', 'User-Agent': 'glimpse/1.0' },
-  });
+  const html = await fetchText(
+    ctx,
+    url,
+    { headers: { Accept: 'text/html', 'User-Agent': 'glimpse/1.0' } },
+    retry,
+  );
   const days = parseContributionDays(html);
   if (days.length === 0) {
     throw new Error(`No contribution data for ${cfg.username} (profile may be private or missing calendar)`);

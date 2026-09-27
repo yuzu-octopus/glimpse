@@ -1,6 +1,6 @@
 import { networkSchema, NETWORK_DEFAULTS } from '../../shared/widgets/network';
 import type { NetworkData } from '../../shared/widgets/payloads';
-import { fetchJson } from './http';
+import { fetchJson, retryOptionsFrom } from './http';
 import { registerWidget } from './registry';
 import * as os from 'node:os';
 
@@ -23,7 +23,7 @@ registerWidget('network', async (ctx, cfg) => {
   let publicIp: string | null = null;
   if (showPublic) {
     try {
-      const j = await fetchJson<{ ip?: string }>(ctx, 'https://api.ipify.org?format=json');
+      const j = await fetchJson<{ ip?: string }>(ctx, 'https://api.ipify.org?format=json', {}, retryOptionsFrom(c));
       publicIp = j.ip ?? null;
     } catch {
       publicIp = null;
