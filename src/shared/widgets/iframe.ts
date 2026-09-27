@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { sharedWidgetFields, type Pref, type SkeletonShape } from './shared';
 
 // ── per-widget defaults (file header owns DEFAULTS + Schema + PREF) ──
-export const IFRAME_DEFAULTS = {} as const;
 export const IFRAME_PREF: Pref = { cols: 6, rows: 3, resizable: false, priority: 4, zone: 'main', preferredWidth: 500, preferredHeight: 400 };
 /** A full-bleed frame in a 500x400 tile. Three hairlines promise text; a
  * solid block is the only one of the four that does not. */
@@ -16,7 +15,6 @@ export const iframeSchema = z.object({
 });
 export type IframeConfig = z.infer<typeof iframeSchema>;
 
-export const HTML_DEFAULTS = {} as const;
 export const htmlSchema = z.object({
   type: z.literal('html'),
   ...sharedWidgetFields,

@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { sharedWidgetFields, type Pref, type SkeletonShape } from './shared';
 
 // ── per-widget defaults (file header owns DEFAULTS + Schema + PREF) ──
-export const GROUP_DEFAULTS = {} as const;
 export const GROUP_PREF: Pref = { cols: 4, rows: 3, resizable: false, priority: 5, zone: 'main', preferredWidth: 340, preferredHeight: 320 };
 export const GROUP_SKELETON: SkeletonShape = 'rows';
 
@@ -30,7 +29,6 @@ export const groupSchema = z.object({
 });
 export type GroupConfig = z.infer<typeof groupSchema>;
 
-export const SPLIT_COLUMN_DEFAULTS = {} as const;
 export const splitColumnSchema = z.object({
   type: z.literal('split-column'),
   ...sharedWidgetFields,
