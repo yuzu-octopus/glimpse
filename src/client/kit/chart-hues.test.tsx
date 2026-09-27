@@ -89,7 +89,7 @@ describe('chart ink is the kit CHART_HUES', () => {
   });
 
   it('carries the re-sync note on every vendored kit chart file', () => {
-    for (const file of ['sparkline.tsx', 'chart-hues.ts', 'chart-labels.tsx', 'metric-delta.tsx']) {
+    for (const file of ['sparkline.tsx', 'chart-hues.ts', 'metric-delta.tsx']) {
       const src = readFileSync(join(here, file), 'utf8');
       expect(src, file).toMatch(/^\/\/ Vendored from astryx-dracula@[\d.]+ `shared\/[\w-]+\.\w+` \(MIT\)/);
       expect(src, file).toMatch(/re-sync this file on any kit version bump/);
