@@ -75,6 +75,13 @@
   min-width: 0;
 }
 
+/* The notice is chrome around the body, not a body row: one gap down, and it
+ * never participates in the grid or rail the body may be running. */
+.notice {
+  min-width: 0;
+  padding-bottom: var(--widget-gap);
+}
+
 .skeleton {
   display: flex;
   flex-direction: column;

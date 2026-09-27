@@ -1,7 +1,7 @@
 import { VIDEOS_DEFAULTS, videosSchema } from '../../shared/widgets/keyed';
 import { fetchText, retryOptionsFrom, type RetryOptions } from './http';
 import { registerWidget } from './registry';
-import type { Video } from '../../shared/widgets/payloads';
+import type { Video, VideoSourceIssue, VideosData } from '../../shared/widgets/payloads';
 import type { WidgetFetchContext } from './registry';
 import { STATIC_TTL_MS } from '../../shared/live';
 import { getBXML } from './xml';
@@ -89,13 +89,24 @@ function extractYtInitialData(html: string): unknown {
  * `metadata.lockupMetadataViewModel.title.content`), the regex stopped matching,
  * and every row rendered its bare video id as the title. So parse the embedded
  * JSON and read whichever renderer is present instead.
+ *
+ * Throws when the page carries no `ytInitialData` blob at all. A redesign, a
+ * consent wall or a 404 stub must read as a broken scraper, not as a channel
+ * with nothing to show — the throw is what the caller turns into a visible
+ * per-source failure.
  */
 export function parseChannelPage(html: string): {
   title?: string;
   items: Array<Record<string, unknown>>;
 } {
   const data = extractYtInitialData(html);
-  if (!data || typeof data !== 'object') return { items: [] };
+  // No blob means the page is not the page we think it is: a consent wall, a
+  // 404 stub, or a redesign that moved the grid. Returning `{items: []}` here
+  // is what made a broken scraper indistinguishable from a quiet channel, so
+  // this is a hard throw and the caller reports it as a source failure.
+  if (!data || typeof data !== 'object') {
+    throw new Error(`markup changed: no ytInitialData (${html.length} bytes)`);
+  }
 
   const found: Array<{ videoId: string; title: string }> = [];
   const seen = new Set<string>();
@@ -210,12 +221,23 @@ async function resolveHandleToChannelId(
   });
 }
 
-async function feedUrlsForChannels(
+/** One configured source, resolved to everything the fetch needs: the RSS
+ * feed, the page to scrape when that feed is empty, and the config string a
+ * diagnostic must name. */
+interface FeedSpec {
+  source: string;
+  url: string;
+  cacheKey: string;
+  /** null when we have no page to fall back to for this source */
+  pageUrl: string | null;
+}
+
+async function feedSpecsForChannels(
   ctx: WidgetFetchContext,
   channels: string[],
   includeShorts: boolean,
   retry: RetryOptions,
-): Promise<Array<{ url: string; source: string; cacheKey: string }>> {
+): Promise<FeedSpec[]> {
   const results = await Promise.all(
     channels.map(async (ch) => {
       let id = ch;
@@ -229,7 +251,15 @@ async function feedUrlsForChannels(
           id = ch;
         }
       }
-      return { url: feedUrlForId(id, includeShorts), source, cacheKey: id };
+      return {
+        url: feedUrlForId(id, includeShorts),
+        source,
+        cacheKey: id,
+        // A resolved handle has a public /videos page to fall back to. Each
+        // path segment is encoded on its own — never the whole path — so a
+        // non-ASCII handle still resolves to a real URL.
+        pageUrl: source.startsWith('@') ? `https://www.youtube.com/${encodeURIComponent(source)}/videos` : null,
+      };
     }),
   );
   return results;
@@ -331,23 +361,40 @@ function toVideo(
   };
 }
 
-/** Channel-page fallback for handles whose RSS feed comes back with 0 entries —
- * YouTube still serves an empty `videos.xml` for many small channels, while the
- * channel's own /videos page carries the same grid as embedded JSON. */
-async function scrapeChannelVideos(
+/** The second channel, for any source whose RSS feed comes back empty or
+ * fails outright: YouTube still serves an empty `videos.xml` for many small
+ * channels and playlists, while the channel's own /videos page carries the
+ * same grid as embedded JSON.
+ *
+ * Throws instead of returning null — an HTTP failure, a 404 page, or markup we
+ * can no longer read all have to reach the caller as a reason the widget can
+ * show. A silent null is what let a dead source look like a quiet one. */
+async function scrapeChannelPage(
   ctx: WidgetFetchContext,
-  handle: string,
+  pageUrl: string,
   retry: RetryOptions,
-): Promise<{ title?: string; items: Array<Record<string, unknown>> } | null> {
-  try {
-    const html = await fetchText(ctx, `https://www.youtube.com/${handle}/videos`, {
-      headers: { 'User-Agent': YT_UA },
-    }, retry);
-    const parsed = parseChannelPage(html);
-    return parsed.items.length > 0 ? parsed : null;
-  } catch {
-    return null;
-  }
+): Promise<{ title?: string; items: Array<Record<string, unknown>> }> {
+  const html = await fetchText(ctx, pageUrl, { headers: { 'User-Agent': YT_UA } }, retry);
+  return parseChannelPage(html);
+}
+
+/** `HTTP 404 for https://…` is the one shape fetchWithRetry throws, so the
+ * status is worth keeping and the URL is not — the widget names the source. */
+function reasonFor(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  const status = /^HTTP (\d{3})\b/.exec(msg)?.[1];
+  if (status) return `HTTP ${status}`;
+  return msg.length > 60 ? `${msg.slice(0, 57)}…` : msg;
+}
+
+/** Every channel answered but none of them produced a video. */
+const NO_VIDEOS = 'no videos found';
+
+/** What one source contributed: its videos, and — when it contributed none —
+ * why, so the widget can say so instead of looking merely quiet. */
+interface SourceOutcome {
+  videos: Video[];
+  issue?: VideoSourceIssue;
 }
 
 registerWidget('videos', async (ctx, config) => {
@@ -355,15 +402,15 @@ registerWidget('videos', async (ctx, config) => {
   const includeShorts = cfg['include-shorts'] ?? false;
   const retry = retryOptionsFrom(cfg);
 
-  const channelFeeds = await feedUrlsForChannels(ctx, cfg.channels, includeShorts, retry);
-  const playlistFeeds = cfg.playlists.map((p) => {
+  const channelFeeds = await feedSpecsForChannels(ctx, cfg.channels, includeShorts, retry);
+  const playlistFeeds = cfg.playlists.map((p): FeedSpec => {
     const pid = p.startsWith(PLAYLIST_PREFIX) ? p : `${PLAYLIST_PREFIX}${p}`;
-    return { url: feedUrlForId(pid, includeShorts), source: p, cacheKey: pid };
+    return { url: feedUrlForId(pid, includeShorts), source: p, cacheKey: pid, pageUrl: null };
   });
-  const feeds = [...channelFeeds, ...playlistFeeds];
+  const feeds: FeedSpec[] = [...channelFeeds, ...playlistFeeds];
 
   const settled = await Promise.allSettled(
-    feeds.map(async ({ url, source, cacheKey }) => {
+    feeds.map(async ({ url, source, cacheKey, pageUrl }): Promise<SourceOutcome> => {
       const fullCacheKey = `videos:feed:${cacheKey}::${cfg['video-url-template'] ?? ''}::${includeShorts ? 'shorts' : 'noshorts'}`;
       // TtlCache.set retains a stale copy for 24h internally, so one key suffices.
       const getCached = (): Video[] | undefined =>
@@ -377,41 +424,65 @@ registerWidget('videos', async (ctx, config) => {
       try {
         const raw = await fetchText(ctx, url, { headers: { 'User-Agent': YT_UA } }, retry);
         let parsed = parseVideoFeed(raw);
-        // Empty feed for an @handle: the channel's own /videos page still has the grid.
-        if (parsed.items.length === 0 && source.startsWith('@')) {
-          parsed = (await scrapeChannelVideos(ctx, source, retry)) ?? parsed;
+        let reason = NO_VIDEOS;
+        // Empty feed: the channel/playlist page still has the grid. If that
+        // page is what failed, its reason is the honest one to report.
+        if (parsed.items.length === 0 && pageUrl) {
+          try {
+            parsed = await scrapeChannelPage(ctx, pageUrl, retry);
+          } catch (err) {
+            reason = reasonFor(err);
+          }
         }
         const videos = mapItems(parsed.items, parsed.title ?? source);
         setCached(videos);
-        return videos;
+        return videos.length === 0 ? { videos, issue: { source, reason } } : { videos };
       } catch (err) {
-        if (source.startsWith('@')) {
-          const scraped = await scrapeChannelVideos(ctx, source, retry);
-          const fallback = scraped ? mapItems(scraped.items, scraped.title ?? source) : [];
-          if (fallback.length > 0) {
-            setCached(fallback);
-            return fallback;
+        if (pageUrl) {
+          try {
+            const scraped = await scrapeChannelPage(ctx, pageUrl, retry);
+            const fallback = mapItems(scraped.items, scraped.title ?? source);
+            if (fallback.length > 0) {
+              setCached(fallback);
+              return { videos: fallback };
+            }
+          } catch {
+            // the page failed too — the feed's error is the one worth naming
           }
         }
         const cached = getCached();
-        if (cached) return cached;
-        throw err;
+        if (cached) return { videos: cached };
+        return { videos: [], issue: { source, reason: reasonFor(err) } };
       }
     }),
   );
 
   const videos: Video[] = [];
+  const issues: VideoSourceIssue[] = [];
   const seen = new Set<string>();
-  for (const r of settled) {
-    if (r.status === 'fulfilled') {
-      for (const v of r.value) {
-        if (!seen.has(v.url)) {
-          seen.add(v.url);
-          videos.push(v);
-        }
+  const seenIssues = new Set<string>();
+  const report = (issue: VideoSourceIssue): void => {
+    // The same source listed twice in one config is one problem, not two dots.
+    const id = `${issue.source} ${issue.reason}`;
+    if (seenIssues.has(id)) return;
+    seenIssues.add(id);
+    issues.push(issue);
+  };
+  settled.forEach((r, i) => {
+    if (r.status === 'rejected') {
+      // Nothing in the mapper rethrows, so this is a bug rather than an
+      // upstream failure — name the source instead of dropping it.
+      report({ source: feeds[i]?.source ?? 'unknown', reason: reasonFor(r.reason) });
+      return;
+    }
+    if (r.value.issue) report(r.value.issue);
+    for (const v of r.value.videos) {
+      if (!seen.has(v.url)) {
+        seen.add(v.url);
+        videos.push(v);
       }
     }
-  }
+  });
   videos.sort((a, b) => {
     const ta = a.published ? Date.parse(a.published) : 0;
     const tb = b.published ? Date.parse(b.published) : 0;
@@ -419,5 +490,5 @@ registerWidget('videos', async (ctx, config) => {
   });
 
   const limit = cfg.limit ?? VIDEOS_DEFAULTS.limit;
-  return { videos: videos.slice(0, limit) };
+  return { videos: videos.slice(0, limit), issues } satisfies VideosData;
 });

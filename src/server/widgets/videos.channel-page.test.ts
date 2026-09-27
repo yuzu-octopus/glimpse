@@ -267,11 +267,22 @@ describe('videos: channel-page fallback', () => {
     });
   });
 
-  it('an unparseable channel page yields no videos rather than id rows', async () => {
+  it('a page whose markup changed fails loudly instead of reading as no videos', async () => {
+    // The whole point of the fallback is that it works when the feed dies. If
+    // YouTube moves the grid, `[]` is a lie: it is indistinguishable from a
+    // channel with nothing to show. Parse must throw, and the widget must turn
+    // that throw into a visible per-source failure.
+    expect(() => parseChannelPage('<html><body>consent wall</body></html>')).toThrow(
+      /markup changed: no ytInitialData/,
+    );
+
     const data = (await videosFetcher()(makeCtx('<html><body>consent wall</body></html>'), {
       type: 'videos',
       channels: ['@Fireship'],
-    })) as { videos: Video[] };
+    })) as { videos: Video[]; issues: { source: string; reason: string }[] };
     expect(data.videos).toEqual([]);
+    expect(data.issues).toEqual([
+      { source: '@Fireship', reason: expect.stringContaining('markup changed: no ytInitialData') },
+    ]);
   });
 });

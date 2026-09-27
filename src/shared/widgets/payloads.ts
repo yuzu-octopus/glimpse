@@ -107,6 +107,22 @@ export interface Video {
   thumbnail: string | null;
 }
 
+/** One configured channel/playlist that produced nothing after every fallback.
+ * A per-source status, not a widget failure: the widget still renders every
+ * source that did answer, so this rides a StatusDot rather than a Banner. */
+export interface VideoSourceIssue {
+  /** the config entry verbatim — `@Fireship`, `UC…`, `PL…` */
+  source: string;
+  /** short and human, never a stack: `HTTP 404`, `handle not found: @typo` */
+  reason: string;
+}
+
+export interface VideosData {
+  videos: Video[];
+  /** empty on a healthy widget — a source that works adds no chrome at all */
+  issues: VideoSourceIssue[];
+}
+
 export interface CustomApiItem {
   title: string;
   url: string | null;

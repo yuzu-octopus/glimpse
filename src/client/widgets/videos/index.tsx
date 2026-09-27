@@ -1,10 +1,10 @@
-import { Link } from '@astryxdesign/core';
+import { Link, Stack, StatusDot, Text } from '@astryxdesign/core';
 import { useState } from 'react';
 import { VIDEOS_DEFAULTS, type VideosConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { useAge } from '../_hooks/useAge';
-import type { Video } from '../../../shared/widgets/payloads';
+import type { Video, VideoSourceIssue } from '../../../shared/widgets/payloads';
 import styles from './videos.module.css';
 import Feed from '../feed/feed';
 
@@ -38,10 +38,44 @@ function Card({ video }: { video: Video }) {
   );
 }
 
+/** A source that came back empty is a status, not a widget failure: the other
+ * sources still render, so this is a StatusDot and the muted name beside it —
+ * never a red Banner over content the user can still read. Purple stays
+ * tappable-only, so the dot takes the kit's negative variant. */
+function SourceIssues({ issues }: { issues: VideoSourceIssue[] }) {
+  if (issues.length === 0) return null;
+  return (
+    <Stack gap={1} className={styles.issues} data-testid="videos-issues">
+      {issues.map((issue) => {
+        const label = `${issue.source}: ${issue.reason}`;
+        return (
+          <Stack key={label} direction="horizontal" gap={2} vAlign="center">
+            <StatusDot
+              variant="error"
+              label={label}
+              tooltip={label}
+              data-testid="videos-source-dot"
+            />
+            <Text type="supporting" className={styles.issueSource}>
+              {issue.source}
+            </Text>
+            <Text type="supporting">{issue.reason}</Text>
+          </Stack>
+        );
+      })}
+    </Stack>
+  );
+}
+
 function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as VideosConfig;
   const loading = isLoading ?? ((data as unknown) == null && !error);
-  const videos = ((data as { videos?: Video[] } | null)?.videos ?? []) as Video[];
+  const payload = (data as { videos?: Video[]; issues?: VideoSourceIssue[] } | null) ?? null;
+  const videos = (payload?.videos ?? []) as Video[];
+  // Only a widget that actually has something to report carries a notice, so
+  // a healthy widget's tree is byte-for-byte what it was before.
+  const issues = (payload?.issues ?? []) as VideoSourceIssue[];
+  const notice = issues.length > 0 ? <SourceIssues issues={issues} /> : undefined;
   const style = cfg.style ?? VIDEOS_DEFAULTS.style;
   const collapseAfter = style === 'grid-cards' ? cfg['collapse-after-rows'] : cfg['collapse-after'];
 
@@ -64,6 +98,7 @@ function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
         titleUrl={cfg['title-url']}
         hideHeader={cfg['hide-header']}
         cssClass={cfg['css-class']}
+        notice={notice}
       >
         <div className={styles.placeholder}>No videos — check channels</div>
       </WidgetChrome>
@@ -80,6 +115,7 @@ function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
         error={error}
         showErrors={cfg['show-errors']}
         collapseAfter={collapseAfter}
+        notice={notice}
         items={videos.map((v) => (
           <VideoRow key={v.url} video={v} />
         ))}
@@ -98,6 +134,7 @@ function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
       collapseAfter={collapseAfter}
       cssClass={[cfg['css-class'], grid ? styles.gridWrap : styles.cards].filter(Boolean).join(' ') || undefined}
       items={videos.map((v) => <Card key={v.url} video={v} />)}
+      notice={notice}
     />
   );
 }

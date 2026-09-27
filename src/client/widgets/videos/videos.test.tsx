@@ -101,6 +101,53 @@ describe('videos widget', () => {
     expect(screen.queryByText('Bun 1.3 release')).toBeNull();
   });
 
+  // A dead source among live ones is a status, not a widget failure: the
+  // videos that did arrive still render, and the source wears a StatusDot
+  // rather than a red Banner over content the user can still read.
+  it('flags a dead source with a StatusDot and keeps the live videos', () => {
+    render(
+      <Videos
+        config={{ type: 'videos' }}
+        data={{ videos, issues: [{ source: '@Fireship', reason: 'HTTP 404' }] }}
+      />,
+    );
+    expect(screen.getByText('Bun 1.3 release')).toBeInTheDocument();
+    const dot = screen.getByTestId('videos-source-dot');
+    // the kit's own StatusDot, not a hand-rolled span
+    expect(dot.className).toContain('astryx-statusdot');
+    expect(dot).toHaveAttribute('data-variant', 'error');
+    expect(dot).toHaveAccessibleName('@Fireship: HTTP 404');
+    expect(screen.getByText('@Fireship')).toBeInTheDocument();
+    expect(screen.getByText('HTTP 404')).toBeInTheDocument();
+    expect(screen.queryByTestId('widget-error-dot')).toBeNull();
+  });
+
+  it('a healthy payload adds no chrome at all', () => {
+    const { container } = render(
+      <Videos config={{ type: 'videos' }} data={{ videos, issues: [] }} />,
+    );
+    expect(screen.queryByTestId('videos-issues')).toBeNull();
+    expect(container.querySelector('.notice')).toBeNull();
+  });
+
+  it('every dead source gets its own dot, including next to the placeholder', () => {
+    render(
+      <Videos
+        config={{ type: 'videos' }}
+        data={{
+          videos: [],
+          issues: [
+            { source: '@Fireship', reason: 'HTTP 404' },
+            { source: 'UCdead', reason: 'no videos found' },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByTestId('videos-issues')).toBeInTheDocument();
+    expect(screen.getAllByTestId('videos-source-dot')).toHaveLength(2);
+    expect(screen.getByText(/No videos/)).toBeInTheDocument();
+  });
+
   it('grid wraps, horizontal scrolls (css distinct)', () => {
     const css = readFileSync('src/client/widgets/videos/videos.module.css', 'utf8');
     expect(css).toMatch(/\.gridWrap[\s\S]*?grid-template-columns:\s*repeat\(auto-fill/);
