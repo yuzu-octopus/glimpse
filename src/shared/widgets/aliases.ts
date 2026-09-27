@@ -12,6 +12,9 @@ const TYPE_ALIASES: Record<string, string> = {
   stocks: 'markets',
 };
 
+/** Accepted alias spellings, for tooling that validates raw config text. */
+export const TYPE_ALIAS_KEYS = Object.keys(TYPE_ALIASES);
+
 /** Rewrite alias `type` values anywhere in a config tree. Only plain objects
  * are rebuilt — a YAML scalar that arrived as a Date must survive as-is. */
 function normalize(value: unknown): unknown {

@@ -9,9 +9,12 @@
 import { readFileSync } from 'node:fs';
 import { loadConfig } from '../src/server/config';
 import { widgetMeta } from '../src/shared/widgets';
+import { TYPE_ALIAS_KEYS } from '../src/shared/widgets/aliases';
 
 const configPath = process.argv[2] ?? process.env.GLIMPSE_CONFIG ?? './config.yml';
-const knownTypes = Object.keys(widgetMeta);
+// Aliases are folded by the schema before it discriminates, so the linter must
+// accept them too — otherwise it flags a valid glance type as unknown.
+const knownTypes = [...Object.keys(widgetMeta), ...TYPE_ALIAS_KEYS];
 
 function levenshtein(a: string, b: string): number {
   const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
