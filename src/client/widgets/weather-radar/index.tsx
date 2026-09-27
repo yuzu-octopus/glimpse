@@ -21,6 +21,14 @@ const TIME_FMT = new Intl.DateTimeFormat('en-GB', {
 
 const SHARED_IMG = { draggable: false } as const;
 
+/**
+ * RainViewer publishes radar tiles for z 0–7 only (probed against the live
+ * API). Beyond that it answers HTTP 200 with a "Zoom level not supported"
+ * placeholder, so an out-of-range zoom in the payload renders as a broken
+ * image rather than an error — clamp before it reaches the tile URL.
+ */
+const MAX_ZOOM = 7;
+
 export function WeatherRadar({ config, data, error, isLoading }: WidgetComponentProps) {
   const cfg = config as unknown as RadarConfig;
   const loading = isLoading ?? ((data as unknown) == null && !error);
@@ -39,7 +47,8 @@ export function WeatherRadar({ config, data, error, isLoading }: WidgetComponent
     );
   }
 
-  const { x, y } = tileCoords(w.lat, w.lon, w.zoom);
+  const zoom = Math.min(w.zoom, MAX_ZOOM);
+  const { x, y } = tileCoords(w.lat, w.lon, zoom);
   const baseX = Math.floor(x) - 1;
   const baseY = Math.floor(y) - 1;
   const tiles = [0, 1].flatMap((dy) => [0, 1].map((dx) => ({ tx: baseX + dx, ty: baseY + dy })));
@@ -50,11 +59,11 @@ export function WeatherRadar({ config, data, error, isLoading }: WidgetComponent
         <div className={styles.tiles}>
           {tiles.map(({ tx, ty }) => (
             <div key={`${tx}:${ty}`} className={styles.cell}>
-              <img {...SHARED_IMG} className={`${styles.base} base`} src={`https://tile.openstreetmap.org/${w.zoom}/${tx}/${ty}.png`} alt="" loading="lazy" />
+              <img {...SHARED_IMG} className={`${styles.base} base`} src={`https://tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`} alt="" loading="lazy" />
               <img
                 {...SHARED_IMG}
                 className={`${styles.overlay} overlay`}
-                src={w.tileUrlTemplate.replace('{z}', String(w.zoom)).replace('{x}', String(tx)).replace('{y}', String(ty))}
+                src={w.tileUrlTemplate.replace('{z}', String(zoom)).replace('{x}', String(tx)).replace('{y}', String(ty))}
                 alt=""
                 loading="lazy"
               />

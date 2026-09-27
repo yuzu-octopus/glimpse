@@ -47,7 +47,7 @@ describe('weather-radar fetcher', () => {
     expect(data.lon).toBe(-0.12);
     expect(data.zoom).toBe(7);
     expect(data.tileUrlTemplate).toBe(
-      'https://tilecache.rainviewer.com/v2/radar/1700000600/{z}/{x}/{y}/2/1_1.png',
+      'https://tilecache.rainviewer.com/v2/radar/1700000600/256/{z}/{x}/{y}/4/1_1.png',
     );
     expect(data.frameTime).toBe(1700000600);
   });
@@ -59,6 +59,34 @@ describe('weather-radar fetcher', () => {
     });
     const data = (await radarFetcher()(ctx, { type: 'weather-radar', location: 'London', zoom: 5 })) as RadarData;
     expect(data.zoom).toBe(5);
+  });
+
+  it('clamps a zoom above the range RainViewer publishes', async () => {
+    // z 8+ is not served: the API answers 200 with a "Zoom level not
+    // supported" placeholder, so an unclamped zoom renders as a broken map
+    // rather than surfacing an error.
+    const ctx = makeCtx({
+      'https://geocoding-api.open-meteo.com/v1/search': GEO,
+      'https://api.rainviewer.com/public/weather-maps.json': RAINVIEWER,
+    });
+    const data = (await radarFetcher()(ctx, { type: 'weather-radar', location: 'London', zoom: 9 })) as RadarData;
+    expect(data.zoom).toBe(7);
+  });
+
+  it('puts the tile size in the segment RainViewer reads it from', async () => {
+    // {path}/{size}/{z}/{x}/{y}/{color}/{options}.png — a template missing
+    // the leading size makes the server read x as z, so every zoom resolves
+    // to the same unsupported placeholder.
+    const ctx = makeCtx({
+      'https://geocoding-api.open-meteo.com/v1/search': GEO,
+      'https://api.rainviewer.com/public/weather-maps.json': RAINVIEWER,
+    });
+    const data = (await radarFetcher()(ctx, { type: 'weather-radar', location: 'London' })) as RadarData;
+    const url = data.tileUrlTemplate
+      .replace('{z}', String(data.zoom))
+      .replace('{x}', '100')
+      .replace('{y}', '63');
+    expect(url).toBe('https://tilecache.rainviewer.com/v2/radar/1700000600/256/7/100/63/4/1_1.png');
   });
 
   it('rejects an out-of-range zoom', async () => {
