@@ -113,6 +113,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Mobile-only control: the 44x44 touch target, measured 18x18 before.
+   * Transparent box around the 18px Menu icon — the hit area grows, the
+   * visual box does not. */
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
   background: none;
   border: none;
   color: var(--color-text-base);
