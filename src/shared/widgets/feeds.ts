@@ -15,7 +15,6 @@ export const REDDIT_SKELETON: SkeletonShape = 'list';
 export const RELEASES_DEFAULTS = { limit: 5 } as const;
 export const RELEASES_PREF: Pref = { cols: 4, rows: 2, resizable: false, priority: 6, zone: 'main', preferredWidth: 360, preferredHeight: 260 };
 export const RELEASES_SKELETON: SkeletonShape = 'list';
-export const WEATHER_DEFAULTS = {} as const;
 export const WEATHER_PREF: Pref = { cols: 3, rows: 2, resizable: false, priority: 9, zone: 'sidebar', preferredWidth: 300, preferredHeight: 280 };
 export const WEATHER_SKELETON: SkeletonShape = 'stat';
 
