@@ -255,7 +255,6 @@
 }
 
 .groupTabs button,
-.groupTabs a,
 .groupTabs [data-tab-value] {
   background: transparent !important;
   border: none !important;
@@ -277,21 +276,18 @@
 /* Tabs are tappable: hover and press resolve to foreground. The accent
    underlines the active tab — a primary action, never decoration. */
 .groupTabs button:hover,
-.groupTabs a:hover,
 .groupTabs [data-tab-value]:hover {
   color: var(--color-text-highlight) !important;
   border-bottom-color: var(--color-text-subdue) !important;
 }
 
 .groupTabs button:active,
-.groupTabs a:active,
 .groupTabs [data-tab-value]:active {
   color: var(--color-text-highlight) !important;
   border-bottom-color: var(--color-primary) !important;
 }
 
 .groupTabs button:focus-visible,
-.groupTabs a:focus-visible,
 .groupTabs [data-tab-value]:focus-visible {
   outline: 2px solid var(--color-primary) !important;
   outline-offset: 2px !important;
@@ -306,9 +302,7 @@
 .groupTabs [data-tab-value] > span:first-child,
 .groupTabs [data-tab-value] > span:last-child,
 .groupTabs button > span:first-child,
-.groupTabs button > span:last-child,
-.groupTabs a > span:first-child,
-.groupTabs a > span:last-child {
+.groupTabs button > span:last-child {
   display: none !important;
 }
 
