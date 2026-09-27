@@ -1,4 +1,4 @@
-import { RELEASES_DEFAULTS, releasesSchema } from '../../shared/widgets/feeds';
+import { releasesSchema } from '../../shared/widgets/feeds';
 import { registerWidget, type WidgetFetchContext } from './registry';
 import { fetchJson, retryOptionsFrom, type RetryOptions } from './http';
 import { getGitHubToken } from '../github-token';
@@ -183,7 +183,7 @@ async function fetchReleases(
 
 registerWidget('releases', async (ctx, config) => {
   const cfg = releasesSchema.parse(config);
-  const limit = cfg.limit ?? RELEASES_DEFAULTS.limit;
+  const limit = cfg.limit;
   const retry = retryOptionsFrom(cfg);
   const githubToken = await getGitHubToken(ctx.env);
 
