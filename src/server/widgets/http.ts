@@ -1,4 +1,11 @@
 import type { WidgetFetchContext } from './registry';
+import { SHARED_WIDGET_DEFAULTS } from '../../shared/widgets/shared';
+
+/** Retry budget when a widget sets none. Mirrors the shared `retries`
+ * default, so config and fetcher can never disagree. */
+export const DEFAULT_RETRIES: number = SHARED_WIDGET_DEFAULTS.retries;
+const DEFAULT_BASE_DELAY = 500;
+const DEFAULT_FACTOR = 2;
 
 export interface HttpOptions extends Omit<RequestInit, 'signal'> {
   headers?: Record<string, string>;
@@ -20,6 +27,21 @@ export interface RetryOptions {
   retries?: number;
   baseDelay?: number;
   factor?: number;
+}
+
+/** Read the retry budget off a validated widget config. Missing or malformed
+ * values fall back to the default, so a config written before the field
+ * existed keeps today's behaviour. */
+export function retryOptionsFrom(
+  config: Record<string, unknown> | undefined,
+): RetryOptions {
+  const raw = config?.['retries'];
+  return {
+    retries:
+      typeof raw === 'number' && Number.isInteger(raw) && raw >= 0
+        ? raw
+        : DEFAULT_RETRIES,
+  };
 }
 
 function parseRetryAfter(value: string | null): number | null {
@@ -51,11 +73,11 @@ export async function fetchWithRetry(
   ctx: WidgetFetchContext,
   url: string,
   httpOpts: HttpOptions = {},
-  retryOpts: RetryOptions = { retries: 3, baseDelay: 500, factor: 2 },
+  retryOpts: RetryOptions = {},
 ): Promise<Response> {
-  const retries = retryOpts.retries ?? 3;
-  const baseDelay = retryOpts.baseDelay ?? 500;
-  const factor = retryOpts.factor ?? 2;
+  const retries = retryOpts.retries ?? DEFAULT_RETRIES;
+  const baseDelay = retryOpts.baseDelay ?? DEFAULT_BASE_DELAY;
+  const factor = retryOpts.factor ?? DEFAULT_FACTOR;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     let res: Response | undefined;
@@ -119,13 +141,15 @@ export async function fetchWithRetry(
   throw new Error(`HTTP fetch failed for ${sanitizeUrl(url)}`);
 }
 
-/** JSON GET helper — every fetcher goes through ctx.fetch (injectable). */
+/** JSON GET helper — every widget fetcher goes through ctx.fetch (injectable).
+ * `retryOpts` carries the widget's configured `retries` budget. */
 export async function fetchJson<T>(
   ctx: WidgetFetchContext,
   url: string,
   opts: HttpOptions = {},
+  retryOpts?: RetryOptions,
 ): Promise<T> {
-  const res = await fetchWithRetry(ctx, url, opts);
+  const res = await fetchWithRetry(ctx, url, opts, retryOpts);
   return res.json() as Promise<T>;
 }
 
@@ -133,7 +157,8 @@ export async function fetchText(
   ctx: WidgetFetchContext,
   url: string,
   opts: HttpOptions = {},
+  retryOpts?: RetryOptions,
 ): Promise<string> {
-  const res = await fetchWithRetry(ctx, url, opts);
+  const res = await fetchWithRetry(ctx, url, opts, retryOpts);
   return res.text();
 }

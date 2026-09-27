@@ -143,8 +143,8 @@ describe('PageView', () => {
           size: 'full',
           span: 2,
           widgets: [
-            { type: 'clock', title: 'Clock', timezones: [] },
-            { type: 'clock', title: 'Second Clock', timezones: [] },
+            { type: 'clock', title: 'Clock', timezones: [], retries: 3, 'show-errors': true },
+            { type: 'clock', title: 'Second Clock', timezones: [], retries: 3, 'show-errors': true },
           ],
         },
       ],
@@ -378,16 +378,16 @@ describe('PageView', () => {
         {
           size: 'full',
           widgets: [
-            { type: 'rss', title: 'Feeds', feeds: [{ url: 'https://example.com/feed.xml' }], limit: 10 },
-            { type: 'markets', title: 'Markets', markets: [{ symbol: 'SPY' }] },
+            { type: 'rss', title: 'Feeds', feeds: [{ url: 'https://example.com/feed.xml' }], limit: 10, retries: 3, 'show-errors': true },
+            { type: 'markets', title: 'Markets', markets: [{ symbol: 'SPY' }], retries: 3, 'show-errors': true },
           ],
         },
         // clock PREF rows: 2
-        { size: 'small', widgets: [{ type: 'clock', title: 'Clock', timezones: [] }] },
+        { size: 'small', widgets: [{ type: 'clock', title: 'Clock', timezones: [], retries: 3, 'show-errors': true }] },
         // group container PREF rows: 3
         {
           size: 'small',
-          widgets: [{ type: 'group', title: 'Group', widgets: [{ type: 'clock', title: 'Child' }] }],
+          widgets: [{ type: 'group', title: 'Group', retries: 3, 'show-errors': true, widgets: [{ type: 'clock', title: 'Child' }] }],
         },
       ],
     };

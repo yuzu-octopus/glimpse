@@ -31,9 +31,10 @@
 }
 
 /* glance widgets.css .widget-error-header — negative status surface bleeding
-   half a content-padding step into the surrounding area. Status resolves
-   through a 10% muted wash plus a semantic border, never a direct tint
-   fill, and depth is the border — no soft shadow. */
+   half a content-padding step into the surrounding area, for a SURFACED
+   failure only (`show-errors: false` leaves the header plain). Status
+   resolves through a 10% muted wash plus a semantic border, never a direct
+   tint fill, and depth is the border — no soft shadow. */
 .errorHeader {
   position: relative;
   z-index: 1;
@@ -56,16 +57,6 @@
   align-items: center;
   gap: 6px;
   min-width: 0;
-}
-
-/* Small negative status marker next to the title when the widget failed.
-   4px inner radius — a crisp badge, never a circle or pill. */
-.errorDot {
-  width: 10px;
-  height: 10px;
-  border-radius: var(--radius-inner);
-  background: var(--color-negative);
-  flex-shrink: 0;
 }
 
 .title {

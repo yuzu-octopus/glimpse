@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { Singleflight, TtlCache } from '../cache';
-import { fetchWithRetry, fetchJson, fetchText } from './http';
+import { fetchWithRetry, fetchJson, fetchText, retryOptionsFrom, DEFAULT_RETRIES } from './http';
 import type { WidgetFetchContext } from './registry';
 
 function makeCtx(fetchMock: ReturnType<typeof vi.fn>): WidgetFetchContext {
@@ -96,6 +96,69 @@ describe('fetchWithRetry', () => {
     const ctx = makeCtx(fetchMock);
     const text = await fetchText(ctx, 'https://example.com/f');
     expect(text).toBe('hello');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries: 0 means exactly one attempt', async () => {
+    const fetchMock = vi.fn(async () => new Response('x', { status: 500 }));
+    const ctx = makeCtx(fetchMock);
+    await expect(
+      fetchWithRetry(ctx, 'https://example.com/zero', {}, { retries: 0 }),
+    ).rejects.toThrow('HTTP 500');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries: 2 means up to three attempts', async () => {
+    const fetchMock = vi.fn(async () => new Response('x', { status: 503 }));
+    const ctx = makeCtx(fetchMock);
+    await expect(
+      fetchWithRetry(ctx, 'https://example.com/two', {}, { retries: 2, baseDelay: 1 }),
+    ).rejects.toThrow('HTTP 503');
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('retries: 0 also gives a network error a single attempt', async () => {
+    const fetchMock = vi.fn(async () => {
+      throw new Error('network down');
+    });
+    const ctx = makeCtx(fetchMock);
+    await expect(
+      fetchWithRetry(ctx, 'https://example.com/netzero', {}, { retries: 0 }),
+    ).rejects.toThrow('network down');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('defaults to the shared retry budget when config sets none', async () => {
+    const fetchMock = vi.fn(async () => new Response('x', { status: 500 }));
+    const ctx = makeCtx(fetchMock);
+    await expect(
+      fetchWithRetry(ctx, 'https://example.com/def', {}, { ...retryOptionsFrom({}), baseDelay: 1 }),
+    ).rejects.toThrow('HTTP 500');
+    // one initial attempt plus the default budget
+    expect(fetchMock).toHaveBeenCalledTimes(DEFAULT_RETRIES + 1);
+  });
+});
+
+describe('retryOptionsFrom', () => {
+  it('reads an explicit budget off the widget config', () => {
+    expect(retryOptionsFrom({ retries: 0 })).toEqual({ retries: 0 });
+    expect(retryOptionsFrom({ retries: 2 })).toEqual({ retries: 2 });
+  });
+
+  it('falls back to the default for missing or malformed budgets', () => {
+    expect(retryOptionsFrom(undefined)).toEqual({ retries: DEFAULT_RETRIES });
+    expect(retryOptionsFrom({})).toEqual({ retries: DEFAULT_RETRIES });
+    expect(retryOptionsFrom({ retries: 'three' })).toEqual({ retries: DEFAULT_RETRIES });
+    expect(retryOptionsFrom({ retries: 1.5 })).toEqual({ retries: DEFAULT_RETRIES });
+    expect(retryOptionsFrom({ retries: -1 })).toEqual({ retries: DEFAULT_RETRIES });
+  });
+
+  it('carries the budget through fetchJson', async () => {
+    const fetchMock = vi.fn(async () => new Response('x', { status: 500 }));
+    const ctx = makeCtx(fetchMock);
+    await expect(
+      fetchJson(ctx, 'https://example.com/json', {}, retryOptionsFrom({ retries: 0 })),
+    ).rejects.toThrow('HTTP 500');
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

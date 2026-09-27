@@ -12,6 +12,8 @@ const CONFIG: SearchConfig = {
     { title: 'YouTube', shortcut: 'yt', url: 'https://www.youtube.com/results?search_query={QUERY}' },
   ],
   'new-tab': true,
+  retries: 3,
+  'show-errors': true,
 };
 
 function renderSearch(config = CONFIG) {
