@@ -2,8 +2,9 @@ import { TWITCH_TOP_GAMES_DEFAULTS, type TwitchTopGamesConfig } from '../../../s
 import type { TwitchTopGamesData } from '../../../shared/widgets/payloads';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
+import { Button } from '@astryxdesign/core';
+import { ChevronRight } from 'lucide-react';
 import { useState } from 'react';
-import chromeStyles from '../../components/widget-chrome.module.css';
 import styles from './twitch-top-games.module.css';
 
 function TwitchTopGames({ config, data, error, isLoading }: WidgetComponentProps) {
@@ -50,15 +51,13 @@ function TwitchTopGames({ config, data, error, isLoading }: WidgetComponentProps
         ))}
       </ol>
       {hasCollapse ? (
-        expanded ? (
-          <button type="button" className={`${chromeStyles.more} ${chromeStyles.moreExpanded}`} onClick={() => setExpanded(false)}>
-            Show less
-          </button>
-        ) : (
-          <button type="button" className={chromeStyles.more} onClick={() => setExpanded(true)}>
-            {`Show more (${games.length - collapseAfter})`}
-          </button>
-        )
+        <Button
+          variant="ghost"
+          size="sm"
+          label={expanded ? 'Show less' : `Show more (${games.length - collapseAfter})`}
+          endContent={<ChevronRight size={12} />}
+          onClick={() => setExpanded(!expanded)}
+        />
       ) : null}
     </WidgetChrome>
   );
