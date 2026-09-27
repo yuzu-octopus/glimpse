@@ -1,28 +1,14 @@
 /* Home Assistant state rows — dot + name/entity-id + current value. The kit
    owns the dot, the type scale and the text colours; what is left here is the
-   row rhythm, the separator, the hover backdrop and the right-hand value
-   column, matching the Docker and Feed row idiom. */
+   row rhythm, the separator and the right-hand value column.
+
+   No hover backdrop: an entity row is a Stack of a StatusDot, two Texts and a
+   value — nothing in it takes focus and nothing in it can be activated, so a
+   :focus-within rule here would be a channel that never fires. The wash
+   revealed no state either, so the row is static per the doctrine. */
 
 .row {
-  position: relative;
-  isolation: isolate;
   padding-block: calc(var(--widget-content-vertical) / 2 - 0.5px);
-}
-
-.row::before {
-  content: '';
-  position: absolute;
-  inset: -4px -10px;
-  border-radius: var(--border-radius);
-  background-color: var(--color-widget-background-highlight);
-  opacity: 0;
-  transition: opacity 0.2s;
-  z-index: -1;
-  pointer-events: none;
-}
-
-.row:hover::before {
-  opacity: 1;
 }
 
 .row + .row {
