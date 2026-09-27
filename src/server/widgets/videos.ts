@@ -1,4 +1,4 @@
-import { VIDEOS_DEFAULTS, videosSchema } from '../../shared/widgets/keyed';
+import { videosSchema } from '../../shared/widgets/keyed';
 import { fetchText, fetchWithRetry, retryOptionsFrom, type RetryOptions } from './http';
 import { registerWidget } from './registry';
 import type { Video, VideoSourceIssue, VideosData } from '../../shared/widgets/payloads';
@@ -833,7 +833,6 @@ registerWidget('videos', async (ctx, config) => {
     };
   });
   const feeds: FeedSpec[] = [...channelFeeds, ...playlistFeeds];
-  const limit = cfg.limit ?? VIDEOS_DEFAULTS.limit;
 
   const settled = await Promise.allSettled(
     feeds.map(async ({ url, source, cacheKey, pageUrl, resolveError, playlistId }): Promise<SourceOutcome> => {
@@ -874,7 +873,7 @@ registerWidget('videos', async (ctx, config) => {
             ctx,
             playlistId,
             parsed,
-            { source, limit, template: cfg['video-url-template'], retry },
+            { source, limit: cfg.limit, template: cfg['video-url-template'], retry },
             { get: getCached, set: setCached },
           );
           if (corrected) return corrected;
@@ -934,5 +933,5 @@ registerWidget('videos', async (ctx, config) => {
     return tb - ta;
   });
 
-  return { videos: videos.slice(0, limit), issues } satisfies VideosData;
+  return { videos: videos.slice(0, cfg.limit), issues } satisfies VideosData;
 });
