@@ -49,7 +49,9 @@
   flex-shrink: 0;
 }
 
-.row:hover .icon {
+/* The row's link is its focusable child, so :focus-within is the keyboard's
+   equivalent of :hover — without it the row is a hover-only affordance. */
+.row:is(:hover, :focus-within) .icon {
   opacity: 1;
   filter: grayscale(0);
 }
@@ -57,6 +59,14 @@
 /* glance .flat-icon: simple-icons and mdi glyphs are black paths with no
    fill, so on a dark-only theme they are invisible until inverted. */
 .iconAutoInvert {
+  filter: invert(1);
+}
+
+/* The hover rule above is (0,3,0) and wins over a bare .iconAutoInvert
+   (0,1,0) on specificity, which would strip the invert from exactly the
+   glyphs that cannot render without it. Same value one class deeper, so the
+   invert survives hover and focus alike. */
+.row:is(:hover, :focus-within) .iconAutoInvert {
   filter: invert(1);
 }
 
