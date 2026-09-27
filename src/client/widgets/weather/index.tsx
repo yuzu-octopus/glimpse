@@ -4,8 +4,10 @@ import {
   CloudRain,
   CloudSnow,
   CloudSun,
+  Droplets,
   Sun,
 } from 'lucide-react';
+import { Text } from '@astryxdesign/core';
 import type { WeatherConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
@@ -92,6 +94,20 @@ export function Weather({ config, data, error, isLoading }: WidgetComponentProps
           Feels like {Math.round(w.current.feelsLike)}°{unit}
         </div>
       ) : null}
+
+      {/* Humidity rides along in the open-meteo current block and was fetched
+          and thrown away. A quantity, so it goes through Text with tabular
+          numerals at the 12px supporting floor, the way every other number in
+          the app does. */}
+      {w.current.humidity != null ? (
+        <div className={styles.humidity}>
+          <Droplets size={13} aria-hidden />
+          <Text as="span" type="supporting" hasTabularNumbers>
+            Humidity {Math.round(w.current.humidity)}%
+          </Text>
+        </div>
+      ) : null}
+
       {!cfg['hide-location'] ? (
         <div className={styles.location}>
           <span className={styles.locationIcon} aria-hidden="true" />

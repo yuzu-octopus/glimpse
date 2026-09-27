@@ -33,6 +33,16 @@
   margin-top: 4px;
 }
 
+/* One more supporting line under feels-like. Text type=supporting owns the
+   12px floor and the muted colour; the module only centres the pair. */
+.humidity {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
 /* glance weather.html: location row, size-h5 + location-icon, margin-top-15 */
 .location {
   display: flex;

@@ -17,12 +17,23 @@ const DATA: WeatherData = {
 };
 
 describe('weather widget', () => {
-  it('renders temperature, condition, feels-like and location', () => {
+  it('renders temperature, condition, feels-like, humidity and location', () => {
     render(<Weather config={{ type: 'weather', location: 'London' }} data={DATA} />);
     expect(screen.getByText('23°')).toBeInTheDocument();
     expect(screen.getByText('Partly Cloudy')).toBeInTheDocument();
     expect(screen.getByText('Feels like 21°C')).toBeInTheDocument();
+    expect(screen.getByText('Humidity 60%')).toBeInTheDocument();
     expect(screen.getByText('London, England, United Kingdom')).toBeInTheDocument();
+  });
+
+  it('drops the humidity line when the provider reports none', () => {
+    render(
+      <Weather
+        config={{ type: 'weather', location: 'London' }}
+        data={{ ...DATA, current: { ...DATA.current, humidity: null } }}
+      />,
+    );
+    expect(screen.queryByText(/Humidity/)).toBeNull();
   });
 
   it('renders daily rows for today and upcoming days', () => {
