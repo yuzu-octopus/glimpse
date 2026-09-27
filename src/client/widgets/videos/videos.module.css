@@ -41,14 +41,16 @@
   background: var(--color-widget-background-highlight);
 }
 
-/* glance video-card-contents: 2-line clamp title, flat glance — no colour, consistent */
+/* glance video-card-contents: 2-line clamp title, flat glance — no colour, consistent.
+ * A video title is content the user came to read, so it wears the `body` role
+ * (14px); the age • channel line below it is the only `supporting` text. */
 .cardTitle {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   padding: 8px 10px 0;
-  font-size: var(--font-size-base);
+  font-size: var(--text-body-size);
   line-height: 1.4;
   color: var(--color-text-base);
 }
@@ -130,10 +132,11 @@
   min-width: 0;
 }
 
-/* glance vertical list title: block text-truncate link — no colour, consistent */
+/* glance vertical list title: block text-truncate link — no colour, consistent.
+ * `body` role, same as the card title above. */
 .title {
   display: block;
-  font-size: var(--font-size-base);
+  font-size: var(--text-body-size);
   color: var(--color-text-base);
   text-decoration: none;
   overflow: hidden;
