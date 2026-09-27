@@ -264,6 +264,13 @@ const WEB_CLIENT_VERSION = '2.20260708.00.00';
 
 const HANDLE_TTL_MS = 24 * 60 * 60 * 1000;
 
+/** resolve_url's answer, in the two shapes it is read in: the documented
+ * `response.-`-wrapped one and the top-level one. */
+interface ResolveEndpoint {
+  endpoint?: { browseEndpoint?: { browseId?: unknown } };
+  response?: ResolveEndpoint;
+}
+
 /** resolve_url answered, and answered "no such thing". Kept distinct from
  * every other failure because it is the one that must not be rescued: a
  * handle YouTube cannot resolve has no channel page to scrape either, so the
@@ -328,19 +335,23 @@ async function resolveViaInnerTube(
   } catch {
     throw new Error('resolve_url returned an unreadable body');
   }
-  // A 200 with no `UC…` at `response.endpoint.browseEndpoint.browseId` is
-  // unresolved, not an empty string: the research is explicit that this shape
-  // must fail loudly (docs/research/youtube-fetching-2026/REPORT.md, "Failing
-  // loudly"). Defaulting it to `''` would send `channel_id=` to the feed and
+  // The report documents the id at `response.endpoint.browseEndpoint.browseId`.
+  // Every live probe from this host on 2026-09-27 — 7/7 handles, on
+  // www.youtube.com and youtubei.googleapis.com, with and without
+  // `prettyPrint=false` — put it at the TOP level instead, with the same ids
+  // the report's own table lists. Both shapes are read, because reading only
+  // the documented one silently demotes the primary to the scrape.
+  //
+  // A 200 that carries no `UC…` in either is unresolved, not an empty string:
+  // the research is explicit that this shape must fail loudly (REPORT.md,
+  // "Failing loudly"). Defaulting it would send `channel_id=` to the feed and
   // manufacture a 404 of our own.
-  const node = payload as
-    | { response?: { endpoint?: { browseEndpoint?: { browseId?: unknown } } } }
-    | null;
-  const browseId = node?.response?.endpoint?.browseEndpoint?.browseId;
-  if (typeof browseId !== 'string' || !CHANNEL_ID_RE.test(browseId)) {
-    throw new Error('resolve_url returned no channel id');
+  const shapes: unknown[] = [payload, (payload as ResolveEndpoint)?.response];
+  for (const shape of shapes) {
+    const browseId = (shape as ResolveEndpoint)?.endpoint?.browseEndpoint?.browseId;
+    if (typeof browseId === 'string' && CHANNEL_ID_RE.test(browseId)) return browseId;
   }
-  return browseId;
+  throw new Error('resolve_url returned no channel id');
 }
 
 /** The fallback channel: the handle's own page. No retry budget of its own —
