@@ -11,12 +11,19 @@
 }
 
 /* Gear trigger; fills the header/mobile-nav bar height so the icon centers
- * in the 45px header row (align-items: center on the row). */
+ * in the 45px header row (align-items: center on the row).
+ *
+ * The button is a mobile-first control, so it carries the 44x44 touch target
+ * (measured 18x45) as a transparent box around the 18px gear — the hit area
+ * grows, the visual box does not. */
 .trigger {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100%;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
   background: none;
   border: none;
   color: var(--color-text-base);
