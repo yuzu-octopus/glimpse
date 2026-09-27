@@ -47,11 +47,15 @@ describe('videos fetcher', () => {
     expect(data.videos[1].thumbnail).toBeNull();
   });
 
-  it('resolves @handles to channel_id via handle page', async () => {
-    const handleHtml = `{"externalId":"UC1234567890123456789012"}`;
+  it('resolves @handles to channel_id via resolve_url', async () => {
     const ctx = makeCtx(async (url) => {
-      if (url.includes('/@handle')) {
-        return new Response(handleHtml, { status: 200 });
+      if (url.includes('/navigation/resolve_url')) {
+        return new Response(
+          JSON.stringify({
+            response: { endpoint: { browseEndpoint: { browseId: 'UC1234567890123456789012' } } },
+          }),
+          { status: 200 },
+        );
       }
       expect(url).toBe('https://www.youtube.com/feeds/videos.xml?channel_id=UC1234567890123456789012');
       return new Response(FEED, { status: 200 });
