@@ -26,10 +26,16 @@
 }
 
 @container (max-width: 480px) {
-  /* astryx's `Link` wraps whatever it renders in a text span, so the card's
-   * own box holds exactly one child and the two-column layout belongs on
-   * that wrapper, not on the anchor. */
-  .gridWrap .card > * {
+  /* Two columns: 16:9 thumb beside the title, meta under it. The card's
+     children are its own now — there is no wrapper to place them in.
+     The inset rides on the kit's container padding tokens: the card reads
+     them (minus its border width), so it still lands content exactly
+     8px/10px from the card's edge. */
+  .gridWrap .card {
+    --container-padding-inline-start: 10px;
+    --container-padding-inline-end: 10px;
+    --container-padding-block-start: 8px;
+    --container-padding-block-end: 8px;
     display: grid;
     grid-template-columns: 112px minmax(0, 1fr);
     grid-template-areas:
@@ -37,10 +43,6 @@
       "thumb meta";
     align-items: center;
     column-gap: 10px;
-  }
-
-  .gridWrap .card {
-    padding: 8px 10px;
   }
 
   .gridWrap .cardThumb,
@@ -62,16 +64,13 @@
   }
 }
 
-/* glance .card (widget-content-frame): framed card holding the thumbnail */
+/* glance .card (widget-content-frame): the frame, radius and clip come from
+   the ClickableCard; the column stack of thumb over title over meta is all
+   that is left local. */
 .card {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  text-decoration: none;
-  background: var(--color-widget-background);
-  border: 1px solid var(--color-widget-content-border);
-  border-radius: var(--border-radius);
-  overflow: hidden;
 }
 
 .cards .card {
@@ -104,12 +103,9 @@
   color: var(--color-text-base);
 }
 
-.cardTitle:visited {
-  color: var(--color-text-base);
-}
-
-/* The card is the anchor, so the title's resolve follows the card's focus. */
-.card:is(:hover, :focus-visible) .cardTitle {
+/* The card carries the link, so the title's resolve follows the card's
+   pointer and its focus. */
+.card:is(:hover, :focus-within) .cardTitle {
   color: var(--color-text-highlight);
 }
 

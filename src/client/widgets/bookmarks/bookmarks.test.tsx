@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import Bookmarks from './index';
@@ -18,11 +19,16 @@ describe('bookmarks widget', () => {
     );
     expect(screen.getByText('Dev')).toBeInTheDocument();
     expect(screen.getByText('GitHub')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'GitHub' }).className).toContain(styles.linkCard);
+    // astryx's ListItem is the row: a list item carrying the group's real
+    // link, rather than a Link anchor that had its children flattened back
+    // out with `display: contents`.
+    const row = screen.getByRole('link', { name: 'GitHub' }).closest('li')!;
+    expect(row).not.toBeNull();
+    expect(row.parentElement?.tagName).toBe('UL');
   });
 
   it('renders icons and descriptions when present', () => {
-    const { container } = render(
+    render(
       <Bookmarks
         data={null}
         config={{
@@ -42,7 +48,10 @@ describe('bookmarks widget', () => {
         }}
       />,
     );
-    expect(container.querySelector(`.${styles.icon}`)).not.toBeNull();
+    // the icon is the item's start slot and the description its own, so the
+    // whole row is the link's target
+    const row = screen.getByRole('link', { name: /API reference/ }).closest('li')!;
+    expect(row.querySelector(`.${styles.icon}`)).not.toBeNull();
     expect(screen.getByText('API reference')).toBeInTheDocument();
   });
 
@@ -167,11 +176,12 @@ describe('bookmarks widget', () => {
         }}
       />,
     );
-    const shown = (name: string) => screen.getByRole('link', { name }).className;
-    expect(shown('A')).not.toContain(styles.linkNoArrow);
-    expect(shown('B')).toContain(styles.linkNoArrow);
+    const shown = (name: string) =>
+      screen.getByRole('link', { name }).closest('li')!.textContent?.includes('↗');
+    expect(shown('A')).toBe(true);
+    expect(shown('B')).toBe(false);
     // a link overrides its group, in both directions
-    expect(shown('C')).not.toContain(styles.linkNoArrow);
+    expect(shown('C')).toBe(true);
   });
 
   it('lets target override same-tab, and the group fill in for its links', () => {
@@ -217,5 +227,15 @@ describe('bookmarks widget', () => {
   it('shows an empty message when no groups are configured', () => {
     render(<Bookmarks data={null} config={{ type: 'bookmarks' }} />);
     expect(screen.getByText('No bookmark groups configured.')).toBeInTheDocument();
+  });
+
+  // astryx's Link nests everything it renders in one span, which is why the
+  // row used to need `.linkCard > span { display: contents !important; }` to
+  // put the icon and title back side by side. ListItem lays the row out
+  // itself, so that un-wrapping hack must never come back.
+  it('needs no wrapper-flattening hack: the item lays the row out itself', () => {
+    const css = readFileSync('src/client/widgets/bookmarks/bookmarks.module.css', 'utf8');
+    expect(css).not.toMatch(/display:\s*contents/);
+    expect(css).not.toMatch(/!important/);
   });
 });

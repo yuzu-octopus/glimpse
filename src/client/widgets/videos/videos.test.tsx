@@ -86,10 +86,34 @@ describe('videos widget', () => {
     expect(css).toMatch(
       /@container[\s\S]*?grid-template-columns:\s*112px minmax\(0,\s*1fr\)/,
     );
-    // astryx's Link wraps the card contents in a text span, so the two-column
-    // layout belongs on that wrapper — a grid on the anchor has no items to
-    // place and collapses the whole card into the first column.
-    expect(css).toMatch(/@container[\s\S]*?\.gridWrap \.card > \*\s*\{[^}]*grid-template-areas/);
+    // the card is its own grid now: ClickableCard holds the thumb, title and
+    // meta as direct children, so the areas land on the card itself and no
+    // wrapper span has to be re-gridded. The inset rides on the kit's own
+    // container padding tokens — the card computes its padding from them.
+    expect(css).toMatch(/@container[\s\S]*?\.gridWrap \.card\s*\{[^}]*display:\s*grid/);
+    expect(css).toMatch(/@container[\s\S]*?\.gridWrap \.card\s*\{[^}]*grid-template-areas/);
+    expect(css).toMatch(
+      /@container[\s\S]*?\.gridWrap \.card\s*\{[^}]*--container-padding-inline-start:\s*10px/,
+    );
+    expect(css).not.toMatch(/\.card > \*/);
+  });
+
+  // astryx's Link is a styled text link: it nests whatever it renders in one
+  // span, which is why the frame used to be re-declared on the anchor. The
+  // kit's card container takes a real link of its own instead, so the module
+  // keeps only the column stack.
+  it('mounts each card as a ClickableCard, not a link wrapping the tile', () => {
+    const { container } = render(<Videos config={{ type: 'videos' }} data={{ videos }} />);
+    const card = container.querySelector<HTMLElement>(`.${styles.card}`)!;
+    expect(card.tagName).toBe('DIV');
+    // one real link, the card's own, named for the video it opens
+    expect(card.querySelectorAll('a')).toHaveLength(1);
+    expect(card.contains(screen.getByRole('link', { name: 'Bun 1.3 release' }))).toBe(true);
+  });
+
+  it('leaves the card frame to the kit: no anchor background, border or radius', () => {
+    const css = readFileSync('src/client/widgets/videos/videos.module.css', 'utf8');
+    expect(css).not.toMatch(/\.card\s*\{[^}]*(background|border-radius|border:)/);
   });
 
   it('surfaces a fetch error via the widget chrome', () => {

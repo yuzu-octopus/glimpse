@@ -1,4 +1,4 @@
-import { Link, Stack, StatusDot, Text } from '@astryxdesign/core';
+import { ClickableCard, Stack, StatusDot, Text } from '@astryxdesign/core';
 import { useState } from 'react';
 import { VIDEOS_DEFAULTS, type VideosConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
@@ -17,7 +17,7 @@ function Card({ video }: { video: Video }) {
   const age = rawAge || null;
   const [thumbFailed, setThumbFailed] = useState(false);
   return (
-    <Link href={video.url} target="_blank" className={styles.card} hasUnderline={false} color="inherit">
+    <ClickableCard label={video.title} href={video.url} target="_blank" padding={0} className={styles.card}>
       {video.thumbnail && !thumbFailed ? (
         <img
           src={video.thumbnail}
@@ -34,7 +34,7 @@ function Card({ video }: { video: Video }) {
         {age ? <span className={styles.cardTime}>{age}</span> : null}
         <span className={styles.cardChannel}>{video.channel}</span>
       </span>
-    </Link>
+    </ClickableCard>
   );
 }
 

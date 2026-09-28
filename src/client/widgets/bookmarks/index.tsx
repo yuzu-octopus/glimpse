@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from '@astryxdesign/core';
+import { ListItem } from '@astryxdesign/core';
 import type { BookmarksConfig } from '../../../shared/widgets/bookmarks';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
@@ -89,20 +89,21 @@ function Bookmarks({ config }: WidgetComponentProps) {
               {links.map((link) => {
                 const { target, hideArrow } = resolveLink(link, group, cfg['same-tab']);
                 return (
-                  <li key={`${link.title}::${link.url}::${link.description ?? ''}`} className={styles.linkItem}>
-                    <Link
-                      href={link.url}
-                      target={target}
-                      className={hideArrow ? `${styles.linkCard} ${styles.linkNoArrow}` : styles.linkCard}
-                      hasUnderline={false}
-                    >
-                      {link.icon ? (
-                        <BookmarkIcon icon={link.icon} accent={tagAccent(link.url)} />
-                      ) : null}
-                      <span className={styles.linkTitle}>{link.title}</span>
-                    </Link>
-                    {link.description ? <span className={styles.linkDesc}>{link.description}</span> : null}
-                  </li>
+                  <ListItem
+                    key={`${link.title}::${link.url}::${link.description ?? ''}`}
+                    href={link.url}
+                    target={target}
+                    startContent={link.icon ? <BookmarkIcon icon={link.icon} accent={tagAccent(link.url)} /> : undefined}
+                    label={link.title}
+                    description={link.description ?? undefined}
+                    endContent={
+                      hideArrow ? undefined : (
+                        <span className={styles.arrow} aria-hidden="true">
+                          ↗
+                        </span>
+                      )
+                    }
+                  />
                 );
               })}
             </ul>

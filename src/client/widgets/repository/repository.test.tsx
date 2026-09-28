@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import Repository from './index';
@@ -87,7 +88,9 @@ describe('repository widget', () => {
       />,
     );
     expect(screen.getByText('Anonymous')).toBeInTheDocument();
-    expect(document.querySelector(`.${styles.subMeta}`)).toBeNull();
+    // no second line: a description would have joined the message inside the
+    // link's own accessible name, so the exact-name match is the assertion
+    expect(screen.getByRole('link', { name: 'Anonymous' })).toBeInTheDocument();
   });
 
   it('shows no commits section when the payload carries none', () => {
@@ -102,5 +105,32 @@ describe('repository widget', () => {
     expect(screen.getByText('GitHub API unavailable')).toBeInTheDocument();
     expect(screen.getByTestId('widget-error-dot')).toBeInTheDocument();
     expect(screen.queryByText('user/other')).toBeNull();
+  });
+
+  // astryx's Link is a styled text link: it nests whatever it renders in one
+  // span, and that span was the row's only flex item, so the row needed
+  // `.subRow > * { display: grid; … }` to constrain it. ListItem lays the
+  // lead / title / second line out itself, and it is a list item, so the
+  // rows need a real list around them.
+  it('renders each sub-row as a list item inside the sub-list', () => {
+    const { container } = render(
+      <Repository config={{ type: 'repository', repository: 'user/glimpse' }} data={repo} />,
+    );
+    const list = container.querySelector(`.${styles.subRows}`)!;
+    expect(list.tagName).toBe('UL');
+    const rows = list.querySelectorAll(`.${styles.subRow}`);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].tagName).toBe('LI');
+    // the lead and the title are the item's own slots, and the real link
+    // lives inside the row rather than wrapping it
+    expect(rows[0].querySelector(`.${styles.subNumber}`)?.textContent).toBe('#12');
+    expect(rows[0].querySelector('a')).toBe(
+      screen.getByRole('link', { name: 'Add keyed widgets' }),
+    );
+  });
+
+  it('needs no wrapper grid: the item carries the number and title itself', () => {
+    const css = readFileSync('src/client/widgets/repository/repository.module.css', 'utf8');
+    expect(css).not.toMatch(/\.subRow > \*/);
   });
 });

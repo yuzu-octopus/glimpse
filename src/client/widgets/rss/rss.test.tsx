@@ -1,7 +1,9 @@
+import { readFileSync } from 'node:fs';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import Rss from './index';
 import feedStyles from '../feed/feed.module.css';
+import styles from './rss.module.css';
 import type { RssItem } from '../../../shared/widgets/payloads';
 
 const items: RssItem[] = [
@@ -110,5 +112,41 @@ describe('rss widget', () => {
   it('shows skeleton while loading when data is null', () => {
     render(<Rss config={{ feeds: [{ url: 'https://example.com/rss' }] } as unknown as Record<string, unknown>} data={null} />);
     expect(screen.getByTestId('widget-loading')).toBeInTheDocument();
+  });
+
+  // astryx's Link is a styled text link: it nests whatever it renders in one
+  // span, so the frame and the tile layout had to be re-declared on the
+  // anchor. ClickableCard is the container built for this — the card paints
+  // itself and owns a real link of its own.
+  it('mounts each tile as a ClickableCard, not a link wrapping the tile', () => {
+    const { container } = render(
+      <Rss
+        config={{ type: 'rss', style: 'horizontal-cards', feeds: [{ url: 'x' }] }}
+        data={{ items }}
+      />,
+    );
+    const card = container.querySelector<HTMLElement>(`.${styles.card}`)!;
+    expect(card.tagName).toBe('DIV');
+    // one real link, the card's own, named for the post it opens
+    expect(card.querySelectorAll('a')).toHaveLength(1);
+    expect(card.contains(screen.getByRole('link', { name: 'First post' }))).toBe(true);
+  });
+
+  it('mounts the overlay tile as a ClickableCard too', () => {
+    const { container } = render(
+      <Rss
+        config={{ type: 'rss', style: 'horizontal-cards-2', overlay: true, feeds: [{ url: 'x' }] }}
+        data={{ items }}
+      />,
+    );
+    const card = container.querySelector<HTMLElement>(`.${styles.card2}`)!;
+    expect(card.tagName).toBe('DIV');
+    expect(card.contains(screen.getByRole('link', { name: 'First post' }))).toBe(true);
+  });
+
+  it('leaves the tile frame to the card: no anchor background, border or radius', () => {
+    const css = readFileSync('src/client/widgets/rss/rss.module.css', 'utf8');
+    expect(css).not.toMatch(/\.card\s*\{[^}]*(background|border-radius|border:)/);
+    expect(css).not.toMatch(/\.card2\s*\{[^}]*(background|border-radius|border:)/);
   });
 });

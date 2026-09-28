@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Link } from '@astryxdesign/core';
+import { Button, ClickableCard } from '@astryxdesign/core';
 import { ChevronRight } from 'lucide-react';
 import type { RssConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
@@ -53,13 +53,18 @@ function Cards({ items, title, titleUrl, hideHeader, cssClass, cardHeight, thumb
       <div className={styles.cardRow}>
         {items.map((item) =>
           overlay ? (
-            <Link
+            <ClickableCard
               key={item.url}
+              label={item.title}
               href={item.url}
               target="_blank"
+              padding={0}
               className={styles.card2}
+              // The height rides inline, not on the `height` prop: a card
+              // with a fixed height switches the kit to `overflow: auto`,
+              // and this tile's gradient overlay must stay clipped, not
+              // scrollable.
               style={cardHeight ? { height: cardHeight } : undefined}
-              hasUnderline={false}
             >
               {item.thumbnail ? (
                 <img src={item.thumbnail} alt="" loading="lazy" className={styles.card2Thumb} />
@@ -73,9 +78,16 @@ function Cards({ items, title, titleUrl, hideHeader, cssClass, cardHeight, thumb
                   {item.published ? <span>· {formatAge((Date.now() - Date.parse(item.published)) / 1000)}</span> : null}
                 </div>
               </div>
-            </Link>
+            </ClickableCard>
           ) : (
-            <Link key={item.url} href={item.url} target="_blank" className={styles.card} hasUnderline={false}>
+            <ClickableCard
+              key={item.url}
+              label={item.title}
+              href={item.url}
+              target="_blank"
+              padding={0}
+              className={styles.card}
+            >
               {item.thumbnail ? (
                 <img
                   src={item.thumbnail}
@@ -96,7 +108,7 @@ function Cards({ items, title, titleUrl, hideHeader, cssClass, cardHeight, thumb
                   {item.published ? <span>· {formatAge((Date.now() - Date.parse(item.published)) / 1000)}</span> : null}
                 </div>
               </div>
-            </Link>
+            </ClickableCard>
           ),
         )}
       </div>
