@@ -21,12 +21,16 @@ describe('WidgetChrome', () => {
   });
 
   it('hides the header when hideHeader is set', () => {
+    // By role, not by a literal `.header` class: Vitest serves CSS modules as
+    // a hashed proxy, so `querySelector('.header')` is null whether or not the
+    // header renders and the assertion could not fail.
     const { container } = render(
       <WidgetChrome title="Secret" hideHeader>
         <div>x</div>
       </WidgetChrome>,
     );
-    expect(container.querySelector('.header')).toBeNull();
+    expect(screen.queryByRole('heading', { level: 3, name: 'Secret' })).toBeNull();
+    expect(container.querySelector('h3')).toBeNull();
   });
 
   it('collapses lists beyond collapseAfter and expands on click', () => {
@@ -118,33 +122,29 @@ describe('WidgetChrome', () => {
   it('Show less scrolls with content (not sticky)', () => {
     render(<WidgetChrome title="Feed" collapseAfter={2} items={rows} />);
     fireEvent.click(screen.getByRole('button', { name: /show more/i }));
-    const btn = screen.getByRole('button', { name: /show less/i });
-    expect(getComputedStyle(btn).position).not.toBe('sticky');
+    expect(screen.getByRole('button', { name: /show less/i })).toBeInTheDocument();
     // The kit Button owns the toggle's box, so nothing in the module may pin
     // it to the viewport — the guard used to be scoped to the one class the
-    // raw button owned.
+    // raw button owned. A `getComputedStyle(btn).position` check would be
+    // vacuous: jsdom injects no stylesheet under vitest, so the computed
+    // value is always "static" and it would pass with `position: sticky` in
+    // the CSS. The stylesheet source is the surface that can actually fail.
     const css = readFileSync('src/client/components/widget-chrome.module.css', 'utf8');
     expect(css).not.toMatch(/position\s*:\s*sticky/);
   });
 
-  it('Show more and Show less have same position (both not sticky)', () => {
-    render(<WidgetChrome title="Feed" collapseAfter={2} items={rows} />);
-    const moreBtn = screen.getByRole('button', { name: /show more/i });
-    expect(getComputedStyle(moreBtn).position).not.toBe('sticky');
-    fireEvent.click(moreBtn);
-    const lessBtn = screen.getByRole('button', { name: /show less/i });
-    expect(getComputedStyle(lessBtn).position).not.toBe('sticky');
-    // both scroll off — identical non-sticky positioning
-    expect(getComputedStyle(lessBtn).position).toBe(getComputedStyle(moreBtn).position);
-  });
-
-  it('renders list-shaped skeleton rows', () => {
-    render(<WidgetChrome title="Feed" isLoading skeletonShape="list" />);
-    expect(screen.getByTestId('widget-loading').className).toContain('shapeList');
-  });
-  it('renders stat-shaped skeleton', () => {
-    render(<WidgetChrome title="Clock" isLoading skeletonShape="stat" />);
-    expect(screen.getByTestId('widget-loading').className).toContain('shapeStat');
+  it('paints a genuinely different skeleton per shape', () => {
+    // Structure, not a hashed class. `className.toContain('shapeList')` only
+    // matched by accident of the hash suffix.
+    const counts: Record<string, number> = {};
+    for (const shape of ['list', 'stat', 'rows', 'chart'] as const) {
+      const { unmount } = render(
+        <WidgetChrome title="S" isLoading skeletonShape={shape} />,
+      );
+      counts[shape] = screen.getByTestId('widget-loading').children.length;
+      unmount();
+    }
+    expect(counts).toEqual({ list: 5, stat: 2, rows: 3, chart: 1 });
   });
 });
 
@@ -155,32 +155,35 @@ describe('WidgetChrome brand principles', () => {
     expect(screen.getByRole('heading', { level: 3, name: 'My Widget' })).toBeInTheDocument();
   });
 
-  it('marks only a linked title as tappable (accent)', () => {
+  it('renders the title as a real anchor only when titleUrl is set', () => {
     const { container, rerender } = render(<WidgetChrome title="Plain">x</WidgetChrome>);
-    expect(container.querySelector('h3')?.className).not.toContain('titleLink');
+    expect(container.querySelector('a')).toBeNull();
 
     rerender(
       <WidgetChrome title="Linked" titleUrl="https://example.com">
         x
       </WidgetChrome>,
     );
-    expect(container.querySelector('h3')?.className).toContain('titleLink');
+    expect(screen.getByRole('link', { name: 'Linked' })).toHaveAttribute(
+      'href',
+      'https://example.com',
+    );
   });
 
-  it('wears the error header wash only while the failure is surfaced', () => {
-    const { container, rerender } = render(
+  it('surfaces the failure only while showErrors is on', () => {
+    const { rerender } = render(
       <WidgetChrome title="Broken" error="boom" showErrors={false}>
         <div>stale</div>
       </WidgetChrome>,
     );
-    expect(container.querySelector('[class*="errorHeader"]')).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
 
     rerender(
       <WidgetChrome title="Broken" error="boom">
         <div>stale</div>
       </WidgetChrome>,
     );
-    expect(container.querySelector('[class*="errorHeader"]')).not.toBeNull();
+    expect(screen.getByRole('alert')).toHaveTextContent('boom');
   });
 
   it('carries no shadow-based depth — borders only', () => {
@@ -192,14 +195,6 @@ describe('WidgetChrome brand principles', () => {
 });
 
 describe('WidgetChrome quiet errors (show-errors)', () => {
-  it('shows the Banner by default — a self-hosted dashboard must not fail silently', () => {
-    render(
-      <WidgetChrome title="Broken" error="upstream exploded">
-        <div>stale</div>
-      </WidgetChrome>,
-    );
-    expect(screen.getByRole('alert')).toHaveTextContent('upstream exploded');
-  });
 
   it('hides the Banner text and keeps the chrome and stale content when false', () => {
     render(

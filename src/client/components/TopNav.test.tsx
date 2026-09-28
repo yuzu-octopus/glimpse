@@ -82,6 +82,12 @@ describe('TopNav', () => {
 
     dev.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
     expect(prefetch).toHaveBeenCalledWith('dev');
+
+    // Focus is the only path a keyboard-only user takes; the old version
+    // never dispatched it, so deleting TopNav's onFocus would not fail.
+    prefetch.mockClear();
+    fireEvent.focus(dev);
+    expect(prefetch).toHaveBeenCalledWith('dev');
   });
 
   it('keeps the logo a real outbound anchor, not a button', () => {

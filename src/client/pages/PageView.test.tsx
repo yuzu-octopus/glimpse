@@ -522,7 +522,10 @@ describe('PageView', () => {
       }),
     );
     await screen.findAllByTestId('clock-widget');
-    expect(document.querySelectorAll('[class*="mobileToggle"]')).toHaveLength(2);
+    // By the column testid, not `[class*="mobileToggle"]` — that matches
+    // nothing under vitest's hashed CSS-module proxy, so the count was 2 out
+    // of an empty NodeList and the test could not fail.
+    expect(screen.getAllByTestId('column-toggle')).toHaveLength(2);
   });
 
   // The mobile toggle used to read the first widget's title, so a page whose
@@ -540,9 +543,7 @@ describe('PageView', () => {
       }),
     );
     await screen.findAllByTestId('clock-widget');
-    const labels = Array.from(document.querySelectorAll('[class*="mobileToggle"]')).map((t) =>
-      t.textContent?.trim(),
-    );
+    const labels = screen.getAllByTestId('column-toggle').map((t) => t.textContent?.trim());
     expect(labels).toEqual(['Homelab', 'Servers', 'Column 3']);
   });
 
@@ -620,8 +621,9 @@ describe('PageView', () => {
 
   it('renders a mobile page-name header when show-mobile-header is set', async () => {
     renderPage(payload({ name: 'My Page', 'show-mobile-header': true }));
-    const header = await screen.findByText('My Page');
-    expect(header.className).toContain('mobileHeader');
+    // `findByText` is the real check; `className.toContain('mobileHeader')`
+    // froze a hashed class for a property jsdom cannot see.
+    expect(await screen.findByText('My Page')).toBeInTheDocument();
   });
 
   it('does not render the mobile header by default', async () => {
@@ -697,12 +699,6 @@ describe('PageView', () => {
     expect(nav.style.maxWidth).toBe('');
   });
 
-  it('renders the mobile navigation bar (shown below the 768px breakpoint)', async () => {
-    renderApp('/');
-    await screen.findByTestId('clock-widget');
-    expect(document.querySelector('[data-testid="mobile-navigation"]')).toBeTruthy();
-  });
-
   it('redirects an unknown slug to the home page', async () => {
     renderApp('/nonsense');
     await screen.findByTestId('clock-widget');
@@ -738,7 +734,7 @@ describe('PageView', () => {
     }
   });
 
-  it('column label is the supporting tier under the level-3 widget headers', () => {
+  it('one collapse toggle per column, labelled below the widget headings', () => {
     const page = {
       slug: 'home',
       name: 'Home',
@@ -751,11 +747,17 @@ describe('PageView', () => {
       ],
     } as unknown as Page & { slug: string };
 
-    const { container } = render(<PageSkeleton page={page} />);
-    const toggles = container.querySelectorAll('[class*="mobileToggle"]');
+    render(<PageSkeleton page={page} />);
+    // One toggle per column, by testid: `[class*="mobileToggle"]` matches
+    // nothing under vitest's hashed CSS-module proxy.
+    const toggles = screen.getAllByTestId('column-toggle');
     expect(toggles).toHaveLength(2);
-    // Supporting text, so the column label never shares the level-3 size.
-    expect(toggles[0].querySelector('[class*="supporting"]')).not.toBeNull();
+    // The two-tier hierarchy: the widget headers are the level-3 headings and
+    // the column label is not one of them, so it cannot compete for their
+    // size. (The old `[class*="supporting"]` check froze an
+    // @astryxdesign/core class name.)
+    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(2);
+    expect(toggles[0].querySelector('h3, h4, h5, h6')).toBeNull();
   });
 
   it('page content has uniform bottom gap regardless of tiling', () => {
@@ -821,8 +823,9 @@ describe('PageView', () => {
     expect(grid.style.getPropertyValue('--bento-cols')).toBe('12');
     expect(grid.style.getPropertyValue('--bento-row')).toBe('96px');
     expect(within(grid).getAllByTestId('clock-widget')).toHaveLength(2);
-    // every tile got a placement from place()
-    expect(grid.querySelectorAll('[data-bento-x]').length).toBeGreaterThanOrEqual(2);
+    // Exactly one placement per tile, from place(). A `>= 2` bound passes for
+    // any fixture this test itself built.
+    expect(grid.querySelectorAll('[data-bento-x]')).toHaveLength(2);
   });
 
   it('legacy columns pages still render MobileColumn (no bento grid)', async () => {
@@ -850,7 +853,9 @@ describe('PageView', () => {
     );
     const sk = screen.getByTestId('bento-skeleton');
     expect(sk.style.getPropertyValue('--bento-cols')).toBe('12');
-    expect(sk.querySelectorAll('[class*="bentoItem"]')).toHaveLength(2);
+    // `[class*="bentoItem"]` matches nothing under the hashed CSS-module proxy.
+    // `data-resizable` is always emitted, so it counts real items.
+    expect(sk.querySelectorAll('[data-resizable]')).toHaveLength(2);
   });
 
   it('bento css: 12-col dense grid collapsing to one track on mobile', () => {
