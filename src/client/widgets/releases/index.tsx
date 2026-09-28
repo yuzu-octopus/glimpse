@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react';
-import { Badge, Card, HStack, Icon, IconButton, Link, Text } from '@astryxdesign/core';
-import { ChevronDown, Container, GitBranch } from 'lucide-react';
+import { Badge, Card, Collapsible, HStack, Icon, Link, Text } from '@astryxdesign/core';
+import { Container, GitBranch } from 'lucide-react';
 import { RELEASES_DEFAULTS, type ReleasesConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
@@ -47,10 +47,12 @@ function ReleaseRow({
   const trimmed = release.notes?.trim() ?? '';
   const hasNotes = trimmed.length > 0;
 
-  /* The row is a plain container, not a button: it holds the release link
-     and the disclosure button, and a role="button" host around both is a
-     nested-interactive defect (WCAG 4.1.2). The chevron button is the only
-     expander, so it carries aria-expanded. */
+  /* The row stays a plain container holding the release link and the
+     disclosure — a role="button" host around both would nest interactive
+     controls (WCAG 4.1.2). Collapsible owns the toggle, so this row only
+     supplies the trigger label; aria-expanded, aria-controls and the chevron
+     are the primitive's job. The open flag is still parent-controlled, keyed
+     by url::tag, so a poll that swaps object identity does not collapse it. */
   return (
     <div className={styles.row}>
       <HStack gap={1} vAlign="center">
@@ -64,16 +66,6 @@ function ReleaseRow({
         >
           {release.name || release.tag}
         </Link>
-        {hasNotes ? (
-          <IconButton
-            label={open ? 'Hide release notes' : 'Show release notes'}
-            aria-expanded={open}
-            icon={<ChevronDown size={14} className={open ? styles.chevronOpen : styles.chevron} />}
-            variant="secondary"
-            size="sm"
-            onClick={onToggle}
-          />
-        ) : null}
       </HStack>
       {/* Metadata: every edge on the 4px half-step (`gap={1}`), the separator
           as its own item so chip and age get the same beat. Age is metadata. */}
@@ -90,21 +82,25 @@ function ReleaseRow({
         ) : null}
       </HStack>
       {hasNotes ? (
-        <div className={`${styles.collapse} ${open ? styles.collapseOpen : ''}`}>
-          <div className={styles.collapseInner}>
-            {open ? (
-              /* Upstream changelogs run to thousands of lines, so the inset
-                 clamps to whole lines with a real ellipsis — no half-cut
-                 line, no nested scroller. The row title links to the full
-                 release, which is where glance sends readers too. */
-              <Card variant="transparent" padding={3} style={insetCard} className={styles.notesCard}>
-                <Text type="body" as="div" maxLines={NOTES_PREVIEW_LINES} wordBreak="break-all" className={styles.notes}>
-                  {trimmed}
-                </Text>
-              </Card>
-            ) : null}
-          </div>
-        </div>
+        <Collapsible
+          className={styles.disclosure}
+          isOpen={open}
+          onOpenChange={onToggle}
+          trigger="Release notes"
+        >
+          {/* Upstream changelogs run to thousands of lines, so the inset
+              clamps to whole lines with a real ellipsis — no half-cut
+              line, no nested scroller. The row title links to the full
+              release, which is where glance sends readers too. Collapsed
+              rows render no card at all: hidden copy is still text. */}
+          {open ? (
+            <Card variant="transparent" padding={3} style={insetCard} className={styles.notesCard}>
+              <Text type="body" as="div" maxLines={NOTES_PREVIEW_LINES} wordBreak="break-all" className={styles.notes}>
+                {trimmed}
+              </Text>
+            </Card>
+          ) : null}
+        </Collapsible>
       ) : null}
     </div>
   );

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { Button } from '@astryxdesign/core';
+import { Button, SegmentedControl, SegmentedControlItem, TextArea } from '@astryxdesign/core';
 import { Pause, Play, RotateCcw } from 'lucide-react';
 import { CHART_HUES } from '../../kit/chart-hues';
 import { formatDuration, parseDuration, type TimerConfig } from '../../../shared/widgets/timer';
@@ -105,22 +105,21 @@ function ringFraction(state: TimerState, defaultSeconds: number): number {
   return total > 0 ? Math.max(0, Math.min(1, state.seconds / total)) : 0;
 }
 
+/** Timer-vs-stopwatch is a value, not a view, so this is a radio group rather
+ *  than a tablist — which is exactly what `SegmentedControl` is for. It also
+ *  brings the roving arrow-key navigation the hand-rolled `role="tab"` pair
+ *  never had (that markup declared tabs with no tabpanel and no tablist
+ *  keyboard handling). */
 function ModeTabs({ mode, onSelect }: { mode: Mode; onSelect: (mode: Mode) => void }) {
   return (
-    <div className={styles.modeRow} role="tablist" aria-label="Timer mode">
-      {(['timer', 'stopwatch'] as const).map((m) => (
-        <button
-          key={m}
-          type="button"
-          role="tab"
-          aria-selected={mode === m}
-          className={mode === m ? `${styles.modeTab} ${styles.modeTabActive}` : styles.modeTab}
-          onClick={() => onSelect(m)}
-        >
-          {m[0].toUpperCase() + m.slice(1)}
-        </button>
-      ))}
-    </div>
+    <SegmentedControl
+      value={mode}
+      onChange={(value) => onSelect(value === 'stopwatch' ? 'stopwatch' : 'timer')}
+      label="Timer mode"
+    >
+      <SegmentedControlItem value="timer" label="Timer" />
+      <SegmentedControlItem value="stopwatch" label="Stopwatch" />
+    </SegmentedControl>
   );
 }
 
@@ -272,14 +271,15 @@ export function Timer({ config }: WidgetComponentProps) {
         <TimerControls running={state.running} onToggle={toggle} onReset={reset} />
 
         {cfg.notes ? (
-          <textarea
-            className={styles.notes}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Notes…"
-            aria-label="Notes"
-            data-testid="timer-notes"
+          <TextArea
+            label="Notes"
+            isLabelHidden
+            width="100%"
             rows={3}
+            value={notes}
+            onChange={setNotes}
+            placeholder="Notes…"
+            data-testid="timer-notes"
           />
         ) : null}
       </div>
