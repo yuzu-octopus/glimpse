@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DnsStatsWidget } from './index';
 import type { DnsStats } from '../../../shared/widgets/payloads';
-import { CHART_HUES } from '../../kit/chart-hues';
+import { CHART_HUES } from 'astryx-dracula/shared/chart-hues';
 import styles from './dns.module.css';
 
 // Vitest serves CSS modules as a class-name proxy, so the token bindings are

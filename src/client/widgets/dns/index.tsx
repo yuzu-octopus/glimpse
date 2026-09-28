@@ -5,7 +5,7 @@ import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { fmtNumber as fmt } from '../_helpers/fmtNumber';
 import { Text } from '@astryxdesign/core';
-import { CHART_HUES } from '../../kit/chart-hues';
+import { CHART_HUES } from 'astryx-dracula/shared/chart-hues';
 import styles from './dns.module.css';
 
 function fmtApprox(n: number): string {

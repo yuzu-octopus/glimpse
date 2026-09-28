@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { formatDuration, parseDuration } from '../../../shared/widgets/timer';
-import { CHART_HUES } from '../../kit/chart-hues';
+import { CHART_HUES } from 'astryx-dracula/shared/chart-hues';
 import { Timer } from './index';
 import styles from './timer.module.css';
 

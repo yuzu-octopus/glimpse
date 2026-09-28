@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import Markets, { TrendChart } from './index';
 import styles from './markets.module.css';
-import { CHART_HUES } from '../../kit/chart-hues';
+import { CHART_HUES } from 'astryx-dracula/shared/chart-hues';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';

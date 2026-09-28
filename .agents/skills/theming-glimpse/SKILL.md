@@ -40,22 +40,25 @@ Auto-reload failure keeps the last good config active. Fix: delete the whole `th
 `astryx-dracula/tokens.css` (62 unlayered `:root` vars — the pre-`<Theme>` paint fallback) + `astryx-dracula/theme.css` (270 unique vars inside `@layer reset` / `@layer astryx-theme`, `@scope`d to `[data-astryx-theme]`) are the source of truth. Never write a hex; consume `var(--color-*)`, `var(--space-*)`, `var(--radius-*)`, `var(--font-size-*)`, or the 20 `--dracula-*` primitives in `tokens.css`.
 
 **Charts have two vocabularies, on purpose.**
-- *Categorical series* → the vendored `CHART_HUES` in `src/client/kit/chart-hues.ts` (`cyan`, `orange`, `green`, `pink`, `muted`). Five slots, purple-free by construction, because purple means tappable and must never encode data. Hand-rolling a per-template hue list is a defect.
+- *Categorical series* → `CHART_HUES` from `astryx-dracula/shared/chart-hues` (`cyan`, `orange`, `green`, `pink`, `muted`). Five slots, purple-free by construction, because purple means tappable and must never encode data. Hand-rolling a per-template hue list is a defect.
 - *Sequential ramps* → the 55 `--color-data-*` tokens: 10 categorical slots (`--color-data-categorical-{blue,orange,purple,green,pink,cyan,red,teal,brown,indigo}`) plus 9 sequential families (`blue`, `gray`, `orange`, `pink`, `purple`, `red`, `shamrock`, `teal`, `yellow`) at levels 1–5. Use a ramp when the value is an *amount* (a contribution heatmap), never for identity.
 
-## The app's own layer: `src/client/kit/`
-Four files vendored from `astryx-dracula@0.3.1` `shared/` (MIT). They are the app's brand primitives, not app code: re-sync them on any kit version bump rather than editing them. The kit also ships a `chart-labels.tsx` (`ChartLabel`); nothing imports it, so it is not vendored — re-add it from `shared/` if a hand-drawn axis label ever needs the 13px mono floor.
+## Chart and icon modules: import, never copy
 
-| File | What it owns |
+Every brand primitive is a subpath export of the kit. Import it; do not copy it into the repo.
+
+| Module | What it owns |
 |---|---|
-| `icons.ts` | side-effecting `registerIcons(draculaIconRegistry)`; imported **first** in `src/main.tsx` so every Astryx component resolves brand icons |
-| `chart-hues.ts` | `CHART_HUES` — the categorical series palette above, on `--color-data-categorical-*` role tokens (0.3.0 moved it off raw `--dracula-*` primitives) |
-| `sparkline.tsx` | `Sparkline` — `mode: 'max'` (dashboard tiles) / `'range'` (market rows); requires a unique `label` per instance |
-| `metric-delta.tsx` | `MetricDelta` — the one KPI-delta pattern (sign + arrow carry direction, tone only reinforces) |
+| `astryx-dracula/shared/chart-hues` | `CHART_HUES` — the categorical series palette, on `--color-data-categorical-*` role tokens |
+| `astryx-dracula/shared/sparkline` | `Sparkline` (`mode: 'max' \| 'range'`, unique `label` per instance) |
+| `astryx-dracula/shared/data-bar` | `DataBar` — magnitude against a domain (quota/headroom/budget). NOT core's `ProgressBar`, which is for task completion |
+| `astryx-dracula/shared/metric-delta` | `MetricDelta` — the one KPI-delta pattern |
+| `src/client/kit/icons.ts` | **ours, and the only local file.** Wires core's `registerIcons` to `draculaIconRegistry`; import FIRST in `main.tsx`, because the icon registry is module state and a later call leaves the first painted tree on core's icons |
 
-App-local `:root` values in `src/index.css` are limited to what the kit does not ship, and declare no colours: `color-scheme: dark`, `--tile-row`, `--mobile-navigation-height`, and the glance padding aliases (`--widget-content-vertical-padding`, `--widget-content-horizontal-padding`, `--widget-content-padding`, `--content-bounds-padding` — all `var()` aliases of kit tokens, never a second set of numbers). Scrollbars and form-control chrome come from the kit's `tokens.css`.
-
-The one exception is a **scoped component-surface override**, and the app has exactly one. Astryx core's `Tooltip` hardcodes `background-color: var(--color-text-primary)` / `color: var(--color-background-surface)` with no mode branch (`dist/Tooltip/useTooltip.js` — the "inverted palette" comment only holds on a light theme), so on a dark-only app every tooltip is a near-white `#F8F8F2` bubble. Both are global roles read from `:root`, so no token override can fix it without repainting the app. `src/index.css` therefore repaints the surface on `.astryx-tooltip` — the kit's own stable seam (`useTooltip` renders `className: themeProps('tooltip').className`, and `themeProps` builds `astryx-tooltip` from `naming.ts`; `themeProps('tooltip')` appears in exactly one place in core dist) — to `--color-background-popover` over `--color-text-primary`. Unlayered app CSS outranks core's `@layer astryx-base` on layer order, so it needs no `!important` and no specificity race. Verified contrast 9.06:1. Re-check the dist output and `themeProps`/`naming` before copying this pattern to another component; a hashed `.x…` stylex class is not a stable seam.
+A copied file is the thing that drifts. This repo briefly vendored four of these, which cost a re-sync contract, a header
+comment on every file, three hand-written deviations and a fidelity test to police them — all unnecessary, since the package
+path resolves under tsc, Vite and vitest. **Bumping the dependency IS the re-sync.** A brand change is a change to the kit's
+`astryx-dracula` package, never to a local copy.
 
 ## Colour follows identity, not position
 Tag and bookmark chips take their accent from `tagAccent()` (`src/client/widgets/feed/tag-accent.ts`), an FNV-style hash of the tag text or bookmark URL over `['green', 'cyan', 'pink', 'orange']`. `--color-tag-blue` is deliberately excluded: in this kit it is literally the tappable purple, so cycling through it would paint purple under another name. Yellow is the default and lives on the base chip class. `:nth-child` colour cycling was removed — colour assigned by DOM position is decoration, and it made the same tag a different colour on every row. Any new coloured identity hashes the same way.
@@ -72,5 +75,5 @@ Tag and bookmark chips take their accent from `tagAccent()` (`src/client/widgets
 - Skipping `bun run check-config` after deleting `theme:` and assuming the reload picked it up.
 - Picking a chart series colour by hand instead of `CHART_HUES`, or using a `--color-data-*` ramp for identity instead of for magnitude.
 - Assigning a chip or row colour by `:nth-child` — hash the identity with `tagAccent()`.
-- Editing a file in `src/client/kit/` instead of bumping the kit and re-syncing; the files are vendored, MIT, and version-stamped.
+- Copying a module out of `node_modules/astryx-dracula/shared/` into `src/client/kit/` instead of importing the subpath — a local copy is what drifts.ion-stamped.
 - Expecting `color-scheme: dark` to be a brand decision you can flip — it is a constant, and the brand has no light tier.
