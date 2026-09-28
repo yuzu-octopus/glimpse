@@ -69,8 +69,7 @@ function SubList({ icon, label, rows }: { icon: ReactNode; label: string; rows: 
             }
             className={styles.subRow}
             // glance's rows are a dense 2px pad, not the item's spacing token.
-            // StyleX compiles its classes with a specificity layer a CSS
-            // module cannot beat, so this one value rides inline.
+            // A single value inline beats opening a rule for it in the module.
             style={{ padding: '2px 0' }}
           />
         ))}
