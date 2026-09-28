@@ -78,8 +78,9 @@
 /* Icon tile. Its hue is hashed from the link's identity rather than its
  * position in the list, so a bookmark keeps one accent wherever it is
  * reordered. Yellow is the tag hue and the default, carried by .iconContainer
- * itself. The accent set omits --color-tag-blue, which is #BD93F9 in this
- * kit — the tappable purple. */
+ * itself. The accent set omits --color-tag-purple, which is #BD93F9 in this
+ * kit — the tappable purple. (Renamed from --color-tag-blue in 0.3.0; the
+ * value was always purple.) */
 .iconContainer {
   --icon-hue: var(--color-tag-yellow);
   margin-block: 1px;
