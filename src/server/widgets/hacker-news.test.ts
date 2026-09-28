@@ -51,7 +51,21 @@ describe('hacker-news fetcher', () => {
     expect(data.posts[0].title).toBe('High');
   });
 
-  it('drops null items and applies the limit', async () => {
+  it('drops the null item without letting it consume a slot', async () => {
+    // With `limit: 1` the null is truncated away anyway, so dropping it and
+    // keeping it produced the same length. The schema default is 5, well above
+    // the three ids, so the null can only disappear if it is actually filtered.
+    const routes = {
+      'https://hacker-news.firebaseio.com/v0/topstories.json': [1, 2, 3],
+      'https://hacker-news.firebaseio.com/v0/item/1.json': { id: 1, title: 'A', time: 1_700_000_000 },
+      'https://hacker-news.firebaseio.com/v0/item/2.json': null,
+      'https://hacker-news.firebaseio.com/v0/item/3.json': { id: 3, title: 'B', time: 1_700_000_000 },
+    };
+    const data = (await hnFetcher()(makeCtx(routes), { type: 'hacker-news' })) as { posts: HnPost[] };
+    expect(data.posts.map((p) => p.title)).toEqual(['A', 'B']);
+  });
+
+  it('applies the limit after the nulls are dropped', async () => {
     const routes = {
       'https://hacker-news.firebaseio.com/v0/topstories.json': [1, 2, 3],
       'https://hacker-news.firebaseio.com/v0/item/1.json': { id: 1, title: 'A', time: 1_700_000_000 },
@@ -59,6 +73,6 @@ describe('hacker-news fetcher', () => {
       'https://hacker-news.firebaseio.com/v0/item/3.json': { id: 3, title: 'B', time: 1_700_000_000 },
     };
     const data = (await hnFetcher()(makeCtx(routes), { type: 'hacker-news', limit: 1 })) as { posts: HnPost[] };
-    expect(data.posts).toHaveLength(1);
+    expect(data.posts.map((p) => p.title)).toEqual(['A']);
   });
 });

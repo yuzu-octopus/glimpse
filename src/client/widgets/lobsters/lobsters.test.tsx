@@ -41,12 +41,11 @@ describe('lobsters widget', () => {
     expect(screen.getByText(/1h/)).toBeInTheDocument();
   });
 
-  it('renders an empty chrome without crashing on empty data', () => {
-    const { container } = render(
-      <Lobsters config={{ type: 'lobsters' }} data={{ posts: [] }} />,
-    );
-    expect(container.querySelector('[data-testid="widget-body"]')).toBeInTheDocument();
-    expect(screen.queryByText('First post')).toBeNull();
+  it('shows the empty-state copy rather than a blank card', () => {
+    render(<Lobsters config={{ type: 'lobsters' }} data={{ posts: [] }} />);
+    // `widget-body` is unconditional in WidgetChrome, so the old assertion
+    // could only fail on a crash.
+    expect(screen.getByText('No posts')).toBeInTheDocument();
   });
 
   it('collapses posts beyond collapse-after until "Show more" is clicked', () => {

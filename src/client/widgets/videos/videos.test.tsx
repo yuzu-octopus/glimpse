@@ -39,18 +39,21 @@ describe('videos widget', () => {
     expect(screen.getAllByText(/\d+d/).length).toBeGreaterThan(0);
   });
 
-  it('renders grid cards and survives empty data', () => {
-    render(
-      <Videos config={{ type: 'videos', style: 'grid-cards' }} data={{ videos: [] }} />,
-    );
-    expect(screen.getByTestId('widget-body')).toBeInTheDocument();
-    expect(screen.queryByText('Bun 1.3 release')).toBeNull();
-  });
-
-  it('videos empty shows placeholder No videos', () => {
-    render(<Videos config={{ type: 'videos', channels: ['UCx'] }} data={{ videos: [] }} />);
-    expect(screen.getByText(/No videos/)).toBeInTheDocument();
-  });
+  // The placeholder is the same for every style, so the empty case is
+  // parameterised rather than duplicated: `grid-cards` used to get its own
+  // test that only proved it did not crash.
+  it.each([undefined, 'grid-cards'] as const)(
+    'videos empty shows placeholder No videos (style %s)',
+    (style) => {
+      render(
+        <Videos
+          config={{ type: 'videos', channels: ['UCx'], ...(style ? { style } : {}) }}
+          data={{ videos: [] }}
+        />,
+      );
+      expect(screen.getByText(/No videos/)).toBeInTheDocument();
+    },
+  );
 
   // YouTube hands out dead hqdefault.jpg paths often enough that 4 of 10
   // thumbnails 404'd, each leaving a bare grey 16:9 box. The failed load must
@@ -139,8 +142,9 @@ describe('videos widget', () => {
     );
     expect(screen.getByText('Bun 1.3 release')).toBeInTheDocument();
     const dot = screen.getByTestId('videos-source-dot');
-    // the kit's own StatusDot, not a hand-rolled span
-    expect(dot.className).toContain('astryx-statusdot');
+    // The kit's own StatusDot, not a hand-rolled span. Asserted through the
+    // hooks it actually exposes — accessible name and data-variant. The
+    // `astryx-statusdot` class is core's legacyNames shim and 0.7.0 drops it.
     expect(dot).toHaveAttribute('data-variant', 'error');
     expect(dot).toHaveAccessibleName('@Fireship: HTTP 404');
     expect(screen.getByText('@Fireship')).toBeInTheDocument();

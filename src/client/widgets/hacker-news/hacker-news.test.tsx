@@ -38,10 +38,12 @@ describe('hacker-news widget', () => {
     expect(screen.getByText(/1m/)).toBeInTheDocument();
   });
 
-  it('renders an empty chrome without crashing on empty data', () => {
-    const { container } = render(<HackerNews config={{ type: 'hacker-news' }} data={{ posts: [] }} />);
-    expect(container.querySelector('[data-testid="widget-body"]')).toBeInTheDocument();
-    expect(screen.queryByText('HN story one')).toBeNull();
+  it('shows the empty-state copy rather than a blank card', () => {
+    render(<HackerNews config={{ type: 'hacker-news' }} data={{ posts: [] }} />);
+    // `widget-body` is unconditional in WidgetChrome, so the old assertion
+    // could only fail on a crash. The widget's own emptyText is what
+    // distinguishes "no stories" from "broken widget".
+    expect(screen.getByText('No stories right now')).toBeInTheDocument();
   });
 
   it('collapses posts beyond collapse-after until "Show more" is clicked', () => {

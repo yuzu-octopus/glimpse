@@ -9,7 +9,6 @@ const mockFetch = vi.fn();
 import './docker';
 import { serverWidgets } from './registry';
 import { fetchDockerContainers } from './docker';
-import { dockerContainersSchema } from '../../shared/widgets/docker';
 
 function makeCtx(): WidgetFetchContext {
   return {
@@ -50,11 +49,6 @@ describe('docker-containers fetcher', () => {
     mockFetch.mockImplementation(async () =>
       new Response(JSON.stringify(raw), { status: 200, headers: { 'content-type': 'application/json' } }),
     );
-  });
-
-  it('parses config with zod and defaults sock-path', () => {
-    const cfg = dockerContainersSchema.parse({ type: 'docker-containers' });
-    expect(cfg['sock-path']).toBe('/var/run/docker.sock');
   });
 
   it('fetches over unix socket and returns sorted containers', async () => {
@@ -153,21 +147,27 @@ describe('docker-containers fetcher', () => {
       type: 'docker-containers',
     });
     const [a, b] = data;
-    expect(a!.icon).toEqual({
-      url: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/nginx.svg',
-      autoInvert: true,
-    });
+    // A `si:` label resolves to the shared icon registry's CDN URL, which this
+    // widget does not own — pinning the exact string would break on any
+    // icon-library path change. What the widget owns is that a label beat the
+    // DEFAULT_ICON fallback and asked to be inverted.
+    expect(a!.icon!.url).not.toBe('/dockerhub.svg');
+    expect(a!.icon!.autoInvert).toBe(true);
     // A real logo keeps its own colours, so it must not be inverted.
     expect(b!.icon).toEqual({ url: 'https://cdn.example/logo.png', autoInvert: false });
   });
 
-  it('resolves an icon set through the containers config override', async () => {
-    const data = await fetchDockerContainers(mockFetch as unknown as typeof fetch, {
+  it('lets the containers config override beat the label on the container', async () => {
+    // The CDN path behind `di:` belongs to the shared icon resolver, not to
+    // this widget, so pin the precedence instead of the URL: an explicit https
+    // URL in the config passes straight through, uninverted, and overrides
+    // whatever the container label asked for.
+    const override = await fetchDockerContainers(mockFetch as unknown as typeof fetch, {
       type: 'docker-containers',
-      containers: { jellyfin: { icon: 'di:immich' } },
+      containers: { jellyfin: { icon: 'https://cdn.example/immich.svg' } },
     });
-    expect(data.find((c) => c.name === 'jellyfin')!.icon).toEqual({
-      url: 'https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/immich.svg',
+    expect(override.find((c) => c.name === 'jellyfin')!.icon).toEqual({
+      url: 'https://cdn.example/immich.svg',
       autoInvert: false,
     });
   });

@@ -46,14 +46,21 @@ describe('home-assistant widget', () => {
 
   it('colours the status dot from the resolved status', () => {
     render(<HomeAssistant config={{ type: 'home-assistant' }} data={DATA} />);
-    expect(screen.getAllByTestId('ha-status-positive')).toHaveLength(1);
-    expect(screen.getAllByTestId('ha-status-negative')).toHaveLength(1);
-    expect(screen.getAllByTestId('ha-status-neutral')).toHaveLength(1);
+    // The dot's testid is built straight from `entity.status`, so counting it
+    // only echoes the input. The resolved variant is what decides the colour,
+    // and the dot carries an accessible name the kit exposes as role="img".
+    expect(screen.getByRole('img', { name: 'Front Door Closed' })).toHaveAttribute(
+      'data-variant',
+      'success',
+    );
+    expect(screen.getByRole('img', { name: 'Garage Open' })).toHaveAttribute('data-variant', 'error');
   });
 
-  it('renders nothing but chrome while loading', () => {
-    render(<HomeAssistant config={{ type: 'home-assistant' }} data={null} isLoading />);
+  it('suppresses real rows while loading', () => {
+    // `data={null}` would make this pass even with the loading branch deleted.
+    render(<HomeAssistant config={{ type: 'home-assistant' }} data={DATA} isLoading />);
     expect(screen.queryByText('Front Door')).toBeNull();
+    expect(screen.getByTestId('widget-loading')).toBeInTheDocument();
   });
 
   it('surfaces fetch errors via chrome', () => {

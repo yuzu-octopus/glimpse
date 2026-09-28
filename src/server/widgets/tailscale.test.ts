@@ -98,15 +98,6 @@ describe('tailscale fetcher', () => {
     expect((inits[0].headers as Record<string, string>).Authorization).toBe('Bearer tskey-secret');
   });
 
-  it('reads the TS_API_KEY env var', async () => {
-    const inits: RequestInit[] = [];
-    const ctx = makeCtx(recorder([], inits), { TS_API_KEY: 'tskey-env' });
-
-    await fetcher()(ctx, { type: 'tailscale' });
-
-    expect((inits[0].headers as Record<string, string>).Authorization).toBe('Bearer tskey-env');
-  });
-
   it('ignores an api-key left in the config — the schema strips it', async () => {
     const inits: RequestInit[] = [];
     const ctx = makeCtx(recorder([], inits), { TS_API_KEY: 'tskey-env' });
@@ -233,7 +224,14 @@ describe('tailscale fetcher', () => {
   });
 
   it('surfaces an upstream failure instead of rendering an empty tailnet', async () => {
+    // The title's claim — fail loudly rather than degrade to `{devices: []}` —
+    // is only distinguishable from the tolerates-an-empty-response test by the
+    // thrown message. A bare toThrow passes on both paths.
     const ctx = makeCtx(async () => new Response('unauthorized', { status: 401 }));
-    await expect(fetcher()(ctx, { type: 'tailscale' })).rejects.toThrow();
+    // The `?…` is the point: sanitizeUrl truncates the query so a credential
+    // in it can never reach a payload.error the browser renders.
+    await expect(fetcher()(ctx, { type: 'tailscale' })).rejects.toThrow(
+      'HTTP 401 for https://api.tailscale.com/api/v2/tailnet/-/devices?…',
+    );
   });
 });

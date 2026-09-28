@@ -12,9 +12,12 @@ export async function fetchCopilotUsage(
     { headers: { Authorization: `Bearer ${auth.token}` } },
   );
   const windows = [];
+  // A plan with no quota reports total: 0, and 0/0 renders as "NaN%".
   if (data.premium_interactions) {
     windows.push({
-      usedPercent: (data.premium_interactions.used / data.premium_interactions.total) * 100,
+      usedPercent: data.premium_interactions.total > 0
+        ? (data.premium_interactions.used / data.premium_interactions.total) * 100
+        : 0,
       windowMinutes: 0,
       resetsAt: 0,
       label: 'premium',
@@ -22,7 +25,7 @@ export async function fetchCopilotUsage(
   }
   if (data.chat) {
     windows.push({
-      usedPercent: (data.chat.used / data.chat.total) * 100,
+      usedPercent: data.chat.total > 0 ? (data.chat.used / data.chat.total) * 100 : 0,
       windowMinutes: 0,
       resetsAt: 0,
       label: 'chat',

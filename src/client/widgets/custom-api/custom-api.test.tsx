@@ -59,11 +59,12 @@ describe('custom-api widget', () => {
     expect(screen.queryByTestId('widget-body')).toBeNull();
   });
 
-  it('renders an empty body without crashing on empty data', () => {
-    const { container } = render(
-      <CustomApi config={{ type: 'custom-api', url: 'https://api.example.com' }} data={{ items: [], frameless: false }} />,
-    );
-    expect(container.querySelector('[data-testid="widget-body"]')).toBeInTheDocument();
+  it('shows the loading skeleton while the payload is still null', () => {
+    // `items: []` renders no user-visible output at all, so the old version
+    // could only fail on a crash. The state a user actually sees with no data
+    // yet is the loading one — and it must be distinguishable from empty.
+    render(<CustomApi config={{ type: 'custom-api', url: 'https://api.example.com' }} data={null} />);
+    expect(screen.getByTestId('widget-loading')).toBeInTheDocument();
     expect(screen.queryByText('Deploy #42')).toBeNull();
   });
 

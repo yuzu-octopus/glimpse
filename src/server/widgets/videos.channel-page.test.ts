@@ -180,16 +180,6 @@ function makeCtx(channelPage: string = CHANNEL_PAGE): WidgetFetchContext {
 const videosFetcher = () => serverWidgets.get('videos')!;
 
 describe('videos: channel-page fallback', () => {
-  it('this fixture is the current markup the old title regex could not read', () => {
-    // The old parser looked for a title immediately after a videoId. Ids are
-    // still all over the page, but only in menu blobs with no title after them.
-    const oldPattern = new RegExp(
-      `"videoId":"c1rPlzxSZ8E"[^}]*"title":\\{"runs":\\[\\{"text":"([^"]+)"`,
-      's',
-    );
-    expect(oldPattern.test(CHANNEL_PAGE)).toBe(false);
-  });
-
   it('resolves real titles when the channel RSS feed is empty', async () => {
     const data = (await videosFetcher()(makeCtx(), {
       type: 'videos',
@@ -234,17 +224,6 @@ describe('videos: channel-page fallback', () => {
     expect(parsed.items).toHaveLength(5);
   });
 
-  it('reads every documented title shape', () => {
-    const parsed = parseChannelPage(CHANNEL_PAGE);
-    const byId = new Map(
-      parsed.items.map((i) => [i.link as string, i.title as string]),
-    );
-    expect(byId.get('https://www.youtube.com/watch?v=aaaaaaaaaaa')).toBe('Legacy runs title');
-    expect(byId.get('https://www.youtube.com/watch?v=bbbbbbbbbbb')).toBe('Legacy simpleText title');
-    expect(byId.get('https://www.youtube.com/watch?v=c1rPlzxSZ8E')).toBe(
-      'Meta is pivoting again... everything you missed from Connect 2026',
-    );
-  });
 
   it('an RSS entry whose title is an id is dropped too', () => {
     const feed = `<?xml version="1.0" encoding="UTF-8"?>

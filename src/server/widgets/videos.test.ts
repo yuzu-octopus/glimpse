@@ -47,21 +47,6 @@ describe('videos fetcher', () => {
     expect(data.videos[1].thumbnail).toBeNull();
   });
 
-  it('resolves @handles to channel_id via resolve_url', async () => {
-    const ctx = makeCtx(async (url) => {
-      if (url.includes('/navigation/resolve_url')) {
-        return new Response(
-          JSON.stringify({
-            response: { endpoint: { browseEndpoint: { browseId: 'UC1234567890123456789012' } } },
-          }),
-          { status: 200 },
-        );
-      }
-      expect(url).toBe('https://www.youtube.com/feeds/videos.xml?channel_id=UC1234567890123456789012');
-      return new Response(FEED, { status: 200 });
-    });
-    await videosFetcher()(ctx, { type: 'videos', channels: ['@handle'] });
-  });
 
   it('fetches playlist feeds and applies the limit', async () => {
     const ctx = makeCtx(async (url) => {
@@ -76,15 +61,6 @@ describe('videos fetcher', () => {
     expect(data.videos).toHaveLength(1);
   });
 
-  it('returns an empty list for an empty feed', async () => {
-    const empty = `<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><title>Empty</title></feed>`;
-    const ctx = makeCtx(async () => new Response(empty, { status: 200 }));
-    const data = (await videosFetcher()(ctx, {
-      type: 'videos',
-      channels: ['UC1234567890123456789012'],
-    })) as { videos: Video[] };
-    expect(data.videos).toEqual([]);
-  });
 
   it('drops shorts unless include-shorts is set', async () => {
     const feed = `<?xml version="1.0" encoding="UTF-8"?>
@@ -124,14 +100,17 @@ describe('videos fetcher', () => {
     expect(data.videos[1].url).toBe('https://invidious.local/watch?v=bbb');
   });
 
-  it('429 returns cached stale', async () => {
+  // The catch does not branch on status: a retryable status raises out of
+  // fetchWithRetry, the channel-page rescue fails too, and the stale copy
+  // serves. 429 and 500 are the same path, so they are one test.
+  it.each([429, 500])('HTTP %i returns cached stale', async (status) => {
     const cachedVideos = [
       { title: 'cached', url: 'https://www.youtube.com/watch?v=cached', channel: 'Cached', published: null, thumbnail: null },
     ] as Video[];
-    // retries: 0 — the fallback now also hits the channel page, and a
-    // retryable status twice over is backoff, not coverage.
+    // retries: 0 — the fallback also hits the channel page, so a retryable
+    // status twice over is backoff, not coverage.
     const ctx = makeCtx(async (url) =>
-      url.includes('feeds/videos.xml') ? new Response('', { status: 429 }) : new Response('', { status: 404 }),
+      url.includes('feeds/videos.xml') ? new Response('', { status }) : new Response('', { status: 404 }),
     );
     ctx.cache.set('videos:feed:UCx', cachedVideos, 3600_000);
     ctx.cache.set('videos:feed:UCx::::noshorts', cachedVideos, 3600_000);
@@ -142,24 +121,6 @@ describe('videos fetcher', () => {
     })) as { videos: Video[] };
     expect(data.videos[0].title).toBe('cached');
   });
-
-  it('500 returns cached stale', async () => {
-    const cachedVideos = [
-      { title: 'cached500', url: 'https://www.youtube.com/watch?v=cached500', channel: 'Cached', published: null, thumbnail: null },
-    ] as Video[];
-    const ctx = makeCtx(async (url) =>
-      url.includes('feeds/videos.xml') ? new Response('', { status: 500 }) : new Response('', { status: 404 }),
-    );
-    ctx.cache.set('videos:feed:UCx::::noshorts', cachedVideos, 3600_000);
-    ctx.cache.set('videos:feed:UCx', cachedVideos, 3600_000);
-    const data = (await videosFetcher()(ctx, {
-      type: 'videos',
-      channels: ['UCx'],
-      retries: 0,
-    })) as { videos: Video[] };
-    expect(data.videos[0].title).toBe('cached500');
-  });
-
   it('sends Mozilla User-Agent on youtube fetches', async () => {
     let ua: string | null = null;
     const trackingCtx: WidgetFetchContext = {

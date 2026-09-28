@@ -47,7 +47,10 @@ describe('releases widget', () => {
   });
 
   it('renders an empty widget body when no release data arrives', () => {
-    render(<Releases config={{ type: 'releases', repositories: ['glanceapp/glance'] }} data={null} />);
+    // `data={null}` takes the LOADING branch, so the old version only proved
+    // the skeleton has no links. `{releases: []}` is the empty branch the name
+    // promises.
+    render(<Releases config={{ type: 'releases', repositories: ['glanceapp/glance'] }} data={{ releases: [] }} />);
     expect(screen.getByTestId('widget-body')).toBeInTheDocument();
     expect(screen.queryByRole('link')).toBeNull();
   });

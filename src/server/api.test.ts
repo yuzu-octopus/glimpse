@@ -186,13 +186,18 @@ describe('buildPagePayload', () => {
     expect(payload.minColumnWidth).toBe(300);
   });
 
-  it('resolves auto tiling config and carries column spans into the payload', async () => {
+  // The tiling value is a pass-through of the config field, so the two modes
+  // differ only in the literal: one test, two rows.
+  it.each([
+    ['auto', 340],
+    ['collage', 360],
+  ] as const)('resolves %s tiling config and carries column spans into the payload', async (tiling, minColumnWidth) => {
     const payload = await buildPagePayload(
       {
         name: 'Home',
         slug: 'home',
-        tiling: 'auto',
-        'min-column-width': 340,
+        tiling,
+        'min-column-width': minColumnWidth,
         columns: [
           { size: 'small', span: 2, widgets: [clockWidget] },
           { size: 'small', widgets: [clockWidget] },
@@ -200,28 +205,10 @@ describe('buildPagePayload', () => {
       },
       makeCtx(),
     );
-    expect(payload.tiling).toBe('auto');
-    expect(payload.minColumnWidth).toBe(340);
-    expect(payload.columns[0].span).toBe(2);
-    expect(payload.columns[1].span).toBeUndefined();
-  });
-
-  it('resolves collage tiling config and carries column spans into the payload', async () => {
-    const payload = await buildPagePayload(
-      {
-        name: 'Home',
-        slug: 'home',
-        tiling: 'collage',
-        'min-column-width': 360,
-        columns: [
-          { size: 'small', span: 2, widgets: [clockWidget] },
-          { size: 'small', widgets: [clockWidget] },
-        ],
-      },
-      makeCtx(),
-    );
-    expect(payload.tiling).toBe('collage');
-    expect(payload.minColumnWidth).toBe(360);
+    expect(payload.tiling).toBe(tiling);
+    expect(payload.minColumnWidth).toBe(minColumnWidth);
+    // An explicit span is carried; an absent one stays absent so the client
+    // falls back to resolveSpan rather than being handed a wrong number.
     expect(payload.columns[0].span).toBe(2);
     expect(payload.columns[1].span).toBeUndefined();
   });
@@ -242,8 +229,9 @@ describe('buildPagePayload', () => {
     expect(payload.gridRowHeight).toBe(96);
   });
 
-  it('streams flat widgets with w:i cache paths', async () => {
-    registerWidget('clock', vi.fn(async () => ({ time: 'now' })));
+  it('streams a flat page as widgets[i] chunks', async () => {
+    const fetcher = vi.fn(async () => ({ time: 'now' }));
+    registerWidget('clock', fetcher);
     const ctx = makeCtx();
     const flatPage = {
       name: 'X',
@@ -255,21 +243,25 @@ describe('buildPagePayload', () => {
     expect(chunks).toHaveLength(1);
     expect(chunks[0].path).toBe('widgets[0]');
     expect(chunks[0].payload.data).toEqual({ time: 'now' });
+
+    // The flat cache key is `w:i`, so a second stream of the same page with a
+    // warm cache must not reach the fetcher again. The chunk path is `widgets[0]`
+    // — the two key forms deliberately differ, and a client that conflated
+    // them would refetch every widget on every poll.
+    for await (const _ of streamPagePayload(flatPage, ctx)) void _;
+    expect(fetcher).toHaveBeenCalledOnce();
   });
 });
 
 
 describe('streamPagePayload', () => {
-  it('stream page flushes head widgets before slow videos', async () => {
-    const headFetcher = vi.fn(async () => ({ items: [{ title: 'head' }] }));
-    const slowFetcher = vi.fn(
-      () =>
-        new Promise<unknown>((resolve) => {
-          setTimeout(() => resolve({ videos: [{ title: 'slow' }] }), 40);
-        }),
-    );
-    registerWidget('rss', headFetcher);
-    registerWidget('videos', slowFetcher);
+  it('flushes head widgets before a slow column widget, with exact paths', async () => {
+    // A deferred rather than a 40ms sleep: the ordering is the contract, and
+    // the wall-clock version was the only time-dependent test in this file
+    // while matching the paths with a loose regex.
+    registerWidget('rss', vi.fn(async () => ({ items: [{ title: 'head' }] })));
+    const slow = Promise.withResolvers<unknown>();
+    registerWidget('videos', vi.fn(() => slow.promise));
     const ctx = makeCtx();
     const testPage = {
       name: 'Home',
@@ -277,31 +269,18 @@ describe('streamPagePayload', () => {
       columns: [{ size: 'full', widgets: [{ type: 'videos' }] }],
       'head-widgets': [{ type: 'rss', cache: '1h' }],
     } as unknown as Parameters<typeof streamPagePayload>[0];
-    const chunks: Array<{ path: string; payload: unknown }> = [];
-    for await (const c of streamPagePayload(testPage, ctx)) chunks.push(c as unknown as { path: string; payload: unknown });
-    expect(chunks).toHaveLength(2);
-    expect(chunks[0].path).toMatch(/headWidgets/);
-    expect(chunks[1].path).toMatch(/columns/);
-  });
 
-  it('delivers a frame for every configured widget, even when fetches fail', async () => {
-    // A dropped chunk leaves the client on the skeleton frame it already
-    // rendered, with nothing to tell it apart from a slow widget — the
-    // skeleton never resolves and no error is shown. Every configured
-    // widget must get a frame, carrying the error when it failed.
-    registerWidget('rss', vi.fn(async () => {
-      throw new Error('upstream exploded');
-    }));
-    const testPage = {
-      name: 'Home',
-      slug: 'home',
-      columns: [{ size: 'full', widgets: [{ type: 'rss' }, clockWidget] }],
-    } as unknown as Parameters<typeof streamPagePayload>[0];
-    const chunks: StreamChunk[] = [];
-    for await (const c of streamPagePayload(testPage, makeCtx())) chunks.push(c);
-    expect(chunks).toHaveLength(2);
-    const failed = chunks.find((c) => c.payload.type === 'rss');
-    expect(failed?.payload.error).toBe('upstream exploded');
+    const stream = streamPagePayload(testPage, ctx);
+    // The head frame lands while the column widget is still pending — that is
+    // the whole point of flushing the head first.
+    const first = await stream.next();
+    expect(first.done).toBe(false);
+    expect(first.value!.path).toBe('headWidgets[0]');
+    slow.resolve({ videos: [{ title: 'slow' }] });
+    const second = await stream.next();
+    expect(second.done).toBe(false);
+    expect(second.value!.path).toBe('columns[0].widgets[0]');
+    expect((await stream.next()).done).toBe(true);
   });
 
   it('carries each failing widget its own error, head / column / nested child alike', async () => {

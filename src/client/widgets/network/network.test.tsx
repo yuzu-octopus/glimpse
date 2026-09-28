@@ -1,4 +1,4 @@
-import { act, render } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import Network from './index';
 import styles from './network.module.css';
@@ -115,8 +115,11 @@ describe('network widget', () => {
   });
 
   it('labels the reading for what it measures, not for what it is not', () => {
-    const { getByText } = render(<Network config={{ type: 'network' }} data={STEADY} />);
-    expect(getByText('TTFB')).toBeTruthy();
-    expect(() => getByText('Ping')).toThrow();
+    render(<Network config={{ type: 'network' }} data={STEADY} />);
+    // `expect(getByText('TTFB')).toBeTruthy()` was dead — getByText throws when
+    // absent — and `expect(() => getByText('Ping')).toThrow()` is a
+    // throw-assert rather than an absence assert.
+    expect(screen.getByText('TTFB')).toBeInTheDocument();
+    expect(screen.queryByText('Ping')).toBeNull();
   });
 });

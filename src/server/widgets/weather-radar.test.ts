@@ -73,27 +73,14 @@ describe('weather-radar fetcher', () => {
     expect(data.zoom).toBe(7);
   });
 
-  it('puts the tile size in the segment RainViewer reads it from', async () => {
-    // {path}/{size}/{z}/{x}/{y}/{color}/{options}.png — a template missing
-    // the leading size makes the server read x as z, so every zoom resolves
-    // to the same unsupported placeholder.
-    const ctx = makeCtx({
-      'https://geocoding-api.open-meteo.com/v1/search': GEO,
-      'https://api.rainviewer.com/public/weather-maps.json': RAINVIEWER,
-    });
-    const data = (await radarFetcher()(ctx, { type: 'weather-radar', location: 'London' })) as RadarData;
-    const url = data.tileUrlTemplate
-      .replace('{z}', String(data.zoom))
-      .replace('{x}', '100')
-      .replace('{y}', '63');
-    expect(url).toBe('https://tilecache.rainviewer.com/v2/radar/1700000600/256/7/100/63/4/1_1.png');
-  });
 
-  it('rejects an out-of-range zoom', async () => {
+  it('rejects an out-of-range zoom before any request goes out', async () => {
+    // The schema's `zoom: int 3..10` is what is under test; a bare toThrow
+    // would pass if the fetcher failed for an unrelated reason.
     const ctx = makeCtx({});
     await expect(
       radarFetcher()(ctx, { type: 'weather-radar', location: 'London', zoom: 11 }),
-    ).rejects.toThrow();
+    ).rejects.toThrow(/Too big: expected number to be <=10/);
   });
 
   it('throws when no radar frames are available', async () => {

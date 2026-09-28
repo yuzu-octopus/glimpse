@@ -67,12 +67,42 @@ describe('warmCache', () => {
     expect(mocks.buildPagePayload).toHaveBeenCalledTimes(2);
   });
 
-  it('is idempotent and re-invocable', async () => {
-    mocks.getConfig.mockReturnValue(okConfig);
-    const ctx = makeCtx();
-    await warmCache(ctx);
-    await warmCache(ctx);
-    expect(mocks.buildPagePayload).toHaveBeenCalledTimes(4);
+  it('never has more than WARMUP_CONCURRENCY pages in flight', async () => {
+    // The cap is the entire reason warmCache exists — unbounded fan-out at
+    // boot spikes upstream connections and RSS. A mock call count cannot see
+    // it, so drive the fetcher and track real concurrency.
+    const pages = Array.from({ length: 20 }, (_, i) => ({
+      name: `P${i}`,
+      slug: `p${i}`,
+      columns: [{ size: 'full' as const, widgets: [{ type: 'clock' }] }],
+    }));
+    mocks.getConfig.mockReturnValue({
+      ok: true as const,
+      errors: [],
+      files: [],
+      config: { pages } as unknown as Config,
+    });
+    let inFlight = 0;
+    let maxInFlight = 0;
+    // Every page blocks on one gate, so the whole pool is scheduled and parked
+    // before anything completes. No timers: the pool's continuations are
+    // microtasks, and 200 turns is far more than 20 pages can need.
+    const gate = Promise.withResolvers<void>();
+    mocks.buildPagePayload.mockImplementation(async () => {
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await gate.promise;
+      inFlight -= 1;
+      return {} as never;
+    });
+    const warm = warmCache(makeCtx());
+    for (let turn = 0; turn < 200; turn += 1) await Promise.resolve();
+    gate.resolve();
+    await warm;
+    expect(mocks.buildPagePayload).toHaveBeenCalledTimes(20);
+    // Exactly the declared pool size: 6, not fewer. Dropping the cap to 1
+    // serialises a 20-page boot and is as much a regression as removing it.
+    expect(maxInFlight).toBe(6);
   });
 
   it('does nothing when config is not ok', async () => {

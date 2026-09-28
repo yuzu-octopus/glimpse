@@ -282,10 +282,13 @@ describe('config dx', () => {
     expect(JSON.stringify(r2.config)).toContain('https://example.com/fb/x.xml');
   });
 
-  it('leaves ${secret:...} untouched', () => {
-    const r = loadConfig(write('c.yml', page('https://example.com/${secret:tok}/x.xml')));
+  it('leaves ${secret:...} untouched even with a fallback suffix', () => {
+    // The loadConfig block already covers the bare `${secret:tok}` form. This
+    // retarget is the case that one does not reach: a default after the colon,
+    // where a naive regex that stopped at the first `}` would substitute.
+    const r = loadConfig(write('c.yml', page('https://example.com/${secret:tok:-fb}/x.xml')));
     expect(r.ok).toBe(true);
-    expect(JSON.stringify(r.config)).toContain('${secret:tok}');
+    expect(JSON.stringify(r.config)).toContain('${secret:tok:-fb}');
   });
 
   it('warns instead of dropping unsupported $include keys', () => {

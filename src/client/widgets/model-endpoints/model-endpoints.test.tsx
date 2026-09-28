@@ -130,9 +130,12 @@ describe('model-endpoints widget', () => {
     expect(screen.getByText('No models answered')).toBeInTheDocument();
   });
 
-  it('renders the chrome only while loading', () => {
-    render(<ModelEndpoints config={CONFIG} data={null} isLoading />);
+  it('suppresses a real table while loading', () => {
+    // `data={null}` gives rows = [], so the table is absent whether or not
+    // isLoading is honoured.
+    render(<ModelEndpoints config={CONFIG} data={PAYLOAD} isLoading />);
     expect(screen.queryByRole('table')).toBeNull();
+    expect(screen.getByTestId('widget-loading')).toBeInTheDocument();
   });
 
   it('stays quiet on a failure when show-errors is off', () => {

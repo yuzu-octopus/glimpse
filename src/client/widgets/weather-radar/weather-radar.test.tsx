@@ -1,15 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import type { RadarData } from '../../../shared/widgets/payloads';
 import { WeatherRadar, tileCoords } from './index';
 import styles from './weather-radar.module.css';
-
-// Vitest serves CSS modules as a class-name proxy, so the token bindings are
-// only observable in the stylesheet source itself.
-const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'weather-radar.module.css'), 'utf8');
 
 const DATA: RadarData = {
   location: 'London',
@@ -118,10 +111,12 @@ describe('weather-radar widget', () => {
     expect(screen.getByTestId('widget-error-dot')).toBeInTheDocument();
   });
 
-  it('keeps the frame timestamp on the muted text token', () => {
+  it('shows the frame timestamp with the location', () => {
     const { container } = render(<WeatherRadar config={{ type: 'weather-radar', location: 'London' }} data={DATA} />);
     expect(container.querySelector(`.${styles.timestamp}`)).toHaveTextContent('London · 22:23 UTC');
-    const rule = css.match(/\.timestamp\s*\{([^}]*)\}/)?.[1] ?? '';
-    expect(rule).toContain('color: var(--color-text-base-muted)');
+    // The colour token is deliberately NOT asserted: `--color-text-base-muted`
+    // is owned by astryx-dracula, and pinning its name here is a freeze on the
+    // kit that fires on any theme rename with no behaviour change. That the
+    // timestamp is subdued text is the subdued-text contract test's job.
   });
 });

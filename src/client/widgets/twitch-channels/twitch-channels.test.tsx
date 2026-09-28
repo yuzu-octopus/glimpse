@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import TwitchChannels from './index';
 import type { TwitchChannelsData } from '../../../shared/widgets/payloads';
@@ -61,7 +61,11 @@ describe('twitch-channels widget', () => {
 
   it('collapses beyond collapse-after until "Show more" is clicked', () => {
     render(<TwitchChannels config={{ type: 'twitch-channels', 'collapse-after': 1 }} data={streams} />);
-    expect(screen.getByText(/Show more \(1\)/)).toBeInTheDocument();
+    // Asserting the label alone passed even if the collapse stopped
+    // truncating entirely — the whole point is that the extra row is hidden.
+    expect(screen.queryByText('Shroud')).toBeNull();
+    fireEvent.click(screen.getByText(/Show more \(1\)/));
+    expect(screen.getByText('Shroud')).toBeInTheDocument();
   });
 
   it('survives empty data and surfaces errors', () => {
