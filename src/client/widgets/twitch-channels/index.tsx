@@ -2,7 +2,7 @@ import { TWITCH_CHANNELS_DEFAULTS, type TwitchChannelsConfig } from '../../../sh
 import type { TwitchChannelsData } from '../../../shared/widgets/payloads';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import { Avatar, Button, StatusDot } from '@astryxdesign/core';
+import { Avatar, Button, Link, StatusDot, Text } from '@astryxdesign/core';
 import { ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import styles from './twitch-channels.module.css';
@@ -59,13 +59,13 @@ function TwitchChannels({ config, data, error, isLoading }: WidgetComponentProps
               <img src={s.thumbnailUrl} alt="" className={styles.thumb} loading="lazy" />
             ) : null}
             <div className={styles.body}>
-              <a href={s.url} target="_blank" rel="noopener noreferrer" className={styles.name}>
+              <Link href={s.url} target="_blank" weight="semibold" hasUnderline={false} className={styles.name}>
                 {/* the kit's StatusDot owns the pulse and the accessible name;
                  * red is the negative hue and a live stream is not a failure */}
                 {s.live ? <StatusDot variant="success" label="Live" isPulsing /> : null}
                 {s.displayName}
-              </a>
-              {s.live ? <div className={styles.title}>{s.title}</div> : <div className={styles.title}>Offline</div>}
+              </Link>
+              {s.live ? <Text as="div" type="body" color="secondary" maxLines={2}>{s.title}</Text> : <Text as="div" type="body" color="secondary">Offline</Text>}
               <div className={styles.meta}>
                 {s.gameName ? <span>{s.gameName}</span> : null}
                 {s.live ? <span>{formatViewers(s.viewerCount)} watching</span> : null}

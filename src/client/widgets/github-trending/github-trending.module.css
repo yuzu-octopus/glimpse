@@ -1,11 +1,12 @@
 .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .row { display: grid; gap: 2px; }
-.name { font-weight: 600; color: var(--color-primary); text-decoration: none; }
-/* The repo name is a real <a>, so the hover underline — the whole "goes
-   somewhere" signal, given the rest of the row is plain text — reaches the
-   keyboard. */
-.name:is(:hover, :focus-visible) { text-decoration: underline; }
-.desc { font-size: var(--font-size-base); color: var(--color-text-base-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* `.name` and `.desc` are gone: the repo name is a kit `Link` and the
+   description is `Text maxLines={2}`. Two notes on the Link. Its ink is
+   `--color-text-accent`, the same #BD93F9 the old `var(--color-primary)`
+   resolved to, so the name keeps its colour. And astryx-dracula underlines
+   every kit link at rest — its `@layer astryx-theme` beats core's
+   `@layer astryx-base` — so `hasUnderline={false}` is inert here and the name
+   now carries the app's standard link underline, focus included. */
 .meta { font-size: 12px; color: var(--color-text-base-muted); display: flex; gap: 8px; align-items: center; }
 /* a language IS a tag, so it wears the tag hue at the wash/border every other
  * chip in the app uses rather than the flat grey chip surface. */

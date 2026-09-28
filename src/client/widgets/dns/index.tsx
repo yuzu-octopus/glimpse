@@ -4,6 +4,7 @@ import type { DnsStats } from '../../../shared/widgets/payloads';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { fmtNumber as fmt } from '../_helpers/fmtNumber';
+import { Text } from '@astryxdesign/core';
 import { CHART_HUES } from '../../kit/chart-hues';
 import styles from './dns.module.css';
 
@@ -73,30 +74,30 @@ export function DnsStatsWidget({ config, data, error, isLoading }: WidgetCompone
       <div data-testid="dns-root">
         <div className={styles.totals}>
           <div className={styles.totalsItem}>
-            <div className={styles.totalsValue} data-testid="dns-total">
+            <Text as="div" type="large" hasTabularNumbers data-testid="dns-total">
               {fmt(d.totalQueries)}
-            </div>
-            <div className={styles.totalsLabel}>QUERIES</div>
+            </Text>
+            <Text as="div" type="label" className={styles.totalsLabel}>QUERIES</Text>
           </div>
           <div className={styles.totalsItem}>
-            <div className={styles.totalsValue} data-testid="dns-blocked">
+            <Text as="div" type="large" hasTabularNumbers data-testid="dns-blocked">
               {d.blockedPercent}%
-            </div>
-            <div className={styles.totalsLabel}>BLOCKED</div>
+            </Text>
+            <Text as="div" type="label" className={styles.totalsLabel}>BLOCKED</Text>
           </div>
           {d.responseTime > 0 ? (
             <div className={styles.totalsItem}>
-              <div className={styles.totalsValue} data-testid="dns-latency">
+              <Text as="div" type="large" hasTabularNumbers data-testid="dns-latency">
                 {fmt(d.responseTime)}ms
-              </div>
-              <div className={styles.totalsLabel}>LATENCY</div>
+              </Text>
+              <Text as="div" type="label" className={styles.totalsLabel}>LATENCY</Text>
             </div>
           ) : (
             <div className={styles.totalsItem} title="Total number of blocked domains from all adlists">
-              <div className={styles.totalsValue} data-testid="dns-domains">
+              <Text as="div" type="large" hasTabularNumbers data-testid="dns-domains">
                 {fmtApprox(d.domainsBlocked)}
-              </div>
-              <div className={styles.totalsLabel}>DOMAINS</div>
+              </Text>
+              <Text as="div" type="label" className={styles.totalsLabel}>DOMAINS</Text>
             </div>
           )}
         </div>
@@ -141,12 +142,12 @@ export function DnsStatsWidget({ config, data, error, isLoading }: WidgetCompone
                 >
                   <div className={styles.tip} data-testid="dns-tip" aria-hidden="true">
                     <div>
-                      <div className={styles.tipValue}>{fmt(pt.queries)}</div>
-                      <div className={styles.tipLabel}>QUERIES</div>
+                      <Text as="div" type="large" hasTabularNumbers>{fmt(pt.queries)}</Text>
+                      <Text as="div" type="label">QUERIES</Text>
                     </div>
                     <div>
-                      <div className={styles.tipValue}>{pt.percentBlocked}%</div>
-                      <div className={styles.tipLabel}>BLOCKED</div>
+                      <Text as="div" type="large" hasTabularNumbers>{pt.percentBlocked}%</Text>
+                      <Text as="div" type="label">BLOCKED</Text>
                     </div>
                   </div>
                   {pt.percentTotal > 0 ? (
@@ -182,16 +183,18 @@ export function DnsStatsWidget({ config, data, error, isLoading }: WidgetCompone
 
         {showTop ? (
           <details className={`${styles.details} ${showGraph ? styles.detailsWithGraph : ''}`} data-testid="dns-details">
-            <summary className={styles.summary}>Top blocked domains</summary>
+            <summary className={styles.summary}>
+              <Text type="supporting" className={styles.summaryText}>Top blocked domains</Text>
+            </summary>
             <ul className={styles.list}>
               {d.topBlockedDomains.map((t) => (
                 <li key={t.domain} className={styles.row} data-testid="dns-domain-row">
                   <div className={styles.domain} title={t.domain}>
-                    {t.domain}
+                    <Text type="supporting">{t.domain}</Text>
                   </div>
-                  <div className={styles.percent}>
-                    <span className={styles.percentValue}>{t.percentBlocked}</span>%
-                  </div>
+                  <Text type="supporting" justify="end" hasTabularNumbers className={styles.percent}>
+                    <Text color="primary">{t.percentBlocked}</Text>%
+                  </Text>
                 </li>
               ))}
             </ul>

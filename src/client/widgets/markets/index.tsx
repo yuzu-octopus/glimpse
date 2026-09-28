@@ -43,11 +43,10 @@ function Change({ change, changePct }: { change: number | null; changePct: numbe
     fmtNumber(change, { maximumFractionDigits: 2 }) +
     (changePct !== null ? ` (${changePct.toFixed(2)}%)` : '');
   // glance colors strictly by sign; zero has no sign, so it stays neutral.
-  if (change === 0) return <span className={styles.change}>{text}</span>;
   return (
-    <span className={styles.change}>
-      <MetricDelta value={text} positive={change > 0} />
-    </span>
+    <Text as="div" hasTabularNumbers className={styles.change}>
+      {change === 0 ? text : <MetricDelta value={text} positive={change > 0} />}
+    </Text>
   );
 }
 
@@ -68,19 +67,33 @@ interface RowLinks {
 }
 
 function Row({ market, symbolLink, chartLink }: { market: Market } & RowLinks) {
+  // The symbol is the row's headline, so it takes the `large` role whether or
+  // not it is a link — a plain `<Text>` and a `<Link>` must not disagree about
+  // how big a ticker is. `Link` would colour it accent (purple), which is
+  // tappable ink; a symbol is a data readout that happens to be tappable, so
+  // it stays primary.
   const symbol = symbolLink ? (
-    <Link href={symbolLink} target="_blank" className={styles.symbol} hasUnderline={false}>
+    <Link
+      href={symbolLink}
+      target="_blank"
+      type="large"
+      color="primary"
+      hasUnderline={false}
+      className={styles.symbol}
+    >
       {market.symbol}
     </Link>
   ) : (
-    <span className={styles.symbol}>{market.symbol}</span>
+    <Text type="large" className={styles.symbol}>
+      {market.symbol}
+    </Text>
   );
   const sparkline = <TrendChart symbol={market.symbol} values={market.chart} />;
   return (
     <div className={styles.row}>
       <div className={styles.rowLeft}>
         {symbol}
-        {market.name ? <span className={styles.name}>{market.name}</span> : null}
+        {market.name ? <Text color="secondary" className={styles.name}>{market.name}</Text> : null}
       </div>
       {chartLink ? (
         <Link href={chartLink} target="_blank" className={styles.chartLink} hasUnderline={false} label={`${market.symbol} chart`}>
@@ -91,9 +104,9 @@ function Row({ market, symbolLink, chartLink }: { market: Market } & RowLinks) {
       )}
       <div className={styles.values}>
         <Change change={market.change} changePct={market.changePct} />
-        <span className={styles.price}>
+        <Text color="secondary" hasTabularNumbers className={styles.price}>
           {market.price !== null ? fmtNumber(market.price, { maximumFractionDigits: 2 }) : '—'}
-        </span>
+        </Text>
       </div>
     </div>
   );

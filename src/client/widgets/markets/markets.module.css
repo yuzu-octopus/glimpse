@@ -21,12 +21,15 @@
   min-width: 0;
 }
 
-/* glance: symbol is the headline link (color-highlight size-h3 block text-truncate) */
+/* glance: symbol is the headline (`type="large"`, a Link when the market
+   resolves one) and the company name beneath it is `Text color="secondary"`.
+   Only the truncation is left to CSS — a single-line ticker must never wrap.
+   The symbol's `text-decoration: none` went with the colour: astryx-dracula
+   underlines every kit link at rest (its `@layer astryx-theme` beats core's
+   `@layer astryx-base`), so the linked symbol now carries the app's standard
+   link underline and `hasUnderline={false}` cannot take it back. */
 .symbol {
   display: block;
-  font-size: var(--font-size-h3);
-  color: var(--color-text-highlight);
-  text-decoration: none;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -34,7 +37,6 @@
 
 .name {
   display: block;
-  color: var(--color-text-base);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -77,15 +79,9 @@
   text-align: right;
 }
 
-.price {
-  color: var(--color-text-base);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-/* The delta line. MetricDelta sets its own body role (14px); the neutral
-   zero-change fallback inherits the same size from here so a column of rows
-   never mixes two type sizes. */
+/* The delta line. MetricDelta sets its own body role; the neutral zero-change
+   fallback now wears it too, since both are `Text` inside the same wrapper,
+   so a column of rows never mixes two type sizes. */
 .change {
   display: inline-flex;
   align-items: center;
@@ -93,8 +89,10 @@
   gap: 2px;
   min-width: 0;
   max-width: 100%;
-  font-size: var(--font-size-base);
-  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.price {
   white-space: nowrap;
 }
 
