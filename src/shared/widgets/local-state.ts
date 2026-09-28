@@ -7,7 +7,6 @@ import { canonicalWidgetType } from './aliases';
  * only ones that need a per-instance identity.
  */
 export const LOCAL_STATE_TYPES = ['notepad', 'todo', 'timer'] as const;
-export type LocalStateType = (typeof LOCAL_STATE_TYPES)[number];
 
 const LOCAL_STATE: Record<string, true> = Object.fromEntries(
   LOCAL_STATE_TYPES.map((t) => [t, true]),

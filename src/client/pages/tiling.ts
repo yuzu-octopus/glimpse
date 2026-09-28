@@ -239,7 +239,6 @@ export function place(
  * never touch grid internals. Geometry (spans, tracks, row unit) lives in
  * `place()`; this only picks the CSS mode class.
  */
-export type Tiling = 'columns' | 'auto' | 'collage';
 
 export function getTilingProps(
   tiling: string | undefined,

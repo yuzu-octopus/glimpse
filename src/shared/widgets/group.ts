@@ -27,7 +27,6 @@ export const groupSchema = z.object({
   ...sharedWidgetFields,
   widgets: z.array(z.lazy(recursiveWidgets)).min(1),
 });
-export type GroupConfig = z.infer<typeof groupSchema>;
 
 export const splitColumnSchema = z.object({
   type: z.literal('split-column'),
@@ -36,7 +35,6 @@ export const splitColumnSchema = z.object({
   widgets: z.array(z.lazy(recursiveWidgets)).min(2),
   'max-columns': z.number().int().min(2).optional(),
 });
-export type SplitColumnConfig = z.infer<typeof splitColumnSchema>;
 
 export const SPLIT_COLUMN_PREF: Pref = { cols: null, rows: 3, resizable: true, priority: 5, zone: 'main', preferredWidth: null, preferredHeight: 320 };
 export const SPLIT_COLUMN_SKELETON: SkeletonShape = 'rows';

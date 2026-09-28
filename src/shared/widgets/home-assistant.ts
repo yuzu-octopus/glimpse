@@ -37,4 +37,3 @@ export const homeAssistantSchema = z.object({
 });
 
 export type HomeAssistantConfig = z.infer<typeof homeAssistantSchema>;
-export type HomeAssistantEntityEntry = z.infer<typeof entityEntry>;

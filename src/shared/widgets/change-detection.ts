@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { sharedWidgetFields, type Pref, type SkeletonShape } from './shared';
 
-export const CHANGE_DETECTION_DEFAULTS = { limit: 10 } as const;
 export const CHANGE_DETECTION_PREF: Pref = {
   cols: 3,
   rows: 2,

@@ -35,7 +35,6 @@ export const immichSchema = z.object({
   url: z.string(),
   limit: z.number().int().min(0).default(IMMICH_DEFAULTS.limit),
 });
-export type ImmichConfig = z.infer<typeof immichSchema>;
 
 export const jellyfinSchema = z.object({
   type: z.literal('jellyfin'),
@@ -46,7 +45,6 @@ export const jellyfinSchema = z.object({
   'user-id': z.string().optional(),
   limit: z.number().int().min(0).default(JELLYFIN_DEFAULTS.limit),
 });
-export type JellyfinConfig = z.infer<typeof jellyfinSchema>;
 
 export const qbittorrentSchema = z.object({
   type: z.literal('qbittorrent'),
@@ -55,7 +53,6 @@ export const qbittorrentSchema = z.object({
   url: z.string(),
   limit: z.number().int().min(0).default(QBITTORRENT_DEFAULTS.limit),
 });
-export type QbittorrentConfig = z.infer<typeof qbittorrentSchema>;
 
 export const transmissionSchema = z.object({
   type: z.literal('transmission'),
@@ -64,4 +61,3 @@ export const transmissionSchema = z.object({
   url: z.string(),
   limit: z.number().int().min(0).default(TRANSMISSION_DEFAULTS.limit),
 });
-export type TransmissionConfig = z.infer<typeof transmissionSchema>;
