@@ -6,9 +6,10 @@
  * decoration rather than meaning. Hashing the tag text instead makes a
  * category keep its colour wherever it appears.
  *
- * `--color-tag-blue` is deliberately absent from the set: in the installed
- * astryx-dracula kit it is literally #BD93F9, the tappable purple, so a cycle
- * including it paints purple under another name. Yellow is the default and
+ * `--color-tag-purple` is deliberately absent from the set: it is literally
+ * #BD93F9, the tappable purple, so a cycle including it paints purple under
+ * another name. (The kit renamed this token in 0.3.0 — it was always purple
+ * and never a blue; only the name was the lie.) Yellow is the default and
  * lives on the base chip class, so it needs no entry here.
  */
 export const TAG_ACCENTS = ['green', 'cyan', 'pink', 'orange'] as const;

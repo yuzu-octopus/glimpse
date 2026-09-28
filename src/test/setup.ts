@@ -54,6 +54,23 @@ if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.sho
   };
 }
 
+// core >= 0.6 SideNavItem calls useMediaQuery, which needs matchMedia. jsdom
+// does not implement it, so an honest desktop default is required or every
+// panel test dies in render before it asserts anything.
+if (typeof window !== 'undefined' && !window.matchMedia) {
+  window.matchMedia = (query: string): MediaQueryList =>
+    ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }) as unknown as MediaQueryList;
+}
+
 // Vitest workers run on Node, so `Bun.YAML` is absent there — but the server is
 // Bun-only and `Bun.YAML` is its one and only YAML parser. Install the real
 // parser behind `__bunYamlParse` (a Bun subprocess, ~8ms per document) so tests
