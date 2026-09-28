@@ -38,7 +38,7 @@ function ageOf(iso: string | null): string | null {
 /** Poster-card grid for recently-added library items (immich, jellyfin). */
 export function MediaGrid({ items }: { items: MediaItem[] }) {
   return (
-    <Grid columns={{ minWidth: 110 }} gap={2} className={styles.grid}>
+    <Grid columns={{ minWidth: 110 }} gap={2}>
       {items.map((item) => {
         const meta = [item.subtitle, ageOf(item.date)].filter(Boolean).join(' • ');
         return (
@@ -86,7 +86,7 @@ export function TorrentList({ torrents }: { torrents: TorrentItem[] }) {
         const eta = formatEta(t.eta);
         return (
           <Stack key={t.name} gap={1} data-testid="torrent-row">
-            <Stack direction="horizontal" gap={2} className={styles.torrentHead}>
+            <Stack direction="horizontal" gap={2}>
               <Text type="body" maxLines={1} className={styles.torrentName}>
                 {t.name}
               </Text>
