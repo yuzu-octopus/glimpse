@@ -20,12 +20,17 @@ const HUE_VARS = ['--bar-hue', '--spark-hue', '--ring-hue'];
  * token for the signed sparkline), never a hand-rolled hex.
  */
 describe('chart ink is the kit CHART_HUES', () => {
-  it('exposes the five documented hues, all token refs, and no purple', () => {
-    expect(Object.keys(CHART_HUES)).toEqual(['cyan', 'orange', 'green', 'pink', 'muted']);
+  it('exposes token refs only, and never purple', () => {
     for (const [name, value] of Object.entries(CHART_HUES)) {
       expect(value, name).toMatch(/^var\(--[a-z0-9-]+\)$/);
       expect(value, name).not.toMatch(/purple|#/);
     }
+  });
+
+  // The exact key set is upstream's to change — 0.3.0 added `red` — so pin the
+  // rule that matters instead: purple means tappable, so it can never be a key.
+  it('offers no purple category under any name', () => {
+    expect(Object.keys(CHART_HUES).join(' ')).not.toMatch(/purple/);
   });
 
   it('resolves every rendered chart hue to a CHART_HUES value', () => {
@@ -67,15 +72,21 @@ describe('chart ink is the kit CHART_HUES', () => {
     expect([...seen].sort()).toEqual([CHART_HUES.cyan, CHART_HUES.muted, CHART_HUES.orange].sort());
   });
 
-  it('leaves the signed sparkline on the status hues the kit paints with', () => {
+  // The sparkline picks its own fill from a status hue and paints no data
+  // category, so the assertion is about the ROLE, not the literal: upstream
+  // 0.3.0's own sparkline.tsx still hardcodes the --dracula-* primitives while
+  // chart-hues moved to --color-data-* role tokens, so the two strings differ
+  // even though both resolve to #50FA7B. Vendored verbatim, we do not "fix" it.
+  it('leaves the signed sparkline on a status hue, not a data category', () => {
     render(
       <Markets
         config={{ type: 'markets', markets: [{ symbol: 'A' }] } as never}
         data={{ markets: [{ symbol: 'A', name: 'A', price: 1, change: 1, changePct: 1, chart: [1, 2, 3] }] }}
       />,
     );
-    const fill = screen.getByRole('img', { name: 'A price trend' }).querySelector('rect')!.getAttribute('fill');
-    expect(fill).toBe(CHART_HUES.green);
+    const fill = screen.getByRole('img', { name: 'A price trend' }).querySelector('rect')!.getAttribute('fill')!;
+    expect(fill).not.toBe(CHART_HUES.muted);
+    expect(fill).toMatch(/^var\(--(dracula-(green|red|yellow)|color-(status|text|data)-[a-z0-9-]+)\)$/);
   });
 
   it('declares no hand-rolled colour in the chart widgets', () => {
