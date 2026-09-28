@@ -90,12 +90,13 @@ describe('WidgetChrome', () => {
         <div>content</div>
       </WidgetChrome>,
     );
-    const dot = screen.getByTestId('widget-error-dot');
-    // the kit's own StatusDot, not a hand-rolled span
-    expect(dot.className).toContain('astryx-statusdot');
+    // the kit's own StatusDot, not a hand-rolled span: it is the component's
+    // role and accessible name that carry the failure, and data-variant is the
+    // hook core emits for it. No class name is asserted — `astryx-statusdot`
+    // survives only on core's legacyNames shim (dist/StatusDot/StatusDot.js)
+    // and 0.7.0 drops it.
+    const dot = screen.getByRole('img', { name: 'Broken failed to load' });
     expect(dot).toHaveAttribute('data-variant', 'error');
-    expect(dot).toHaveAttribute('role', 'img');
-    expect(dot).toHaveAttribute('aria-label', 'Broken failed to load');
     // the kit's hover explanation — a closed popover, so it is hidden from
     // the a11y tree until the dot is hovered
     expect(screen.getByRole('tooltip', { hidden: true })).toHaveTextContent(

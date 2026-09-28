@@ -285,10 +285,16 @@
   border-bottom-color: var(--color-text-subdue) !important;
 }
 
+/* Press dims 20%. Hover has already resolved the label to highlight, so the
+   press steps the whole tab down instead of restating that resolve; the
+   primary underline is the tab answering the press, not a second colour
+   swap. No !important: the kit's Tab hover is a background wash and sets no
+   opacity to outrank. */
 .groupTabs button:active,
 .groupTabs [data-tab-value]:active {
   color: var(--color-text-highlight) !important;
   border-bottom-color: var(--color-primary) !important;
+  opacity: 0.8;
 }
 
 .groupTabs button:focus-visible,

@@ -69,8 +69,12 @@
   text-decoration: underline;
 }
 
+/* Press dims 20% — every widget title on the dashboard, so the press is the
+   one place a keyboard-free click must still feel like a click. The hover
+   spends itself on colour + underline, so the press steps the whole title
+   down rather than restating the same resolve. */
 .titleLink:active {
-  color: var(--color-text-highlight);
+  opacity: 0.8;
 }
 
 .body {

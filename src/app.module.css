@@ -27,7 +27,14 @@
   border: 0.25em solid var(--color-widget-content-border);
   border-top-color: var(--color-widget-background-highlight);
   border-radius: 50%;
-  animation: loadingIconSpin 800ms infinite linear;
+  animation: loadingIconSpin var(--duration-slow) var(--ease-linear) infinite;
+}
+/* A spin is motion the user never starts and cannot stop, so reduced-motion
+   drops it outright rather than slowing it down. */
+@media (prefers-reduced-motion: reduce) {
+  .loadingIcon {
+    animation: none;
+  }
 }
 
 /* glance mobile-navigation-offset: keeps page content clear of the fixed

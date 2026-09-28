@@ -73,8 +73,11 @@ describe('model-endpoints widget', () => {
   });
   it('paints health through the kit StatusDot, not a coloured cell', () => {
     render(<ModelEndpoints config={CONFIG} data={PAYLOAD} />);
+    // Health rides on a labelled role, not on a colour: the dot is core's
+    // role="img" plus its accessible name, and data-variant is the hook core
+    // emits for it. No class name is asserted — `astryx-statusdot` survives
+    // only on core's legacyNames shim and 0.7.0 drops it.
     const down = screen.getByRole('img', { name: 'down' });
-    expect(down.className).toContain('astryx-statusdot');
     expect(down).toHaveAttribute('data-variant', 'error');
     expect(screen.getByRole('img', { name: 'up' })).toHaveAttribute('data-variant', 'success');
   });
