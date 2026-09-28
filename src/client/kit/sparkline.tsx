@@ -1,8 +1,16 @@
-// Vendored from astryx-dracula@0.2.1 `shared/sparkline.tsx` (MIT) — re-sync this file on any kit version bump.
+// Vendored from astryx-dracula@0.3.1 `shared/sparkline.tsx` (MIT) — re-sync this file on any kit version bump.
+//
+// One deliberate deviation: upstream imports `{CHART_HUES}` from
+// 'astryx-dracula/shared/chart-hues'. Vendored verbatim that would pull the
+// package's own CHART_HUES in beside this repo's copy — two objects that can
+// drift, which is the exact failure 0.3.1 fixed. The import is repointed at the
+// sibling ./chart-hues so the vendored kit stays self-contained.
 
 // Merged trend-bar sparkline: absorbs the dashboard max-normalized fixed
 // geometry and the portfolio range-normalized step geometry behind one mode
 // switch. Purple stays out of the chart so it keeps meaning "interactive".
+
+import {CHART_HUES} from './chart-hues';
 
 export interface SparkPoint {
   id: string;
@@ -30,7 +38,13 @@ export function Sparkline({
   mode = 'max',
   isCompact = false,
 }: SparklineProps) {
-  const fill = positive ? 'var(--dracula-green)' : 'var(--dracula-red)';
+  // Role tokens, not --dracula-* primitives. Byte-identical values
+  // (--color-data-categorical-green IS #50FA7B), so this is a vocabulary
+  // change with no visual delta -- it just means the sparkline agrees with
+  // chart-hues.ts instead of being the one chart module that decided alone.
+  // Reported by a consumer whose test asserted their sparkline fill equalled
+  // their CHART_HUES.green and stopped agreeing across a version bump.
+  const fill = positive ? CHART_HUES.green : CHART_HUES.red;
   if (mode === 'range') {
     const values = data.map(point => point.value);
     const max = Math.max(...values);
