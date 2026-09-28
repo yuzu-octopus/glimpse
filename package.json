@@ -16,8 +16,7 @@
   },
   "dependencies": {
     "@astryxdesign/core": "^0.6.3",
-    "@astryxdesign/theme-neutral": "^0.6.3",
-    "astryx-dracula": "^0.3.0",
+    "astryx-dracula": "^0.3.1",
     "jsonpath-plus": "^10.4.0",
     "lucide-react": "^1.33.0",
     "react": "^19.2.8",
@@ -28,7 +27,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@astryxdesign/cli": "^0.3.0",
+    "@astryxdesign/cli": "^0.6.3",
     "@stylexjs/stylex": "^0.19.0",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
