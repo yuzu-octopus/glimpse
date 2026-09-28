@@ -49,9 +49,12 @@ describe('timer widget', () => {
 
   it('switches between timer and stopwatch tabs', () => {
     renderTimer();
-    fireEvent.click(screen.getByRole('tab', { name: 'Stopwatch' }));
+    // Mode is a value, not a view, so SegmentedControl exposes it as a radio
+    // group — with the roving arrow-key navigation the old role="tab" pair
+    // never had.
+    fireEvent.click(screen.getByRole('radio', { name: 'Stopwatch' }));
     expect(screen.getByTestId('timer-widget')).toHaveAttribute('data-mode', 'stopwatch');
-    fireEvent.click(screen.getByRole('tab', { name: 'Timer' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Timer' }));
     expect(screen.getByTestId('timer-widget')).toHaveAttribute('data-mode', 'timer');
   });
 

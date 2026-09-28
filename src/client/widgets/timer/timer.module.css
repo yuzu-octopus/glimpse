@@ -8,38 +8,6 @@
   padding: var(--widget-content-vertical-padding) var(--widget-content-horizontal-padding);
 }
 
-.modeRow {
-  display: inline-flex;
-  border: 1px solid var(--color-widget-content-border);
-  border-radius: var(--border-radius);
-  overflow: hidden;
-}
-
-.modeTab {
-  padding: 3px 12px;
-  border: none;
-  background: transparent;
-  color: var(--color-text-base-muted);
-  font-family: inherit;
-  font-size: var(--font-size-h6);
-  cursor: pointer;
-  transition: color 0.15s, background-color 0.15s;
-}
-
-/* Real <button role="tab">, so :focus-visible is the keyboard's tab through
-   the same pair. The active selector carries .modeTab as well: the rule above
-   is one class deeper once :is() counts, and a bare .modeTabActive would lose
-   its wash the moment the selected tab was hovered. */
-.modeTab:is(:hover, :focus-visible) {
-  color: var(--color-text-highlight);
-}
-
-.modeTab.modeTabActive,
-.modeTab.modeTabActive:is(:hover, :focus-visible) {
-  background: var(--color-widget-background-highlight);
-  color: var(--color-text-highlight);
-}
-
 .ringButton {
   position: relative;
   width: 140px;
@@ -117,21 +85,3 @@
   gap: 8px;
 }
 
-.notes {
-  width: 100%;
-  resize: vertical;
-  min-height: 60px;
-  border: 1px solid var(--color-widget-content-border);
-  border-radius: var(--border-radius);
-  background: var(--color-widget-background);
-  color: var(--color-text-base);
-  font-family: inherit;
-  font-size: var(--font-size-h5);
-  line-height: 1.5;
-  padding: 8px 10px;
-}
-
-.notes:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}

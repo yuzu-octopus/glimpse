@@ -13,8 +13,7 @@
 }
 
 /* WCAG 2.5.8: the release name is one 20px line box, so the anchor needs its
-   own floor. The 28px chevron beside it already sets the row's height, so
-   the link grows inside the row and the row does not move. */
+   own floor. */
 .title {
   min-height: 24px;
 }
@@ -29,37 +28,12 @@
   line-height: 1.4;
 }
 
-/* The chevron rotation is motion answering the expand action, which is what
-   motion is for — it stays, unlike the entrance ladder this file used to
-   carry. */
-.chevron {
-  transition: transform 0.2s;
-}
-
-.chevronOpen {
-  transform: rotate(180deg);
-  transition: transform 0.2s;
-}
-
-.collapse {
-  margin-top: 8px;
-  display: grid;
-  grid-template-rows: 0fr;
-  opacity: 0;
-  transition: grid-template-rows 0.22s ease, opacity 0.18s ease;
-}
-
-.collapseOpen {
-  grid-template-rows: 1fr;
-  opacity: 1;
-}
-
-.collapseInner {
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+/* The disclosure is core Collapsible: it owns the trigger chrome, the chevron
+   and the aria wiring. Its content region already carries a 4px block-start
+   padding, so this only makes up the rest of the 8px beat between the metadata
+   row and the inset. */
+.disclosure {
+  margin-top: 4px;
 }
 
 .notesCard {

@@ -73,7 +73,13 @@ describe('releases widget', () => {
     );
     expect(screen.queryByText(/Notes/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Show more/)).not.toBeInTheDocument();
-    expect(screen.getByLabelText(/Show release notes/)).toHaveAttribute('aria-expanded', 'false');
+    // Collapsible owns the disclosure wiring: one trigger button whose
+    // aria-expanded reports the state and whose aria-controls points at the
+    // region it shows (WCAG 4.1.2) — the old hand-wired IconButton had the
+    // first half only.
+    const trigger = screen.getByRole('button', { name: /release notes/i });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveAttribute('aria-controls');
   });
 
   it('keeps expanded release open after data refresh with same url+tag (new object identity)', async () => {
@@ -91,9 +97,9 @@ describe('releases widget', () => {
     );
     // collapsed initially
     expect(screen.queryByText(/fix details/)).not.toBeInTheDocument();
-    await user.click(screen.getByLabelText(/Show release notes/));
+    await user.click(screen.getByRole('button', { name: /release notes/i }));
     expect(screen.getByText(/fix details/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Hide release notes/)).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: /release notes/i })).toHaveAttribute('aria-expanded', 'true');
 
     // Simulate LIVE poll: same release arrives as a new object (same url+tag), plus a new release on top
     const r1Refreshed = { ...r1, notes: '## Notes\nfix details' };
@@ -108,7 +114,7 @@ describe('releases widget', () => {
     rerender(<Releases config={{ type: 'releases', repositories: ['a/b'] }} data={{ releases: [r0, r1Refreshed] }} />);
     // r1 should still be expanded even though it shifted index and got a new object identity
     expect(screen.getByText(/fix details/)).toBeInTheDocument();
-    expect(screen.getAllByLabelText(/release notes/)).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: /release notes/i })).toHaveLength(2);
     // expanded Set is keyed by url::tag, so order change must not collapse
     expect(screen.getAllByText(/fix details/)).toHaveLength(1);
   });
@@ -159,7 +165,7 @@ describe('releases widget', () => {
         }}
       />,
     );
-    await user.click(screen.getByLabelText(/Show release notes/));
+    await user.click(screen.getByRole('button', { name: /release notes/i }));
 
     const body = screen.getByText(/external_statistics_mean_type_message/);
     expect(body).toHaveAttribute('data-type', 'body');
