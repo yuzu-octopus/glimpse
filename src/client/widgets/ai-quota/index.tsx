@@ -1,4 +1,5 @@
-import { Badge, ProgressBar, Stack, Text } from '@astryxdesign/core';
+import { Badge, Stack, Text } from '@astryxdesign/core';
+import { DataBar } from '../../kit/data-bar';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import type { AiQuotaConfig } from '../../../shared/widgets/ai-quota';
@@ -54,24 +55,33 @@ export function AiQuota({ config, data, error, isLoading }: WidgetComponentProps
         {d.plan ? <Badge variant="yellow" label={d.plan} className={styles.plan} /> : null}
         {d.windows.map((w) => {
           const pct = Math.min(100, w.usedPercent);
-          // Consumption is data, so the bar runs cyan and escalates on the fixed
-          // status vocabulary (yellow attention, red negative) — the kit paints
-          // the last two; only cyan needs a token override (see .fill below).
-          const variant = pct > 90 ? 'error' : pct >= 70 ? 'warning' : 'accent';
+          // Consumption is data, so the mark runs cyan and escalates on the
+          // fixed status vocabulary (yellow attention, red negative). Each
+          // step is a --color-data-* role token, which is what the bar's
+          // colour contract asks for, so the ladder lives in the prop rather
+          // than in a stylesheet override.
+          const color =
+            pct > 90
+              ? 'var(--color-data-categorical-red)'
+              : pct >= 70
+                ? 'var(--color-data-yellow-2)'
+                : 'var(--color-data-categorical-cyan)';
           return (
             <Stack key={w.label} gap={1.5} className={styles.row}>
               <Text type="supporting" hasTabularNumbers>
                 {w.label} — {Math.round(w.usedPercent)}% · resets in {fmtReset(w.resetsAt)}
               </Text>
-              {/* The kit's bar supplies the track, the fill, the radius and the
-                  role="progressbar" this widget used to hand-roll. The label is
-                  sr-only: the visible sentence above is the real description. */}
-              <ProgressBar
-                value={pct}
+              {/* A quota window is a magnitude against a domain, not progress
+                  toward a completion: the fill and the unconsumed remainder
+                  are two segments of one 100% total, so the bar's length
+                  still reads as the percentage. It never completes. */}
+              <DataBar
                 label={w.label}
-                isLabelHidden
-                variant={variant}
-                className={styles.fill}
+                height={8}
+                segments={[
+                  {id: 'used', value: pct, color},
+                  {id: 'remaining', value: 100 - pct, color: 'var(--color-data-categorical-blue)'},
+                ]}
               />
             </Stack>
           );
