@@ -3,6 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { AiQuota } from './index';
 
 describe('ai-quota widget', () => {
+
+  const WINDOWS = [
+    { label: 'primary', usedPercent: 15, windowMinutes: 300, resetsAt: Date.now() + 3600000 },
+  ];
+
   it('renders bars per window and plan', () => {
     render(
       <AiQuota
@@ -26,9 +31,75 @@ describe('ai-quota widget', () => {
     expect(screen.getByTestId('widget-loading')).toBeInTheDocument();
   });
 
-  const WINDOWS = [
-    { label: 'primary', usedPercent: 15, windowMinutes: 300, resetsAt: Date.now() + 3600000 },
-  ];
+  // A quota window is a magnitude against a domain, not progress toward a
+  // completion, so the bar must be the kit's DataBar. Reverting to core's
+  // ProgressBar fails on the first assertion: that component reports
+  // role="progressbar", so the img the DataBar renders is simply absent.
+  it('meters the window as a data bar, not a progress bar', () => {
+    render(
+      <AiQuota
+        config={{ type: 'ai-quota' } as never}
+        data={{ provider: 'codex', windows: WINDOWS }}
+      />,
+    );
+    expect(screen.getByRole('img', { name: 'primary' })).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).toBeNull();
+  });
+
+  // The escalation ladder is the signal the widget exists to show, and the
+  // colour contract says a mark resolves to a --color-data-* role token. Read
+  // the fill off the rendered segment so neither can be silently broken.
+  it.each([
+    {usedPercent: 15, color: 'var(--color-data-categorical-cyan)'},
+    {usedPercent: 70, color: 'var(--color-data-yellow-2)'},
+    {usedPercent: 95, color: 'var(--color-data-categorical-red)'},
+  ])('paints $usedPercent% consumption in its status token', ({usedPercent, color}) => {
+    render(
+      <AiQuota
+        config={{ type: 'ai-quota' } as never}
+        data={{
+          provider: 'codex',
+          windows: [{ label: 'primary', usedPercent, windowMinutes: 300, resetsAt: Date.now() + 3600000 }],
+        }}
+      />,
+    );
+    const fill = screen.getByRole('img', { name: 'primary' }).firstElementChild as HTMLElement;
+    expect(fill).toHaveStyle({ background: color });
+  });
+
+  // Bar length is what makes a meter scannable, so the two segments have to
+  // add up to the whole window rather than each filling the track.
+  it('splits the bar into consumed and remaining share of one 100% window', () => {
+    render(
+      <AiQuota
+        config={{ type: 'ai-quota' } as never}
+        data={{
+          provider: 'codex',
+          windows: [{ label: 'primary', usedPercent: 25, windowMinutes: 300, resetsAt: Date.now() + 3600000 }],
+        }}
+      />,
+    );
+    const segments = screen.getByRole('img', { name: 'primary' }).children;
+    expect(segments).toHaveLength(2);
+    expect((segments[0] as HTMLElement).style.flexBasis).toBe('25%');
+    expect((segments[1] as HTMLElement).style.flexBasis).toBe('75%');
+  });
+
+  // A zero window is the all-zero case DataBar has an explicit track fill for.
+  // Reverting to ProgressBar renders a 0%-width fill instead, so the bar
+  // vanishes and the row loses its only visual.
+  it('still draws a bar when the window is untouched', () => {
+    render(
+      <AiQuota
+        config={{ type: 'ai-quota' } as never}
+        data={{
+          provider: 'codex',
+          windows: [{ label: 'primary', usedPercent: 0, windowMinutes: 300, resetsAt: Date.now() + 3600000 }],
+        }}
+      />,
+    );
+    expect(screen.getByRole('img', { name: 'primary' })).toBeInTheDocument();
+  });
 
   it('falls back to the provider name, and honours title-url when given', () => {
     const fallback = render(<AiQuota config={{ type: 'ai-quota' } as never} data={{ provider: 'codex', windows: WINDOWS }} />);

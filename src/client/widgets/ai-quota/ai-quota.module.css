@@ -1,6 +1,7 @@
-/* ai-quota is now Badge + ProgressBar + Text. What stays in the module is the
-   three things a prop cannot express: the badge radius (the kit ships a pill,
-   the brand does not), the cyan data fill, and the row rhythm. */
+/* ai-quota is Badge + DataBar + Text. The bar's own colour now comes from the
+   DataBar's segment prop, so the cyan fill override this file used to carry is
+   gone with it. What stays is the two things a prop cannot express: the badge
+   radius and the row rhythm. */
 
 .plan {
   align-self: flex-start;
@@ -13,15 +14,6 @@
 
 .row + .row {
   margin-top: 2px;
-}
-
-/* The bar encodes quota consumption, which is data — cyan, not purple. The
-   kit's warning (yellow) and error (red) variants own the escalation, so the
-   override is scoped to the `.accent` fill ONLY. An unscoped `> div` rule
-   repaints the escalating bars cyan too and silently flattens the severity
-   ladder, which is exactly the signal the widget exists to show. */
-.fill [data-variant='accent'] {
-  background: var(--color-data-categorical-cyan);
 }
 
 .balance {
