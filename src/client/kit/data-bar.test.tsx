@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DataBar } from './data-bar';
+import { DataBar } from 'astryx-dracula/shared/data-bar';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -102,11 +102,11 @@ describe('kit DataBar', () => {
     expect((bar.children[1] as HTMLElement).style.background).toBe('var(--color-data-yellow-3)');
   });
 
-  it('carries the re-sync note and the self-contained-import deviation', () => {
-    const src = readFileSync(join(here, 'data-bar.tsx'), 'utf8');
-    expect(src).toMatch(/^\/\/ Vendored from astryx-dracula@[\d.]+ `shared\/data-bar\.tsx` \(MIT\)/);
-    expect(src).toMatch(/re-sync this file on any kit version bump/);
-    // The package path would load a second CHART_HUES beside this repo's copy.
-    expect(src).not.toMatch(/from 'astryx-dracula\//);
+  // The kit ships DataBar, we do not copy it. A local copy is the thing that
+  // drifts: it was the reason the repo carried a re-sync contract and three
+  // hand-written deviations. This asserts the copy is gone, so it cannot creep
+  // back in as a second CHART_HUES beside the package's.
+  it('is imported from the package, not copied into the repo', () => {
+    expect(existsSync(join(here, 'data-bar.tsx'))).toBe(false);
   });
 });

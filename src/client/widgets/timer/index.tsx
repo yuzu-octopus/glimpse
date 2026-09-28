@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Button, SegmentedControl, SegmentedControlItem, TextArea } from '@astryxdesign/core';
 import { Pause, Play, RotateCcw } from 'lucide-react';
-import { CHART_HUES } from '../../kit/chart-hues';
+import { CHART_HUES } from 'astryx-dracula/shared/chart-hues';
 import { formatDuration, parseDuration, type TimerConfig } from '../../../shared/widgets/timer';
 import { localStateKey } from '../../../shared/widgets/local-state';
 import { WidgetChrome } from '../../components/WidgetChrome';

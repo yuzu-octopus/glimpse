@@ -1,9 +1,9 @@
 import type { CSSProperties } from 'react';
 import { Link, Stack, StatusDot, Text } from '@astryxdesign/core';
 import { MARKETS_DEFAULTS, type MarketsConfig } from '../../../shared/widgets/keyed';
-import { CHART_HUES } from '../../kit/chart-hues';
-import { Sparkline } from '../../kit/sparkline';
-import { MetricDelta } from '../../kit/metric-delta';
+import { CHART_HUES } from 'astryx-dracula/shared/chart-hues';
+import { Sparkline } from 'astryx-dracula/shared/sparkline';
+import { MetricDelta } from 'astryx-dracula/shared/metric-delta';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { fmtNumber } from '../_helpers/fmtNumber';

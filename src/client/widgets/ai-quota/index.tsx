@@ -1,5 +1,5 @@
 import { Badge, Stack, Text } from '@astryxdesign/core';
-import { DataBar } from '../../kit/data-bar';
+import { DataBar } from 'astryx-dracula/shared/data-bar';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import type { AiQuotaConfig } from '../../../shared/widgets/ai-quota';
