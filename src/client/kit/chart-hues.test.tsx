@@ -72,12 +72,13 @@ describe('chart ink is the kit CHART_HUES', () => {
     expect([...seen].sort()).toEqual([CHART_HUES.cyan, CHART_HUES.muted, CHART_HUES.orange].sort());
   });
 
-  // The sparkline picks its own fill from a status hue and paints no data
-  // category, so the assertion is about the ROLE, not the literal: upstream
-  // 0.3.0's own sparkline.tsx still hardcodes the --dracula-* primitives while
-  // chart-hues moved to --color-data-* role tokens, so the two strings differ
-  // even though both resolve to #50FA7B. Vendored verbatim, we do not "fix" it.
-  it('leaves the signed sparkline on a status hue, not a data category', () => {
+  // The invariant 0.3.1 made enforceable. Until then the kit's sparkline
+  // hardcoded --dracula-* primitives while chart-hues had moved to
+  // --color-data-* role tokens, so "the sparkline fill is a CHART_HUES entry"
+  // was FALSE and could not be asserted — only its weaker cousin. Upstream
+  // repointed it, so the two files agree again and the real contract holds:
+  // one vocabulary for chart ink, no literal anywhere.
+  it('paints the signed sparkline from CHART_HUES, not a raw primitive', () => {
     render(
       <Markets
         config={{ type: 'markets', markets: [{ symbol: 'A' }] } as never}
@@ -85,8 +86,10 @@ describe('chart ink is the kit CHART_HUES', () => {
       />,
     );
     const fill = screen.getByRole('img', { name: 'A price trend' }).querySelector('rect')!.getAttribute('fill')!;
-    expect(fill).not.toBe(CHART_HUES.muted);
-    expect(fill).toMatch(/^var\(--(dracula-(green|red|yellow)|color-(status|text|data)-[a-z0-9-]+)\)$/);
+    expect(fill).toBe(CHART_HUES.green);
+    // and the source that produced it names no raw primitive at all
+    const src = readFileSync(join(here, 'sparkline.tsx'), 'utf8');
+    expect(src).not.toMatch(/var\(--dracula-/);
   });
 
   it('declares no hand-rolled colour in the chart widgets', () => {
