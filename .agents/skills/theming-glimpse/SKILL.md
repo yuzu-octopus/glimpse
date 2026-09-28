@@ -44,12 +44,12 @@ Auto-reload failure keeps the last good config active. Fix: delete the whole `th
 - *Sequential ramps* → the 55 `--color-data-*` tokens: 10 categorical slots (`--color-data-categorical-{blue,orange,purple,green,pink,cyan,red,teal,brown,indigo}`) plus 9 sequential families (`blue`, `gray`, `orange`, `pink`, `purple`, `red`, `shamrock`, `teal`, `yellow`) at levels 1–5. Use a ramp when the value is an *amount* (a contribution heatmap), never for identity.
 
 ## The app's own layer: `src/client/kit/`
-Four files vendored verbatim from `astryx-dracula@0.2.1` `shared/` (MIT). They are the app's brand primitives, not app code: re-sync them on any kit version bump rather than editing them. The kit also ships a `chart-labels.tsx` (`ChartLabel`); nothing imports it, so it is not vendored — re-add it from `shared/` if a hand-drawn axis label ever needs the 13px mono floor.
+Four files vendored from `astryx-dracula@0.3.1` `shared/` (MIT). They are the app's brand primitives, not app code: re-sync them on any kit version bump rather than editing them. The kit also ships a `chart-labels.tsx` (`ChartLabel`); nothing imports it, so it is not vendored — re-add it from `shared/` if a hand-drawn axis label ever needs the 13px mono floor.
 
 | File | What it owns |
 |---|---|
 | `icons.ts` | side-effecting `registerIcons(draculaIconRegistry)`; imported **first** in `src/main.tsx` so every Astryx component resolves brand icons |
-| `chart-hues.ts` | `CHART_HUES` — the categorical series palette above |
+| `chart-hues.ts` | `CHART_HUES` — the categorical series palette above, on `--color-data-categorical-*` role tokens (0.3.0 moved it off raw `--dracula-*` primitives) |
 | `sparkline.tsx` | `Sparkline` — `mode: 'max'` (dashboard tiles) / `'range'` (market rows); requires a unique `label` per instance |
 | `metric-delta.tsx` | `MetricDelta` — the one KPI-delta pattern (sign + arrow carry direction, tone only reinforces) |
 
