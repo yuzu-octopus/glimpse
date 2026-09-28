@@ -88,12 +88,14 @@ describe('videos widget', () => {
     );
     // the card is its own grid now: ClickableCard holds the thumb, title and
     // meta as direct children, so the areas land on the card itself and no
-    // wrapper span has to be re-gridded. The inset rides on the kit's own
-    // container padding tokens — the card computes its padding from them.
+    // wrapper span has to be re-gridded. It also needs the compact row's
+    // inset — however it is spelled: our unlayered module beats every astryx
+    // layer, so a plain `padding` works just as well as the card's own
+    // container padding tokens.
     expect(css).toMatch(/@container[\s\S]*?\.gridWrap \.card\s*\{[^}]*display:\s*grid/);
     expect(css).toMatch(/@container[\s\S]*?\.gridWrap \.card\s*\{[^}]*grid-template-areas/);
     expect(css).toMatch(
-      /@container[\s\S]*?\.gridWrap \.card\s*\{[^}]*--container-padding-inline-start:\s*10px/,
+      /@container[\s\S]*?\.gridWrap \.card\s*\{[^}]*(padding:\s*8px 10px|--container-padding-inline-start:\s*10px)/,
     );
     expect(css).not.toMatch(/\.card > \*/);
   });
