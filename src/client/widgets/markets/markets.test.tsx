@@ -133,11 +133,15 @@ describe('markets widget', () => {
     expect(container.querySelector('rect')).not.toBeNull();
   });
 
+  // The exact token is upstream's to change — 0.3.1 repointed the kit's
+  // sparkline from --dracula-* primitives to --color-data-* role tokens with
+  // no visual delta — so assert the CHART_HUES entry, which is the contract
+  // this repo actually owns, rather than a string the kit happens to print.
   it('paints the series green when it rises, red when it falls, and muted when flat', () => {
     const { container, rerender } = render(<TrendChart symbol="X" values={[1, 2, 3]} />);
-    expect(container.querySelector('rect')).toHaveAttribute('fill', 'var(--dracula-green)');
+    expect(container.querySelector('rect')).toHaveAttribute('fill', CHART_HUES.green);
     rerender(<TrendChart symbol="X" values={[3, 2, 1]} />);
-    expect(container.querySelector('rect')).toHaveAttribute('fill', 'var(--dracula-red)');
+    expect(container.querySelector('rect')).toHaveAttribute('fill', CHART_HUES.red);
     // no sign to show: the kit's muted hue, not a status hue
     rerender(<TrendChart symbol="X" values={[2, 2, 2]} />);
     const flat = container.querySelector('rect')!;
