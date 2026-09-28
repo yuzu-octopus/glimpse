@@ -85,7 +85,6 @@
   height: 100%;
   width: var(--progress, 0%);
   border-radius: inherit;
-  transition: width 0.4s ease;
   background: var(--color-positive);
 }
 .bar[data-high="true"]::before {

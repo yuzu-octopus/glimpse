@@ -10,13 +10,17 @@ import { fileURLToPath } from 'node:url';
 // the control, cards and thumbnails are static — and not any value.
 
 const dir = dirname(fileURLToPath(import.meta.url));
-const client = join(dir, '..');
-const read = (rel: string) => readFileSync(join(client, rel), 'utf8');
+/** The shipped source root, not the client tree. `src/index.css` and
+ *  `src/app.module.css` sit above `src/client` and carry app-level motion, and
+ *  a root at `src/client` never opened either — which is exactly how a
+ *  sub-floor duration and an unguarded infinite animation sat unswept. */
+const root = join(dir, '..', '..');
+const read = (rel: string) => readFileSync(join(root, rel), 'utf8');
 
-/** Every stylesheet in the client tree, walked rather than listed: a
- * hand-maintained list of the files already swept is a list that silently
- * stops covering the widget that lands next week. */
-const SHEETS = readdirSync(client, { recursive: true, encoding: 'utf8' })
+/** Every stylesheet in the shipped source tree, walked rather than listed: a
+ *  hand-maintained list of the files already swept is a list that silently
+ *  stops covering the widget that lands next week. */
+const SHEETS = readdirSync(root, { recursive: true, encoding: 'utf8' })
   .filter((f) => f.endsWith('.css'))
   .map((f) => f.split('\\').join('/'))
   .sort();
@@ -61,7 +65,7 @@ function pointerOnly(src: string): string | undefined {
   return undefined;
 }
 
-const REST_DIMMED = ['widgets/custom-api/custom-api.module.css', 'widgets/rss/rss.module.css', 'widgets/reddit/reddit.module.css'];
+const REST_DIMMED = ['client/widgets/custom-api/custom-api.module.css', 'client/widgets/rss/rss.module.css', 'client/widgets/reddit/reddit.module.css'];
 
 describe('hover affordances are not hover-only', () => {
   it.each(SHEETS)('%s pairs every :hover with a focus channel', (rel) => {
@@ -93,7 +97,7 @@ describe('hover affordances are not hover-only', () => {
     // `.row:hover .icon` is (0,2,0) and beats a bare `.iconAutoInvert` at
     // (0,1,0), so an un-guarded hover rule un-inverts exactly the simple-icons
     // and mdi glyphs that cannot render without the invert.
-    const src = read('widgets/monitor/monitor.module.css');
+    const src = read('client/widgets/monitor/monitor.module.css');
     const dim = src.indexOf('filter: grayscale(0)');
     const invert = src.indexOf('.row:is(:hover, :focus-within) .iconAutoInvert');
     expect(dim).toBeGreaterThan(-1);

@@ -132,8 +132,10 @@
   color: var(--color-text-highlight);
 }
 
+/* Press dims 20%. The hover already spends the whole move on the colour
+   resolve, so the press takes the next step down instead of restating it. */
 .docsLink:active {
-  color: var(--color-text-highlight);
+  opacity: 0.8;
 }
 
 /* Narrow screens: the section rail becomes a row above the content. The

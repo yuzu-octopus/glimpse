@@ -35,6 +35,13 @@
   --content-bounds-padding: var(--space-gap);
 
   --mobile-navigation-height: 50px;
+  /* A continuous rotation is the one motion that cannot take the kit's
+     easing: --ease-standard accelerates and decelerates every revolution, so
+     an infinite spin on it visibly stutters once per cycle. The kit ships no
+     linear keyword, and a spin genuinely needs one, so the app declares it
+     here with the other tokens the kit does not ship. */
+  --ease-linear: linear;
+
 }
 
 * {
@@ -90,7 +97,8 @@ kbd {
   box-shadow: 0 2px 0 var(--color-widget-background-highlight);
   user-select: none;
   cursor: pointer;
-  transition: transform 0.1s, box-shadow 0.1s;
+  transition: transform var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
 }
 
 kbd:active {
