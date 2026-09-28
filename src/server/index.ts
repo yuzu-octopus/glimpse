@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, normalize, resolve, sep } from 'node:path';
+import { etagMatches } from './etag';
 import { initConfig, getConfig } from './config';
 import { Singleflight, TtlCache } from './cache';
 import { buildPagePayload, skeletonPagePayload, streamPagePayload } from './api';
@@ -82,13 +83,6 @@ function readThemeCss(cssFile: string): string | null {
 }
 
 
-function etagMatches(header: string | null, etag: string): boolean {
-  if (!header) return false;
-  const normalize = (v: string): string => v.trim().replace(/^W\//i, '');
-  const want = normalize(etag);
-  if (header.trim() === '*') return true;
-  return header.split(',').some((part) => normalize(part) === want || part.trim() === '*');
-}
 
 const distDirCache = join(process.cwd(), 'dist');
 let distExistsCache: boolean | null = null;
