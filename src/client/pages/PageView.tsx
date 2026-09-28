@@ -492,6 +492,7 @@ const MobileColumn = memo(function MobileColumn({
       <button
         ref={toggleRef}
         type="button"
+        data-testid="column-toggle"
         className={styles.mobileToggle}
         aria-expanded={open}
         onClick={handleToggle}

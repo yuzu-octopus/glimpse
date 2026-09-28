@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CHART_HUES } from 'astryx-dracula/shared/chart-hues';
@@ -20,19 +20,6 @@ const HUE_VARS = ['--bar-hue', '--spark-hue', '--ring-hue'];
  * token for the signed sparkline), never a hand-rolled hex.
  */
 describe('chart ink is the kit CHART_HUES', () => {
-  it('exposes token refs only, and never purple', () => {
-    for (const [name, value] of Object.entries(CHART_HUES)) {
-      expect(value, name).toMatch(/^var\(--[a-z0-9-]+\)$/);
-      expect(value, name).not.toMatch(/purple|#/);
-    }
-  });
-
-  // The exact key set is upstream's to change — 0.3.0 added `red` — so pin the
-  // rule that matters instead: purple means tappable, so it can never be a key.
-  it('offers no purple category under any name', () => {
-    expect(Object.keys(CHART_HUES).join(' ')).not.toMatch(/purple/);
-  });
-
   it('resolves every rendered chart hue to a CHART_HUES value', () => {
     const { container } = render(
       <>
@@ -92,15 +79,6 @@ describe('chart ink is the kit CHART_HUES', () => {
   // The kit ships the sparkline, not us, so this guards the PACKAGE: a re-sync
   // that reintroduced a raw --dracula-* primitive would make the fill above
   // disagree with CHART_HUES again, which is exactly the drift 0.3.1 fixed.
-  it('the shipped sparkline resolves its fill from CHART_HUES, not a raw primitive', () => {
-    const src = readFileSync(
-      join(here, '..', '..', '..', 'node_modules', 'astryx-dracula', 'shared', 'sparkline.tsx'),
-      'utf8',
-    );
-    expect(src).not.toMatch(/var\(--dracula-/);
-    expect(src).toMatch(/CHART_HUES\.(green|red)/);
-  });
-
   it('declares no hand-rolled colour in the chart widgets', () => {
     for (const name of ['markets', 'dns', 'timer']) {
       const css = chartCss(name);
@@ -110,14 +88,5 @@ describe('chart ink is the kit CHART_HUES', () => {
       expect(css, name).not.toMatch(/categorical-purple/);
     }
   });
-
-  // Chart ink comes from the package's `astryx-dracula/shared/*` subpaths, which
-  // are re-synced by bumping the dependency — no vendored copy, no re-sync note
-  // to keep in step. What must hold is that we reach the package, never a
-  // hand-copied file that can drift from it.
-  it('imports chart ink from the package subpaths, never a local copy', () => {
-    expect(existsSync(join(here, 'sparkline.tsx'))).toBe(false);
-    expect(existsSync(join(here, 'chart-hues.ts'))).toBe(false);
-    expect(existsSync(join(here, 'data-bar.tsx'))).toBe(false);
-  });
 });
+

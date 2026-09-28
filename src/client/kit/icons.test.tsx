@@ -23,9 +23,20 @@ describe('brand icon registry', () => {
   });
 
   it('paints an Astryx <Icon> with the kit glyph', () => {
-    const { container } = render(<Icon icon="chevronDown" size="sm" />);
-    const path = container.querySelector('path');
-    // core's built-in chevronDown is "M6 9l6 6 6-6"; lucide's is "m6 9 6 6 6-6"
-    expect(path?.getAttribute('d')).toBe('m6 9 6 6 6-6');
+    // Compared against the kit registry element rather than a hardcoded
+    // lucide path string, which would break on any lucide version bump with
+    // no Glimpse change. Rendering the registry entry and <Icon> side by side
+    // is the real claim: the kit won, core's built-in default did not.
+    const { container } = render(
+      <>
+        <Icon icon="chevronDown" size="sm" />
+        {draculaIconRegistry.chevronDown}
+      </>,
+    );
+    const [fromIcon, fromRegistry] = Array.from(container.querySelectorAll('path')).map(
+      (p) => p.getAttribute('d'),
+    );
+    expect(fromIcon).toBeTruthy();
+    expect(fromIcon).toBe(fromRegistry);
   });
 });
