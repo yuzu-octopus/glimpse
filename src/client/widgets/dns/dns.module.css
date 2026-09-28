@@ -2,7 +2,14 @@
    the duration of a hover so the per-bar tip could sit over them — on a touch
    device, which can never fire :hover, that is a legibility regression with
    no way to recover it. The tip is an opaque popover, so it reads on top
-   without dimming anything. */
+   without dimming anything.
+
+   Every size, weight and colour below is a `Text` prop now — `type="large"`
+   for a figure, `type="label"` for the QUERIES/BLOCKED captions, `type="supporting"`
+   for the domain rows — so this sheet is down to geometry: the totals strip,
+   the chart, and the truncation of a domain to its tail. The chart and its
+   tip stay bespoke; only the tip's two text children are `Text`, because the
+   tip is driven by a tap-pin that no kit component can express. */
 .totals {
   display: flex;
   text-align: center;
@@ -14,18 +21,7 @@
   flex: 1;
 }
 
-.totalsValue {
-  color: var(--color-text-highlight);
-  font-size: var(--font-size-h3);
-  font-weight: 500;
-  line-height: 1.2;
-}
-
 .totalsLabel {
-  font-size: var(--font-size-h6);
-  color: var(--color-text-base-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   margin-top: 2px;
 }
 
@@ -167,7 +163,6 @@
   border: 1px solid var(--color-popover-border);
   border-radius: var(--border-radius);
   padding: 8px 12px;
-  font-size: var(--font-size-h6);
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
@@ -185,18 +180,6 @@
   transform: translateX(-50%) translateY(0);
 }
 
-.tipValue {
-  color: var(--color-text-highlight);
-  font-size: var(--font-size-h3);
-  line-height: 1.2;
-}
-
-.tipLabel {
-  font-size: var(--font-size-h6);
-  color: var(--color-text-base-muted);
-  text-transform: uppercase;
-}
-
 .details {
   margin-top: 15px;
 }
@@ -205,16 +188,14 @@
   margin-top: 40px;
 }
 
-.details summary {
+.summary {
   cursor: pointer;
-  font-size: var(--font-size-h5);
-  color: var(--color-text-base);
   user-select: none;
 }
 
 /* <summary> is natively focusable, so the keyboard channel is the same
    treatment as the pointer's. */
-.details summary:is(:hover, :focus-visible) {
+.summary:is(:hover, :focus-visible) .summaryText {
   color: var(--color-text-highlight);
 }
 
@@ -231,7 +212,6 @@
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  font-size: var(--font-size-h5);
 }
 
 .domain {
@@ -245,12 +225,7 @@
 
 .percent {
   width: 4rem;
-  text-align: right;
   flex-shrink: 0;
-}
-
-.percentValue {
-  color: var(--color-text-highlight);
 }
 
 .empty { padding: 12px; color: var(--color-text-base-muted); }

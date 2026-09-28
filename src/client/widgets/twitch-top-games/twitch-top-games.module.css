@@ -2,7 +2,8 @@
 .row { display: flex; gap: 10px; align-items: center; }
 .rank { font-size: 12px; color: var(--color-text-base-muted); width: 16px; text-align: right; flex-shrink: 0; }
 .art { width: 40px; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
-.name { font-weight: 600; color: var(--color-primary); text-decoration: none; }
-/* The game name is a real <a>, so the hover underline reaches the keyboard. */
-.name:is(:hover, :focus-visible) { text-decoration: underline; }
+/* `.name` is gone: the game name is a kit `Link`. astryx-dracula underlines
+   every kit link at rest (its `@layer astryx-theme` beats core's
+   `@layer astryx-base`), so `hasUnderline={false}` is inert here and the name
+   now carries the app's standard link underline, focus included. */
 .empty { padding: 12px; color: var(--color-text-base-muted); }

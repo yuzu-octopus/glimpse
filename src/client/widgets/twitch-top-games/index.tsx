@@ -2,7 +2,7 @@ import { TWITCH_TOP_GAMES_DEFAULTS, type TwitchTopGamesConfig } from '../../../s
 import type { TwitchTopGamesData } from '../../../shared/widgets/payloads';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import { Button } from '@astryxdesign/core';
+import { Button, Link } from '@astryxdesign/core';
 import { ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import styles from './twitch-top-games.module.css';
@@ -46,7 +46,7 @@ function TwitchTopGames({ config, data, error, isLoading }: WidgetComponentProps
           <li key={g.id || g.name} className={styles.row}>
             <span className={styles.rank}>{i + 1}</span>
             {g.boxArtUrl ? <img src={g.boxArtUrl} alt="" className={styles.art} loading="lazy" /> : null}
-            <a href={g.url} target="_blank" rel="noopener noreferrer" className={styles.name}>{g.name}</a>
+            <Link href={g.url} target="_blank" weight="semibold" hasUnderline={false}>{g.name}</Link>
           </li>
         ))}
       </ol>

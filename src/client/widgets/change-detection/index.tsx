@@ -2,6 +2,7 @@ import type { ChangeDetectionConfig } from '../../../shared/widgets/change-detec
 import type { ChangeDetectionData } from '../../../shared/widgets/payloads';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
+import { Link, Text } from '@astryxdesign/core';
 import styles from './change-detection.module.css';
 
 const TIME_FMT = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -43,9 +44,9 @@ function ChangeDetection({ config, data, error, isLoading }: WidgetComponentProp
         {items.map((item) => (
           <li key={item.url} className={styles.row}>
             <div className={styles.top}>
-              <a href={item.url} target="_blank" rel="noopener noreferrer" className={styles.name}>
+              <Link href={item.url} target="_blank" weight="semibold" hasUnderline={false} maxLines={1}>
                 {hostOf(item.url)}
-              </a>
+              </Link>
               {item.changed ? <span className={styles.badge}>Changed</span> : null}
             </div>
             {item.changedAt ? (
@@ -53,7 +54,7 @@ function ChangeDetection({ config, data, error, isLoading }: WidgetComponentProp
             ) : (
               <div className={styles.meta}>unchanged</div>
             )}
-            {item.diffSnippet ? <div className={styles.snippet}>{item.diffSnippet}</div> : null}
+            {item.diffSnippet ? <Text as="div" type="body" color="secondary" maxLines={2}>{item.diffSnippet}</Text> : null}
           </li>
         ))}
       </ul>

@@ -2,6 +2,7 @@ import type { TrendingData } from '../../../shared/widgets/payloads';
 import type { GithubTrendingConfig } from '../../../shared/widgets/github-trending';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
+import { Link, Text } from '@astryxdesign/core';
 import styles from './github-trending.module.css';
 
 function Trending({ config, data, error, isLoading }: WidgetComponentProps) {
@@ -33,8 +34,10 @@ function Trending({ config, data, error, isLoading }: WidgetComponentProps) {
       <ul className={styles.list}>
         {items.map((r) => (
           <li key={r.fullName} className={styles.row}>
-            <a href={r.url} target="_blank" rel="noopener noreferrer" className={styles.name}>{r.fullName}</a>
-            {r.description ? <div className={styles.desc}>{r.description}</div> : null}
+            <Link href={r.url} target="_blank" weight="semibold" hasUnderline={false}>
+              {r.fullName}
+            </Link>
+            {r.description ? <Text as="div" type="body" color="secondary" maxLines={2}>{r.description}</Text> : null}
             <div className={styles.meta}>
               {r.language ? <span className={styles.lang}>{r.language}</span> : null}
               {/* `stars` is scraped, not validated: a GitHub markup change
