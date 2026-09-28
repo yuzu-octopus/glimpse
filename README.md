@@ -148,7 +148,7 @@ Unauthenticated GitHub and Reddit requests are rate-limited, so raise `cache` fo
 
 ## Theming
 
-- **Single theme**: [astryx-dracula](https://github.com/yuzu-octopus/astryx-dracula) (`^0.2.1`, MIT) is a runtime dependency, imported as `astryx-dracula/tokens.css` + `astryx-dracula/theme.css` and applied by `<Theme theme={astryxDraculaTheme} mode="dark">`. It is **dark-only** — Dracula dark is the brand, not a mode.
+- **Single theme**: [astryx-dracula](https://github.com/yuzu-octopus/astryx-dracula) (`^0.3.1`, MIT) is a runtime dependency, imported as `astryx-dracula/tokens.css` + `astryx-dracula/theme.css` and applied by `<Theme theme={astryxDraculaTheme} mode="dark">`. It is **dark-only** — Dracula dark is the brand, not a mode.
 - **Nothing to switch**: no presets, no light mode, no picker. The Settings dialog has two sections, About and Docs, and no appearance controls. Display mode is hardcoded; nothing about the theme is persisted to `localStorage`.
 - **Custom CSS**: a top-level `custom-css-file: ./custom.css` (path relative to `config.yml`'s directory) is served with the theme and injected last so it wins. This is the only supported appearance override.
 - **No config theme block**: a `theme:` key is a validation error (`config.theme: block removed …`). Delete it; hoist a custom stylesheet to `custom-css-file:`. Run `bun run check-config` to confirm.
