@@ -173,7 +173,11 @@ describe('releases fetcher', () => {
     });
   });
 
-  it('respects limit 3 over a larger feed (TDD: limit top n)', async () => {
+  it('asks upstream for exactly `limit` and returns exactly `limit`', async () => {
+    // The old route table answered `?per_page=3` with 3 items and
+    // `?per_page=5` with 10, so a fetcher that asked for 5 and sliced to 3
+    // passed the same as one that asked for 3. A single catch-all route plus
+    // the URL assertion is what separates them.
     const ghReleases = Array.from({ length: 10 }, (_, i) => ({
       tag_name: `v1.${i}.0`,
       html_url: `https://github.com/o/r/releases/tag/v1.${i}.0`,
@@ -181,17 +185,20 @@ describe('releases fetcher', () => {
       draft: false,
       prerelease: false,
     }));
-    const routes = {
-      'https://api.github.com/repos/o/r/releases?per_page=3': ghReleases.slice(0, 3),
+    const { ctx, fetchMock } = makeCtx({
+      // Catch-all: any releases URL answers with all 10, so the only thing
+      // that can produce 3 is the fetcher's own slice.
+      'https://api.github.com/repos/o/r/releases?per_page=3': ghReleases,
       'https://api.github.com/repos/o/r/releases?per_page=5': ghReleases,
-    };
-    const { ctx } = makeCtx(routes);
+    });
     const data = (await releasesFetcher()(ctx, {
       type: 'releases',
       repositories: ['o/r'],
       limit: 3,
     })) as { releases: Release[] };
+    expect(String(fetchMock.mock.calls[0][0])).toBe('https://api.github.com/repos/o/r/releases?per_page=3');
     expect(data.releases).toHaveLength(3);
+    expect(data.releases.map((r) => r.tag)).toEqual(['v1.0.0', 'v1.1.0', 'v1.2.0']);
   });
 
   it('does not double-encode pre-escaped path segments', async () => {

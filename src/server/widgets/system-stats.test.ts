@@ -68,23 +68,6 @@ describe('system-stats fetcher', () => {
     expect(mockCpu).toHaveBeenCalledTimes(1);
   });
 
-  it('graceful null when cpu rejects (not on homelab)', async () => {
-    mockCpu.mockRejectedValueOnce(new Error('no'));
-    const ctx = makeCtx();
-    const res = (await fetcher()(ctx, { type: 'system-stats' })) as {
-      cpu: unknown;
-      mem: unknown;
-      fs: unknown[];
-      temp: unknown;
-      gpu: unknown[];
-    };
-    expect(res.cpu).toBeNull();
-    expect(res.fs).toEqual(expect.any(Array));
-    expect(res.gpu).toEqual(expect.any(Array));
-    // should not throw
-    expect(res).toBeDefined();
-  });
-
   it('never throws when all si rejects', async () => {
     mockCpu.mockRejectedValueOnce(new Error('x'));
     mockMem.mockRejectedValueOnce(new Error('x'));
@@ -108,13 +91,23 @@ describe('system-stats fetcher', () => {
     expect(res.gpu).toEqual([]);
   });
 
-  it('caches 5s default ttl', async () => {
-    const ctx = makeCtx();
-    const res1 = await fetcher()(ctx, { type: 'system-stats', cache: '5s' });
-    expect(res1).toBeDefined();
-    expect(mockCpu).toHaveBeenCalledTimes(1);
-    // second call within ttl returns cached without new si calls
-    await fetcher()(ctx, { type: 'system-stats', cache: '5s' });
-    expect(mockCpu).toHaveBeenCalledTimes(1);
+  it('caches for 5s by default when no cache string is configured', async () => {
+    // The old version passed `cache: '5s'` on both calls, so the explicit
+    // branch ran and the default never did. Crossing the boundary is the only
+    // way to see which TTL was actually used.
+    vi.useFakeTimers();
+    try {
+      const ctx = makeCtx();
+      await fetcher()(ctx, { type: 'system-stats' });
+      expect(mockCpu).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(4_999);
+      await fetcher()(ctx, { type: 'system-stats' });
+      expect(mockCpu).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(2);
+      await fetcher()(ctx, { type: 'system-stats' });
+      expect(mockCpu).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

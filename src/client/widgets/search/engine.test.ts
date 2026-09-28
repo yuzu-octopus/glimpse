@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { ENGINE_PRESETS, listBangs, resolveEngine, resolveSearch } from './engine';
-import { bangs as heliumBangs } from '../../../shared/widgets/bangs';
 
 describe('search engine', () => {
   it('resolveSearch gh query => github url', () => {
@@ -64,16 +63,24 @@ describe('search engine', () => {
     expect(url).toBe('https://foo.com/?q=bar');
   });
 
-  it('target:_self by default, _blank when newTab', () => {
+  it('opens in a new tab by default, and honours newTab and an explicit target', () => {
     expect(resolveSearch('hello').target).toBe('_blank');
     expect(resolveSearch('hello', { newTab: false }).target).toBe('_self');
     expect(resolveSearch('hello', { newTab: true }).target).toBe('_blank');
     expect(resolveSearch('hello', { newTab: true, target: '_top' }).target).toBe('_top');
+    // The documented precedence: an explicit `newTab: false` is a hard
+    // "same tab" and outranks a configured target, while `newTab: true` with
+    // no target still lands on the _blank default.
+    expect(resolveSearch('hello', { newTab: false, target: '_top' }).target).toBe('_self');
+    expect(resolveSearch('hello', { target: '_top' }).target).toBe('_top');
   });
 
-  it('listBangs defaults to helium', () => {
-    expect(listBangs().length).toBe(heliumBangs.length);
-    expect(listBangs([]).length).toBe(heliumBangs.length);
+  it('listBangs defaults to helium, and an empty custom list falls back to it', () => {
+    // `listBangs()` returns the helium constant by identity, so comparing
+    // lengths is a tautology that still passes on an empty default. Assert a
+    // member instead.
+    expect(listBangs().map((b) => b.shortcut)).toContain('gh');
+    expect(listBangs([]).map((b) => b.shortcut)).toContain('gh');
   });
 
   it('listBangs returns custom when non-empty', () => {

@@ -27,10 +27,6 @@ const fetcher = () => serverWidgets.get('change-detection')!;
 const URL = 'https://example.com/prices';
 
 describe('change-detection fetcher', () => {
-  it('registers a fetcher', () => {
-    expect(fetcher()).toBeDefined();
-  });
-
   it('reports unchanged on first sight, then detects a change with a snippet', async () => {
     const { ctx } = makeCtx({ [URL]: '<html><body><p>price: $10</p></body></html>' });
     const cfg = { type: 'change-detection', urls: [URL] };
@@ -61,15 +57,46 @@ describe('change-detection fetcher', () => {
   });
 
   it('keeps the stored hash and prior changedAt on network error', async () => {
+    // The test name promises two things and the naive version asserts neither:
+    // `changedAt` is null for the whole run, and nothing checks that the hash
+    // survived. A fetcher that dropped the cache entry in its catch would
+    // report `unchanged` forever and never detect a real change again.
     const { ctx } = makeCtx({ [URL]: '<html><body>v1</body></html>' });
     const cfg = { type: 'change-detection', urls: [URL] };
     await fetcher()(ctx, cfg);
+    const key = `change-detection:${URL}:`;
+    const seeded = ctx.cache.get<{ hash: string; changedAt: string | null }>(key)!;
+
+    // Seed a prior detection so "prior changedAt" is something to preserve.
+    const priorAt = '2026-01-02T03:04:05.000Z';
+    const withPrior = { ...seeded, changedAt: priorAt };
     const { ctx: failing } = makeCtx({}, [URL]);
-    const prev = ctx.cache.get(`change-detection:${URL}:`);
-    failing.cache.set(`change-detection:${URL}:`, prev, 1000);
+    // A long TTL: the failing poll burns real retry backoff before it returns,
+    // so a 1s seed would be gone by the time the next poll reads it.
+    failing.cache.set(key, withPrior, 3_600_000);
     await expect(fetcher()(failing, cfg)).resolves.toEqual([
-      { url: URL, changed: false, changedAt: null },
+      { url: URL, changed: false, changedAt: priorAt },
     ]);
+
+    // The entry the failing poll left behind still carries v1's hash.
+    const { ctx: after } = makeCtx({ [URL]: '<html><body>v1</body></html>' });
+    after.cache.set(key, failing.cache.get(key), 3_600_000);
+    await expect(fetcher()(after, cfg)).resolves.toEqual([
+      { url: URL, changed: false, changedAt: priorAt },
+    ]);
+
+    // So the next real change is still detected rather than reported as the
+    // first sight.
+    const { ctx: changedCtx } = makeCtx({ [URL]: '<html><body>v2</body></html>' });
+    changedCtx.cache.set(key, failing.cache.get(key), 3_600_000);
+    const res = (await fetcher()(changedCtx, cfg)) as Array<{
+      changed: boolean;
+      changedAt: string | null;
+      diffSnippet?: string;
+    }>;
+    expect(res[0].changed).toBe(true);
+    expect(res[0].changedAt).toEqual(expect.any(String));
+    expect(res[0].diffSnippet).toContain('v2');
   });
 
   it('watches only the selected element when selector is set', async () => {
@@ -92,8 +119,12 @@ describe('change-detection fetcher', () => {
   });
 
   it('requires at least one url', async () => {
+    // A bare toThrow would pass on any crash; the contract is that the config
+    // is rejected by the schema before a request goes out.
     const { ctx } = makeCtx({});
-    await expect(fetcher()(ctx, { type: 'change-detection', urls: [] })).rejects.toThrow();
+    await expect(fetcher()(ctx, { type: 'change-detection', urls: [] })).rejects.toThrow(
+      /Too small: expected array to have >=1 items/,
+    );
   });
 });
 

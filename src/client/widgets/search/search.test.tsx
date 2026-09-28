@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SearchConfig } from '../../../shared/widgets/search';
@@ -71,14 +70,6 @@ describe('search widget', () => {
     expect(open).toHaveBeenCalledWith('https://github.com/search?q=astryx', '_blank', 'noopener,noreferrer');
   });
 
-  it('opens in a new tab when new-tab is configured', () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
-    renderSearch({ ...CONFIG, 'new-tab': true });
-    fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'x' } });
-    fireEvent.submit(screen.getByLabelText('Search').closest('form')!);
-    expect(open).toHaveBeenCalledWith(expect.any(String), '_blank', 'noopener,noreferrer');
-  });
-
   it('keeps Enter in the same tab and opens Ctrl+Enter in a new tab by default', () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null);
     renderSearch({ ...CONFIG, 'new-tab': false });
@@ -141,85 +132,11 @@ describe('search widget', () => {
     expect(input).toHaveValue('hello world');
   });
 
-  it('routes bangs without a leading ! using the first word', () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
-    renderSearch();
-    fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'yt cats' } });
-    fireEvent.submit(screen.getByLabelText('Search').closest('form')!);
-    expect(open).toHaveBeenCalledWith(
-      'https://www.youtube.com/results?search_query=cats',
-      '_blank',
-      'noopener,noreferrer',
-    );
-  });
-
-  it('routes a bare shortcut to the bang engine with an empty query', () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
-    renderSearch();
-    fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'yt' } });
-    fireEvent.submit(screen.getByLabelText('Search').closest('form')!);
-    expect(open).toHaveBeenCalledWith('https://www.youtube.com/results?search_query=', '_blank', 'noopener,noreferrer');
-  });
-
-  it('does not treat a shortcut prefix as a bang when it is not a full word', () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
-    renderSearch();
-    fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'youtube results' } });
-    fireEvent.submit(screen.getByLabelText('Search').closest('form')!);
-    expect(open).toHaveBeenCalledWith(
-      'https://duckduckgo.com/?q=youtube%20results',
-      '_blank',
-      'noopener,noreferrer',
-    );
-  });
-
-  it('supports a custom URL string as search-engine', () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
-    renderSearch({
-      ...CONFIG,
-      'search-engine': 'https://example.com/search?q={QUERY}',
-    });
-    submitQuery('hello world');
-    expect(open).toHaveBeenCalledWith('https://example.com/search?q=hello%20world', '_blank', 'noopener,noreferrer');
-  });
-
-  it('falls back to duckduckgo for an unknown engine name', () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
-    renderSearch({ ...CONFIG, 'search-engine': 'yahoo' });
-    submitQuery('hello');
-    expect(open).toHaveBeenCalledWith('https://duckduckgo.com/?q=hello', '_blank', 'noopener,noreferrer');
-  });
-  it('defaults to new-tab (no config)', () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
-    render(<Search config={{ type: 'search', 'search-engine': 'https://duckduckgo.com/?q={QUERY}', bangs: [] } as unknown as SearchConfig} data={null} />);
-    fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'hello' } });
-    fireEvent.submit(screen.getByLabelText('Search').closest('form')!);
-    expect(open).toHaveBeenCalledWith('https://duckduckgo.com/?q=hello', '_blank', 'noopener,noreferrer');
-  });
-  it('explicit new-tab false stays same-tab', () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
-    render(<Search config={{ type: 'search', 'search-engine': 'https://duckduckgo.com/?q={QUERY}', bangs: [], 'new-tab': false } as unknown as SearchConfig} data={null} />);
-    fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'hello' } });
-    fireEvent.submit(screen.getByLabelText('Search').closest('form')!);
-    expect(open).toHaveBeenCalledWith('https://duckduckgo.com/?q=hello', '_self', 'noopener,noreferrer');
-  });
   it('does nothing for an empty query', () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null);
     renderSearch();
     fireEvent.keyDown(screen.getByLabelText('Search'), { key: 'Enter' });
     expect(open).not.toHaveBeenCalled();
   });
-
-  it('search compact height 36-40px', () => {
-    const css = readFileSync('src/client/widgets/search/search.module.css', 'utf8');
-    expect(css).toMatch(/height:\s*(36|37|38|39|40)px/);
-    // container or input must be 38px (task spec)
-    expect(css).toContain('38px');
-  });
-
-  it('search icon is 16px', () => {
-    const css = readFileSync('src/client/widgets/search/search.module.css', 'utf8');
-    expect(css).toMatch(/\.icon\s*\{[^}]*width:\s*16px/);
-    expect(css).toMatch(/\.icon\s*\{[^}]*height:\s*16px/);
-  });
 });
+

@@ -39,8 +39,10 @@ const baseConfig = { type: 'dns-stats', title: 'DNS', url: 'http://pi.local' } a
 describe('DnsStats client', () => {
   it('renders totals: QUERIES/BLOCKED/DOMAINS when responseTime is 0', () => {
     render(<DnsStatsWidget config={baseConfig} data={sample({ responseTime: 0, domainsBlocked: 50_000 })} />);
-    expect(screen.getAllByText('QUERIES').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('BLOCKED').length).toBeGreaterThan(0);
+    // One in the totals row, one in each of the 8 per-bar tips. A
+    // `toBeGreaterThan(0)` here pinned neither the count nor the structure.
+    expect(screen.getAllByText('QUERIES')).toHaveLength(9);
+    expect(screen.getAllByText('BLOCKED')).toHaveLength(9);
     expect(screen.getByText('DOMAINS')).toBeInTheDocument();
     expect(screen.getByTestId('dns-total').textContent).toMatch(/1,234/);
     expect(screen.getByTestId('dns-blocked').textContent).toBe('23%');
@@ -99,18 +101,14 @@ describe('DnsStats client', () => {
     expect(cols[1]).not.toHaveAttribute('data-active');
   });
 
-  it('never dims the headline totals, and reaches every bar through all three channels', () => {
+  it('never dims the headline totals, and never dims the unfocused bars', () => {
     // The channels and the totals dim are CSS-only, so the stylesheet is the
-    // surface under test: :hover (pointer), :focus-visible (keyboard),
-    // [data-active] (tap). Every reveal rule shares that one group.
+    // surface under test. Asserting the *prohibition* is the point — the three
+    // reveal channels (:hover, :focus-visible, [data-active]) are already
+    // covered behaviourally by the tap and Escape tests above, and pinning
+    // their exact selector spelling would fire on a reformat.
     expect(css).not.toMatch(/\.totals[^{]*\{[^}]*opacity:\s*0?\.1/);
     expect(css).not.toContain(':has(.column:hover) .totals');
-    expect(css).toContain('.column:is(:hover, :focus-visible, [data-active]) .tip {');
-    expect(css).toContain('.column:is(:hover, :focus-visible, [data-active]) .bar {');
-    expect(css).toContain('.column:is(:hover, :focus-visible, [data-active])::before {');
-    // the axis label retires the rest through the same three channels
-    expect(css).toContain('.columns:has(.column:is(:hover, :focus-visible, [data-active]))');
-    expect(css).toContain('.column:not(:is(:hover, :focus-visible, [data-active])) .time {');
     expect(css).not.toContain('.columns:hover .column:not(:hover) .time');
   });
 
@@ -149,9 +147,13 @@ describe('DnsStats client', () => {
     expect(screen.queryByTestId('dns-details')).not.toBeInTheDocument();
   });
 
-  it('shows loading chrome when isLoading', () => {
-    render(<DnsStatsWidget config={baseConfig} data={null} isLoading />);
+  it('suppresses a real payload while loading', () => {
+    // `data={null}` would take the early return anyway, and the `!d` fallback
+    // also omits dns-root — so the original assertion could not fail. Real
+    // data is what isLoading has to suppress.
+    render(<DnsStatsWidget config={baseConfig} data={sample()} isLoading />);
     expect(screen.queryByTestId('dns-root')).not.toBeInTheDocument();
+    expect(screen.getByTestId('widget-loading')).toBeInTheDocument();
   });
 
   it('surfaces error', () => {

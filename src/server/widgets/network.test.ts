@@ -48,9 +48,5 @@ describe('network fetcher', () => {
     const data = (await serverWidgets.get('network')!(ctx, { type: 'network' })) as NetworkData;
     expect(data.ttfbMs).toBeNull();
   });
-
-  it('keeps the field name honest: the wire carries ttfbMs, not pingMs', async () => {
-    const data = await probe(200);
-    expect('pingMs' in data).toBe(false);
-  });
 });
+

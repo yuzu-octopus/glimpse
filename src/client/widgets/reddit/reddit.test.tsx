@@ -37,11 +37,18 @@ describe('reddit widget', () => {
   });
 
   it('renders thumbnails and flair only when enabled', () => {
-    const { container } = render(
+    const { container, rerender } = render(
       <Reddit config={{ type: 'reddit', subreddit: 'test', 'show-thumbnails': true, 'show-flairs': true }} data={{ posts }} />,
     );
     expect(container.querySelectorAll('img')).toHaveLength(1);
     expect(screen.getByText('Discussion')).toBeInTheDocument();
+    // The "only when" half: with both flags off the same payload must render
+    // no pictures and no flair.
+    rerender(
+      <Reddit config={{ type: 'reddit', subreddit: 'test', 'show-thumbnails': false, 'show-flairs': false }} data={{ posts }} />,
+    );
+    expect(container.querySelectorAll('img')).toHaveLength(0);
+    expect(screen.queryByText('Discussion')).toBeNull();
   });
 
   it('renders vertical cards with score meta and horizontal cards as plain cards', () => {
@@ -55,12 +62,15 @@ describe('reddit widget', () => {
     );
     expect(container.querySelectorAll('img')).toHaveLength(1);
     expect(screen.getByText('First post title')).toBeInTheDocument();
+    // Plain cards drop the score meta the vertical style carries.
+    expect(screen.queryAllByText(/points/)).toHaveLength(0);
   });
 
-  it('renders an empty chrome without crashing on empty data', () => {
-    const { container } = render(<Reddit config={{ type: 'reddit', subreddit: 'test' }} data={{ posts: [] }} />);
-    expect(container.querySelector('[data-testid="widget-body"]')).toBeInTheDocument();
-    expect(screen.queryByText('First post title')).toBeNull();
+  it('shows the empty-state copy rather than a blank card', () => {
+    render(<Reddit config={{ type: 'reddit', subreddit: 'test' }} data={{ posts: [] }} />);
+    // `widget-body` is unconditional in WidgetChrome, so the old assertion
+    // could only fail on a crash.
+    expect(screen.getByText('No posts')).toBeInTheDocument();
   });
 
   it('renders Reddit as a source header when enabled and no explicit title', () => {

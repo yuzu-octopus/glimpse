@@ -68,9 +68,13 @@ describe('SystemStats client', () => {
     expect(screen.queryByRole('meter', { name: 'GPU load' })).toBeNull();
   });
 
-  it('renders loading chrome when isLoading', () => {
-    render(<SystemStats config={baseConfig} data={null} isLoading />);
-    // placeholder not shown when loading; Chrome shows skeleton (no rows)
+  it('suppresses a real payload while loading', () => {
+    render(<SystemStats config={baseConfig} data={sampleData} isLoading />);
+    // Asserting only the absent placeholder passes for a renderer that emits
+    // nothing at all. The skeleton and the suppressed meters are the
+    // consumer-visible pair.
+    expect(screen.getByTestId('widget-loading')).toBeInTheDocument();
+    expect(screen.queryByRole('meter', { name: 'CPU load' })).toBeNull();
     expect(screen.queryByText('No data — not running on homelab host')).not.toBeInTheDocument();
   });
 });

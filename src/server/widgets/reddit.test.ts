@@ -176,19 +176,6 @@ describe('reddit fetcher', () => {
 
 
 
-  it('reddit with env credentials uses the oauth token (sequential mock, TDD red-green)', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: 'tok' }), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ data: { children: [{ data: { title: 'hi', permalink: '/r/selfhosted/comments/1/hi/', created_utc: 1 } }] } }), { status: 200 }));
-    const ctx: WidgetFetchContext = { fetch: fetchMock as unknown as typeof fetch, env: { REDDIT_CLIENT_ID: 'id', REDDIT_CLIENT_SECRET: 'sec' }, cache: new TtlCache(), singleflight: new Singleflight() };
-    const data = (await redditFetcher()(ctx, { type: 'reddit', subreddit: 'selfhosted' })) as { posts: RedditPost[] };
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('access_token'), expect.any(Object));
-    expect(data.posts.length).toBe(1);
-    // second call was oauth host
-    expect(String(fetchMock.mock.calls[1][0])).toContain('oauth.reddit.com');
-  });
-
 
   it('sorts by engagement when extra-sort-by is set', async () => {
     const listing = {

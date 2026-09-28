@@ -44,9 +44,22 @@ describe('change-detection widget', () => {
     expect(screen.getByText('unchanged')).toBeInTheDocument();
   });
 
-  it('renders nothing but chrome while loading', () => {
-    render(<ChangeDetection config={{ type: 'change-detection' }} data={null} isLoading />);
+  it('suppresses real rows while loading', () => {
+    // `data={null}` would make this pass even with the loading branch deleted:
+    // there would be no links either way. Real rows are what `isLoading` has
+    // to suppress.
+    render(
+      <ChangeDetection
+        config={{ type: 'change-detection' }}
+        data={[
+          { url: 'https://example.com/a', changed: false, changedAt: null },
+          { url: 'https://example.com/b', changed: true, changedAt: '2026-01-01T00:00:00Z', diffSnippet: 'price: $12' },
+        ]}
+        isLoading
+      />,
+    );
     expect(screen.queryByRole('link')).toBeNull();
+    expect(screen.getByTestId('widget-loading')).toBeInTheDocument();
   });
 
   it('surfaces fetch errors via chrome', () => {

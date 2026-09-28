@@ -50,7 +50,7 @@ describe('todo widget', () => {
   });
 
   it('prepends tasks added with Ctrl+Enter, Enter still appends', () => {
-    const { container } = renderTodo();
+    renderTodo();
     const input = screen.getByLabelText('New task');
 
     fireEvent.change(input, { target: { value: 'bottom' } });
@@ -60,9 +60,10 @@ describe('todo widget', () => {
     fireEvent.change(input, { target: { value: 'middle' } });
     fireEvent.keyDown(input, { key: 'Enter' });
 
-    const texts = Array.from(container.querySelectorAll('[class*="itemText"]')).map(
-      (el) => el.textContent,
-    );
+    // By test id, not by a `[class*="itemText"]` substring: the renderer
+    // already emits data-testid="todo-item-text", and a substring match on a
+    // CSS-module class breaks on any hashing change.
+    const texts = screen.getAllByTestId('todo-item-text').map((el) => el.textContent);
     expect(texts).toEqual(['top', 'bottom', 'middle']);
   });
 

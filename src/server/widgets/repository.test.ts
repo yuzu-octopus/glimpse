@@ -127,11 +127,14 @@ describe('repository fetcher', () => {
     expect(fetchMock2.mock.calls.map((c) => c[0])).toContain(`${REPO_URL}/commits?per_page=3`);
   });
 
-  it('throws on missing repo (404)', async () => {
+  it('throws a sanitized message on missing repo (404)', async () => {
+    // The contract is `HTTP ${status} for ${sanitizeUrl(url)}` — the message
+    // reaches payload.error in the browser, so a bare toThrow would pass on
+    // any rejection at all.
     const { ctx } = makeCtx({});
     await expect(
       repositoryFetcher()(ctx, { type: 'repository', repository: 'acme/missing' }),
-    ).rejects.toThrow();
+    ).rejects.toThrow('HTTP 404 for https://api.github.com/repos/acme/missing');
   });
 
   it('takes no token — the config value is stripped, GITHUB_TOKEN wins', async () => {

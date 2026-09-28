@@ -96,7 +96,10 @@ describe('schema defaults', () => {
     }).join('');
     const { ctx } = makeCtx(html);
     const data = (await fetcher()(ctx, { type: 'contribution-graph', username: 'octocat' })) as ContributionGraphData;
-    expect(data.days.at(-1)?.date).toBe('2024-02-04');
+    // The default has to be pinned by length: `days.at(-1)` is the last cell
+    // of the input for any limit >= 1, so it would pass with a default of 1.
+    expect(data.days).toHaveLength(52 * 7);
+    expect(data.days[0].date).toBe('2023-02-06');
   });
 });
 

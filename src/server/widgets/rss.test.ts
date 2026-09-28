@@ -61,14 +61,20 @@ describe('rss fetcher', () => {
       type: 'rss',
       feeds: [{ url: 'https://example.com/ok' }, { url: 'https://example.com/broken' }],
     })) as { items: RssItem[] };
-    expect(data.items.length).toBeGreaterThan(0);
+    // The one healthy feed contributes exactly its items, newest first.
+    // `toBeGreaterThan(0)` would pass even if a single failing feed poisoned
+    // the batch and only one item survived.
+    expect(data.items).toHaveLength(2);
+    expect(data.items.map((i) => i.title)).toEqual(['Second post', 'First post']);
   });
 
   it('throws when every feed fails', async () => {
+    // The message is the contract: a bare toThrow would equally pass on a
+    // config error or a schema rejection.
     const ctx = makeCtx(async () => new Response('nope', { status: 500 }));
     await expect(
       rssFetcher()(ctx, { type: 'rss', feeds: [{ url: 'https://example.com/x' }] }),
-    ).rejects.toThrow();
+    ).rejects.toThrow('all RSS feeds failed to load');
   });
 
   it('extracts categories per item', async () => {

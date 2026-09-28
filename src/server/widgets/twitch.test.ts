@@ -24,12 +24,18 @@ const GAMES = {
     { id: '1', name: 'Just Chatting', box_art_url: 'https://img/chat-{width}x{height}.jpg' },
     { id: '2', name: 'League of Legends', box_art_url: 'https://img/lol-{width}x{height}.jpg' },
     { id: '3', name: 'Music', box_art_url: 'https://img/music-{width}x{height}.jpg' },
+    { id: '4', name: 'Art', box_art_url: 'https://img/art-{width}x{height}.jpg' },
+    { id: '5', name: 'Chess', box_art_url: 'https://img/chess-{width}x{height}.jpg' },
   ],
 };
 
-function makeCtx(): WidgetFetchContext {
+/** The ctx plus the URLs it was asked for, so a test can pin the upstream
+ *  query a fetcher built — the only way to see over-fetching at all. */
+function makeCtx(): WidgetFetchContext & { calls: string[] } {
+  const calls: string[] = [];
   const fetchImpl = async (url: string | URL | Request): Promise<Response> => {
     const u = String(url);
+    calls.push(u);
     if (u.includes('oauth2/token')) return new Response(JSON.stringify(TOKEN), { status: 200 });
     if (u.includes('/helix/users')) return new Response(JSON.stringify(USERS), { status: 200 });
     if (u.includes('/helix/streams')) return new Response(JSON.stringify(STREAMS), { status: 200 });
@@ -41,6 +47,7 @@ function makeCtx(): WidgetFetchContext {
     env: { TWITCH_CLIENT_ID: 'id', TWITCH_CLIENT_SECRET: 'secret' },
     cache: new TtlCache(),
     singleflight: new Singleflight(),
+    calls,
   };
 }
 
@@ -85,10 +92,6 @@ describe('twitch-channels fetcher', () => {
 });
 
 describe('twitch-top-games fetcher', () => {
-  it('registers a fetcher', () => {
-    expect(games()).toBeDefined();
-  });
-
   it('maps box art templates and fills rank order', async () => {
     const data = (await games()(makeCtx(), { type: 'twitch-top-games', limit: 2 })) as TwitchTopGamesData;
     expect(data).toHaveLength(2);
@@ -97,11 +100,20 @@ describe('twitch-top-games fetcher', () => {
     expect(data[0].url).toBe('https://www.twitch.tv/directory/category/just-chatting');
   });
 
-  it('drops excluded slugs', async () => {
-    const data = (await games()(makeCtx(), {
-      type: 'twitch-top-games', limit: 3, exclude: ['just-chatting', 'music'],
+  it('over-fetches by the exclude count so the list still fills the limit', async () => {
+    // The fetcher asks Twitch for `min(100, limit + excluded)` games, so
+    // excluding 2 of 5 still shows 3. With a 3-game fixture over-fetching and
+    // not over-fetching produce identical output and the regression is
+    // invisible; the upstream `first` is what tells them apart.
+    const ctx = makeCtx();
+    const data = (await games()(ctx, {
+      type: 'twitch-top-games',
+      limit: 3,
+      exclude: ['just-chatting', 'music'],
     })) as TwitchTopGamesData;
-    expect(data.map((g) => g.name)).toEqual(['League of Legends']);
+    // 3 wanted + 2 excluded = 5 asked for.
+    expect(ctx.calls).toContain('https://api.twitch.tv/helix/games/top?first=5');
+    expect(data.map((g) => g.name)).toEqual(['League of Legends', 'Art', 'Chess']);
   });
 
   it('throws without client credentials', async () => {

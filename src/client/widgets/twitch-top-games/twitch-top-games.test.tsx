@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import TwitchTopGames from './index';
 import type { TwitchTopGamesData } from '../../../shared/widgets/payloads';
@@ -20,7 +20,11 @@ describe('twitch-top-games widget', () => {
 
   it('collapses beyond collapse-after until "Show more" is clicked', () => {
     render(<TwitchTopGames config={{ type: 'twitch-top-games', 'collapse-after': 1 }} data={games} />);
-    expect(screen.getByText(/Show more \(1\)/)).toBeInTheDocument();
+    // Asserting the label alone passed even if the collapse stopped
+    // truncating entirely.
+    expect(screen.queryByText('League of Legends')).toBeNull();
+    fireEvent.click(screen.getByText(/Show more \(1\)/));
+    expect(screen.getByText('League of Legends')).toBeInTheDocument();
   });
 
   it('survives empty data and surfaces errors', () => {

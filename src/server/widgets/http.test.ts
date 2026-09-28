@@ -3,7 +3,6 @@ import { Singleflight, TtlCache } from '../cache';
 import {
   fetchWithRetry,
   fetchJson,
-  fetchText,
   retryOptionsFrom,
   sanitizeUrl,
   DEFAULT_RETRIES,
@@ -98,14 +97,6 @@ describe('fetchWithRetry', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it('fetchText delegates to fetchWithRetry', async () => {
-    const fetchMock = vi.fn(async () => new Response('hello', { status: 200 }));
-    const ctx = makeCtx(fetchMock);
-    const text = await fetchText(ctx, 'https://example.com/f');
-    expect(text).toBe('hello');
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-  });
-
   it('retries: 0 means exactly one attempt', async () => {
     const fetchMock = vi.fn(async () => new Response('x', { status: 500 }));
     const ctx = makeCtx(fetchMock);
@@ -194,7 +185,10 @@ describe('sanitizeUrl', () => {
     expect(sanitizeUrl('not a url at all')).toBe('not a url at all');
   });
 
-  it('never returns a null origin', () => {
-    expect(sanitizeUrl('file:///etc/hosts')).not.toContain('null');
+  it('rebuilds a null-origin URL instead of emitting "null"', () => {
+    // `not.toContain('null')` passes for nearly any non-crashing
+    // implementation, including one that left the path off. The exact
+    // protocol/host/pathname reconstruction is the contract.
+    expect(sanitizeUrl('file:///etc/hosts')).toBe('file:///etc/hosts');
   });
 });

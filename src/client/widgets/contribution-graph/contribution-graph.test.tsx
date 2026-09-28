@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import ContributionGraph from './index';
+import styles from './contribution-graph.module.css';
 
 const DAYS = [
   { date: '2024-01-01', count: 0, level: 0 as const },
@@ -17,11 +18,16 @@ describe('contribution-graph widget', () => {
     expect(screen.getByTitle('0 contributions on 2024-01-01')).toBeInTheDocument();
   });
 
-  it('shows total contributions and level ramp attributes', () => {
+  it('shows total contributions and colours each cell by its level', () => {
     render(<ContributionGraph config={{ type: 'contribution-graph', username: 'octocat' }} data={{ username: 'octocat', days: DAYS }} />);
     expect(screen.getByText('26 contributions')).toBeInTheDocument();
-    expect(screen.getByTestId('cell-2024-01-03')).toHaveAttribute('data-level', '2');
-    expect(screen.getByTestId('cell-2024-02-01')).toHaveAttribute('data-level', '4');
+    // The ramp class is what the user sees. `data-level` copies the payload
+    // field verbatim, so asserting it only proves the attribute exists.
+    // The class comes through the CSS-module proxy, so this tracks the class
+    // and survives a hash change.
+    expect(screen.getByTestId('cell-2024-01-03').className).toContain(styles.l2);
+    expect(screen.getByTestId('cell-2024-02-01').className).toContain(styles.l4);
+    expect(screen.getByTestId('cell-2024-01-01').className).toContain(styles.l0);
   });
 
   it('renders month labels when a week column starts a new month', () => {
@@ -34,9 +40,12 @@ describe('contribution-graph widget', () => {
     expect(screen.getByText('Feb')).toBeInTheDocument();
   });
 
-  it('renders nothing but chrome while loading', () => {
-    render(<ContributionGraph config={{ type: 'contribution-graph', username: 'octocat' }} data={null} isLoading />);
+  it('suppresses a real grid while loading', () => {
+    // `data={null}` would make this pass even with the loading branch deleted.
+    // Real data is what `isLoading` has to suppress.
+    render(<ContributionGraph config={{ type: 'contribution-graph', username: 'octocat' }} data={{ username: 'octocat', days: DAYS }} isLoading />);
     expect(screen.queryByTestId('contribution-grid')).toBeNull();
+    expect(screen.getByTestId('widget-loading')).toBeInTheDocument();
   });
 
   it('surfaces fetch errors via chrome', () => {

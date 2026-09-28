@@ -379,10 +379,65 @@ describe('ConfigSchema', () => {
     expect(raw).toMatch(/Minecraft[\s\S]*?limit:\s*9/);
   });
 
-  it('WidgetType has no twitch', () => {
-    const src = readFileSync('src/shared/widgets/keyed.ts', 'utf8');
-    expect(src).not.toMatch(/twitch-/);
-    expect(src).not.toMatch(/twitch\.ts/);
+  // This guard used to read `keyed.ts` and assert it held no `twitch`, written
+  // when twitch was being removed from the keyed family. It was vacuous: the
+  // `WidgetType` union is built from `schemaEntries` in `src/shared/widgets/index.ts`,
+  // not from that file, and keyed.ts never carried a twitch symbol — so the
+  // regex matched nothing no matter what the code did. The subject moved into
+  // `src/shared/widgets/twitch.ts` during that refactor and the guard was left
+  // behind. What is actually load-bearing now is the opposite claim: the twitch
+  // types are registered and a user config naming one must load.
+  it('accepts a twitch-channels widget with its channel list intact', () => {
+    const r = ConfigSchema.safeParse({
+      pages: [
+        {
+          name: 'H',
+          widgets: [
+            { type: 'twitch-channels', channels: ['xqc', 'shroud'], 'sort-by': 'live', 'collapse-after': -1 },
+          ],
+        },
+      ],
+    });
+    expect(r.success).toBe(true);
+    if (!r.success) return;
+    const w = r.data.pages[0].widgets![0];
+    if (w.type !== 'twitch-channels') throw new Error('expected a twitch-channels widget');
+    expect(w.channels).toEqual(['xqc', 'shroud']);
+    expect(w['sort-by']).toBe('live');
+  });
+
+  it('accepts a twitch-top-games widget at the limit boundaries', () => {
+    const page = (cfg: Record<string, unknown>) => ({
+      pages: [{ name: 'H', widgets: [{ type: 'twitch-top-games', ...cfg }] }],
+    });
+    expect(ConfigSchema.safeParse(page({ limit: 1 })).success).toBe(true);
+    expect(ConfigSchema.safeParse(page({ limit: 25 })).success).toBe(true);
+    // A twitch widget that collapses after fewer than every item would render
+    // an empty list behind a "show more" affordance, so 0 is out of range and
+    // -1 is the never-collapse sentinel.
+    expect(ConfigSchema.safeParse(page({ limit: 0 })).success).toBe(false);
+    expect(ConfigSchema.safeParse(page({ limit: 26 })).success).toBe(false);
+    expect(ConfigSchema.safeParse(page({ 'collapse-after': -1 })).success).toBe(true);
+    expect(ConfigSchema.safeParse(page({ 'collapse-after': -2 })).success).toBe(false);
+  });
+
+  it('rejects a twitch-channels widget with an empty channel list', () => {
+    // Empty is a config the user can only have written by accident, and it
+    // fetches nothing — a permanent empty widget with no way to tell it apart
+    // from an upstream failure.
+    const r = ConfigSchema.safeParse({
+      pages: [{ name: 'H', widgets: [{ type: 'twitch-channels', channels: [] }] }],
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it('rejects an unknown twitch sort-by', () => {
+    const r = ConfigSchema.safeParse({
+      pages: [
+        { name: 'H', widgets: [{ type: 'twitch-channels', channels: ['xqc'], 'sort-by': 'followers' }] },
+      ],
+    });
+    expect(r.success).toBe(false);
   });
 
   it('infers span 9/3 for full+small via ConfigSchema and resolveSpan', () => {

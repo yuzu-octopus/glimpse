@@ -81,10 +81,6 @@ const run = (ctx: WidgetFetchContext, config: Record<string, unknown>) =>
   fetcher()(ctx, config) as Promise<ModelEndpointsData>;
 
 describe('model-endpoints fetcher', () => {
-  it('registers a fetcher', () => {
-    expect(fetcher()).toBeDefined();
-  });
-
   it('maps status codes onto health, worst first', async () => {
     const { ctx } = makeCtx();
     const out = await run(ctx, { type: 'model-endpoints', models: [OPENAI] });
