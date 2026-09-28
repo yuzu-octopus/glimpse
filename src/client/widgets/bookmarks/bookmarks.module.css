@@ -1,4 +1,7 @@
-/* Glance bookmarks look: group headers + flat list rows (flex row, left-aligned). */
+/* Glance bookmarks look: group headers + flat list rows (flex row, left-aligned).
+   Each row is a kit ListItem, so it owns the flex line, the spacing, the
+   ellipsised label, the hover dim and the focus ring — nothing about the row
+   itself is left to declare here. Only the icon tile and the ↗ are local. */
 
 .group {
   /* glance .bookmarks-group: one colour per group, shared by the title and
@@ -27,52 +30,13 @@
   flex-direction: column;
 }
 
-.linkItem {
-  display: flex;
-  flex-direction: column;
-}
-
-/* row: icon left, title inline, gap 10px
- *
- * WCAG 2.5.8: without an icon the row collapses to the 20px body line box,
- * and the links stack at 0 gap, so every 24px circle centred on a title is
- * blocked by the sibling above and below it. The min-height is the whole
- * fix — the anchor box clears 24 on its own, no spacing exception needed.
- * Icon rows are already taller than that, so they keep their height. */
-.linkCard {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 24px;
-  text-decoration: none;
-  min-width: 0;
-}
-
-/* glance .bookmarks-link::after — the ↗ that says "this leaves the dashboard".
-   A flex item of its own, so it never squeezes the ellipsised title, and
-   flex-shrink: 0 keeps it whole in a narrow card. */
-.linkCard::after {
-  content: '↗';
-  margin-left: 0.5em;
+/* glance .bookmarks-link — the ↗ that says "this leaves the dashboard". It
+   rides in the item's end slot, so a long title truncates and the arrow
+   keeps its whole box in a narrow card, and it takes the group accent. */
+.arrow {
   position: relative;
   top: 0.15em;
   color: var(--bookmarks-group-color);
-  flex-shrink: 0;
-}
-
-/* glance .bookmarks-link-no-arrow: hide-arrow on the link or its group. */
-.linkNoArrow::after {
-  content: none;
-}
-
-/* flatten Astryx Text wrapper so icon + title become direct flex children */
-.linkCard > span {
-  display: contents !important;
-}
-
-/* The card is the anchor, so the title's accent follows the card's focus. */
-.linkCard:is(:hover, :focus-visible) .linkTitle {
-  color: var(--color-primary);
 }
 
 /* Icon tile. Its hue is hashed from the link's identity rather than its
@@ -120,25 +84,6 @@
  * with no fill, so on a dark-only theme they are invisible until inverted. */
 .iconAutoInvert {
   filter: invert(1);
-}
-
-.linkTitle {
-  min-width: 0;
-  font-size: var(--font-size-h4);
-  color: var(--color-text-highlight);
-  text-align: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.linkDesc {
-  font-size: var(--font-size-h6);
-  color: var(--color-text-paragraph);
-  text-align: left;
-  display: block;
-  white-space: normal;
-  word-break: break-word;
 }
 
 .empty {

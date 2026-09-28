@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { fmtNumber } from '../_helpers/fmtNumber';
-import { Link, Text } from '@astryxdesign/core';
+import { ListItem, Link } from '@astryxdesign/core';
 import { CircleDot, GitCommitHorizontal, GitPullRequest, Star } from 'lucide-react';
 import type { RepositoryConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
@@ -16,31 +16,26 @@ interface Row {
   lead: string;
   title: string;
   url: string;
-  meta?: ReactNode;
+  meta?: string | null;
 }
 
 const asRow = (p: RepoPull): Row => ({ lead: `#${p.number}`, title: p.title, url: p.url });
 
 /** glance repository.html puts the commit's author in a `title` and the age
  * beside the message; a tooltip is unreachable on a dashboard, so both become
- * a real supporting line. The age comes from the shared 60s ticker, so a
+ * the row's description line. The age comes from the shared 60s ticker, so a
  * widget left open keeps counting. */
-function CommitMeta({ author, date }: { author: string; date: string | null }) {
+function commitMeta(author: string, date: string | null): string | null {
   const age = useAge(date);
   const parts = [author.trim(), age ? `${age} ago` : null].filter(Boolean);
-  if (parts.length === 0) return null;
-  return (
-    <Text type="supporting" hasTabularNumbers className={styles.subMeta}>
-      {parts.join(' · ')}
-    </Text>
-  );
+  return parts.length === 0 ? null : parts.join(' · ');
 }
 
 const asCommitRow = (c: RepoCommit): Row => ({
   lead: c.sha,
   title: c.message,
   url: c.url,
-  meta: <CommitMeta author={c.author} date={c.date} />,
+  meta: commitMeta(c.author, c.date),
 });
 
 function SubList({ icon, label, rows }: { icon: ReactNode; label: string; rows: Row[] }) {
@@ -51,13 +46,23 @@ function SubList({ icon, label, rows }: { icon: ReactNode; label: string; rows: 
         {icon}
         <span>{label}</span>
       </div>
-      {rows.map((r) => (
-        <Link key={`${r.lead}::${r.url}`} href={r.url} target="_blank" className={styles.subRow} hasUnderline={false}>
-          <span className={styles.subNumber}>{r.lead} </span>
-          <span className={styles.subTitle}>{r.title}</span>
-          {r.meta}
-        </Link>
-      ))}
+      <ul className={styles.subRows}>
+        {rows.map((r) => (
+          <ListItem
+            key={`${r.lead}::${r.url}`}
+            href={r.url}
+            target="_blank"
+            startContent={<span className={styles.subNumber}>{r.lead}</span>}
+            label={r.title}
+            description={r.meta ?? undefined}
+            className={styles.subRow}
+            // glance's rows are a dense 2px pad, not the item's spacing token.
+            // StyleX compiles its classes with a specificity layer a CSS
+            // module cannot beat, so this one value rides inline.
+            style={{ padding: '2px 0' }}
+          />
+        ))}
+      </ul>
     </div>
   );
 }

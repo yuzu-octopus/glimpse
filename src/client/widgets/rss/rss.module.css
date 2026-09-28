@@ -10,18 +10,12 @@
   padding-bottom: 7px;
 }
 
-/* glance .card.widget-content-frame */
+/* glance .card.widget-content-frame — the frame, radius and clip are the
+   ClickableCard's now; only the fixed tile width and snap point are local. */
 .card {
   flex: 0 0 150px;
   scroll-snap-align: start;
-  display: flex;
-  flex-direction: column;
   min-width: 0;
-  text-decoration: none;
-  background: var(--color-widget-background);
-  border: 1px solid var(--color-widget-content-border);
-  border-radius: var(--border-radius);
-  overflow: hidden;
 }
 
 .cardThumb {
@@ -63,7 +57,6 @@
 .cardContent {
   display: flex;
   flex-direction: column;
-  flex: 1;
   min-width: 0;
   padding: 0 10px 10px;
 }
@@ -92,18 +85,15 @@
   color: var(--color-text-base-muted);
 }
 
-/* glance .rss-card-2 */
+/* glance .rss-card-2 — the tile's own size and snap point; the frame is the
+   ClickableCard's. It is also the containing block the gradient, the
+   full-bleed thumb and the caption are positioned against. */
 .card2 {
   position: relative;
   flex: 0 0 150px;
   scroll-snap-align: start;
   min-width: 0;
   height: 270px;
-  text-decoration: none;
-  background: var(--color-widget-background);
-  border: 1px solid var(--color-widget-content-border);
-  border-radius: var(--border-radius);
-  overflow: hidden;
 }
 
 .card2::before {

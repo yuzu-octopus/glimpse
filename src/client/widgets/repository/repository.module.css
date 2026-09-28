@@ -49,14 +49,22 @@
 
 /* glance: hr margin-block-8 between sections */
 .subList {
-  display: grid;
-  /* Same containment as .header: without an explicit track the implicit
-   * `auto` column took the max-content width of the nowrap PR titles
-   * (measured overflowing the card by up to 937px). */
-  grid-template-columns: minmax(0, 1fr);
-  gap: 2px;
   padding: 8px 0;
   border-top: 1px solid var(--color-separator);
+  min-width: 0;
+}
+
+/* An implicit `auto` track is sized to its items' max-content, so the nowrap
+   PR titles grew the column past the card (measured by up to 937px).
+   minmax(0, 1fr) pins the track to the card and lets each row's own
+   ellipsis clamp do its job. */
+.subRows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
   min-width: 0;
 }
 
@@ -74,35 +82,12 @@
   margin-bottom: 4px;
 }
 
+/* glance list-horizontal-text: the row is a kit ListItem — the number is its
+   start slot, the title its label and a commit's second line its
+   description, so only the width containment is left local. The dense
+   vertical rhythm rides inline, where it can beat the kit's own padding. */
 .subRow {
-  display: flex;
   min-width: 0;
-  padding: 2px 0;
-  text-decoration: none;
-}
-
-/* astryx's Link nests its children in a single span, and that span is the
-   row's only flex item. Left alone its automatic minimum size is the
-   max-content width of the nowrap title, so the row ran 400-780px past a
-   300px card and .subTitle's ellipsis clamp — inline inside the wrapper —
-   never fired. Constrain the wrapper and let it carry the number/title
-   baseline the row was written for. It is a grid, not a flex line, so a
-   commit's author and age can take a second row under the title. */
-.subRow > * {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: baseline;
-  column-gap: 6px;
-  flex: 1;
-  min-width: 0;
-}
-
-.subMeta {
-  grid-column: 2;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .subNumber {
@@ -112,15 +97,3 @@
   font-variant-numeric: tabular-nums;
 }
 
-.subTitle {
-  font-size: var(--font-size-base);
-  color: var(--color-text-base);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-}
-
-.subRow:is(:hover, :focus-visible) .subTitle {
-  color: var(--color-text-highlight);
-}
