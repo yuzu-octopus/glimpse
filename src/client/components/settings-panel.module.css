@@ -117,25 +117,15 @@
   color: var(--color-text-highlight);
 }
 
-/* Prose link: purple means tappable, so it wears the accent underlined and
-   resolves to foreground on hover. The kit Link's accent variant resolves to
-   the paragraph step under this theme, which is why this stays a styled <a>.
-   It is a real <a> in a <p>, so :focus-visible is the keyboard's equivalent of
-   the hover — without it the resolve exists only for a device with a pointer. */
-.docsLink {
-  color: var(--color-primary);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.docsLink:is(:hover, :focus-visible) {
+/* The Docs source link is core's Link: the tappable accent, the persistent
+   underline (hasUnderline — colour alone fails WCAG 1.4.1 inside prose), the
+   hover resolve and the press overlay are all the kit's, so none of them are
+   restated here. The one channel the kit does not paint is the colour on
+   keyboard focus — its focus channel is the ring, which names the control but
+   does not reveal it — so without this the resolve exists only for a device
+   with a pointer. */
+.proseLink:focus-visible {
   color: var(--color-text-highlight);
-}
-
-/* Press dims 20%. The hover already spends the whole move on the colour
-   resolve, so the press takes the next step down instead of restating it. */
-.docsLink:active {
-  opacity: 0.8;
 }
 
 /* Narrow screens: the section rail becomes a row above the content. The

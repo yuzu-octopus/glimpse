@@ -4,6 +4,7 @@ import {
   DialogHeader,
   Heading,
   IconButton,
+  Link,
   SideNavItem,
   Table,
   Text,
@@ -24,6 +25,11 @@ import styles from './settings-panel.module.css';
 // list is a kit Table, so the dense data stays in rows. The About facts stay
 // a <dl>: a definition list is the semantics, not a layout to be swapped for
 // a component.
+//
+// The Docs source link is a kit Link as well: it sits inside running prose, so
+// it passes hasUnderline and takes its tappable purple, its hover resolve and
+// its press from the kit. target="_blank" is all it needs — the kit derives
+// rel="noopener noreferrer" from it.
 
 type SettingsSection = 'about' | 'docs';
 
@@ -154,7 +160,16 @@ export function SettingsPanel() {
                   Bangs are shortcuts that route a query directly to a site. Prefix the search with{' '}
                   <code className={styles.code}>!gh</code> or <code className={styles.code}>gh</code>{' '}
                   followed by a space — e.g. <code className={styles.code}>gh glimpse dashboard</code> opens
-                  GitHub search. Source: <a href="https://helium.computer/bangs" target="_blank" rel="noopener noreferrer" className={styles.docsLink}>helium.computer/bangs</a> ({bangs.length} curated from 13k+).
+                  GitHub search. Source:{' '}
+                  <Link
+                    href="https://helium.computer/bangs"
+                    target="_blank"
+                    hasUnderline
+                    className={styles.proseLink}
+                  >
+                    helium.computer/bangs
+                  </Link>{' '}
+                  ({bangs.length} curated from 13k+).
                 </p>
                 <p className={styles.aboutBlurb}>
                   Config override: set <code className={styles.code}>bangs</code> in the{' '}
