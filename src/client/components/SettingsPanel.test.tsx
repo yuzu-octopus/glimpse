@@ -164,7 +164,24 @@ describe('SettingsPanel section sidebar', () => {
       expect(within(table).getByRole('cell', { name: bang.title })).toBeInTheDocument();
     }
     expect(within(table).getAllByRole('row')).toHaveLength(bangs.length + 1);
+  });
 
+  // The source link is core's Link, not a hand-rolled anchor: the kit owns the
+  // tappable purple, the underline it carries in prose, the hover resolve and
+  // the press. target="_blank" is also what makes the kit derive the new-tab
+  // relationship, so dropping it would silently drop the rel with it.
+  it('renders the Docs source link as the kit Link with its new-tab relationship', async () => {
+    stubConfigApi();
+    render(<SettingsPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    await screen.findByText('9.9.9');
+    fireEvent.click(within(screen.getByTestId('settings-nav')).getByText('Docs'));
+
+    const link = screen.getByRole('link', { name: 'helium.computer/bangs' });
+    expect(link).toHaveClass('astryx-link');
+    expect(link).toHaveAttribute('data-color', 'accent');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
 });
 
