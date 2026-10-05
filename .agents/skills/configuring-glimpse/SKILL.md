@@ -13,7 +13,7 @@ Glimpse dashboards are defined entirely in `config.yml` (glance-compatible forma
 pages:
   - name: Home            # slug = slugify(name); must be unique
     width: default        # default | slim | wide
-    columns:              # OR flat `widgets:` (pure bento) — never both
+    columns:              # or a flat `widgets:` list (pure bento); both together is accepted, and the flat list wins
       - span: 3           # span tracks on 12-col grid; legacy size: small/full still accepted
         title: Clock         # optional: names the column itself; the mobile section header reads it
         widgets:
@@ -21,9 +21,22 @@ pages:
     head-widgets:         # optional row above columns
       - type: search
 ```
-Max 3 columns/page, columns require `size` or `span` (span explicit on all or none); when using `size`, exactly 1–2 `full`. Groups cannot nest `group`/`split-column`.
+Max 3 columns/page, and every column needs `size` or `span`. With `size`, exactly 1–2 columns must be `full`; when every column carries an explicit `span` the grid is sized outright and the full/small rule is skipped. `span` on some columns but not others is rejected — as `must have at least one full column`, not a span-specific message, because a mixed page falls through to the `size` rules.
+
+A page needs `columns:` or `widgets:`. Supplying **both** is not an error — the schema only complains when neither is present — and at render the flat `widgets:` list wins, leaving `columns:` unused.
+
+Group nesting is enforced in exactly one place: the direct children of a `group`, under `columns[].widgets` or `head-widgets`. There, a `group` or `split-column` child is an error. Nothing else is walked — a `split-column`'s children are never inspected, and a page's flat `widgets:` list is not scanned for nesting at all, so the same nesting that is rejected under `columns:` loads clean under `widgets:`.
 
 Without a column `title` the mobile section header falls back to the column's first widget title, then `Column N`.
+
+## A key that isn't in the schema is stripped, not rejected
+Widget objects are plain `z.object`, so a key the schema doesn't declare parses clean and is then dropped — no validation error, nothing logged at runtime, the widget simply renders as if you hadn't written it. `sort:` where the schema says `sort-by:` is the textbook case, and so is any `token:` Glimpse moved to the environment.
+
+`bun run check-config` is the only thing that catches it: it diffs the raw YAML against the schemas and prints
+```
+warning: line 12: "sort" is not a supported option of the hacker-news widget (pages[0].columns[0].widgets[0].sort) — Glimpse ignores it
+```
+Those are warnings, not errors — they print on a passing run too, so a config with a typo still exits 0. Read the output, not just the exit code. A credential Glimpse used to read from config gets its own line naming the env var to set instead. Two gaps worth knowing: the config root is exempt (glance declares ~38 top-level keys, Glimpse admits 2), and `.loose()` widgets — `network`, `system-stats`, `server-stats`, `docker-containers`, `github-trending`, `change-detection`, `model-endpoints`, `twitch-channels`, `twitch-top-games` — keep unknown keys instead of stripping them, so nothing is ever reported there.
 
 ## Shared widget props
 Every widget accepts all of these — no widget-specific opt-in needed.
@@ -47,43 +60,43 @@ Only the six live types (`clock`, `weather`, `markets`, `monitor`, `server-stats
 | Widget | Key options |
 |---|---|
 | `rss` | `feeds[].url/title`, limit, collapse-after, style |
-| `hacker-news` | sort `top/new/best`, limit, collapse-after |
-| `reddit` | `subreddit`, sort, `search` mode |
-| `releases` | `repositories[]`: `"owner/repo"` or gitlab:/codeberg:/dockerhub: prefixed, or `{repository, include-prereleases}`; optional per-repo `token` / `gitlab-token` |
-| `lobsters` | `instance-url` (default lobste.rs), `custom-url`, sort `hot/new`, `tags[]`, limit, collapse-after |
-| `repository` | `repository: owner/repo`, `pull-requests-limit` / `issues-limit` (5), `token` |
+| `hacker-news` | `sort-by` top\|new\|best, limit, collapse-after |
+| `reddit` | `subreddit` (required), `sort-by` hot\|new\|top\|rising, `search`, `top-period`. No `app-auth` — `REDDIT_CLIENT_ID` + `REDDIT_CLIENT_SECRET` in the environment switch the widget to the OAuth host |
+| `releases` | `repositories[]`: `"owner/repo"` or `gitlab:`/`codeberg:`/`dockerhub:`-prefixed, or `{url?, repository?, source?, include-prereleases?}`; limit, collapse-after. **No per-repo `token`/`gitlab-token`** — those keys are stripped. Credentials come from the environment only (`GITHUB_TOKEN`, or `GH_TOKEN`, and `GITLAB_TOKEN`); without them these endpoints are read anonymously |
+| `lobsters` | `sort-by` hot\|new, `tags[]`, limit, collapse-after, `instance-url` (default lobste.rs, giving `<instance>/hottest\|newest.json`) — `custom-url` replaces the whole URL when set |
+| `repository` | `repository: owner/repo` (required), `pull-requests-limit` / `issues-limit` (5), `commits-limit` (-1 = show none, glance's default). **No `token`** — `GITHUB_TOKEN`/`GH_TOKEN` in the environment only, else the public API's anonymous rate limit |
 | `videos` | `channels[]` (UC id or @handle), `playlists[]` (`playlist:<id>`), include-shorts |
-| `twitch-channels` | `channels[]` (required logins), `sort-by` viewers\|live, collapse-after (5); needs `TWITCH_CLIENT_ID` + `TWITCH_CLIENT_SECRET` |
-| `twitch-top-games` | `limit` ≤25 (10), collapse-after (5), `exclude[]` slugs; needs `TWITCH_CLIENT_ID` + `TWITCH_CLIENT_SECRET` |
-| `markets` | `markets[]`: {symbol (`SPY`, `BTC-USD`), name?, symbol-link?, chart-link?}, sort-by |
-| `monitor` | `sites[]`: url, check-url, error-url, timeout (`3s`), alt-status-codes, basic-auth, same-tab; optional `kuma-url` + `kuma-slug`, `healthchecks-key`/`healthchecks-url`/`healthchecks-tags` sources |
+| `twitch-channels` | `channels[]` (required logins), `sort-by` viewers\|live (viewers), collapse-after (5); needs `TWITCH_CLIENT_ID` + `TWITCH_CLIENT_SECRET` |
+| `twitch-top-games` | `limit` 1–25 (10), collapse-after (5), `exclude[]` slugs; needs `TWITCH_CLIENT_ID` + `TWITCH_CLIENT_SECRET` |
+| `markets` | `markets[]`: {symbol (`SPY`, `BTC-USD`), name?, symbol-link?, chart-link?}, `sort-by` change\|absolute-change |
+| `monitor` | `sites[]`: url, title?, icon?, check-url, error-url, timeout (`3s`), alt-status-codes, expected-status-code, basic-auth, same-tab, allow-insecure — or instead of sites, `kuma-url` + `kuma-slug` (both together or neither) or `healthchecks-url`/`healthchecks-key` (`healthchecks-tags` needs one of those two). At least one of the three sources must be set |
 | `custom-api` | `url` **or** at least one `subrequests` entry (at least one is required). Request fields: `method` (GET/POST/PUT/PATCH/DELETE/OPTIONS/HEAD), `headers`, `body`, `body-type` (json\|string), `parameters`, `allow-insecure`, `skip-json-validation`, plus `frameless` and `limit`. `subrequests: {<name>: {url, …same request fields}}` fetches several endpoints in parallel and makes them a synthetic root keyed by name, so `options.path` reaches them as `$.<name>.<field>`. When a top-level `url` **is** set it is the root and subrequests are not merged in. `options` is a single mapping object, not a list: `path` (JSONPath, default `$`), `title`, `url`, `description`, `icon`, `subtitle`, `value`, `image`, `timestamp`; a value starting `$`/`@` is evaluated as JSONPath against the item, anything else is a literal. |
 | `weather` | `location`, units metric\|imperial, hide-location |
 | `weather-radar` | `location` (required), `zoom` 3–10 (7) |
-| `github-trending` | `language`, `since` daily\|weekly\|monthly, limit ≤25 |
-| `contribution-graph` | `username` (required), `token`, `limit` weeks 1–104 (52) |
+| `github-trending` | `language`, `since` daily\|weekly\|monthly, limit 1–25 (10) |
+| `contribution-graph` | `username` (required), `limit` weeks 1–104 (52). **No `token`** — the fetcher scrapes public profile HTML, so the widget is anonymous by construction and the key would only have put a secret in the config |
 | `network` | `ping-target`, `public-ip` |
 | `events-calendar` | `urls[]` / `ics-url` (one required), `days` (14), `limit` (20) |
 | `change-detection` | `urls[]` (required, ≤10), `selector` tag/`#id`/`.class` |
-| `immich` | `url` (required), `api-key` or `IMMICH_API_KEY`, `limit` (10) |
-| `jellyfin` | `url` (required), `api-key` or `JELLYFIN_API_KEY`, `limit` (10) |
-| `qbittorrent` / `transmission` | `url` (required), `username`/`password` or env, `limit` (10) |
+| `immich` | `url` (required), `limit` (10). The key is environment-only (`IMMICH_API_KEY`) — there is no `api-key` key |
+| `jellyfin` | `url` (required), `user-id` (auto-resolved to the first user when omitted), `limit` (10). The key is environment-only (`JELLYFIN_API_KEY`) — there is no `api-key` key |
+| `qbittorrent` / `transmission` | `url` (required), `limit` (10). Credentials are environment-only — `QBITTORRENT_USERNAME`/`QBITTORRENT_PASSWORD`, `TRANSMISSION_USERNAME`/`TRANSMISSION_PASSWORD`; there are no `username`/`password` keys |
 | `server-stats` | `servers[]`: {name?, type: local(default) \| remote, url?} |
 | `system-stats` | none required (host machine) |
-| `dns-stats` | `service`: pihole \| adguard \| technitium, `url`, credentials |
+| `dns-stats` | `url` (required), `service` pihole (default) \| adguard \| technitium, `allow-insecure`, `hide-graph`, `hide-top-domains`. Credentials are environment-only, one set per service: `PIHOLE_PASSWORD`/`PIHOLE_TOKEN`, `ADGUARD_USERNAME`/`ADGUARD_PASSWORD`, `TECHNITIUM_TOKEN` — there are no `username`/`password`/`token` keys |
 | `docker-containers` | `sock-path` (default `/var/run/docker.sock`; tcp:// or http:// URL also works), `running-only`, `category`, `hide-by-default` |
-| `tailscale` | `api-key` (`${TS_API_KEY}`, needs the `devices:core:read` scope), `tailnet` (id, or `-` for the tailnet that owns the key), `limit` 1–200 (20). Online devices sort first; exit-node badges come from `enabledRoutes` in the same one call |
-| `home-assistant` | `entities[]` required, in display order — a bare entity id (`sensor.living_room_temp`) or `{entity, label}` to override the derived name; `url` (default `http://homeassistant.local:8123`), `token` or `HA_TOKEN`. **State only**: the current value of each entity from one REST `GET /api/states`, filtered server-side (never one request per entity). There is no history here — no energy chart, no long-term statistics; those come from HA's WebSocket recorder API, not REST, so a config asking for them wants a different tool |
+| `tailscale` | `tailnet` (id, or `-` for the tailnet that owns the key), `limit` 1–200 (20). The key is environment-only (`TS_API_KEY`, needing the `devices:core:read` scope) — there is no `api-key` key. Online devices sort first; exit-node badges come from `enabledRoutes` in the same one call |
+| `home-assistant` | `entities[]` required, in display order — a bare entity id (`sensor.living_room_temp`) or `{entity, label}` to override the derived name; `url` (default `http://homeassistant.local:8123`). The long-lived access token is environment-only (`HA_TOKEN`) — there is no `token` key. **State only**: the current value of each entity from one REST `GET /api/states`, filtered server-side (never one request per entity). There is no history here — no energy chart, no long-term statistics; those come from HA's WebSocket recorder API, not REST, so a config asking for them wants a different tool |
 | `bookmarks` | `groups[]`: {title, links[]} |
 | `search` | `search-engine` (preset name / URL / {name,url}), `bangs[]`, new-tab (default true), target |
 | `clock` | `timezones[]` {timezone, label}, hour-format 24h\|12h |
 | `calendar` | first-day-of-week |
 | `timer` | `id`, `duration: 25m` / `mm:ss` (user-editable), `notes: true` |
 | `notepad` | `id`, `placeholder` |
-| `group` | tabbed container; `widgets[]` (≥1; cannot nest `group`/`split-column`) |
-| `split-column` | side-by-side container; `widgets[]` (≥2) laid out in a grid of at most `max-columns` tracks per row (`max-columns` ≥ 2, default 2, clamped to the child count) — N children, one column each, wrapping past the cap. Cannot nest `group`/`split-column`. |
-| `todo` / `iframe` / `html` | id / source+height / raw content |
-| `ai-quota` | `provider` (70 ids, all with fetchers: codex/claude/openai/anthropic/copilot/gemini/cursor/kimi/opencode/vertex/jetbrains/zed/grok/amp/kiro/antigravity/ollama/bedrock/stepfun/… — `KNOWN_PROVIDERS` in `src/shared/widgets/quota-types.ts`), `token` (env `${VAR}`) or `tokenFile` (mounted path: JetBrains `AIAssistantQuotaManager2.xml`, Kiro `kiro-cli` auth file, Grok `~/.grok/auth.json`, Zed `~/.config/zed/credentials`, Amp `~/.config/amp/auth.json`), `quotaUrl` override (e.g. `Z_AI_API_HOST`, Ollama `http://localhost:11434`, Antigravity `https://localhost:8765`), `projectId` (OpenAI/Vertex/GCP), `baseUrl`. Default `cache` is 1h — set `cache: 2m` for a counter you actually watch |
+| `group` | tabbed container; `widgets[]` (≥1). A `group` or `split-column` child is rejected — but only one level deep, and only under `columns:`/`head-widgets` (see Structure rules) |
+| `split-column` | side-by-side container; `widgets[]` (≥2) laid out in a grid of at most `max-columns` tracks per row (`max-columns` ≥ 2, default 2, clamped to the child count) — N children, one column each, wrapping past the cap. Nothing validates what goes inside: nesting is only checked among a `group`'s own children |
+| `todo` / `iframe` / `html` | `id` / `source` + `height` (≥50) / `source` (raw markup) |
+| `ai-quota` | `provider` (70 ids, default `codex`, all with fetchers: codex/claude/openai/anthropic/copilot/gemini/cursor/kimi/opencode/vertex/jetbrains/zed/grok/amp/kiro/antigravity/ollama/bedrock/stepfun/… — `KNOWN_PROVIDERS` in `src/shared/widgets/quota-types.ts`), `tokenFile` (mounted path: JetBrains `AIAssistantQuotaManager2.xml`, Kiro `kiro-cli` auth file, Grok `~/.grok/auth.json`, Zed `~/.config/zed/credentials`, Amp `~/.config/amp/auth.json`), `quotaUrl` override (e.g. `Z_AI_API_HOST`, Ollama `http://localhost:11434`, Antigravity `https://localhost:8765`), `projectId` (OpenAI/Vertex/GCP), `baseUrl`. **No `token`** — the credential comes from the provider's own environment variable (CODEX_TOKEN, ANTHROPIC_API_KEY, …) or from `tokenFile`. Default `cache` is 1h — set `cache: 2m` for a counter you actually watch |
 | `model-endpoints` | Whether the **models and providers you depend on are still being served** — availability, not your quota. `ai-quota` above is the quota/balance view; adding both is fine, but neither answers the other's question, and one being empty says nothing about the other. `models[]` required (OpenRouter `vendor/model` slugs, 1–12), `provider` tag filter, `limit` rows 1–100 (8), `unhealthy-only`. Keyless — no token, no `quotaUrl`; worst-status-first, grouped by model, 5m / 30m / 1d uptime |
 
 Authoritative shapes: `src/shared/widgets/*.ts` (schema per widget) and working examples in `config.example.yml`.
@@ -145,8 +158,10 @@ On auto-reload the last good config stays active, so a dashboard can look like i
 
 ## Common mistakes
 - Leaving a `theme:` block behind after upgrading → `config.theme` error, last good config stays active. Delete it.
-- Mixing explicit spans on some columns only → error (all-or-none).
-- Putting `group` inside `group` → error.
+- Mixing explicit spans on some columns only → error (all-or-none), reported as "must have at least one full column".
+- Putting a `group` or `split-column` inside a `group` → error, but only under `columns:`/`head-widgets`; the same nesting under a flat `widgets:` page is never checked.
+- Writing `sort:` where the schema says `sort-by:` → the key is stripped and the widget keeps its default order, with nothing logged at runtime.
+- Writing a credential key Glimpse moved to the environment (`token`, `api-key`, `username`, `password`) → stripped as well, and the config file was the only place that secret was stored.
 - Expecting `.env` loading — there is none; export vars or use your process manager.
 - Setting `show-errors: false` and then wondering why a dead widget looks fine — the status dot is the only remaining signal; check it.
 - Setting `retries: 0` expecting "unlimited" — it means one attempt, no retry.
