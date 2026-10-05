@@ -2,8 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { Singleflight, TtlCache } from '../cache';
 import type { WidgetFetchContext } from './registry';
 
-// TDD red: fetchWidgetData should cache on second call.
-// This import will fail until runtime.ts exists.
 import { fetchWidgetData } from './runtime';
 
 function makeCtx(): WidgetFetchContext {

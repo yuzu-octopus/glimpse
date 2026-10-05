@@ -78,7 +78,8 @@ function interpolateEnv(
 /**
  * Load one YAML file, recursively processing $include directives (relative
  * paths resolve against the including file). Included pages are appended;
- * included theme keys override the parent's.
+ * `custom-css-file` from the included file wins. No other top-level key
+ * merges — the include reports it as unsupported and it is dropped.
  */
 function loadYamlTree(
   filePath: string,

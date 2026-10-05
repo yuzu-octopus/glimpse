@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, Stack, StatusDot, Text } from '@astryxdesign/core';
-import { MONITOR_DEFAULTS, type MonitorConfig } from '../../../shared/widgets/keyed';
+import { type MonitorConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 // One customIconField port for the whole app: the same `icon:` string has the
@@ -8,7 +8,6 @@ import { registerWidgetComponent, type WidgetComponentProps } from '../registry'
 import { resolveIcon } from '../../../shared/widgets/icon';
 import type { MonitorSite } from '../../../shared/widgets/payloads';
 import styles from './monitor.module.css';
-void MONITOR_DEFAULTS;
 
 /** glance widget-monitor.go renders .Icon.URL, and skips the img entirely when
  * there is none. A bad URL must cost the icon, not the row. */

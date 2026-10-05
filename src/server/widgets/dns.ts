@@ -406,9 +406,6 @@ registerWidget('dns-stats', async (ctx, config) => {
   const hideGraph = cfg['hide-graph'] ?? false;
   const hideTopDomains = cfg['hide-top-domains'] ?? false;
   const service = cfg.service ?? 'pihole';
-
-  // allow-insecure is a no-op for fetch (YAGNI over TLS hacks) — kept in schema for glance parity
-
   if (service === 'adguard') {
     return fetchAdguard(
       ctx,

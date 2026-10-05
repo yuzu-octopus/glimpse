@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ConfigSchema, resolveSpan } from './config';
+import { calendarSchema } from './widgets/calendar';
 
 declare const Bun: { YAML: { parse(s: string): unknown } } | undefined;
 
@@ -114,6 +115,45 @@ describe('ConfigSchema', () => {
     expect(issues[0].message).toContain('block removed');
     expect(issues[0].message).toContain('astryx-dracula');
     expect(issues[0].message).toContain('delete the theme block');
+  });
+
+  // The dns-stats fetcher cannot skip TLS verification, so glance's
+  // `allow-insecure` parses clean and does nothing — a config that looks
+  // honoured and is not. The schema refuses it and names the key instead.
+  it('rejects a dns-stats widget that sets allow-insecure', () => {
+    const page = (extra: Record<string, unknown>) => ({
+      pages: [{ name: 'H', widgets: [{ type: 'dns-stats', url: 'http://dns.local', ...extra }] }],
+    });
+    expect(ConfigSchema.safeParse(page({})).success).toBe(true);
+    const r = ConfigSchema.safeParse(page({ 'allow-insecure': true }));
+    expect(r.success).toBe(false);
+    if (r.success) return;
+    const issue = r.error.issues.find((i) => i.path.at(-1) === 'allow-insecure');
+    expect(issue?.message).toContain('cannot skip TLS verification');
+    expect(issue?.message).toContain('delete it from the config');
+  });
+
+  // The renderer lowercased the value and fell back to Monday on a miss, so
+  // every typo rendered as a plausible week. Case and padding still parse;
+  // a name that is not a day is now a load-time error.
+  it('normalizes first-day-of-week and rejects a spelling that is not a day', () => {
+    expect(
+      calendarSchema.parse({ type: 'calendar', 'first-day-of-week': ' Sunday ' })['first-day-of-week'],
+    ).toBe('sunday');
+    const page = (value: string) => ({
+      pages: [{ name: 'H', widgets: [{ type: 'calendar', 'first-day-of-week': value }] }],
+    });
+    for (const day of ['Sunday', 'monday', 'TUESDAY', 'wednesday', 'thursday', 'friday', 'saturday']) {
+      expect(ConfigSchema.safeParse(page(day)).success).toBe(true);
+    }
+    const r = ConfigSchema.safeParse(page('mon'));
+    expect(r.success).toBe(false);
+    if (!r.success) {
+      expect(r.error.issues.some((i) => i.path.at(-1) === 'first-day-of-week')).toBe(true);
+    }
+    for (const bad of ['funday', '', 'mondayy', '1']) {
+      expect(ConfigSchema.safeParse(page(bad)).success).toBe(false);
+    }
   });
 
   it('accepts a top-level custom-css-file', () => {

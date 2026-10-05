@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { Button, ClickableCard, Grid, HStack, Text } from '@astryxdesign/core';
 import { ChevronRight } from 'lucide-react';
-import { REDDIT_DEFAULTS, type RedditConfig } from '../../../shared/widgets/feeds';
+import { type RedditConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { formatAge } from '../_hooks/useRelativeTime';
 import type { RedditPost } from '../../../shared/widgets/payloads';
 import styles from './reddit.module.css';
 import Feed, { type FeedItem } from '../feed/feed';
-void REDDIT_DEFAULTS;
 
 const CARD_TITLE_LINES = 3;
 

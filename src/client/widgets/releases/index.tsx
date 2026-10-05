@@ -1,13 +1,12 @@
 import { useState, type CSSProperties } from 'react';
 import { Badge, Card, Collapsible, HStack, Icon, Link, Text } from '@astryxdesign/core';
 import { Container, GitBranch } from 'lucide-react';
-import { RELEASES_DEFAULTS, type ReleasesConfig } from '../../../shared/widgets/feeds';
+import { type ReleasesConfig } from '../../../shared/widgets/feeds';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { useAge } from '../_hooks/useAge';
 import type { Release } from '../../../shared/widgets/payloads';
 import styles from './releases.module.css';
-void RELEASES_DEFAULTS;
 
 /** Kit nested-inset surface (spacing.md: outer card `padding={4}`, nested
  *  `padding={3}`): background plus a separator border, never a direct fill. */

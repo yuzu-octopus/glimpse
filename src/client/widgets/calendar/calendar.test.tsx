@@ -73,6 +73,15 @@ describe('calendar widget', () => {
     expect(dayOneColumn()).toBe(3);
   });
 
+  it('renders a mixed-case day name the way the lowercase one does', () => {
+    // The schema normalizes case at load; the component still lowercases
+    // because a config can reach it before validation in tests.
+    freeze(AUG_2026);
+    render(<Calendar data={null} config={{ type: 'calendar', 'first-day-of-week': 'Sunday' }} />);
+    expect(dowLabels()).toEqual(['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']);
+    expect(dayOneColumn()).toBe(6);
+  });
+
   it('highlights today', () => {
     freeze(AUG_2026);
     render(<Calendar data={null} config={{ type: 'calendar' }} />);

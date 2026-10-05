@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { Button } from '@astryxdesign/core';
 import { ChevronRight } from 'lucide-react';
-import { LOBSTERS_DEFAULTS, type LobstersConfig } from '../../../shared/widgets/keyed';
+import { type LobstersConfig } from '../../../shared/widgets/keyed';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import { formatAge } from '../_hooks/useRelativeTime';
 import type { LobsterPost } from '../../../shared/widgets/payloads';
 import Feed, { type FeedItem } from '../feed/feed';
-void LOBSTERS_DEFAULTS;
 
 function domainOf(url: string): string | null {
   try {

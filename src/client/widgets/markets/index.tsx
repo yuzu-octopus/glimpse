@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { Link, Stack, StatusDot, Text } from '@astryxdesign/core';
-import { MARKETS_DEFAULTS, type MarketsConfig } from '../../../shared/widgets/keyed';
+import { type MarketsConfig } from '../../../shared/widgets/keyed';
 import { CHART_HUES } from 'astryx-dracula/shared/chart-hues';
 import { Sparkline } from 'astryx-dracula/shared/sparkline';
 import { MetricDelta } from 'astryx-dracula/shared/metric-delta';
@@ -9,7 +9,6 @@ import { registerWidgetComponent, type WidgetComponentProps } from '../registry'
 import { fmtNumber } from '../_helpers/fmtNumber';
 import type { Market, MarketSourceIssue } from '../../../shared/widgets/payloads';
 import styles from './markets.module.css';
-void MARKETS_DEFAULTS;
 
 /**
  * Kit sparkline in `range` mode — the kit's market-row geometry. The flat
