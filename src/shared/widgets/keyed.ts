@@ -41,7 +41,7 @@ export type LobstersConfig = z.infer<typeof lobstersSchema>;
 export const videosSchema = z.object({
   type: z.literal('videos'),
   ...sharedWidgetFields,
-  channels: z.array(z.string()).default([...VIDEOS_DEFAULTS.channels]),
+  channels: z.array(z.string()).describe('Channel source: @handle (resolved via InnerTube) or UC... id (stable, no resolution)').default([...VIDEOS_DEFAULTS.channels]),
   playlists: z.array(z.string()).default([...VIDEOS_DEFAULTS.playlists]),
   limit: z.number().int().min(0).default(VIDEOS_DEFAULTS.limit),
   'collapse-after': z.number().int().min(-1).optional(),

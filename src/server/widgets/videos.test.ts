@@ -293,4 +293,38 @@ describe('videos fetcher', () => {
 
     expect(data.issues).toEqual([{ source: 'UCdead', reason: 'HTTP 404' }]);
   });
+
+  it('resolves @handle to a channel id and fetches the feed', async () => {
+    const ctx = makeCtx(async (url) => {
+      if (url.includes('resolve_url')) {
+        return new Response(
+          JSON.stringify({ endpoint: { browseEndpoint: { browseId: 'UC1234567890123456789012' } } }),
+          { status: 200 },
+        );
+      }
+      if (url.includes('feeds/videos.xml')) return new Response(FEED, { status: 200 });
+      return new Response('', { status: 404 });
+    });
+    const data = (await videosFetcher()(ctx, {
+      type: 'videos',
+      channels: ['@ferntv'],
+    })) as { videos: Video[] };
+    expect(data.videos).toHaveLength(2);
+    expect(data.videos[0].title).toBe('Video one');
+  });
+
+  it('reports handle not found honestly when resolution fails', async () => {
+    const ctx = makeCtx(async (url) => {
+      if (url.includes('resolve_url')) {
+        return new Response(JSON.stringify({ error: { message: 'Requested entity was not found.' } }), { status: 404 });
+      }
+      return new Response('', { status: 404 });
+    });
+    const data = (await videosFetcher()(ctx, {
+      type: 'videos',
+      channels: ['@ferntv'],
+    })) as VideosData;
+    expect(data.videos).toEqual([]);
+    expect(data.issues).toEqual([{ source: '@ferntv', reason: 'handle not found: @ferntv' }]);
+  });
 });
