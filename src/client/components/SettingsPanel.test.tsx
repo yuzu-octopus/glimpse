@@ -64,7 +64,7 @@ afterEach(() => {
 });
 
 describe('SettingsPanel section sidebar', () => {
-  it('opens on About and lists exactly About and Docs', () => {
+  it('opens on About and lists About, Docs and Changelog', () => {
     stubConfigApi();
     render(<SettingsPanel />);
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
@@ -72,12 +72,15 @@ describe('SettingsPanel section sidebar', () => {
     const nav = screen.getByTestId('settings-nav');
     const about = within(nav).getByText('About').closest('button');
     const docs = within(nav).getByText('Docs').closest('button');
+    const changelog = within(nav).getByText('Changelog').closest('button');
 
     // Kit SideNavItem: a real button per section, current one aria-current.
     expect(about).not.toBeNull();
     expect(docs).not.toBeNull();
+    expect(changelog).not.toBeNull();
     expect(about).toHaveAttribute('aria-current', 'page');
     expect(docs).not.toHaveAttribute('aria-current');
+    expect(changelog).not.toHaveAttribute('aria-current');
     expect(document.getElementById('settings-panel-about')).not.toBeNull();
   });
 
@@ -86,7 +89,7 @@ describe('SettingsPanel section sidebar', () => {
     render(<SettingsPanel />);
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
 
-    for (const label of ['About', 'Docs']) {
+    for (const label of ['About', 'Docs', 'Changelog']) {
       const item = within(screen.getByTestId('settings-nav')).getByText(label).closest('button');
       expect(item?.tagName).toBe('BUTTON');
       expect(item).not.toBeDisabled();
@@ -199,6 +202,46 @@ describe('SettingsPanel About facts', () => {
     expect(within(list as HTMLElement).getByText('Config file').tagName).toBe('DT');
   });
 
+  // The facts must reflect the live server on every open, not a snapshot from
+  // the first open: a config reload or a version upgrade must not be masked by
+  // a cached answer. Each open refetches, so the second open sees the new
+  // version.
+  it('refetches /api/config on every open and shows the new version', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ok: true,
+            config: {},
+            configPath: '/etc/glimpse/config.yml',
+            version: '0.1.1',
+          }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ok: true,
+            config: {},
+            configPath: '/etc/glimpse/config.yml',
+            version: '0.2.0',
+          }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<SettingsPanel />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    expect(await screen.findByText('0.1.1')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    expect(await screen.findByText('0.2.0')).toBeInTheDocument();
+    expect(screen.queryByText('0.1.1')).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   // The About request is fired from a click, not from an effect, so it can
   // still be in flight when the panel goes away. The `cancelled` guard is what
   // stops the late answer being written; the signal is what stops the request.
@@ -215,6 +258,39 @@ describe('SettingsPanel About facts', () => {
 
     unmount();
     expect(signal?.aborted).toBe(true);
+  });
+
+  // Closing the dialog drops the in-flight request too: the next open
+  // refetches, so a late answer would only write state nobody is looking at.
+  it('aborts the in-flight About request when the dialog closes', async () => {
+    const { promise } = Promise.withResolvers<Response>();
+    const fetchMock = vi.fn((_url: string, _init?: RequestInit) => promise);
+    vi.stubGlobal('fetch', fetchMock);
+    render(<SettingsPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+
+    const signal = fetchMock.mock.calls[0][1]?.signal;
+    expect(signal?.aborted).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(signal?.aborted).toBe(true);
+  });
+
+  // The changelog is a build-time ?raw import of the repo CHANGELOG.md, so it
+  // ships as a static string with no runtime fetch and no markdown dependency.
+  it('renders the changelog from the raw markdown import', async () => {
+    stubConfigApi();
+    render(<SettingsPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    await screen.findByText('9.9.9');
+    fireEvent.click(within(screen.getByTestId('settings-nav')).getByText('Changelog'));
+
+    const pane = document.getElementById('settings-panel-changelog');
+    expect(pane).not.toBeNull();
+    const pre = pane?.querySelector('pre');
+    expect(pre).not.toBeNull();
+    expect(pre?.textContent).toContain('## [Unreleased]');
+    expect(pre?.textContent).toContain('## [0.1.1]');
   });
 });
 

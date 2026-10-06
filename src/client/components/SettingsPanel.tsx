@@ -10,14 +10,17 @@ import {
   Text,
   proportional,
 } from '@astryxdesign/core';
-import { BookOpen, Info, Settings } from 'lucide-react';
+import { BookOpen, FileText, Info, Settings } from 'lucide-react';
 import type { ConfigResponse } from '../../shared/api';
 import { bangs } from '../../shared/widgets/bangs';
+import changelog from '../../../CHANGELOG.md?raw';
 import styles from './settings-panel.module.css';
 // Settings dialog: section sidebar + spacious content pane. About lists app +
-// config facts from /api/config (loaded on first open, falling back to
+// config facts from /api/config (revalidated on every open so version and
+// config path never go stale across a config reload or upgrade; falls back to
 // glance's documented defaults while loading or on failure); Docs covers
-// bangs. The theme itself is not a setting — it is the astryx-dracula brand.
+// bangs; Changelog renders the repo's CHANGELOG.md. The theme itself is not a
+// setting — it is the astryx-dracula brand.
 //
 // The section switcher uses kit SideNavItems, so the active item, its
 // hover/press washes and its focus ring belong to the kit; the <nav> rail
@@ -31,7 +34,7 @@ import styles from './settings-panel.module.css';
 // its press from the kit. target="_blank" is all it needs — the kit derives
 // rel="noopener noreferrer" from it.
 
-type SettingsSection = 'about' | 'docs';
+type SettingsSection = 'about' | 'docs' | 'changelog';
 
 interface AboutInfo {
   version: string;
@@ -57,9 +60,13 @@ export function SettingsPanel() {
   }, []);
 
 
+  // Fired on every open (and every click of the About nav item): the facts
+  // must reflect the current package version and config path, so a config
+  // reload or upgrade is never masked by a cached answer. Any in-flight
+  // request is aborted before a new one starts, and the unmount guard above
+  // stops a late answer from being written.
   const openAbout = () => {
     setSection('about');
-    if (about) return;
     aboutAbortRef.current?.abort();
     const ac = new AbortController();
     aboutAbortRef.current = ac;
@@ -81,6 +88,13 @@ export function SettingsPanel() {
       });
   };
 
+  // Closing the dialog aborts any in-flight About request: its answer would
+  // only be written to state that is refetched on the next open anyway.
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (!next) aboutAbortRef.current?.abort();
+  };
+
   return (
     <>
       <IconButton
@@ -89,18 +103,18 @@ export function SettingsPanel() {
         variant="ghost"
         className={styles.trigger}
         onClick={() => {
-          setOpen(true);
+          handleOpenChange(true);
           openAbout();
         }}
       />
       <Dialog
         isOpen={open}
-        onOpenChange={setOpen}
+        onOpenChange={handleOpenChange}
         width="min(960px, calc(100vw - 32px))"
         maxHeight="85vh"
         className={styles.dialog}
       >
-        <DialogHeader title="Settings" onOpenChange={setOpen} />
+        <DialogHeader title="Settings" onOpenChange={handleOpenChange} />
         <div className={styles.body} data-testid="settings-panel">
           <nav
             className={styles.nav}
@@ -118,6 +132,12 @@ export function SettingsPanel() {
               icon={<BookOpen size={16} aria-hidden="true" />}
               isSelected={section === 'docs'}
               onClick={() => setSection('docs')}
+            />
+            <SideNavItem
+              label="Changelog"
+              icon={<FileText size={16} aria-hidden="true" />}
+              isSelected={section === 'changelog'}
+              onClick={() => setSection('changelog')}
             />
           </nav>
           <div className={styles.content}>
@@ -144,7 +164,7 @@ export function SettingsPanel() {
                   </div>
                 </dl>
               </section>
-            ) : (
+            ) : section === 'docs' ? (
               <section
                 className={styles.section}
                 id="settings-panel-docs"
@@ -200,6 +220,17 @@ export function SettingsPanel() {
                     },
                   ]}
                 />
+              </section>
+            ) : (
+              <section
+                className={styles.section}
+                id="settings-panel-changelog"
+                aria-label="Changelog"
+              >
+                <Heading level={2} className={styles.sectionTitle}>
+                  Changelog
+                </Heading>
+                <pre className={styles.changelog}>{changelog}</pre>
               </section>
             )}
           </div>
