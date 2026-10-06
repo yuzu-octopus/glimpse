@@ -38,10 +38,18 @@ describe('tailscale widget', () => {
 
   it('renders each node with its 100.x address in the code face', () => {
     render(<Tailscale config={{ type: 'tailscale' }} data={data} />);
-    expect(screen.getByText('nas.home.arpa')).toBeInTheDocument();
-    expect(screen.getByText('laptop.home.arpa')).toBeInTheDocument();
+    expect(screen.getByText('nas')).toBeInTheDocument();
+    expect(screen.getByText('laptop')).toBeInTheDocument();
     expect(screen.getByText('100.101.102.103')).toHaveAttribute('data-type', 'code');
     expect(screen.getByText('100.64.7.7')).toHaveAttribute('data-type', 'code');
+  });
+
+  it('shows the short hostname with the full name in a tooltip', () => {
+    render(<Tailscale config={{ type: 'tailscale' }} data={data} />);
+    expect(screen.getByText('nas')).toBeInTheDocument();
+    expect(screen.getByText('laptop')).toBeInTheDocument();
+    expect(screen.getByTitle('nas.home.arpa')).toBeInTheDocument();
+    expect(screen.getByTitle('laptop.home.arpa')).toBeInTheDocument();
   });
 
   it('gives online nodes a success dot and offline ones a muted dot', () => {
@@ -75,7 +83,8 @@ describe('tailscale widget', () => {
     };
     render(<Tailscale config={{ type: 'tailscale' }} data={data2} />);
     expect(screen.queryByTestId('ts-address')).toBeNull();
-    expect(screen.getByText('nas.home.arpa')).toBeInTheDocument();
+    expect(screen.getByText('nas')).toBeInTheDocument();
+    expect(screen.getByTitle('nas.home.arpa')).toBeInTheDocument();
   });
 
   it('says "offline" rather than inventing an age when lastSeen is missing', () => {

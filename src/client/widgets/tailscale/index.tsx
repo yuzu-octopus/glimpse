@@ -47,7 +47,9 @@ function DeviceRow({ device }: { device: TailscaleDevice }) {
       />
       <Stack gap={0.5} className={styles.body}>
         <Stack direction="horizontal" gap={2} vAlign="center">
-          <Text maxLines={1}>{device.name}</Text>
+          <span title={device.name}>
+            <Text maxLines={1}>{device.name.split('.')[0]}</Text>
+          </span>
           {/* `cyan`, not the kit's `info` — in astryx-dracula `info` is a solid
             purple fill, and purple is reserved for things you can click. An
             exit node is a fact, not an action: a 10% cyan wash + cyan border. */}
