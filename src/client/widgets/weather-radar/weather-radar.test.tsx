@@ -78,6 +78,25 @@ describe('weather-radar widget', () => {
     expect(cells.sort()).toEqual(['3/3', '3/4', '4/3', '4/4']);
   });
 
+  it('centers the map on the location via fractional tile offset', () => {
+    const { container } = render(
+      <WeatherRadar
+        config={{ type: 'weather-radar', location: 'Singapore' }}
+        data={{ ...DATA, location: 'Singapore', lat: 1.35, lon: 103.82, zoom: 7 }}
+      />,
+    );
+    const tilesEl = container.querySelector<HTMLElement>(`.${styles.tiles}`);
+    expect(tilesEl).not.toBeNull();
+    const fx = parseFloat(tilesEl!.style.getPropertyValue('--fx'));
+    const fy = parseFloat(tilesEl!.style.getPropertyValue('--fy'));
+    // Singapore at z7: x ≈ 100.914, y ≈ 63.520 — fractional parts must be
+    // non-zero so the location lands at the viewport center, not a corner.
+    expect(fx).toBeGreaterThan(0.9);
+    expect(fx).toBeLessThan(1);
+    expect(fy).toBeGreaterThan(0.5);
+    expect(fy).toBeLessThan(0.6);
+  });
+
   it('shows the location and frame timestamp in UTC', () => {
     render(<WeatherRadar config={{ type: 'weather-radar', location: 'London' }} data={DATA} />);
     // 1700000600 -> 2023-11-14T22:23:20Z

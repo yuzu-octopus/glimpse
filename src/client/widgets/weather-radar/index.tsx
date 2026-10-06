@@ -3,6 +3,7 @@ import type { RadarData } from '../../../shared/widgets/payloads';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 import styles from './weather-radar.module.css';
+import type { CSSProperties } from 'react';
 
 // eslint-disable-next-line react-doctor/only-export-components -- tileCoords is a pure helper used by tests
 export function tileCoords(lat: number, lon: number, zoom: number): { x: number; y: number } {
@@ -49,6 +50,8 @@ export function WeatherRadar({ config, data, error, isLoading }: WidgetComponent
 
   const zoom = Math.min(w.zoom, MAX_ZOOM);
   const { x, y } = tileCoords(w.lat, w.lon, zoom);
+  const fx = x - Math.floor(x);
+  const fy = y - Math.floor(y);
   const baseX = Math.floor(x) - 1;
   const baseY = Math.floor(y) - 1;
   const tiles = [0, 1].flatMap((dy) => [0, 1].map((dx) => ({ tx: baseX + dx, ty: baseY + dy })));
@@ -56,7 +59,10 @@ export function WeatherRadar({ config, data, error, isLoading }: WidgetComponent
   return (
     <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
       <div className={styles.map} role="img" aria-label={`Radar map for ${w.location}`}>
-        <div className={styles.tiles}>
+        <div
+          className={styles.tiles}
+          style={{ '--fx': fx, '--fy': fy } as CSSProperties}
+        >
           {tiles.map(({ tx, ty }) => (
             <div key={`${tx}:${ty}`} className={styles.cell}>
               <img {...SHARED_IMG} className={`${styles.base} base`} src={`https://tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`} alt="" loading="lazy" />
@@ -69,7 +75,7 @@ export function WeatherRadar({ config, data, error, isLoading }: WidgetComponent
               />
             </div>
           ))}
-        </div>
+      </div>
       </div>
       <div className={styles.timestamp}>
         {w.location} · {w.frameTime != null ? `${TIME_FMT.format(new Date(w.frameTime * 1000))} UTC` : 'live'}
