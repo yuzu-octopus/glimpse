@@ -32,9 +32,12 @@
 /* Motion answers action: the kit's overlay dim, straight on the row. The
  * hand-rolled `::before` backdrop that faded its own opacity was a lookalike
  * of this and needed the row to be positioned and isolated for a z-index.
- * :focus-within is the keyboard's equivalent channel. */
+ * :focus-within is the keyboard's equivalent channel. The wash rounds on the
+ * card radius like Docker's row backdrop — a square full-width bar read as a
+ * hard band against the rounded card. */
 .item:is(:hover, :focus-within) {
   background-color: var(--color-overlay-hover);
+  border-radius: var(--border-radius);
 }
 
 /* The kit Stack has no flex-grow, so the column that takes the leftover width
@@ -56,6 +59,13 @@
 .item + .item {
   margin-top: calc(var(--widget-content-vertical) / 3);
   border-top: 1px solid var(--color-separator);
+}
+
+/* The first row carries no separator, so it takes the same beat the
+   separators give the rows below — a hovered first row never sits flush
+   under the widget title. */
+.item:first-child {
+  margin-top: calc(var(--widget-content-vertical) / 3);
 }
 
 /* image — glance .thumbnail-container / rss-detailed-thumbnail, flat, full

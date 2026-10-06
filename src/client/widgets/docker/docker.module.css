@@ -15,13 +15,15 @@
 /* hover backdrop larger than text — same pattern as Feed rows. The row's own
    children are the focus channel: a container with a url renders its name as
    a Link and a container with children renders a Button, both real focus
-   targets, so tabbing the expander lights the row it belongs to. */
+   targets, so tabbing the expander lights the row it belongs to. The wash is
+   the same translucent overlay dim Feed rows carry, so a hover reads the same
+   in either list. */
 .row::before {
   content: '';
   position: absolute;
   inset: -4px -10px;
   border-radius: var(--border-radius);
-  background-color: var(--color-widget-background-highlight);
+  background-color: var(--color-overlay-hover);
   opacity: 0;
   transition: opacity 0.2s;
   z-index: -1;
@@ -30,6 +32,13 @@
 
 .row:is(:hover, :focus-within)::before {
   opacity: 1;
+}
+
+/* The first row carries no separator, so it takes the same beat the
+   separators give the rows below — a hovered first row never sits flush
+   under the widget title. */
+.row:first-child {
+  margin-top: calc(var(--widget-content-vertical) / 3);
 }
 
 .row + .row {
