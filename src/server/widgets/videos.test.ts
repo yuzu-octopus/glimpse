@@ -179,6 +179,81 @@ describe('videos fetcher', () => {
     expect(data.issues).toEqual([{ source: 'UC1234567890123456789012', reason: 'no videos found' }]);
   });
 
+  it('resolves playlist lockups when the page grid holds no videos', async () => {
+    const empty = `<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><title>Empty</title></feed>`;
+    // A channel page whose grid holds only playlist lockups — no video lockups.
+    // This is the flamefrags case: the feed is correctly empty, the page has
+    // content, but it is all playlists.
+    const playlistPage = `<!DOCTYPE html><html><body><script>var ytInitialData = {"contents":[{"lockupViewModel":{"contentId":"PLabc123","metadata":{"lockupMetadataViewModel":{"title":{"content":"Playlist One"}}}}},{"lockupViewModel":{"contentId":"PLdef456","metadata":{"lockupMetadataViewModel":{"title":{"content":"Playlist Two"}}}}}]};</script></body></html>`;
+    // InnerTube browse responses for the two playlists.
+    const browseOne = JSON.stringify({
+      contents: [
+        { lockupViewModel: { contentId: 'vid000000001', metadata: { lockupMetadataViewModel: { title: { content: 'Video A' } } } } },
+        { lockupViewModel: { contentId: 'vid000000002', metadata: { lockupMetadataViewModel: { title: { content: 'Video B' } } } } },
+      ],
+    });
+    const browseTwo = JSON.stringify({
+      contents: {
+        lockupViewModel: { contentId: 'vid000000003', metadata: { lockupMetadataViewModel: { title: { content: 'Video C' } } } },
+      },
+    });
+    const ctx: WidgetFetchContext = {
+      fetch: vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('feeds/videos.xml')) return new Response(empty, { status: 200 });
+        if (url.includes('/channel/UC1234567890123456789012/videos')) return new Response(playlistPage, { status: 200 });
+        if (url.includes('youtubei/v1/browse')) {
+          // Distinguish playlists by the browseId in the request body.
+          const body = typeof init?.body === 'string' ? init.body : '';
+          if (body.includes('PLabc123')) return new Response(browseOne, { status: 200 });
+          if (body.includes('PLdef456')) return new Response(browseTwo, { status: 200 });
+        }
+        return new Response('', { status: 404 });
+      }) as unknown as typeof fetch,
+      env: {},
+      cache: new TtlCache(),
+      singleflight: new Singleflight(),
+    };
+
+    const data = (await videosFetcher()(ctx, {
+      type: 'videos',
+      channels: ['UC1234567890123456789012'],
+    })) as VideosData;
+
+    // Both playlists resolved, newest entries attributed to the channel.
+    expect(data.videos).toHaveLength(3);
+    expect(data.videos[0].title).toBe('Video A');
+    expect(data.videos[0].channel).toBe('Empty');
+    expect(data.videos[1].title).toBe('Video B');
+    expect(data.videos[2].title).toBe('Video C');
+    expect(data.issues).toEqual([]);
+  });
+
+  it('reports playlist listing failures when lockups cannot be resolved', async () => {
+    const empty = `<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><title>Empty</title></feed>`;
+    const playlistPage = `<!DOCTYPE html><html><body><script>var ytInitialData = {"contents":{"lockupViewModel":{"contentId":"PLabc123","metadata":{"lockupMetadataViewModel":{"title":{"content":"Playlist One"}}}}}};</script></body></html>`;
+    const ctx: WidgetFetchContext = {
+      fetch: vi.fn(async (url: string) => {
+        if (url.includes('feeds/videos.xml')) return new Response(empty, { status: 200 });
+        if (url.includes('/channel/UC1234567890123456789012/videos')) return new Response(playlistPage, { status: 200 });
+        if (url.includes('youtubei/v1/browse')) return new Response('', { status: 500 });
+        return new Response('', { status: 404 });
+      }) as unknown as typeof fetch,
+      env: {},
+      cache: new TtlCache(),
+      singleflight: new Singleflight(),
+    };
+
+    const data = (await videosFetcher()(ctx, {
+      type: 'videos',
+      channels: ['UC1234567890123456789012'],
+    })) as VideosData;
+
+    expect(data.videos).toEqual([]);
+    expect(data.issues).toHaveLength(1);
+    expect(data.issues[0].source).toBe('UC1234567890123456789012');
+    expect(data.issues[0].reason).toContain('playlist PLabc123 could not be listed');
+  });
+
   // The rescue is a second look, not a second retry ladder: the feed has
   // already spent the configured budget, and a dead source should not cost
   // twice the backoff before the widget can fall back to cache.

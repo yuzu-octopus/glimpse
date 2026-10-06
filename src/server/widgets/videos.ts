@@ -98,6 +98,7 @@ function extractYtInitialData(html: string): unknown {
 export function parseChannelPage(html: string): {
   title?: string;
   items: Array<Record<string, unknown>>;
+  playlists: Array<{ id: string; title: string }>;
 } {
   const data = extractYtInitialData(html);
   // No blob means the page is not the page we think it is: a consent wall, a
@@ -109,13 +110,21 @@ export function parseChannelPage(html: string): {
   }
 
   const found: Array<{ videoId: string; title: string }> = [];
+  const playlists: Array<{ id: string; title: string }> = [];
   const seen = new Set<string>();
+  const seenPlaylists = new Set<string>();
   let channel: string | undefined;
 
   const add = (videoId: string, title: string) => {
     if (seen.has(videoId)) return;
     seen.add(videoId);
     found.push({ videoId, title });
+  };
+
+  const addPlaylist = (id: string, title: string) => {
+    if (seenPlaylists.has(id)) return;
+    seenPlaylists.add(id);
+    playlists.push({ id, title });
   };
 
   const visit = (node: unknown): void => {
@@ -134,6 +143,10 @@ export function parseChannelPage(html: string): {
         const meta = renderer.metadata as Record<string, unknown> | undefined;
         const lockupMeta = meta?.lockupMetadataViewModel as Record<string, unknown> | undefined;
         if (typeof id === 'string' && isVideoId(id)) add(id, readText(lockupMeta?.title));
+        else if (typeof id === 'string' && PLAYLIST_ID_RE.test(id)) {
+          const title = readText(lockupMeta?.title);
+          if (title !== '') addPlaylist(id, title);
+        }
       } else if (RENDERER_ID_KEYS[key] === true) {
         const id = renderer.videoId;
         if (typeof id === 'string' && isVideoId(id)) add(id, readText(renderer.title));
@@ -144,7 +157,7 @@ export function parseChannelPage(html: string): {
   visit(data);
 
   // A video whose title could not be resolved is dropped, never rendered as its
- // own id — an 11-char id in the title slot is the bug, not a fallback.
+  // own id — an 11-char id in the title slot is the bug, not a fallback.
   const items = found
     .filter((v) => v.title !== '' && !isVideoId(v.title))
     .slice(0, FALLBACK_LIMIT)
@@ -154,10 +167,13 @@ export function parseChannelPage(html: string): {
       published: null,
       'media:group': { 'media:thumbnail': { '@url': `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg` } },
     }));
-  return { title: channel, items };
+  return { title: channel, items, playlists };
 }
 
 const PLAYLIST_PREFIX = 'playlist:';
+
+/** A YouTube playlist id is `PL` + url-safe base64 chars. */
+const PLAYLIST_ID_RE = /^PL[A-Za-z0-9_-]+$/;
 
 /** A channel id is `UC` + 22 url-safe base64 chars, but a config value that
  * starts with `UC` is a channel id someone mistyped — not a handle to resolve.
@@ -482,7 +498,7 @@ function videoUrlFor(link: string, template: string | undefined): string {
   }
 }
 
-function parseVideoFeed(raw: string): { title?: string; items: Array<Record<string, unknown>> } {
+function parseVideoFeed(raw: string): { title?: string; items: Array<Record<string, unknown>>; playlists: Array<{ id: string; title: string }> } {
   const parsed = getBXML().parse(raw) as Record<string, unknown>;
   const feed = parsed.feed as Record<string, unknown> | undefined;
   if (feed) {
@@ -490,7 +506,7 @@ function parseVideoFeed(raw: string): { title?: string; items: Array<Record<stri
     const title = typeof rawTitle === 'string' ? rawTitle : (rawTitle as Record<string, unknown> | undefined)?.['#text'] as string | undefined;
     const rawEntries = feed.entry;
     const entries = rawEntries == null ? [] : Array.isArray(rawEntries) ? rawEntries : [rawEntries];
-    return { title: title as string | undefined, items: entries as Array<Record<string, unknown>> };
+    return { title: title as string | undefined, items: entries as Array<Record<string, unknown>>, playlists: [] };
   }
   const rss = parsed.rss as Record<string, unknown> | undefined;
   if (rss) {
@@ -500,10 +516,10 @@ function parseVideoFeed(raw: string): { title?: string; items: Array<Record<stri
       const title = typeof rawTitle === 'string' ? rawTitle : undefined;
       const rawItems = channel.item;
       const items = rawItems == null ? [] : Array.isArray(rawItems) ? rawItems : [rawItems];
-      return { title: title as string | undefined, items: items as Array<Record<string, unknown>> };
+      return { title: title as string | undefined, items: items as Array<Record<string, unknown>>, playlists: [] };
     }
   }
-  return { title: undefined, items: [] };
+  return { title: undefined, items: [], playlists: [] };
 }
 
 /** One feed item -> one Video. Returns null when the item cannot produce a
@@ -783,7 +799,7 @@ async function scrapeChannelPage(
   ctx: WidgetFetchContext,
   pageUrl: string,
   retry: RetryOptions,
-): Promise<{ title?: string; items: Array<Record<string, unknown>> }> {
+): Promise<{ title?: string; items: Array<Record<string, unknown>>; playlists: Array<{ id: string; title: string }> }> {
   // The rescue gets no retry budget of its own. The feed has already spent the
   // configured one, and a source that is down should cost one look, not two
   // full backoff ladders — that doubles the worst-case latency of a dead
@@ -810,6 +826,48 @@ const NO_VIDEOS = 'no videos found';
 interface SourceOutcome {
   videos: Video[];
   issue?: VideoSourceIssue;
+}
+
+/** Resolve playlist lockups found on a channel page into videos.
+ *
+ * When a channel's feed is empty and its page grid holds only playlist lockups
+ * (no video lockups), the playlists are the channel's only visible content.
+ * Resolve up to 3 of them through the existing listing machinery and attribute
+ * the newest entries to the channel. */
+async function resolvePlaylistLockups(
+  ctx: WidgetFetchContext,
+  playlists: Array<{ id: string; title: string }>,
+  channel: string,
+  opts: { source: string; limit: number; template: string | undefined; retry: RetryOptions },
+  cache: { get: () => Video[] | undefined; set: (videos: Video[]) => void },
+): Promise<SourceOutcome | null> {
+  if (playlists.length === 0) return null;
+  const toResolve = playlists.slice(0, 3);
+  const share = Math.ceil(opts.limit / toResolve.length);
+  const videos: Video[] = [];
+  const failures: string[] = [];
+  for (const pl of toResolve) {
+    try {
+      const { entries } = await playlistListing(ctx, pl.id, opts.retry);
+      const newest = entries.slice(-share).reverse();
+      for (const entry of newest) {
+        videos.push(entryToVideo(entry, channel, opts.template));
+      }
+    } catch (err) {
+      failures.push(`playlist ${pl.id} could not be listed: ${reasonFor(err)}`);
+    }
+  }
+  if (videos.length > 0) {
+    cache.set(videos);
+    const issue = failures.length > 0
+      ? { source: opts.source, reason: failures.join('; ') }
+      : undefined;
+    return { videos, issue };
+  }
+  if (failures.length > 0) {
+    return { videos: [], issue: { source: opts.source, reason: failures.join('; ') } };
+  }
+  return null;
 }
 
 registerWidget('videos', async (ctx, config) => {
@@ -865,6 +923,19 @@ registerWidget('videos', async (ctx, config) => {
             reason = reasonFor(err);
           }
         }
+        // A page whose grid holds only playlist lockups (no video lockups)
+        // still names the channel's content: resolve the playlists and
+        // attribute their newest entries to the channel.
+        if (parsed.items.length === 0 && parsed.playlists.length > 0) {
+          const resolved = await resolvePlaylistLockups(
+            ctx,
+            parsed.playlists,
+            parsed.title ?? source,
+            { source, limit: cfg.limit, template: cfg['video-url-template'], retry },
+            { get: getCached, set: setCached },
+          );
+          if (resolved) return resolved;
+        }
         // A playlist whose feed window runs oldest→newest is the positional
         // feed showing its OLDEST slots — the "frozen forever" bug. List the
         // playlist properly and show its newest end, or say why we cannot.
@@ -889,6 +960,16 @@ registerWidget('videos', async (ctx, config) => {
             if (fallback.length > 0) {
               setCached(fallback);
               return { videos: fallback };
+            }
+            if (scraped.playlists.length > 0) {
+              const resolved = await resolvePlaylistLockups(
+                ctx,
+                scraped.playlists,
+                scraped.title ?? source,
+                { source, limit: cfg.limit, template: cfg['video-url-template'], retry },
+                { get: getCached, set: setCached },
+              );
+              if (resolved) return resolved;
             }
           } catch {
             // the page failed too — the feed's error is the one worth naming
