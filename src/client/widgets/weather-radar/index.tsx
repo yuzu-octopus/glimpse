@@ -50,10 +50,15 @@ export function WeatherRadar({ config, data, error, isLoading }: WidgetComponent
 
   const zoom = Math.min(w.zoom, MAX_ZOOM);
   const { x, y } = tileCoords(w.lat, w.lon, zoom);
-  const fx = x - Math.floor(x);
-  const fy = y - Math.floor(y);
-  const baseX = Math.floor(x) - 1;
-  const baseY = Math.floor(y) - 1;
+  // Centre the location, not just keep it on screen. Anchor the 2x2 window on
+  // the NEAREST tile corner (round, not floor) so the layer can always be
+  // shifted by ≤ half a viewport and still cover the frame; a floor-anchored
+  // window cannot centre a location whose fractional part is > 0.5 without
+  // exposing a blank edge. `o*` is the layer offset in viewport widths.
+  const baseX = Math.round(x) - 1;
+  const baseY = Math.round(y) - 1;
+  const ox = x - baseX - 0.5;
+  const oy = y - baseY - 0.5;
   const tiles = [0, 1].flatMap((dy) => [0, 1].map((dx) => ({ tx: baseX + dx, ty: baseY + dy })));
 
   return (
@@ -61,7 +66,7 @@ export function WeatherRadar({ config, data, error, isLoading }: WidgetComponent
       <div className={styles.map} role="img" aria-label={`Radar map for ${w.location}`}>
         <div
           className={styles.tiles}
-          style={{ '--fx': fx, '--fy': fy } as CSSProperties}
+          style={{ '--ox': ox, '--oy': oy } as CSSProperties}
         >
           {tiles.map(({ tx, ty }) => (
             <div key={`${tx}:${ty}`} className={styles.cell}>

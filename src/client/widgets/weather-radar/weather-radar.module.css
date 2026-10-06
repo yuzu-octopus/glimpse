@@ -16,7 +16,9 @@
   position: absolute;
   left: 0;
   top: 0;
-  transform: translate(calc(var(--fx) * -50%), calc(var(--fy) * -50%));
+  /* --ox/--oy are layer offsets in viewport widths; 100% of this 200%-wide
+     layer is two viewports, so the factor is -50% per unit. */
+  transform: translate(calc(var(--ox) * -50%), calc(var(--oy) * -50%));
 }
 
 .cell {

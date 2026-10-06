@@ -42,8 +42,10 @@ describe('weather-radar widget', () => {
     }
     const xs = [...overlays].map((i) => Number(i.src.match(/\/7\/(\d+)\//)![1]));
     const ys = [...overlays].map((i) => Number(i.src.match(/\/7\/\d+\/(\d+)\//)![1]));
-    expect(xs.slice().sort()).toEqual([62, 62, 63, 63]);
-    expect(ys.slice().sort()).toEqual([41, 41, 42, 42]);
+    // Window anchored on the NEAREST corner (63,42) so the location can be
+    // centred; floor-anchoring would put it at 62 and expose a blank edge.
+    expect(xs.slice().sort()).toEqual([63, 63, 64, 64]);
+    expect(ys.slice().sort()).toEqual([42, 42, 43, 43]);
 
     const bases = [...container.querySelectorAll<HTMLImageElement>('img.base')];
     expect(bases).toHaveLength(4);
@@ -65,7 +67,7 @@ describe('weather-radar widget', () => {
     const xs = [...container.querySelectorAll<HTMLImageElement>('img.overlay')].map((i) =>
       Number(i.src.match(/\/7\/(\d+)\//)![1]),
     );
-    expect(xs.slice().sort()).toEqual([62, 62, 63, 63]);
+    expect(xs.slice().sort()).toEqual([63, 63, 64, 64]);
   });
 
   it('places the 2x2 grid around the exact-boundary coordinate', () => {
@@ -78,7 +80,7 @@ describe('weather-radar widget', () => {
     expect(cells.sort()).toEqual(['3/3', '3/4', '4/3', '4/4']);
   });
 
-  it('centers the map on the location via fractional tile offset', () => {
+  it('centers the map on Singapore at z7 (pixel offset, not just fx)', () => {
     const { container } = render(
       <WeatherRadar
         config={{ type: 'weather-radar', location: 'Singapore' }}
@@ -87,14 +89,51 @@ describe('weather-radar widget', () => {
     );
     const tilesEl = container.querySelector<HTMLElement>(`.${styles.tiles}`);
     expect(tilesEl).not.toBeNull();
-    const fx = parseFloat(tilesEl!.style.getPropertyValue('--fx'));
-    const fy = parseFloat(tilesEl!.style.getPropertyValue('--fy'));
-    // Singapore at z7: x ≈ 100.914, y ≈ 63.520 — fractional parts must be
-    // non-zero so the location lands at the viewport center, not a corner.
-    expect(fx).toBeGreaterThan(0.9);
-    expect(fx).toBeLessThan(1);
-    expect(fy).toBeGreaterThan(0.5);
-    expect(fy).toBeLessThan(0.6);
+    const ox = parseFloat(tilesEl!.style.getPropertyValue('--ox'));
+    const oy = parseFloat(tilesEl!.style.getPropertyValue('--oy'));
+
+    // Singapore at z7 is tile coordinate (100.914, 63.520). The 2x2 window is
+    // anchored on the NEAREST corner (100, 63) — not floor — so the layer
+    // offset stays within [0,1] viewport widths and the map is centred without
+    // exposing a blank edge. Values are in viewport widths.
+    expect(ox).toBeCloseTo(0.4138, 3);
+    expect(oy).toBeCloseTo(0.02, 3);
+
+    // Reconstruct the location's pixel position from the RENDERED offset. The
+    // window is translated left by ox, so it spans viewport grid [-ox, -ox + 2];
+    // the location at grid column (x - baseX) = 0.9138 lands at 0.9138 - ox =
+    // 0.5 viewport widths — dead centre, not the bottom-right corner.
+    const { x, y } = tileCoords(1.35, 103.82, 7);
+    expect(x - (Math.round(x) - 1) - ox).toBeCloseTo(0.5, 6);
+    expect(y - (Math.round(y) - 1) - oy).toBeCloseTo(0.5, 6);
+    // No blank edges: the 2-tile-wide window still spans the whole viewport.
+    expect(-ox).toBeLessThanOrEqual(0);
+    expect(-ox + 2).toBeGreaterThanOrEqual(1);
+  });
+
+  it('covers the viewport when the fractional part is just past 0.5', () => {
+    // x = 64.51 at z7 (lat 0, lon 1.434375) — the case a floor-anchored window
+    // gets wrong: floor gives base 63, which would require a 1.01-viewport
+    // shift and slide the layer's left edge to +0.01, exposing a blank strip.
+    // Round-anchoring gives base 64 and offset 0.01, so the 2-tile window still
+    // spans the viewport.
+    const { container } = render(
+      <WeatherRadar config={{ type: 'weather-radar', location: 'Edge' }} data={{ ...DATA, location: 'Edge', lat: 0, lon: 1.434375, zoom: 7 }} />,
+    );
+    const tilesEl = container.querySelector<HTMLElement>(`.${styles.tiles}`)!;
+    const ox = parseFloat(tilesEl.style.getPropertyValue('--ox'));
+    const oy = parseFloat(tilesEl.style.getPropertyValue('--oy'));
+    expect(ox).toBeCloseTo(0.01, 3);
+    expect(oy).toBeCloseTo(0.5, 6);
+    // The layer is translated left by ox viewports, so it spans [-ox, -ox + 2]
+    // and [0, 1] must lie inside it.
+    expect(-ox).toBeLessThanOrEqual(0);
+    expect(-ox + 2).toBeGreaterThanOrEqual(1);
+    // The window is anchored on the nearest corner (64), not the floor (63).
+    const xs = [...container.querySelectorAll<HTMLImageElement>('img.overlay')]
+      .map((i) => Number(i.src.match(/\/7\/(\d+)\//)![1]))
+      .sort();
+    expect(xs).toEqual([64, 64, 65, 65]);
   });
 
   it('shows the location and frame timestamp in UTC', () => {
