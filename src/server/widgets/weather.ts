@@ -31,6 +31,7 @@ export interface GeocodePlace {
   name?: string;
   admin1?: string;
   country?: string;
+  timezone?: string;
 }
 
 /** Shared open-meteo geocoding — used by weather + weather-radar. */

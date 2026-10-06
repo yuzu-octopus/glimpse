@@ -14,11 +14,26 @@ export function tileCoords(lat: number, lon: number, zoom: number): { x: number;
   return { x, y };
 }
 
-const TIME_FMT = new Intl.DateTimeFormat('en-GB', {
+const TIME_FMT_UTC = new Intl.DateTimeFormat('en-GB', {
   hour: '2-digit',
   minute: '2-digit',
   timeZone: 'UTC',
 });
+/** Frame time in the radar's own zone (Singapore reads SGT, not UTC).
+ *  A bogus zone falls back to UTC rather than throwing on render. */
+function formatFrame(frameTime: number, timezone: string | null): string {
+  const date = new Date(frameTime * 1000);
+  if (timezone) {
+    try {
+      const fmt = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: timezone });
+      const short = timezone.split('/').pop()?.replace(/_/g, ' ') ?? timezone;
+      return `${fmt.format(date)} ${short}`;
+    } catch {
+      // fall through to UTC
+    }
+  }
+  return `${TIME_FMT_UTC.format(date)} UTC`;
+}
 
 const SHARED_IMG = { draggable: false } as const;
 
@@ -83,7 +98,7 @@ export function WeatherRadar({ config, data, error, isLoading }: WidgetComponent
       </div>
       </div>
       <div className={styles.timestamp}>
-        {w.location} · {w.frameTime != null ? `${TIME_FMT.format(new Date(w.frameTime * 1000))} UTC` : 'live'}
+        {w.location} · {w.frameTime != null ? formatFrame(w.frameTime, w.timezone ?? null) : 'live'}
       </div>
     </WidgetChrome>
   );

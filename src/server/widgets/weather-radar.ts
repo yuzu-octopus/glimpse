@@ -46,6 +46,7 @@ registerWidget('weather-radar', async (ctx, config) => {
     zoom,
     tileUrlTemplate: `${host}${last.path}/256/{z}/{x}/{y}/4/1_1.png`,
     frameTime: typeof last.time === 'number' ? last.time : null,
+    timezone: typeof place.timezone === 'string' ? place.timezone : null,
   };
   return data;
 });

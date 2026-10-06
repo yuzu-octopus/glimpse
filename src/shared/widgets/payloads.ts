@@ -109,6 +109,10 @@ export interface RadarData {
   tileUrlTemplate: string;
   /** Radar frame time, unix seconds. */
   frameTime: number | null;
+  /** IANA zone from geocoding (e.g. Asia/Singapore) — the frame timestamp
+   *  renders in the radar's own zone, not the viewer's. Optional: payloads
+   *  predating this field (incl. cached ones) read as the viewer's zone. */
+  timezone?: string | null;
 }
 
 export interface MonitorSite {
