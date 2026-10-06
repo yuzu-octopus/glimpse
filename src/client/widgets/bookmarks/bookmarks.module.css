@@ -6,8 +6,8 @@
 .group {
   /* glance .bookmarks-group: one colour per group, shared by the title and
    * the link arrows. A named accent overrides it on the group element, so it
-   * reaches both. */
-  --bookmarks-group-color: var(--color-primary);
+   * reaches both. Default is neutral — purple is tappable-only. */
+  --bookmarks-group-color: var(--color-text-highlight);
   margin-bottom: 12px;
 }
 

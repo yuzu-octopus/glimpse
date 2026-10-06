@@ -26,6 +26,7 @@
   align-items: flex-start;
   min-width: 0;
   padding-block: calc(var(--widget-content-vertical) / 2 - 0.5px);
+  padding-inline: var(--spacing-3);
 }
 
 /* Motion answers action: the kit's overlay dim, straight on the row. The
