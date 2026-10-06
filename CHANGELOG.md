@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-06
+
+### Added
+- Changelog renders colourised Markdown (headings/code/links/quotes mapped
+  onto dracula tokens, single title, no leaked maintainer comment).
+- Radar frame time shows the radar's own timezone, not UTC.
+
+### Fixed
+- Every clickable title wears tappable purple at rest (videos, bookmarks,
+  media, repository, reddit, docker names).
+
 ## [0.2.0] - 2026-10-06
 
 ### Added
