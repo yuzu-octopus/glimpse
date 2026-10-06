@@ -63,7 +63,11 @@ function Network({ config, data, error, isLoading }: WidgetComponentProps) {
       cssClass={cfg['css-class']}
       isLoading={!!loading}
     >
-      <Grid columns={3} gap={2}>
+      {/* Responsive, not fixed: three equal tracks crushed each value to a
+          few px in a narrow column (a tablet/phone span-3 tile), clipping
+          IPs and latencies to ellipses. minWidth 72 keeps all three across
+          on desktop (≥1180) and stacks to 1-2 in a narrow tile. */}
+      <Grid columns={{ minWidth: 72, max: 3 }} gap={2}>
         <Stack gap={0.5}>
           <Text type="label">Local</Text>
           <Text hasTabularNumbers>{d?.localIp ?? '—'}</Text>

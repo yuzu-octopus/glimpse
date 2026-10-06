@@ -109,6 +109,26 @@
   .sparkline {
     width: 40px;
   }
+  /* The values column's 80px floor (a glance port) is wider than the room a
+     narrow tile leaves the symbol: drop it so a ticker keeps enough width to
+     read, and let the right-aligned price take what is left. */
+  .values {
+    min-width: 0;
+  }
+}
+
+/* Very narrow tile (a span-3 column at tablet/phone width ≈ 136px): symbol,
+   40px chart and values cannot share one line — the symbol collapsed to
+   ~24px and every ticker ellipsised to a letter. Stack the identity block
+   over the chart + values instead of dropping the chart (data ink). */
+@container (max-width: 200px) {
+  .row {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .rowLeft {
+    flex: 1 1 100%;
+  }
 }
 
 /* Per-symbol failure rows. Kit Stack + StatusDot + Text do the work; the
