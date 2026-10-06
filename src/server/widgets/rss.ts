@@ -58,6 +58,65 @@ function extractCategories(item: Record<string, unknown>): string[] {
   return cats;
 }
 
+/** Feed descriptions are HTML but the client renders plain text. */
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'",
+  rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“',
+  mdash: '—', ndash: '–', hellip: '…', nbsp: ' ',
+  copy: '©', reg: '®', trade: '™', laquo: '«', raquo: '»', bull: '•',
+  deg: '°', plusmn: '±', frac12: '½', frac14: '¼', frac34: '¾',
+  times: '×', divide: '÷', micro: 'µ', para: '¶', sect: '§',
+  dagger: '†', Dagger: '‡', permil: '‰', prime: '′', Prime: '″',
+  euro: '€', pound: '£', yen: '¥', cent: '¢',
+  curren: '¤', brvbar: '¦', uml: '¨', ordf: 'ª', ordm: 'º',
+  iexcl: '¡', iquest: '¿', szlig: 'ß',
+  agrave: 'à', aacute: 'á', acirc: 'â', atilde: 'ã', auml: 'ä', aring: 'å', aelig: 'æ',
+  ccedil: 'ç', egrave: 'è', eacute: 'é', ecirc: 'ê', euml: 'ë',
+  igrave: 'ì', iacute: 'í', icirc: 'î', iuml: 'ï', eth: 'ð',
+  ntilde: 'ñ', ograve: 'ò', oacute: 'ó', ocirc: 'ô', otilde: 'õ',
+  ouml: 'ö', oslash: 'ø', ugrave: 'ù', uacute: 'ú', ucirc: 'û',
+  uuml: 'ü', yacute: 'ý', thorn: 'þ', yuml: 'ÿ',
+  Agrave: 'À', Aacute: 'Á', Acirc: 'Â', Atilde: 'Ã', Auml: 'Ä',
+  Aring: 'Å', AElig: 'Æ', Ccedil: 'Ç', Egrave: 'È', Eacute: 'É',
+  Ecirc: 'Ê', Euml: 'Ë', Igrave: 'Ì', Iacute: 'Í', Icirc: 'Î',
+  Iuml: 'Ï', ETH: 'Ð', Ntilde: 'Ñ', Ograve: 'Ò', Oacute: 'Ó',
+  Ocirc: 'Ô', Otilde: 'Õ', Ouml: 'Ö', Oslash: 'Ø', Ugrave: 'Ù',
+  Uacute: 'Ú', Ucirc: 'Û', Uuml: 'Ü', Yacute: 'Ý', THORN: 'Þ',
+  alpha: 'α', beta: 'β', gamma: 'γ', delta: 'δ', epsilon: 'ε',
+  pi: 'π', sigma: 'σ', omega: 'ω', Omega: 'Ω',
+  infin: '∞', ne: '≠', le: '≤', ge: '≥',
+  larr: '←', uarr: '↑', rarr: '→', darr: '↓',
+  harr: '↔', crarr: '↵', lArr: '⇐', uArr: '⇑', rArr: '⇒',
+  dArr: '⇓', hArr: '⇔', forall: '∀', part: '∂', exist: '∃',
+  empty: '∅', nabla: '∇', isin: '∈', notin: '∉', ni: '∋',
+  prod: '∏', sum: '∑', minus: '−', radic: '√', prop: '∝',
+  ang: '∠', and: '∧', or: '∨', cap: '∩', cup: '∪',
+  int: '∫', there4: '∴', sim: '∼', cong: '≅', asymp: '≈',
+  equiv: '≡', sub: '⊂', sup: '⊃', nsub: '⊄', sube: '⊆',
+  supe: '⊇', oplus: '⊕', otimes: '⊗', perp: '⊥', sdot: '⋅',
+  loz: '◊', spades: '♠', clubs: '♣', hearts: '♥', diams: '♦',
+};
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]*);/g, (match, entity: string) => {
+      if (entity.startsWith('#x') || entity.startsWith('#X')) {
+        const code = parseInt(entity.slice(2), 16);
+        return isNaN(code) ? match : String.fromCodePoint(code);
+      }
+      if (entity.startsWith('#')) {
+        const code = parseInt(entity.slice(1), 10);
+        return isNaN(code) ? match : String.fromCodePoint(code);
+      }
+      return NAMED_ENTITIES[entity] ?? match;
+    })
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function parseFeed(raw: string): { title?: string; items: Array<Record<string, unknown>> } {
   const parsed = getBXML().parse(raw) as Record<string, unknown>;
   const rss = parsed.rss as Record<string, unknown> | undefined;
@@ -109,14 +168,15 @@ function itemPublished(item: Record<string, unknown>): string | null {
 }
 
 function itemDescription(item: Record<string, unknown>): string | null {
-  return (
+  const raw =
     textVal(item.description) ??
     textVal(item.summary) ??
     textVal(item.content) ??
     (typeof item['content:encoded'] === 'string' ? (item['content:encoded'] as string) : textVal(item['content:encoded'])) ??
-    textVal(item['media:description']) ??
-    null
-  );
+    textVal(item['media:description']);
+  if (!raw) return null;
+  const stripped = stripHtml(raw);
+  return stripped || null;
 }
 
 registerWidget('rss', async (ctx, config) => {

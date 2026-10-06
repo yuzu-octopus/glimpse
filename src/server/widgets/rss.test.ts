@@ -119,4 +119,34 @@ describe('rss fetcher', () => {
     ]);
   });
 
+  it('strips HTML tags and decodes entities in descriptions', async () => {
+    const html = `<rss version="2.0"><channel>
+  <title>HTML Feed</title>
+  <item>
+    <title>HTML post</title>
+    <link>https://example.com/html</link>
+    <pubDate>Mon, 01 Jan 2024 10:00:00 GMT</pubDate>
+    <description>&lt;p&gt;Hello &lt;em&gt;world&lt;/em&gt;&lt;/p&gt;&lt;img src="x"&gt;It&amp;#8217;s &lt;blockquote cite="u"&gt;quoted&lt;/blockquote&gt;</description>
+  </item>
+</channel></rss>`;
+    const ctx = makeCtx(async () => new Response(html, { status: 200 }));
+    const data = (await rssFetcher()(ctx, { type: 'rss', feeds: [{ url: 'https://example.com/feed' }] })) as { items: RssItem[] };
+    expect(data.items[0].description).toBe("Hello world It's quoted");
+  });
+
+  it('returns null for descriptions that are empty after stripping', async () => {
+    const html = `<rss version="2.0"><channel>
+  <title>Empty Feed</title>
+  <item>
+    <title>Empty post</title>
+    <link>https://example.com/empty</link>
+    <pubDate>Mon, 01 Jan 2024 10:00:00 GMT</pubDate>
+    <description>&lt;p&gt;&lt;img src="x"&gt;&lt;/p&gt;</description>
+  </item>
+</channel></rss>`;
+    const ctx = makeCtx(async () => new Response(html, { status: 200 }));
+    const data = (await rssFetcher()(ctx, { type: 'rss', feeds: [{ url: 'https://example.com/feed' }] })) as { items: RssItem[] };
+    expect(data.items[0].description).toBeNull();
+  });
 });
+
