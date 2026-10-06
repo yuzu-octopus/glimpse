@@ -128,6 +128,117 @@
   color: var(--color-text-highlight);
 }
 
+/* Changelog markdown — colourised structure on dracula tokens.
+ * Headings get presence (highlight), code spans use the syntax family,
+ * links stay tappable-purple, body stays readable prose. No hex. */
+
+.changelogHeading {
+  margin: 20px 0 8px;
+  color: var(--color-text-highlight);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.changelogParagraph {
+  margin: 0 0 10px;
+  color: var(--color-text-paragraph);
+  line-height: 1.6;
+}
+
+.changelogCodeBlock {
+  margin: 10px 0;
+  padding: 10px 12px;
+  background: var(--color-syntax-background);
+  border-radius: var(--radius-inner);
+  overflow-x: auto;
+  font-family: var(--font-family-code);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--color-syntax-variable);
+}
+
+.changelogCodeBlock code {
+  font-family: inherit;
+  background: none;
+  padding: 0;
+}
+
+.changelogInlineCode {
+  padding: 2px 5px;
+  background: var(--color-syntax-background);
+  border-radius: var(--radius-inner);
+  font-family: var(--font-family-code);
+  font-size: 0.875em;
+  color: var(--color-syntax-string);
+}
+
+.changelogLink {
+  color: var(--color-text-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.changelogLink:is(:hover, :focus-visible) {
+  color: var(--color-text-highlight);
+}
+
+.changelogBlockquote {
+  margin: 10px 0;
+  padding: 8px 14px;
+  border-left: 3px solid var(--color-syntax-comment);
+  color: var(--color-text-base-muted);
+  font-style: italic;
+}
+
+.changelogHr {
+  margin: 16px 0;
+  border: none;
+  border-top: 1px solid var(--color-separator);
+}
+
+/* Changelog lists — no components override exists, so CSS owns them. */
+.changelog :global(ul),
+.changelog :global(ol) {
+  margin: 6px 0 10px;
+  padding-left: 22px;
+  color: var(--color-text-paragraph);
+}
+
+.changelog :global(li) {
+  margin-bottom: 4px;
+  line-height: 1.55;
+}
+
+.changelog :global(li)::marker {
+  color: var(--color-syntax-function);
+}
+
+/* Changelog tables — no components override exists, so CSS owns them. */
+.changelog :global(table) {
+  width: 100%;
+  margin: 10px 0;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.changelog :global(th) {
+  padding: 6px 10px;
+  text-align: left;
+  color: var(--color-text-highlight);
+  font-weight: 600;
+  border-bottom: 1px solid var(--color-separator);
+}
+
+.changelog :global(td) {
+  padding: 6px 10px;
+  color: var(--color-text-paragraph);
+  border-bottom: 1px solid var(--color-separator);
+}
+
+.changelog :global(tr:last-child td) {
+  border-bottom: none;
+}
+
 
 /* Narrow screens: the section rail becomes a row above the content. The
    items need no second set of active rules — the kit's selected treatment

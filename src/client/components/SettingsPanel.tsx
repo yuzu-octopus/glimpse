@@ -10,12 +10,53 @@ import {
   Table,
   Text,
   proportional,
+  type MarkdownComponents,
 } from '@astryxdesign/core';
 import { BookOpen, FileText, Info, Settings } from 'lucide-react';
 import type { ConfigResponse } from '../../shared/api';
 import { bangs } from '../../shared/widgets/bangs';
 import changelog from '../../../CHANGELOG.md?raw';
 import styles from './settings-panel.module.css';
+
+// Strip maintainer HTML comments (they guide contributors in the file itself)
+// so they never render as literal text in the Changelog section.
+const changelogMarkdown = changelog.replace(/<!--[\s\S]*?-->/g, '');
+
+// Changelog markdown colourisation — maps structure onto existing dracula
+// tokens. Headings get presence (highlight), code spans use the syntax
+// family, links stay tappable-purple, body stays readable prose. No hex.
+const changelogComponents: MarkdownComponents = {
+  heading: ({ level, children }) => {
+    const Tag = `h${level}` as 'h3' | 'h4' | 'h5' | 'h6';
+    return <Tag className={styles.changelogHeading}>{children}</Tag>;
+  },
+  paragraph: ({ children }) => (
+    <p className={styles.changelogParagraph}>{children}</p>
+  ),
+  code: ({ code, language }) => (
+    <pre className={styles.changelogCodeBlock} data-language={language}>
+      <code>{code}</code>
+    </pre>
+  ),
+  inlineCode: ({ children }) => (
+    <code className={styles.changelogInlineCode}>{children}</code>
+  ),
+  link: ({ href, children }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={styles.changelogLink}
+    >
+      {children}
+    </a>
+  ),
+  blockquote: ({ children }) => (
+    <blockquote className={styles.changelogBlockquote}>{children}</blockquote>
+  ),
+  hr: () => <hr className={styles.changelogHr} />,
+};
+
 // Settings dialog: section sidebar + spacious content pane. About lists app +
 // config facts from /api/config (revalidated on every open so version and
 // config path never go stale across a config reload or upgrade; falls back to
@@ -231,7 +272,13 @@ export function SettingsPanel() {
                 <Heading level={2} className={styles.sectionTitle}>
                   Changelog
                 </Heading>
-                <Markdown headingLevelStart={3}>{changelog}</Markdown>
+                <Markdown
+                  headingLevelStart={3}
+                  density="compact"
+                  components={changelogComponents}
+                >
+                  {changelogMarkdown}
+                </Markdown>
               </section>
             )}
           </div>

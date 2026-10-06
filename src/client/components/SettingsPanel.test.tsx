@@ -290,6 +290,40 @@ describe('SettingsPanel About facts', () => {
     // Kit Markdown renders ## as a heading, not literal text.
     expect(pane?.textContent).toContain('[Unreleased]');
     expect(pane?.textContent).toContain('[0.2.0]');
+    // Single title: the section header owns "Changelog"; the markdown no longer repeats it.
+    expect(within(pane!).getAllByRole('heading', { name: 'Changelog' })).toHaveLength(1);
+    // HTML comments are stripped before rendering.
+    expect(pane?.textContent).not.toContain('<!--');
+    expect(pane?.textContent).not.toContain('Keep this file current');
+  });
+
+  it('colourises changelog markdown structure with dracula tokens', async () => {
+    stubConfigApi();
+    render(<SettingsPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    await screen.findByText('9.9.9');
+    fireEvent.click(within(screen.getByTestId('settings-nav')).getByText('Changelog'));
+
+    const pane = document.getElementById('settings-panel-changelog');
+    expect(pane).not.toBeNull();
+
+    // Headings rendered BY the Markdown carry the changelogHeading class.
+    // (The section's own `Changelog` h2 is kit Heading, not Markdown output.
+    // CSS modules hashes class names, so match the substring, not the literal.)
+    const headings = Array.from(pane!.querySelectorAll('[class*="changelogHeading"]'));
+    expect(headings.length).toBeGreaterThan(0);
+
+    // Links carry the changelogLink class (tappable-purple).
+    const links = Array.from(pane!.querySelectorAll('[class*="changelogLink"]'));
+    expect(links.length).toBeGreaterThan(0);
+
+    // Inline code spans carry the changelogInlineCode class (syntax family).
+    const inlineCodes = pane!.querySelectorAll('[class*="changelogInlineCode"]');
+    expect(inlineCodes.length).toBeGreaterThan(0);
+
+    // Paragraphs carry the changelogParagraph class (readable prose).
+    const paragraphs = pane!.querySelectorAll('[class*="changelogParagraph"]');
+    expect(paragraphs.length).toBeGreaterThan(0);
   });
 });
 
