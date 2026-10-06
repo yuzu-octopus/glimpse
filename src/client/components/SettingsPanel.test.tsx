@@ -287,10 +287,9 @@ describe('SettingsPanel About facts', () => {
 
     const pane = document.getElementById('settings-panel-changelog');
     expect(pane).not.toBeNull();
-    const pre = pane?.querySelector('pre');
-    expect(pre).not.toBeNull();
-    expect(pre?.textContent).toContain('## [Unreleased]');
-    expect(pre?.textContent).toContain('## [0.1.1]');
+    // Kit Markdown renders ## as a heading, not literal text.
+    expect(pane?.textContent).toContain('[Unreleased]');
+    expect(pane?.textContent).toContain('[0.2.0]');
   });
 });
 

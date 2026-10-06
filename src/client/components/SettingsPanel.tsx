@@ -5,6 +5,7 @@ import {
   Heading,
   IconButton,
   Link,
+  Markdown,
   SideNavItem,
   Table,
   Text,
@@ -230,7 +231,7 @@ export function SettingsPanel() {
                 <Heading level={2} className={styles.sectionTitle}>
                   Changelog
                 </Heading>
-                <pre className={styles.changelog}>{changelog}</pre>
+                <Markdown headingLevelStart={3}>{changelog}</Markdown>
               </section>
             )}
           </div>
