@@ -11,11 +11,16 @@ const sampleData: SystemStatsData = {
   fs: [{ fs: '/dev/sda1', size: 500e9, used: 100e9, use: 20, mount: '/' }],
   temp: 55,
   gpu: [{ model: 'M5', temp: 60 }],
+  battery: { percent: 85, status: 'Discharging', powerW: null, health: 91, onAc: false, hoursRemaining: 2 },
+  uptimeHrs: 48.5,
+  load1m: 1.5,
+  fanRpm: 1200,
+  gpuLoad: 35,
 };
 
 describe('SystemStats client', () => {
   it('shows placeholder when cpu null (not on homelab)', () => {
-    const nullData: SystemStatsData = { cpu: null, mem: null, fs: [], temp: null, gpu: [] };
+    const nullData: SystemStatsData = { cpu: null, mem: null, fs: [], temp: null, gpu: [], battery: null, uptimeHrs: null, load1m: null, fanRpm: null, gpuLoad: null };
     render(<SystemStats config={baseConfig} data={nullData} />);
     expect(screen.getByText('No data — not running on homelab host')).toBeInTheDocument();
   });
@@ -76,5 +81,57 @@ describe('SystemStats client', () => {
     expect(screen.getByTestId('widget-loading')).toBeInTheDocument();
     expect(screen.queryByRole('meter', { name: 'CPU load' })).toBeNull();
     expect(screen.queryByText('No data — not running on homelab host')).not.toBeInTheDocument();
+  });
+
+  it('renders battery row with percent and status', () => {
+    render(<SystemStats config={baseConfig} data={sampleData} />);
+    expect(screen.getByText(/BATTERY/i)).toBeInTheDocument();
+    expect(screen.getByText(/85% Discharging/)).toBeInTheDocument();
+    expect(screen.getByText(/2h remaining/)).toBeInTheDocument();
+  });
+
+  it('renders uptime row', () => {
+    render(<SystemStats config={baseConfig} data={sampleData} />);
+    expect(screen.getByText(/UPTIME/i)).toBeInTheDocument();
+    expect(screen.getByText(/48.5h/)).toBeInTheDocument();
+  });
+
+  it('renders load row', () => {
+    render(<SystemStats config={baseConfig} data={sampleData} />);
+    expect(screen.getAllByText(/LOAD/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/1.50/)).toBeInTheDocument();
+  });
+
+  it('renders fan row', () => {
+    render(<SystemStats config={baseConfig} data={sampleData} />);
+    expect(screen.getByText(/FAN/i)).toBeInTheDocument();
+    expect(screen.getByText(/1200 RPM/)).toBeInTheDocument();
+  });
+
+  it('renders gpu load row with meter', () => {
+    render(<SystemStats config={baseConfig} data={sampleData} />);
+    expect(screen.getByText(/GPU LOAD/i)).toBeInTheDocument();
+    expect(screen.getByText(/35%/)).toBeInTheDocument();
+    expect(screen.getByRole('meter', { name: 'GPU LOAD load' })).toHaveAttribute('aria-valuenow', '35');
+  });
+
+  it('omits battery row when battery is null', () => {
+    render(<SystemStats config={baseConfig} data={{ ...sampleData, battery: null }} />);
+    expect(screen.queryByText(/BATTERY/i)).toBeNull();
+  });
+
+  it('omits uptime row when uptimeHrs is null', () => {
+    render(<SystemStats config={baseConfig} data={{ ...sampleData, uptimeHrs: null }} />);
+    expect(screen.queryByText(/UPTIME/i)).toBeNull();
+  });
+
+  it('omits fan row when fanRpm is null', () => {
+    render(<SystemStats config={baseConfig} data={{ ...sampleData, fanRpm: null }} />);
+    expect(screen.queryByText(/FAN/i)).toBeNull();
+  });
+
+  it('omits gpu load row when gpuLoad is null', () => {
+    render(<SystemStats config={baseConfig} data={{ ...sampleData, gpuLoad: null }} />);
+    expect(screen.queryByText(/GPU LOAD/i)).toBeNull();
   });
 });

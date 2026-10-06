@@ -28,7 +28,7 @@ function Row({
   const p = percent == null ? null : Math.max(0, Math.min(100, Math.round(percent)));
   return (
     <Stack gap={1.5} className={styles.row}>
-      <Grid columns={{ minWidth: 48 }} columnGap={3} align="center">
+      <Grid columns={3} columnGap={3} align="center">
         <Text type="label">{label}</Text>
         <Text hasTabularNumbers maxLines={1}>{value}</Text>
         {sub ? <Text type="supporting" hasTabularNumbers>{sub}</Text> : null}
@@ -102,6 +102,40 @@ function buildRows(
   // GPU
   for (const g of d.gpu) {
     rows.push(<Row key={`gpu-${g.model}-${g.temp ?? 'na'}`} label="GPU" value={g.model} sub={g.temp != null ? `${g.temp}°C` : undefined} percent={g.temp} />);
+  }
+
+  // BATTERY
+  if (d.battery) {
+    const b = d.battery;
+    rows.push(
+      <Row
+        key="battery"
+        label="BATTERY"
+        value={`${b.percent}% ${b.status}`}
+        sub={b.hoursRemaining != null ? `${b.hoursRemaining}h remaining` : undefined}
+        percent={b.percent}
+      />,
+    );
+  }
+
+  // UPTIME
+  if (d.uptimeHrs != null) {
+    rows.push(<Row key="uptime" label="UPTIME" value={`${d.uptimeHrs}h`} />);
+  }
+
+  // LOAD
+  if (d.load1m != null) {
+    rows.push(<Row key="load" label="LOAD" value={d.load1m.toFixed(2)} />);
+  }
+
+  // FAN
+  if (d.fanRpm != null) {
+    rows.push(<Row key="fan" label="FAN" value={`${d.fanRpm} RPM`} />);
+  }
+
+  // GPU LOAD
+  if (d.gpuLoad != null) {
+    rows.push(<Row key="gpuLoad" label="GPU LOAD" value={`${d.gpuLoad}%`} percent={d.gpuLoad} />);
   }
 
   return rows;

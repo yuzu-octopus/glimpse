@@ -198,6 +198,11 @@ export interface SystemStatsData {
   fs: { fs: string; size: number; used: number; use: number; mount: string }[];
   temp: number | null;
   gpu: { model: string; temp: number | null }[];
+  battery: { percent: number; status: string; powerW: number | null; health: number | null; onAc: boolean | null; hoursRemaining: number | null } | null;
+  uptimeHrs: number | null;
+  load1m: number | null;
+  fanRpm: number | null;
+  gpuLoad: number | null;
 }
 
 export interface DockerIcon {

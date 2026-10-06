@@ -7,7 +7,9 @@ const mockMem = vi.fn(async () => ({ total: 16e9, active: 8e9, available: 8e9 })
 const mockFsSize = vi.fn(async () => [{ fs: '/dev/sda1', size: 500e9, used: 100e9, use: 20, mount: '/' }]);
 const mockCpuTemp = vi.fn(async () => ({ main: 55 }));
 const mockGraphics = vi.fn(async () => ({ controllers: [{ model: 'M5', temperatureGpu: 60 }] }));
-const mockCurrentLoad = vi.fn(async () => ({ currentLoad: 42 }));
+const mockCurrentLoad = vi.fn<() => Promise<{ currentLoad: number | null; avgLoad: number | null }>>(async () => ({ currentLoad: 42, avgLoad: 1.5 }));
+const mockBattery = vi.fn<() => Promise<{ hasBattery: boolean; percent?: number; isCharging?: boolean; timeRemaining?: number | null; acConnected?: boolean; maxCapacity?: number; designedCapacity?: number }>>(async () => ({ hasBattery: true, percent: 85, isCharging: false, timeRemaining: 120, acConnected: false, maxCapacity: 5000, designedCapacity: 5500 }));
+const mockTime = vi.fn(async () => ({ uptime: 7200 }));
 
 vi.mock('systeminformation', () => ({
   cpu: () => mockCpu(),
@@ -16,6 +18,8 @@ vi.mock('systeminformation', () => ({
   cpuTemperature: () => mockCpuTemp(),
   graphics: () => mockGraphics(),
   currentLoad: () => mockCurrentLoad(),
+  battery: () => mockBattery(),
+  time: () => mockTime(),
 }));
 
 // Import fetcher after mock
@@ -41,7 +45,9 @@ describe('system-stats fetcher', () => {
     mockFsSize.mockResolvedValue([{ fs: '/dev/sda1', size: 500e9, used: 100e9, use: 20, mount: '/' }]);
     mockCpuTemp.mockResolvedValue({ main: 55 });
     mockGraphics.mockResolvedValue({ controllers: [{ model: 'M5', temperatureGpu: 60 }] });
-    mockCurrentLoad.mockResolvedValue({ currentLoad: 42 });
+    mockCurrentLoad.mockResolvedValue({ currentLoad: 42, avgLoad: 1.5 });
+    mockBattery.mockResolvedValue({ hasBattery: true, percent: 85, isCharging: false, timeRemaining: 120, acConnected: false, maxCapacity: 5000, designedCapacity: 5500 });
+    mockTime.mockResolvedValue({ uptime: 7200 });
   });
 
   it('returns shape and respects cache', async () => {
@@ -52,6 +58,11 @@ describe('system-stats fetcher', () => {
       fs: { mount: string }[];
       temp: number | null;
       gpu: { model: string }[];
+      battery: { percent: number; status: string; powerW: number | null; health: number | null; onAc: boolean | null; hoursRemaining: number | null } | null;
+      uptimeHrs: number | null;
+      load1m: number | null;
+      fanRpm: number | null;
+      gpuLoad: number | null;
     };
     expect(res.cpu.cores).toBe(8);
     expect(res.cpu.speed).toBe(3.2);
@@ -60,6 +71,13 @@ describe('system-stats fetcher', () => {
     expect(res.fs[0].mount).toBe('/');
     expect(res.temp).toBe(55);
     expect(res.gpu[0].model).toBe('M5');
+    expect(res.battery?.percent).toBe(85);
+    expect(res.battery?.status).toBe('Discharging');
+    expect(res.battery?.health).toBe(91);
+    expect(res.battery?.onAc).toBe(false);
+    expect(res.battery?.hoursRemaining).toBe(2);
+    expect(res.uptimeHrs).toBe(2);
+    expect(res.load1m).toBe(1.5);
 
     // second call hits cache (singleflight + TtlCache) — si not called again
     const res2 = (await fetcher()(ctx, { type: 'system-stats' })) as typeof res;
@@ -75,6 +93,8 @@ describe('system-stats fetcher', () => {
     mockCpuTemp.mockRejectedValueOnce(new Error('x'));
     mockGraphics.mockRejectedValueOnce(new Error('x'));
     mockCurrentLoad.mockRejectedValueOnce(new Error('x'));
+    mockBattery.mockRejectedValueOnce(new Error('x'));
+    mockTime.mockRejectedValueOnce(new Error('x'));
     const ctx = makeCtx();
     const res = (await fetcher()(ctx, { type: 'system-stats' })) as {
       cpu: unknown;
@@ -82,6 +102,11 @@ describe('system-stats fetcher', () => {
       fs: unknown[];
       temp: unknown;
       gpu: unknown[];
+      battery: unknown;
+      uptimeHrs: unknown;
+      load1m: unknown;
+      fanRpm: unknown;
+      gpuLoad: unknown;
     };
     // per catch categories: cpu null, mem null, fs empty array, temp null, gpu empty
     expect(res.cpu).toBeNull();
@@ -89,6 +114,11 @@ describe('system-stats fetcher', () => {
     expect(res.fs).toEqual([]);
     expect(res.temp).toBeNull();
     expect(res.gpu).toEqual([]);
+    expect(res.battery).toBeNull();
+    expect(res.uptimeHrs).toBeNull();
+    expect(res.load1m).toBeNull();
+    expect(res.fanRpm).toBeNull();
+    expect(res.gpuLoad).toBeNull();
   });
 
   it('caches for 5s by default when no cache string is configured', async () => {
@@ -109,5 +139,59 @@ describe('system-stats fetcher', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('dedupes disk rows by device, keeping root mount', async () => {
+    mockFsSize.mockResolvedValue([
+      { fs: 'nvme0n1p2', size: 500e9, used: 100e9, use: 20, mount: '/' },
+      { fs: 'nvme0n1p2', size: 500e9, used: 100e9, use: 20, mount: '/home' },
+      { fs: 'nvme0n1p2', size: 500e9, used: 100e9, use: 20, mount: '/root' },
+      { fs: 'efivarfs', size: 1e6, used: 1e6, use: 100, mount: '/sys/firmware/efi/efivars' },
+    ]);
+    const ctx = makeCtx();
+    const res = (await fetcher()(ctx, { type: 'system-stats' })) as { fs: { fs: string; mount: string }[] };
+    expect(res.fs).toHaveLength(2);
+    expect(res.fs[0].mount).toBe('/');
+    expect(res.fs[0].fs).toBe('nvme0n1p2');
+    expect(res.fs[1].fs).toBe('efivarfs');
+  });
+
+  it('dedupes disk rows keeping shortest mount when no root', async () => {
+    mockFsSize.mockResolvedValue([
+      { fs: '/dev/sda1', size: 500e9, used: 100e9, use: 20, mount: '/home' },
+      { fs: '/dev/sda1', size: 500e9, used: 100e9, use: 20, mount: '/home/user' },
+    ]);
+    const ctx = makeCtx();
+    const res = (await fetcher()(ctx, { type: 'system-stats' })) as { fs: { fs: string; mount: string }[] };
+    expect(res.fs).toHaveLength(1);
+    expect(res.fs[0].mount).toBe('/home');
+  });
+
+  it('returns null battery when hasBattery is false', async () => {
+    mockBattery.mockResolvedValue({ hasBattery: false });
+    const ctx = makeCtx();
+    const res = (await fetcher()(ctx, { type: 'system-stats' })) as { battery: unknown };
+    expect(res.battery).toBeNull();
+  });
+
+  it('returns null battery when si.battery rejects', async () => {
+    mockBattery.mockRejectedValueOnce(new Error('no battery'));
+    const ctx = makeCtx();
+    const res = (await fetcher()(ctx, { type: 'system-stats' })) as { battery: unknown };
+    expect(res.battery).toBeNull();
+  });
+
+  it('returns null uptime when si.time rejects', async () => {
+    mockTime.mockRejectedValueOnce(new Error('no time'));
+    const ctx = makeCtx();
+    const res = (await fetcher()(ctx, { type: 'system-stats' })) as { uptimeHrs: unknown };
+    expect(res.uptimeHrs).toBeNull();
+  });
+
+  it('returns null load1m when avgLoad missing', async () => {
+    mockCurrentLoad.mockResolvedValue({ currentLoad: 42, avgLoad: null });
+    const ctx = makeCtx();
+    const res = (await fetcher()(ctx, { type: 'system-stats' })) as { load1m: unknown };
+    expect(res.load1m).toBeNull();
   });
 });
