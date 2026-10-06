@@ -8,7 +8,8 @@
   min-width: 0;
 }
 
-/* glance repository.html: name is size-h4 color-highlight link */
+/* glance repository.html: name is size-h4 link — a link, so it wears the
+ * tappable purple at rest. */
 .repoName {
   display: inline-flex;
   align-items: center;
@@ -16,15 +17,15 @@
   width: fit-content;
   font-size: var(--font-size-h4);
   font-weight: 600;
-  color: var(--color-text-highlight);
+  color: var(--color-primary);
   text-decoration: none;
 }
 
 /* Both are real anchors (kit Link), so the pointer resolves reach the
-   keyboard: the repo name turning accent, and the sub-row title lifting to
-   highlight, were pointer-only tells about where each row goes. */
+   keyboard: the repo name lifting to highlight, and the sub-row title with
+   it, were pointer-only tells about where each row goes. */
 .repoName:is(:hover, :focus-visible) {
-  color: var(--color-primary);
+  color: var(--color-text-highlight);
 }
 
 /* glance list-horizontal-text: stars/forks in subdue */
@@ -85,9 +86,18 @@
 /* glance list-horizontal-text: the row is a kit ListItem — the number is its
    start slot, the title its label and a commit's second line its
    description, so only the width containment is left local. The dense
-   vertical rhythm rides inline, where it can beat the kit's own padding. */
+   vertical rhythm rides inline, where it can beat the kit's own padding.
+   The label is the row's destination, so it wears the tappable purple at
+   rest and lifts to highlight with the row's pointer and focus:
+   --_item-label-color is the seam the kit's label span reads (see Item's
+   label rule in astryx.css). */
 .subRow {
   min-width: 0;
+  --_item-label-color: var(--color-primary);
+}
+
+.subRow:is(:hover, :focus-within) {
+  --_item-label-color: var(--color-text-highlight);
 }
 
 .subNumber {

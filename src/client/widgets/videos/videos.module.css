@@ -89,9 +89,10 @@
   background: var(--color-widget-background-highlight);
 }
 
-/* glance video-card-contents: 2-line clamp title, flat glance — no colour, consistent.
- * A video title is content the user came to read, so it wears the `body` role
- * (14px); the age • channel line below it is the only `supporting` text. */
+/* glance video-card-contents: 2-line clamp title. The title is the card's
+ * own link label, so it wears the tappable purple at rest (the `body` size
+ * stays — it is still the thing the user came to read); the age • channel
+ * line below it is the only `supporting` text. */
 .cardTitle {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -100,7 +101,7 @@
   padding: 8px 10px 0;
   font-size: var(--text-body-size);
   line-height: 1.4;
-  color: var(--color-text-base);
+  color: var(--color-primary);
 }
 
 /* The card carries the link, so the title's resolve follows the card's

@@ -90,3 +90,17 @@
   font-size: var(--font-size-base);
   color: var(--color-text-base-muted);
 }
+
+/* The row is a kit ListItem, so the label's paint lives behind its own
+ * slot: --_item-label-color is the seam the kit's label span reads (see
+ * Item's label rule in astryx.css). A linked row's label is the row's
+ * destination, so it wears the tappable purple at rest and lifts to
+ * highlight with the row's pointer and focus. Rows without a link never
+ * match :has(a[href]) and stay on the kit default. */
+.links li:has(a[href]) {
+  --_item-label-color: var(--color-primary);
+}
+
+.links li:has(a[href]):is(:hover, :focus-within) {
+  --_item-label-color: var(--color-text-highlight);
+}

@@ -42,7 +42,10 @@ function ContainerRow({ c }: { c: DockerContainer }) {
               className={styles.link}
               maxLines={1}
             >
-              <Text data-testid="docker-name">{c.name}</Text>
+              {/* The name is the row's link label: no color prop, so it
+                  inherits the Link's accent and wears tappable purple
+                  with the kit's own hover tint. */}
+              <Text data-testid="docker-name" color="inherit">{c.name}</Text>
             </Link>
           ) : (
             <Text data-testid="docker-name">{c.name}</Text>

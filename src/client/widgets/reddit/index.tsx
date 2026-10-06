@@ -27,7 +27,7 @@ function Card({ post, showMeta }: { post: RedditPost; showMeta: boolean }) {
         <div className={styles.cardThumbPlaceholder} aria-hidden="true" />
       )}
       <div className={styles.cardBody}>
-        <Text type="body" maxLines={CARD_TITLE_LINES}>
+        <Text type="body" maxLines={CARD_TITLE_LINES} className={styles.cardTitle}>
           {post.title}
         </Text>
         {showMeta ? <Text type="supporting">{`${post.score} points · ${age}`}</Text> : null}

@@ -21,6 +21,18 @@
   margin-top: 4px;
 }
 
+/* The grid title is the card's own link label, so it wears the tappable
+ * purple at rest and lifts to highlight with the card's pointer and focus.
+ * Gated on a real destination: items without a url render a button card
+ * with no navigation, and their titles stay on the kit default. */
+.card:has(a[href]) .title {
+  color: var(--color-primary);
+}
+
+.card:has(a[href]):is(:hover, :focus-within) .title {
+  color: var(--color-text-highlight);
+}
+
 .meta {
   opacity: 0.65;
 }
