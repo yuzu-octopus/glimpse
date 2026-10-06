@@ -39,14 +39,14 @@ cp config.example.yml config.yml
 bun run dev:server   # bun --watch src/server/index.ts (:3000)
 bun run dev          # vite :5173, proxies /api -> :3000 (changeOrigin)
 bun run build        # tsc --noEmit && vite build -> dist/ (PWA precache: globPatterns `**/*.{js,css,html,woff2,svg}`)
-bun run start        # bun serves dist/ + API (:3000; GLIMPSE_PORT, GLIMPSE_CONFIG or argv[2])
+bun run start        # bun serves dist/ + API (:3000; GLIMPSE_PORT, GLIMPSE_HOST, GLIMPSE_CONFIG or argv[2])
 bun run test         # vitest run (jsdom, globals)
 bun run test:watch   # vitest watch
 bun run new-widget <kebab-name>  # scaffold schema + fetcher + renderer + tests
 bun run check-config [path]      # validate config (line numbers + did-you-mean)
 bunx react-doctor@latest  # full scan gate; glance/** ignored via doctor.config.json
 ```
-Env: `GLIMPSE_CONFIG` (CLI arg wins > env > ./config.yml), `GLIMPSE_PORT=3000`, `GITHUB_TOKEN`/`GH_TOKEN` (GitHub widgets; falls back to `gh auth token` via `server/github-token.ts`, then unauthenticated 60 req/h), `${VAR}` interpolation in YAML. No `.env` loader (`.env*` gitignored).
+Env: `GLIMPSE_CONFIG` (CLI arg wins > env > ./config.yml), `GLIMPSE_PORT=3000`, `GLIMPSE_HOST=127.0.0.1` (loopback; Caddy is the external listener), `GITHUB_TOKEN`/`GH_TOKEN` (GitHub widgets; falls back to `gh auth token` via `server/github-token.ts`, then unauthenticated 60 req/h), `${VAR}` interpolation in YAML. No `.env` loader (`.env*` gitignored).
 
 ## Code Conventions & Common Patterns
 - **Strict TS:** `strict`, `verbatimModuleSyntax`, `ES2024/bundler`, `noEmit`, noUnusedLocals/Parameters. No `ReturnType` aliases, no inline casts (except CSSProperties custom-var objects), unconditional hooks.

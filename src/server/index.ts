@@ -11,6 +11,9 @@ import './widgets'; // side-effect: registers all widget fetchers
 const CONFIG_PATH =
   process.argv[2] ?? process.env.GLIMPSE_CONFIG ?? './config.yml';
 const PORT = Number(process.env.GLIMPSE_PORT ?? 3000);
+// Bind loopback by default; Caddy is the only external listener.
+// Override with GLIMPSE_HOST only for debugging behind the firewall.
+const HOST = process.env.GLIMPSE_HOST ?? '127.0.0.1';
 
 // Version from package.json (relative to repo root; the server runs with
 // cwd = repo root). Never fatal — the About pane falls back to 'unknown'.
@@ -147,6 +150,7 @@ function serveDist(pathname: string): Response {
 }
 const server = Bun.serve({
   port: PORT,
+  hostname: HOST,
   routes: {
     '/health': new Response('OK', { headers: { 'content-type': 'text/plain; charset=utf-8' } }),
   },

@@ -98,6 +98,7 @@ Server variables, all optional, read from the process environment (no `.env` loa
 | --- | --- | --- |
 | `GLIMPSE_CONFIG` | `./config.yml` | Config path (first CLI argument wins) |
 | `GLIMPSE_PORT` | `3000` | Port of the Bun server |
+| `GLIMPSE_HOST` | `127.0.0.1` | Bind address of the Bun server (Caddy is the external listener) |
 | `GITHUB_TOKEN` / `GH_TOKEN` | — | Bearer token for GitHub requests (`releases`, `repository`); falls back to `gh auth token`, then unauthenticated |
 
 Widgets also read their own credentials from the environment — `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET`, `IMMICH_API_KEY`, `JELLYFIN_API_KEY`, `QBITTORRENT_USERNAME` / `QBITTORRENT_PASSWORD`, `TRANSMISSION_USERNAME` / `TRANSMISSION_PASSWORD`, `HA_TOKEN`, `TS_API_KEY`, and the per-provider `ai-quota` keys. `${ENV_VAR}` interpolation in YAML covers the rest.
