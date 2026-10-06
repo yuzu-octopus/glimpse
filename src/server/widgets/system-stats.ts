@@ -39,6 +39,22 @@ function readGpuLoad(): number | null {
   } catch { return null; }
 }
 
+/** Kernel/runtime windows onto the machine, not storage. `df` lists them
+ *  because they are mounted, but a disk gauge showing efivarfs beside the
+ *  real SSD is noise. Matched by fstype, plus a mount-point rule for the
+ *  boxes whose `df -T` reports nothing useful. `/run` is deliberately absent:
+ *  `/run/media/<user>/<disk>` is where a removable drive lands, and the
+ *  everything-else under `/run` is tmpfs, which the fstype table drops. */
+const PSEUDO_FS: Record<string, true> = {
+  efivarfs: true, tmpfs: true, devtmpfs: true, squashfs: true, ramfs: true,
+  overlay: true, overlay2: true, proc: true, sysfs: true, cgroup: true,
+  cgroup2: true, devpts: true, autofs: true, binfmt_misc: true, debugfs: true,
+  tracefs: true, securityfs: true, pstore: true, mqueue: true, hugetlbfs: true,
+  configfs: true, fusectl: true, 'fuse.gvfsd-fuse': true, nsfs: true,
+  rpc_pipefs: true, bpf: true,
+};
+const PSEUDO_MOUNT = /^\/(sys|proc|dev)(\/|$)/;
+
 /** One row per device: /, /home, /root on the same nvme collapse to the
  *  root mount (else the shortest path). */
 function dedupeFs<T extends { fs: string; mount: string }>(rows: T[]): T[] {
@@ -72,7 +88,7 @@ registerWidget('system-stats', async (ctx, config) => {
 
       const cpuData = cpu as { cores?: number; speed?: number } | null;
       const memData = mem as { total?: number; active?: number; used?: number; available?: number; free?: number } | null;
-      const fsData = (fs ?? []) as { fs: string; size: number; used: number; use: number; mount: string }[];
+      const fsData = (fs ?? []) as { fs: string; type?: string; size: number; used: number; use: number; mount: string }[];
       const tempData = temp as { main?: number | null } | null;
       const gpuData = gpu as { controllers?: { model: string; temperatureGpu?: number | null }[] } | null;
       const loadData = load as { currentLoad?: number | null; avgLoad?: number | null } | null;
@@ -83,13 +99,24 @@ registerWidget('system-stats', async (ctx, config) => {
       } | null;
       const timeData = time as { uptime?: number } | null;
 
-      const fsRows = (Array.isArray(fsData) ? fsData : []).map((d) => ({
-        fs: String(d.fs ?? ''),
-        size: Number(d.size ?? 0),
-        used: Number(d.used ?? 0),
-        use: Number(d.use ?? 0),
-        mount: String(d.mount ?? ''),
-      }));
+      const mounts = dedupeFs(
+        (Array.isArray(fsData) ? fsData : [])
+          .filter((d) => !PSEUDO_FS[String(d.type ?? '').toLowerCase()] && !PSEUDO_MOUNT.test(String(d.mount ?? '')))
+          .map((d) => ({
+            fs: String(d.fs ?? ''),
+            size: Number(d.size ?? 0),
+            used: Number(d.used ?? 0),
+            use: Number(d.use ?? 0),
+            mount: String(d.mount ?? ''),
+          })),
+      );
+      // Root-only by default: the card is a host gauge, and one SSD's `/` is
+      // the whole story. `show-all-mounts: true` opts a multi-disk box back
+      // into every real mount; a box with no `/` (Windows `C:`, a chroot)
+      // keeps its list, because an empty disk section answers less than a
+      // partial one.
+      const root = mounts.find((m) => m.mount === '/');
+      const fsRows = cfg['show-all-mounts'] === true || !root ? mounts : [root];
 
       const data: SystemStatsData = {
         cpu: cpuData
@@ -102,7 +129,7 @@ registerWidget('system-stats', async (ctx, config) => {
               free: (memData.available ?? memData.free ?? 0) as number,
             }
           : null,
-        fs: dedupeFs(fsRows),
+        fs: fsRows,
         temp: tempData?.main ?? null,
         gpu: (gpuData?.controllers ?? []).map((c) => ({
           model: String(c.model ?? 'GPU'),

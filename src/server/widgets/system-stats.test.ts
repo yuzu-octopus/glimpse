@@ -4,7 +4,7 @@ import type { WidgetFetchContext } from './registry';
 
 const mockCpu = vi.fn(async () => ({ cores: 8, speed: 3.2 }));
 const mockMem = vi.fn(async () => ({ total: 16e9, active: 8e9, available: 8e9 }));
-const mockFsSize = vi.fn(async () => [{ fs: '/dev/sda1', size: 500e9, used: 100e9, use: 20, mount: '/' }]);
+const mockFsSize = vi.fn(async (): Promise<{ fs: string; type?: string; size: number; used: number; use: number; mount: string }[]> => [{ fs: '/dev/sda1', size: 500e9, used: 100e9, use: 20, mount: '/' }]);
 const mockCpuTemp = vi.fn(async () => ({ main: 55 }));
 const mockGraphics = vi.fn(async () => ({ controllers: [{ model: 'M5', temperatureGpu: 60 }] }));
 const mockCurrentLoad = vi.fn<() => Promise<{ currentLoad: number | null; avgLoad: number | null }>>(async () => ({ currentLoad: 42, avgLoad: 1.5 }));
@@ -141,19 +141,43 @@ describe('system-stats fetcher', () => {
     }
   });
 
-  it('dedupes disk rows by device, keeping root mount', async () => {
+  it('drops pseudo-mounts, keeps the root mount and collapses one device', async () => {
     mockFsSize.mockResolvedValue([
-      { fs: 'nvme0n1p2', size: 500e9, used: 100e9, use: 20, mount: '/' },
-      { fs: 'nvme0n1p2', size: 500e9, used: 100e9, use: 20, mount: '/home' },
-      { fs: 'nvme0n1p2', size: 500e9, used: 100e9, use: 20, mount: '/root' },
-      { fs: 'efivarfs', size: 1e6, used: 1e6, use: 100, mount: '/sys/firmware/efi/efivars' },
+      { fs: '/dev/nvme0n1p2', type: 'ext4', size: 500e9, used: 100e9, use: 20, mount: '/' },
+      { fs: '/dev/nvme0n1p2', type: 'ext4', size: 500e9, used: 100e9, use: 20, mount: '/home' },
+      { fs: '/dev/nvme0n1p2', type: 'ext4', size: 500e9, used: 100e9, use: 20, mount: '/root' },
+      { fs: '/dev/nvme0n1p1', type: 'vfat', size: 1e9, used: 5e8, use: 50, mount: '/boot' },
+      { fs: 'efivarfs', type: 'efivarfs', size: 1e6, used: 1e6, use: 100, mount: '/sys/firmware/efi/efivars' },
+      { fs: 'tmpfs', type: 'tmpfs', size: 8e9, used: 1e6, use: 0, mount: '/run' },
     ]);
     const ctx = makeCtx();
     const res = (await fetcher()(ctx, { type: 'system-stats' })) as { fs: { fs: string; mount: string }[] };
-    expect(res.fs).toHaveLength(2);
+    // Default is root-only: efivarfs/tmpfs are not storage at all, and /boot —
+    // real, but off the one-SSD story this card tells — is opt-in.
+    expect(res.fs).toHaveLength(1);
     expect(res.fs[0].mount).toBe('/');
-    expect(res.fs[0].fs).toBe('nvme0n1p2');
-    expect(res.fs[1].fs).toBe('efivarfs');
+    expect(res.fs[0].fs).toBe('/dev/nvme0n1p2');
+  });
+
+  it('keeps every real mount when show-all-mounts is set', async () => {
+    mockFsSize.mockResolvedValue([
+      { fs: '/dev/nvme0n1p2', type: 'ext4', size: 500e9, used: 100e9, use: 20, mount: '/' },
+      { fs: '/dev/nvme0n1p1', type: 'vfat', size: 1e9, used: 5e8, use: 50, mount: '/boot' },
+      { fs: 'efivarfs', type: 'efivarfs', size: 1e6, used: 1e6, use: 100, mount: '/sys/firmware/efi/efivars' },
+    ]);
+    const ctx = makeCtx();
+    const res = (await fetcher()(ctx, { type: 'system-stats', 'show-all-mounts': true })) as { fs: { mount: string }[] };
+    expect(res.fs.map((f) => f.mount)).toEqual(['/', '/boot']);
+  });
+
+  it('keeps its mounts on a box with no root (Windows drive, chroot)', async () => {
+    mockFsSize.mockResolvedValue([
+      { fs: 'C:', type: 'NTFS', size: 500e9, used: 100e9, use: 20, mount: 'C:' },
+    ]);
+    const ctx = makeCtx();
+    const res = (await fetcher()(ctx, { type: 'system-stats' })) as { fs: { mount: string }[] };
+    // An empty disk section answers less than a partial one.
+    expect(res.fs.map((f) => f.mount)).toEqual(['C:']);
   });
 
   it('dedupes disk rows keeping shortest mount when no root', async () => {

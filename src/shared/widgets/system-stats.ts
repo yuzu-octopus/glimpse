@@ -10,6 +10,11 @@ export const SYSTEM_STATS_SKELETON: SkeletonShape = 'rows';
 export const systemStatsSchema = z
   .object({
     type: z.literal('system-stats'),
+    /** Every real mount instead of just `/`. The kernel's pseudo-mounts
+     *  (efivarfs, tmpfs, /sys, /proc, /dev, …) are filtered out of the
+     *  payload either way; this only widens the result past root, for a box
+     *  whose storage is not all under `/`. */
+    'show-all-mounts': z.boolean().optional(),
     ...sharedWidgetFields,
   })
   .loose();

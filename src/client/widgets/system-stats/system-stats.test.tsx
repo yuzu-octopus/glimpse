@@ -35,6 +35,10 @@ describe('SystemStats client', () => {
     expect(screen.getByText(/8 cores/)).toBeInTheDocument();
     expect(screen.getByText(/MEM/i)).toBeInTheDocument();
     expect(screen.getByText('DISK')).toBeInTheDocument();
+    // The mount is the row's value and the byte pair is its sub — the split
+    // that keeps `/` from being buried behind a truncated size string.
+    expect(screen.getByText('/')).toBeInTheDocument();
+    expect(screen.getByText('100.0 GB / 500.0 GB')).toBeInTheDocument();
     expect(screen.getByText('TEMP')).toBeInTheDocument();
     expect(screen.getByText('GPU')).toBeInTheDocument();
     // placeholder should not appear

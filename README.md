@@ -123,7 +123,7 @@ Widgets also read their own credentials from the environment — `TWITCH_CLIENT_
 | `repository` | Repo stats + open PRs / issues | GitHub REST API |
 | `lobsters` | lobste.rs stories | Configurable instance |
 | `server-stats` | Health of configured local services | `systeminformation` probes; defaults to one local server |
-| `system-stats` | CPU / GPU / RAM / disk of the host | `systeminformation`; 1s server cache when present |
+| `system-stats` | CPU / GPU / RAM / disk of the host | `systeminformation`; 1s server cache when present. Disks are root-only by default (`show-all-mounts: true` widens past `/`); pseudo-mounts (efivarfs, tmpfs, `/sys`, `/proc`, `/dev`) are always filtered out |
 | `dns-stats` | DNS server query stats | Pi-hole (v6 session auth, v5 token fallback) or Technitium |
 | `docker-containers` | Container status | Docker Engine API over unix socket |
 | `ai-quota` | AI provider quota and balance | 70 known provider ids, all with fetchers, ported from [CodexBar](https://github.com/steipete/CodexBar): Codex / Claude / OpenAI / Copilot / OpenCode / Gemini / Vertex / Grok and the table-driven rows. `token` or `tokenFile` is required; shows `used%`, reset countdown, plan and balance. Default `cache` is 1h — raise the rate with `cache: 2m` |

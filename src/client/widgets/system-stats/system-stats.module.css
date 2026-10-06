@@ -1,7 +1,11 @@
-/* system-stats is now Stack + Grid + Text, so `.label` (uppercase, 600,
-   letter-spaced) and `.value`/`.sub` are gone — they were literally the
-   `Text type="label"` and `Text hasTabularNumbers` jobs. What stays is the row
-   rhythm plus the severity meter, which is data ink the kit has no prop for:
+/* system-stats is Stack + Text plus one grid, so `.label`/`.sub` typography
+   stays the kit's job (`Text type="label"` / `type="supporting"`); only the
+   geometry lives here. Three equal tracks — what `Grid columns={3}` gave —
+   centred a short value and truncated a long one against an invisible
+   boundary. A fixed label column, a flexible value column and a right-hugging
+   sub column read as a table down the card.
+
+   What also stays is the severity meter, data ink the kit has no prop for:
    ProgressBar's variants would lose the 85/95 escalation thresholds and the
    native <meter> semantics the tests assert on. */
 
@@ -9,6 +13,41 @@
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid var(--color-separator);
+}
+
+/* 4.75rem holds the longest label (GPU LOAD) at the label type size, so the
+   value column starts on the same vertical rule in every row. The sub track
+   is sized to its content but floors at 0, so a narrow column clips the tail
+   of `100.0 GB / 500.0 GB` rather than pushing the row past the card. */
+.rowGrid {
+  display: grid;
+  grid-template-columns: 4.75rem minmax(0, 1fr) minmax(0, max-content);
+  align-items: center;
+  column-gap: 12px;
+}
+
+/* Both elastic tracks need an explicit min-width: 0 — a grid item's default
+   `auto` minimum refuses to shrink below its content, which would defeat the
+   `minmax(0, …)` above. `maxLines={1}` on the Text is what turns the squeeze
+   into an ellipsis. */
+.value,
+.sub {
+  min-width: 0;
+}
+
+/* Narrow tile (sidebar, small span): the three-column row grid collapses the
+   value to a sliver. Below the widget's 340px preferred width, drop the sub
+   to a second line and let the value fill the tile. The meter stays full-
+   width and readable. */
+@container tile (max-width: 220px) {
+  .rowGrid {
+    grid-template-columns: 4.75rem minmax(0, 1fr);
+  }
+
+  .sub {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
 }
 
 /* Neutral track, single fill escalating by severity. Track is Comment, never a

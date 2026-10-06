@@ -65,7 +65,7 @@ Only the six live types (`clock`, `weather`, `markets`, `monitor`, `server-stats
 | `releases` | `repositories[]`: `"owner/repo"` or `gitlab:`/`codeberg:`/`dockerhub:`-prefixed, or `{url?, repository?, source?, include-prereleases?}`; limit, collapse-after. **No per-repo `token`/`gitlab-token`** — those keys are stripped. Credentials come from the environment only (`GITHUB_TOKEN`, or `GH_TOKEN`, and `GITLAB_TOKEN`); without them these endpoints are read anonymously |
 | `lobsters` | `sort-by` hot\|new, `tags[]`, limit, collapse-after, `instance-url` (default lobste.rs, giving `<instance>/hottest\|newest.json`) — `custom-url` replaces the whole URL when set |
 | `repository` | `repository: owner/repo` (required), `pull-requests-limit` / `issues-limit` (5), `commits-limit` (-1 = show none, glance's default). **No `token`** — `GITHUB_TOKEN`/`GH_TOKEN` in the environment only, else the public API's anonymous rate limit |
-| `videos` | `channels[]` (UC id or @handle), `playlists[]` (`playlist:<id>`), include-shorts |
+| `videos` | `channels[]` (`@handle` or UC id), `playlists[]` (`playlist:<id>`), include-shorts |
 | `twitch-channels` | `channels[]` (required logins), `sort-by` viewers\|live (viewers), collapse-after (5); needs `TWITCH_CLIENT_ID` + `TWITCH_CLIENT_SECRET` |
 | `twitch-top-games` | `limit` 1–25 (10), collapse-after (5), `exclude[]` slugs; needs `TWITCH_CLIENT_ID` + `TWITCH_CLIENT_SECRET` |
 | `markets` | `markets[]`: {symbol (`SPY`, `BTC-USD`), name?, symbol-link?, chart-link?}, `sort-by` change\|absolute-change |
@@ -82,7 +82,7 @@ Only the six live types (`clock`, `weather`, `markets`, `monitor`, `server-stats
 | `jellyfin` | `url` (required), `user-id` (auto-resolved to the first user when omitted), `limit` (10). The key is environment-only (`JELLYFIN_API_KEY`) — there is no `api-key` key |
 | `qbittorrent` / `transmission` | `url` (required), `limit` (10). Credentials are environment-only — `QBITTORRENT_USERNAME`/`QBITTORRENT_PASSWORD`, `TRANSMISSION_USERNAME`/`TRANSMISSION_PASSWORD`; there are no `username`/`password` keys |
 | `server-stats` | `servers[]`: {name?, type: local(default) \| remote, url?} |
-| `system-stats` | none required (host machine) |
+| `system-stats` | `show-all-mounts` (false). Disks are root-only by default — the card is a host gauge, and pseudo-mounts (efivarfs, tmpfs, `/sys`, `/proc`, `/dev`) are filtered out of the payload regardless. Set `show-all-mounts: true` for a box whose storage is not all under `/` (a separate data volume, `/boot` on its own partition) |
 | `dns-stats` | `url` (required), `service` pihole (default) \| adguard \| technitium, `allow-insecure`, `hide-graph`, `hide-top-domains`. Credentials are environment-only, one set per service: `PIHOLE_PASSWORD`/`PIHOLE_TOKEN`, `ADGUARD_USERNAME`/`ADGUARD_PASSWORD`, `TECHNITIUM_TOKEN` — there are no `username`/`password`/`token` keys |
 | `docker-containers` | `sock-path` (default `/var/run/docker.sock`; tcp:// or http:// URL also works), `running-only`, `category`, `hide-by-default` |
 | `tailscale` | `tailnet` (id, or `-` for the tailnet that owns the key), `limit` 1–200 (20). The key is environment-only (`TS_API_KEY`, needing the `devices:core:read` scope) — there is no `api-key` key. Online devices sort first; exit-node badges come from `enabledRoutes` in the same one call |

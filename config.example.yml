@@ -165,6 +165,8 @@ pages:
             title: Tech — recent
             limit: 9
             style: grid-cards
+            # `@handle` is resolved through InnerTube; a raw `UC...` channel
+            # id skips resolution and is the more stable choice.
             channels:
               - "@Fireship"
               - "@ByCloud"
@@ -345,6 +347,10 @@ pages:
             hide-by-default: false
           - type: system-stats
             title: Host
+            # Root-only by default: pseudo-mounts (efivarfs, tmpfs, /sys,
+            # /proc, /dev) are always filtered out, and only `/` is shown.
+            # Set this on a box whose storage is not all under `/`.
+            # show-all-mounts: true
           - type: network
             title: Network
             ping-target: 1.1.1.1

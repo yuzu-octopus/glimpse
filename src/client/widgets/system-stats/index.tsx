@@ -1,4 +1,4 @@
-import { Grid, Stack, Text } from '@astryxdesign/core';
+import { Stack, Text } from '@astryxdesign/core';
 import type { SystemStatsConfig } from '../../../shared/widgets/system-stats';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
@@ -28,11 +28,14 @@ function Row({
   const p = percent == null ? null : Math.max(0, Math.min(100, Math.round(percent)));
   return (
     <Stack gap={1.5} className={styles.row}>
-      <Grid columns={3} columnGap={3} align="center">
+      {/* Fixed label / flexible value / right-hugging sub. Three equal tracks
+          (the old `columns={3}`) centred a short value and truncated a long
+          one; a table-shaped grid keeps every row on the same rules. */}
+      <div className={styles.rowGrid}>
         <Text type="label">{label}</Text>
-        <Text hasTabularNumbers maxLines={1}>{value}</Text>
-        {sub ? <Text type="supporting" hasTabularNumbers>{sub}</Text> : null}
-      </Grid>
+        <Text hasTabularNumbers maxLines={1} className={styles.value}>{value}</Text>
+        {sub ? <Text type="supporting" hasTabularNumbers maxLines={1} justify="end" className={styles.sub}>{sub}</Text> : null}
+      </div>
       {p === null ? null : (
         // Data ink — one series, so one hue: a neutral track with a single fill
         // that escalates by severity. A label + a number reads the same at 95%
@@ -91,7 +94,15 @@ function buildRows(
 
   // FS
   for (const f of d.fs) {
-    rows.push(<Row key={`fs-${f.mount}`} label="DISK" value={`${f.mount} ${fmtBytes(f.used)} / ${fmtBytes(f.size)}`} sub={`${f.use}%`} percent={f.use} />);
+    rows.push(
+      <Row
+        key={`fs-${f.mount}`}
+        label="DISK"
+        value={f.mount}
+        sub={`${fmtBytes(f.used)} / ${fmtBytes(f.size)}`}
+        percent={f.use}
+      />,
+    );
   }
 
   // TEMP
