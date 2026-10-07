@@ -207,6 +207,7 @@ Unauthenticated GitHub and Reddit requests are rate-limited, so raise `cache` fo
 bun run test        # vitest (jsdom); schema + fetcher + component tests per widget, no network
 bun run test:watch
 bunx tsc --noEmit   # strict typecheck gate
+biome check src scripts   # lint+format gate (global fallback config; zero errors)
 bunx react-doctor@latest   # React quality scan (full scan is the gate)
 ```
 

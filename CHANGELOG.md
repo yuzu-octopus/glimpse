@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-07
+
+### Fixed
+- Zero biome errors: hoisted assign-in-conditions, braced forEach callbacks,
+  header guards, hex-escape control regex; decorative svgs hidden, group divs
+  are sections, chart bars are real buttons, autofocus via ref+effect.
+- react-doctor back to 100/100 (autofocus effect dep).
+
 ## [0.4.0] - 2026-10-07
 
 ### Added
