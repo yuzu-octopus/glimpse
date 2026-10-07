@@ -949,14 +949,17 @@ registerWidget('videos', async (ctx, config) => {
           );
           if (corrected) return corrected;
         }
-        const videos = mapItems(parsed.items, parsed.title ?? source);
+        // Cap at `limit`: feeds arrive newest-first, so the global top-`limit`
+        // can never need more than `limit` rows from one source. Bounds a
+        // pathological source without changing what the merge can output.
+        const videos = mapItems(parsed.items, parsed.title ?? source).slice(0, cfg.limit);
         setCached(videos);
         return videos.length === 0 ? { videos, issue: { source, reason } } : { videos };
       } catch (err) {
         if (pageUrl) {
           try {
             const scraped = await scrapeChannelPage(ctx, pageUrl, retry);
-            const fallback = mapItems(scraped.items, scraped.title ?? source);
+            const fallback = mapItems(scraped.items, scraped.title ?? source).slice(0, cfg.limit);
             if (fallback.length > 0) {
               setCached(fallback);
               return { videos: fallback };
@@ -992,14 +995,11 @@ registerWidget('videos', async (ctx, config) => {
     issues.push(issue);
   };
 
-  // Per-source cap: a single prolific channel must not crowd out the rest.
-  // Cap each source at ceil(limit / numSources), then fill remaining slots
-  // by date from overflow. This keeps newest-first ordering meaningful while
-  // guaranteeing multi-channel widgets show multiple channels.
-  const perSourceCap = Math.ceil(cfg.limit / feeds.length);
-  const selected: Video[] = [];
-  const overflow: Video[] = [];
+  // Newest-first across all sources: pool everything, order by date, take
+  // the top `limit`. A quiet channel simply contributes fewer rows — that is
+  // the honest shape of recency, not a crowding bug.
   const seen = new Set<string>();
+  const videos: Video[] = [];
 
   settled.forEach((r, i) => {
     if (r.status === 'rejected') {
@@ -1009,36 +1009,18 @@ registerWidget('videos', async (ctx, config) => {
       return;
     }
     if (r.value.issue) report(r.value.issue);
-    const vs = r.value.videos;
-    let fromThisSource = 0;
-    for (const v of vs) {
+    for (const v of r.value.videos) {
       if (seen.has(v.url)) continue;
       seen.add(v.url);
-      if (fromThisSource < perSourceCap) {
-        selected.push(v);
-        fromThisSource++;
-      } else {
-        overflow.push(v);
-      }
+      videos.push(v);
     }
   });
 
-  const byDateDesc = (a: Video, b: Video) => {
+  videos.sort((a, b) => {
     const ta = a.published ? Date.parse(a.published) : 0;
     const tb = b.published ? Date.parse(b.published) : 0;
     return tb - ta;
-  };
+  });
 
-  selected.sort(byDateDesc);
-  const videos = selected.slice(0, cfg.limit);
-
-  if (videos.length < cfg.limit) {
-    overflow.sort(byDateDesc);
-    for (const v of overflow) {
-      if (videos.length >= cfg.limit) break;
-      videos.push(v);
-    }
-  }
-
-  return { videos, issues } satisfies VideosData;
+  return { videos: videos.slice(0, cfg.limit), issues } satisfies VideosData;
 });

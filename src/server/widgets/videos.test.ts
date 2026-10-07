@@ -328,10 +328,9 @@ describe('videos fetcher', () => {
     expect(data.issues).toEqual([{ source: '@ferntv', reason: 'handle not found: @ferntv' }]);
   });
 
-  it('multi-channel widget shows multiple channels within limit', async () => {
-    // 3 sources with skewed dates: one prolific channel must not crowd out the rest.
-    // Source A: 5 videos (newest), Source B: 3 videos, Source C: 2 videos (oldest).
-    // perSourceCap = ceil(6/3) = 2, so each source contributes at most 2.
+  it('pools all sources newest-first and takes the limit', async () => {
+    // 3 sources with skewed dates. Newest-first wins outright: the 6 newest
+    // across all sources, regardless of channel.
     const makeFeed = (channel: string, count: number, startDay: number) => {
       const entries = Array.from({ length: count }, (_, i) => {
         const day = startDay - i;
@@ -352,14 +351,11 @@ describe('videos fetcher', () => {
       limit: 6,
     })) as VideosData;
 
-    // All 3 channels represented, 2 each (perSourceCap = ceil(6/3) = 2).
-    const channels = data.videos.map((v) => v.channel);
-    expect(channels).toContain('Channel A');
-    expect(channels).toContain('Channel B');
-    expect(channels).toContain('Channel C');
+    // The 6 newest overall: A1-A5 (days 10-6) + B1 (day 8)... in date order:
+    // days 10,9,8,8,7,7 → A1,A2,B1,A3,B2,A4. B3/C rows are older, cut off.
     expect(data.videos).toHaveLength(6);
-    // Newest-first ordering within the selection.
+    const dates = data.videos.map((v) => v.published);
+    expect([...dates].sort().reverse()).toEqual(dates);
     expect(data.videos[0].title).toBe('Channel A Video 1');
-    expect(data.videos[1].title).toBe('Channel A Video 2');
   });
 });
