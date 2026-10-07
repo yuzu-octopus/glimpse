@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-07
+
+### Fixed
+- YouTube widgets interleave channels (per-source cap) instead of one
+  prolific channel filling all slots; grid-cards white-at-rest with
+  purple on hover, compact rows keep purple at rest.
+- Hover doctrine app-wide is wash-only: title lifts that painted white
+  on the light wash are gone; every tappable row gets the same overlay
+  wash + radius, static rows none.
+
+### Changed
+- Server file reads go through Bun.file (node:fs/promises fallbacks
+  dropped); token spawn gets a 10s timeout.
+
 ## [0.2.1] - 2026-10-06
 
 ### Added
