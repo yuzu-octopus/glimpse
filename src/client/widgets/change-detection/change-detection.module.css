@@ -22,3 +22,11 @@
 }
 .meta { font-size: 12px; color: var(--color-text-base-muted); }
 .empty { padding: 12px; color: var(--color-text-base-muted); }
+
+/* The row is tappable (the host is a Link), so it gets the same wash + lift
+   pair every other tappable row in the app wears. */
+.row:is(:hover, :focus-within) {
+  background-color: var(--color-overlay-hover);
+  border-radius: var(--border-radius);
+}
+

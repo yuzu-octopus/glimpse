@@ -19,6 +19,20 @@
   border-radius: 50%;
 }
 
+/* The dial is a real <button> and the widget's primary tap target, so it
+   answers the pointer the way every other tappable surface does: hover
+   dims, press dims more. The focus ring below is the keyboard's leg of the
+   same pair, so a keyboard user gets the wash too, not only the outline.
+   Scoped to `button` so the editing state — the same class on a plain div
+   around the duration input — stays static. */
+button.ringButton:is(:hover, :focus-visible) {
+  background-color: var(--color-overlay-hover);
+}
+
+button.ringButton:active {
+  background-color: var(--color-overlay-pressed);
+}
+
 .ringButton:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;

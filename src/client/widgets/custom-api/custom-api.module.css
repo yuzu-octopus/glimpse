@@ -47,19 +47,29 @@
   border-radius: var(--border-radius);
 }
 
-/* glance .thumbnail — desaturated at rest, full colour on hover. The dim is
- * gated on a real pointer: a touch device can never fire :hover, so an
- * ungated rest state would leave every thumbnail permanently greyed out.
- * :focus-within is the keyboard's equivalent channel. */
+/* glance .thumbnail — desaturated at rest, full colour on hover. Both the dim
+ * and the row's wash are scoped to a row that actually navigates: the title
+ * is a kit Link only when the item carries a url, so a url-less row has no
+ * destination and no keyboard channel, and neither the dim nor the wash may
+ * dress it up as tappable. Gated on a real pointer because a touch device can
+ * never fire :hover, so an ungated rest state would leave every thumbnail
+ * permanently greyed out. :focus-within is the keyboard's equivalent channel. */
 @media (hover: hover) {
-  .image {
+  .row:has(a[href]) .image {
     filter: grayscale(0.2) contrast(0.9);
     opacity: 0.8;
     transition: filter 0.2s, opacity 0.2s;
   }
 
-  .row:is(:hover, :focus-within) .image {
+  .row:has(a[href]):is(:hover, :focus-within) .image {
     filter: none;
     opacity: 1;
   }
+}
+
+/* The same tappable-only wash Feed rows carry, so a hover reads the same in
+   either list. */
+.row:has(a[href]):is(:hover, :focus-within) {
+  background-color: var(--color-overlay-hover);
+  border-radius: var(--border-radius);
 }

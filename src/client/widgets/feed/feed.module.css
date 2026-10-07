@@ -51,7 +51,11 @@
    20px target and a two-line title 40px — the tap target doubled or halved
    with the length of the headline. The floor belongs on the link, not on the
    row, so the row's own padding keeps owning the rhythm and a clamped
-   one-line title still clears 24. The kit centres the line in the box. */
+   one-line title still clears 24. The kit centres the line in the box.
+   No hover colour here, deliberately: the kit's Link paints the visible
+   colour on its inner `.astryx-text` span, not on the anchor this class
+   lands on, so a `color` rule at this site would be inert — the row's wash
+   is the pointer's whole answer and the title keeps its tappable purple. */
 .title {
   min-height: 24px;
 }

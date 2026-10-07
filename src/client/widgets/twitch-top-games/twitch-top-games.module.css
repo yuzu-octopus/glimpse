@@ -7,3 +7,11 @@
    `@layer astryx-base`), so `hasUnderline={false}` is inert here and the name
    now carries the app's standard link underline, focus included. */
 .empty { padding: 12px; color: var(--color-text-base-muted); }
+
+/* The row is tappable (the name is a Link), so it gets the same wash + lift
+   pair every other tappable row in the app wears. */
+.row:is(:hover, :focus-within) {
+  background-color: var(--color-overlay-hover);
+  border-radius: var(--border-radius);
+}
+

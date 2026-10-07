@@ -146,3 +146,11 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* The row is tappable when the symbol resolves a Link, so it gets the same
+   wash + lift pair every other tappable row in the app wears. */
+.row:is(:hover, :focus-within) {
+  background-color: var(--color-overlay-hover);
+  border-radius: var(--border-radius);
+}
+

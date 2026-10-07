@@ -17,7 +17,9 @@
    a Link and a container with children renders a Button, both real focus
    targets, so tabbing the expander lights the row it belongs to. The wash is
    the same translucent overlay dim Feed rows carry, so a hover reads the same
-   in either list. */
+   in either list. Gated on the row actually carrying one of those targets: a
+   container with neither a url nor children is static, and a wash that
+   reveals nothing is decoration. */
 .row::before {
   content: '';
   position: absolute;
@@ -30,7 +32,7 @@
   pointer-events: none;
 }
 
-.row:is(:hover, :focus-within)::before {
+.row:has(a[href], button):is(:hover, :focus-within)::before {
   opacity: 1;
 }
 

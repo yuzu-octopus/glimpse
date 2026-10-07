@@ -61,7 +61,10 @@
   padding: 0 10px 10px;
 }
 
-/* glance .text-truncate-3-lines + .color-primary-if-not-visited */
+/* glance .text-truncate-3-lines + .color-primary-if-not-visited. The tile is
+   a ClickableCard whose own wash is the pointer's whole answer, so the
+   tappable purple stays put through the hover: a title that flipped to
+   highlight would brighten exactly where the doctrine says hover dims. */
 .cardTitle {
   margin-top: 7px;
   margin-bottom: auto;
@@ -71,10 +74,6 @@
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
-}
-
-.card:is(:hover, :focus-within) .cardTitle {
-  color: var(--color-text-highlight);
 }
 
 .cardMeta {
@@ -137,6 +136,8 @@
   z-index: 3;
 }
 
+/* Same resolve as `.cardTitle`: the ClickableCard's wash carries the hover,
+   so the overlay tile's title holds its tappable purple through it. */
 .card2Title {
   display: block;
   overflow: hidden;
@@ -144,8 +145,4 @@
   white-space: nowrap;
   font-size: var(--font-size-base);
   color: var(--color-primary);
-}
-
-.card2:is(:hover, :focus-within) .card2Title {
-  color: var(--color-text-highlight);
 }

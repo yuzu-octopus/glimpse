@@ -17,6 +17,14 @@
   padding-block: 2px;
 }
 
+/* A row whose child is a link is tappable, so it wears the same translucent
+   overlay wash Feed, Docker and Markets rows carry — a hover reads the same
+   in any list. The link is the row's focus channel. */
+.row:is(:hover, :focus-within) {
+  background-color: var(--color-overlay-hover);
+  border-radius: var(--border-radius);
+}
+
 .row + .row {
   margin-top: 8px;
   border-top: 1px solid var(--color-separator);
@@ -46,22 +54,29 @@
 }
 
 /* glance .monitor-site-icon: 3.2rem square, desaturated until hover. The
-   row's gap is 3, so the icon keeps the same rhythm as the status dot. */
+   row's gap is 3, so the icon keeps the same rhythm as the status dot. The
+   dim is gated on a real pointer: a touch device can never fire :hover, so
+   an ungated rest state would leave every site icon permanently greyed.
+   :focus-within is the keyboard's equivalent channel — the row's link is
+   its focusable child. */
 .icon {
   display: block;
   width: 24px;
   height: 24px;
   object-fit: contain;
-  opacity: 0.8;
-  filter: grayscale(0.4);
   flex-shrink: 0;
 }
 
-/* The row's link is its focusable child, so :focus-within is the keyboard's
-   equivalent of :hover — without it the row is a hover-only affordance. */
-.row:is(:hover, :focus-within) .icon {
-  opacity: 1;
-  filter: grayscale(0);
+@media (hover: hover) {
+  .icon {
+    opacity: 0.8;
+    filter: grayscale(0.4);
+  }
+
+  .row:is(:hover, :focus-within) .icon {
+    opacity: 1;
+    filter: grayscale(0);
+  }
 }
 
 /* glance .flat-icon: simple-icons and mdi glyphs are black paths with no

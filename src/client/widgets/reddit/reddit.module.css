@@ -59,13 +59,11 @@
   min-width: 0;
 }
 
-/* The tile is a ClickableCard, so the title is the card's own link label:
- * it wears the tappable purple at rest and lifts to highlight with the
- * card's pointer and focus. The score footer below it stays plain body. */
+/* The tile is a ClickableCard, so the title is the card's own link label: it
+ * wears the tappable purple at rest and keeps it through the hover — the
+ * card's own wash is the pointer's whole answer, and flipping the title to
+ * highlight would brighten exactly where the doctrine says hover dims. The
+ * score footer below it stays plain body. */
 .cardTitle {
   color: var(--color-primary);
-}
-
-.card:is(:hover, :focus-within) .cardTitle {
-  color: var(--color-text-highlight);
 }

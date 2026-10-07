@@ -29,9 +29,11 @@
   color: var(--color-primary);
 }
 
-.card:has(a[href]):is(:hover, :focus-within) .title {
-  color: var(--color-text-highlight);
+.card:has(a[href]):is(:hover, :focus-within) {
+  background-color: var(--color-overlay-hover);
+  border-radius: var(--border-radius);
 }
+
 
 .meta {
   opacity: 0.65;

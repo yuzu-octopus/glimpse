@@ -62,11 +62,11 @@
 .iconAccentPink { --icon-hue: var(--color-tag-pink); }
 .iconAccentOrange { --icon-hue: var(--color-tag-orange); }
 
-/* Group title accents: the schema admits only these six names, so the hue is
+/* Group title accents: the schema admits only these five names, so the hue is
  * a class from the kit's tag vocabulary rather than an arbitrary CSS colour
- * string. The title keeps --color-primary as its default (a title is a
- * tappable-ish surface), and an explicit accent overrides it — for the whole
- * group, so the arrows follow the title. */
+ * string. A group title is not tappable, so it keeps the neutral highlight
+ * default (see .group above) and an explicit accent overrides it — for the
+ * whole group, so the arrows follow the title. */
 .titleAccentGreen { --bookmarks-group-color: var(--color-tag-green); }
 .titleAccentCyan { --bookmarks-group-color: var(--color-tag-cyan); }
 .titleAccentYellow { --bookmarks-group-color: var(--color-tag-yellow); }
@@ -101,6 +101,3 @@
   --_item-label-color: var(--color-primary);
 }
 
-.links li:has(a[href]):is(:hover, :focus-within) {
-  --_item-label-color: var(--color-text-highlight);
-}

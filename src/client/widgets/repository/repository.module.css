@@ -21,12 +21,13 @@
   text-decoration: none;
 }
 
-/* Both are real anchors (kit Link), so the pointer resolves reach the
-   keyboard: the repo name lifting to highlight, and the sub-row title with
-   it, were pointer-only tells about where each row goes. */
-.repoName:is(:hover, :focus-visible) {
-  color: var(--color-text-highlight);
+/* The header is tappable (the repoName is a Link), so it gets the same wash
+   every other tappable row in the app wears. */
+.header:is(:hover, :focus-within) {
+  background-color: var(--color-overlay-hover);
+  border-radius: var(--border-radius);
 }
+
 
 /* glance list-horizontal-text: stars/forks in subdue */
 .stars {
@@ -96,9 +97,6 @@
   --_item-label-color: var(--color-primary);
 }
 
-.subRow:is(:hover, :focus-within) {
-  --_item-label-color: var(--color-text-highlight);
-}
 
 .subNumber {
   font-size: 12px;
