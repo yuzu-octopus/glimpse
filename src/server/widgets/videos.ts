@@ -982,17 +982,25 @@ registerWidget('videos', async (ctx, config) => {
     }),
   );
 
-  const videos: Video[] = [];
   const issues: VideoSourceIssue[] = [];
-  const seen = new Set<string>();
   const seenIssues = new Set<string>();
   const report = (issue: VideoSourceIssue): void => {
     // The same source listed twice in one config is one problem, not two dots.
-    const id = `${issue.source} ${issue.reason}`;
+    const id = `${issue.source}${issue.reason}`;
     if (seenIssues.has(id)) return;
     seenIssues.add(id);
     issues.push(issue);
   };
+
+  // Per-source cap: a single prolific channel must not crowd out the rest.
+  // Cap each source at ceil(limit / numSources), then fill remaining slots
+  // by date from overflow. This keeps newest-first ordering meaningful while
+  // guaranteeing multi-channel widgets show multiple channels.
+  const perSourceCap = Math.ceil(cfg.limit / feeds.length);
+  const selected: Video[] = [];
+  const overflow: Video[] = [];
+  const seen = new Set<string>();
+
   settled.forEach((r, i) => {
     if (r.status === 'rejected') {
       // Nothing in the mapper rethrows, so this is a bug rather than an
@@ -1001,18 +1009,36 @@ registerWidget('videos', async (ctx, config) => {
       return;
     }
     if (r.value.issue) report(r.value.issue);
-    for (const v of r.value.videos) {
-      if (!seen.has(v.url)) {
-        seen.add(v.url);
-        videos.push(v);
+    const vs = r.value.videos;
+    let fromThisSource = 0;
+    for (const v of vs) {
+      if (seen.has(v.url)) continue;
+      seen.add(v.url);
+      if (fromThisSource < perSourceCap) {
+        selected.push(v);
+        fromThisSource++;
+      } else {
+        overflow.push(v);
       }
     }
   });
-  videos.sort((a, b) => {
+
+  const byDateDesc = (a: Video, b: Video) => {
     const ta = a.published ? Date.parse(a.published) : 0;
     const tb = b.published ? Date.parse(b.published) : 0;
     return tb - ta;
-  });
+  };
 
-  return { videos: videos.slice(0, cfg.limit), issues } satisfies VideosData;
+  selected.sort(byDateDesc);
+  const videos = selected.slice(0, cfg.limit);
+
+  if (videos.length < cfg.limit) {
+    overflow.sort(byDateDesc);
+    for (const v of overflow) {
+      if (videos.length >= cfg.limit) break;
+      videos.push(v);
+    }
+  }
+
+  return { videos, issues } satisfies VideosData;
 });

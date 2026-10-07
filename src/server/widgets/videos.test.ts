@@ -327,4 +327,39 @@ describe('videos fetcher', () => {
     expect(data.videos).toEqual([]);
     expect(data.issues).toEqual([{ source: '@ferntv', reason: 'handle not found: @ferntv' }]);
   });
+
+  it('multi-channel widget shows multiple channels within limit', async () => {
+    // 3 sources with skewed dates: one prolific channel must not crowd out the rest.
+    // Source A: 5 videos (newest), Source B: 3 videos, Source C: 2 videos (oldest).
+    // perSourceCap = ceil(6/3) = 2, so each source contributes at most 2.
+    const makeFeed = (channel: string, count: number, startDay: number) => {
+      const entries = Array.from({ length: count }, (_, i) => {
+        const day = startDay - i;
+        const id = `${channel.toLowerCase()}${String(i).padStart(2, '0')}`;
+        return `<entry><title>${channel} Video ${i + 1}</title><link href="https://www.youtube.com/watch?v=${id}"/><published>2024-01-${String(day).padStart(2, '0')}T10:00:00+00:00</published></entry>`;
+      }).join('');
+      return `<?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom"><title>${channel}</title>${entries}</feed>`;
+    };
+    const ctx = makeCtx(async (url) => {
+      if (url.includes('channel_id=UCaaa')) return new Response(makeFeed('Channel A', 5, 10), { status: 200 });
+      if (url.includes('channel_id=UCbbb')) return new Response(makeFeed('Channel B', 3, 8), { status: 200 });
+      if (url.includes('channel_id=UCccc')) return new Response(makeFeed('Channel C', 2, 6), { status: 200 });
+      return new Response('', { status: 404 });
+    });
+    const data = (await videosFetcher()(ctx, {
+      type: 'videos',
+      channels: ['UCaaa', 'UCbbb', 'UCccc'],
+      limit: 6,
+    })) as VideosData;
+
+    // All 3 channels represented, 2 each (perSourceCap = ceil(6/3) = 2).
+    const channels = data.videos.map((v) => v.channel);
+    expect(channels).toContain('Channel A');
+    expect(channels).toContain('Channel B');
+    expect(channels).toContain('Channel C');
+    expect(data.videos).toHaveLength(6);
+    // Newest-first ordering within the selection.
+    expect(data.videos[0].title).toBe('Channel A Video 1');
+    expect(data.videos[1].title).toBe('Channel A Video 2');
+  });
 });
