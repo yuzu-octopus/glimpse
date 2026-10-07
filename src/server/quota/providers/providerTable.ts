@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises';
 import { fetchJson } from '../../widgets/http';
 import type { WidgetFetchContext } from '../../widgets/registry';
 import type { RateWindow, UsageSnapshot } from '../../../shared/widgets/quota-types';
@@ -39,12 +38,8 @@ export interface TableRow {
 async function readTokenFile(path?: string): Promise<string> {
   if (!path) return '';
   try {
-    const bun = (globalThis as unknown as { Bun?: typeof Bun }).Bun;
-    if (bun) {
-      const f = bun.file(path);
-      return (await f.exists()) ? (await f.text()).trim() : '';
-    }
-    return (await readFile(path, 'utf8').catch(() => '')).trim();
+    const f = Bun.file(path);
+    return (await f.exists()) ? (await f.text()).trim() : '';
   } catch {
     return '';
   }
@@ -207,13 +202,8 @@ async function fetchPerplexityUsage(auth: ProviderAuth, ctx: WidgetFetchContext)
 async function fetchAmpUsage(auth: ProviderAuth, _ctx: WidgetFetchContext): Promise<UsageSnapshot> {
   if (auth.tokenFile) {
     try {
-      const bun = (globalThis as unknown as { Bun?: typeof Bun }).Bun;
-      const text = bun
-        ? await (async () => {
-            const f = bun.file(auth.tokenFile!);
-            return (await f.exists()) ? f.text() : '';
-          })()
-        : await readFile(auth.tokenFile, 'utf8').catch(() => '');
+      const f = Bun.file(auth.tokenFile!);
+      const text = (await f.exists()) ? await f.text() : '';
       if (text) {
         const used = Number(text.match(/used_percent["\s:]+(\d+(?:\.\d+)?)/i)?.[1] ?? text.match(/(\d+(?:\.\d+)?)\s*%/)?.[1] ?? 0);
         if (used)

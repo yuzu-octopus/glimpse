@@ -7,9 +7,7 @@ import type { UsageSnapshot } from '../../../shared/widgets/quota-types';
 // Uses Bun.spawn(['gcloud','auth','print-access-token']) with 10s timeout when token missing
 async function gcloudAccessToken(): Promise<string | null> {
   try {
-    const bun = (globalThis as unknown as { Bun?: typeof Bun }).Bun;
-    if (!bun) return null;
-    const proc = bun.spawn(['gcloud', 'auth', 'print-access-token'], { stdout: 'pipe', stderr: 'pipe' });
+    const proc = Bun.spawn(['gcloud', 'auth', 'print-access-token'], { stdout: 'pipe', stderr: 'pipe' });
     const timer = setTimeout(() => { try { proc.kill(); } catch {} }, 10_000);
     const text = await new Response(proc.stdout).text();
     clearTimeout(timer);
@@ -26,14 +24,8 @@ export async function fetchGeminiUsage(
   let token = auth.token;
   if (!token && auth.tokenFile) {
     try {
-      const bun = (globalThis as unknown as { Bun?: typeof Bun }).Bun;
-      if (bun) {
-        const f = bun.file(auth.tokenFile);
-        if (await f.exists()) token = (await f.text()).trim();
-      } else {
-        const { readFile } = await import('node:fs/promises');
-        token = (await readFile(auth.tokenFile, 'utf8')).trim();
-      }
+      const f = Bun.file(auth.tokenFile);
+      if (await f.exists()) token = (await f.text()).trim();
     } catch {}
   }
   if (!token) token = (await gcloudAccessToken()) ?? '';

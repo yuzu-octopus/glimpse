@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises';
 import { fetchJson } from '../../widgets/http';
 import type { WidgetFetchContext } from '../../widgets/registry';
 import { extractToken, type UsageSnapshot } from '../../../shared/widgets/quota-types';
@@ -10,9 +9,8 @@ export async function fetchGrokUsage(
 ): Promise<UsageSnapshot> {
   const readToken = async (path: string): Promise<string> => {
     try {
-      const bun = (globalThis as unknown as { Bun?: typeof Bun }).Bun;
-      const text = bun ? await (async () => { const f = bun.file(path); return await f.exists() ? f.text() : ''; })() : await readFile(path, 'utf8').catch(() => '');
-      return extractToken(text) ?? '';
+      const f = Bun.file(path);
+      return extractToken((await f.exists()) ? await f.text() : '') ?? '';
     } catch {}
     return '';
   };

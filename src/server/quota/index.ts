@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { extractToken, type ProviderId, type UsageSnapshot } from '../../shared/widgets/quota-types';
 import type { WidgetFetchContext } from '../widgets/registry';
 import { fetchAnthropicUsage } from './anthropic';
@@ -87,14 +86,15 @@ function readTokenFrom(raw: string): string | undefined {
   return trimmed ? (extractToken(trimmed) ?? trimmed) : undefined;
 }
 
-export function resolveAuth(
+export async function resolveAuth(
   env: Record<string, string | undefined>,
   cfg: { tokenFile?: string; accountId?: string },
   provider?: string,
-): { token: string; accountId?: string } {
+): Promise<{ token: string; accountId?: string }> {
   if (cfg.tokenFile) {
     try {
-      const tok = readTokenFrom(readFileSync(cfg.tokenFile, 'utf8'));
+      const f = Bun.file(cfg.tokenFile);
+      const tok = readTokenFrom((await f.exists()) ? await f.text() : '');
       if (tok) return { token: tok, accountId: cfg.accountId };
     } catch {}
   }
@@ -107,7 +107,8 @@ export function resolveAuth(
     if (defFile) {
       try {
         const p = defFile.replace(/^~/, env.HOME ?? process.env.HOME ?? '');
-        const tok = readTokenFrom(readFileSync(p, 'utf8'));
+        const f = Bun.file(p);
+        const tok = readTokenFrom((await f.exists()) ? await f.text() : '');
         if (tok) return { token: tok, accountId: cfg.accountId };
       } catch {}
     }

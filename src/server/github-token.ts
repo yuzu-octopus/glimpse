@@ -26,7 +26,9 @@ export async function getGitHubToken(
         stdout: 'pipe',
         stderr: 'pipe',
       });
+      const timer = setTimeout(() => { try { proc.kill(); } catch {} }, 10_000);
       const text = await new Response(proc.stdout).text();
+      clearTimeout(timer);
       const code = await proc.exited;
       const token = text.trim();
       if (code === 0 && token) {
