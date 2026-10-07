@@ -1,24 +1,24 @@
 /* Query container: the widget body's content box. A 300px column yields
    ~264px here; full columns are wider. */
 .rows {
-  container-type: inline-size;
+	container-type: inline-size;
 }
 
 .row {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  min-width: 0;
+	display: flex;
+	align-items: center;
+	gap: 15px;
+	min-width: 0;
 }
 
 .row + .row {
-  margin-top: 10px;
-  border-top: 1px solid var(--color-separator);
-  padding-top: 10px;
+	margin-top: 10px;
+	border-top: 1px solid var(--color-separator);
+	padding-top: 10px;
 }
 
 .rowLeft {
-  min-width: 0;
+	min-width: 0;
 }
 
 /* glance: symbol is the headline (`type="large"`, a Link when the market
@@ -29,92 +29,89 @@
    `@layer astryx-base`), so the linked symbol now carries the app's standard
    link underline and `hasUnderline={false}` cannot take it back. */
 .symbol {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+	display: block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .name {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+	display: block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 /* glance .market-chart: margin-left auto, 65px wide */
 .chartLink {
-  display: block;
-  margin-left: auto;
-  flex-shrink: 0;
-  line-height: 0;
+	display: block;
+	margin-left: auto;
+	flex-shrink: 0;
+	line-height: 0;
 }
 
 /* Wrapper: the kit Sparkline sizes itself at width 100%, so the row's chart
    box (glance .market-chart, 65px) lives here. */
 .sparkline {
-  display: block;
-  width: 65px;
-  line-height: 0;
+	display: block;
+	width: 65px;
+	line-height: 0;
 }
 
 /* A directionless (flat) series has no sign to show, so it takes the kit's
    muted chart hue instead of a status hue. The sparkline sets `fill` as an
    SVG presentation attribute, which any CSS rule outranks. */
 .sparkFlat rect {
-  fill: var(--spark-hue);
+	fill: var(--spark-hue);
 }
 
 /* glance .market-values: min-width 80px, right-aligned, change stacked over
    price (two inline spans would join into one ~200px line and crush the
    symbol block). */
 .values {
-  min-width: 80px;
-  /* never let the values column crowd out the symbol/name block */
-  max-width: 50%;
-  flex-shrink: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  text-align: right;
+	min-width: 80px;
+	/* never let the values column crowd out the symbol/name block */
+	max-width: 50%;
+	flex-shrink: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	text-align: right;
 }
 
 /* The delta line. MetricDelta sets its own body role; the neutral zero-change
    fallback now wears it too, since both are `Text` inside the same wrapper,
    so a column of rows never mixes two type sizes. */
 .change {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 2px;
-  min-width: 0;
-  max-width: 100%;
-  white-space: nowrap;
+	display: inline-flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 2px;
+	min-width: 0;
+	max-width: 100%;
+	white-space: nowrap;
 }
 
 .price {
-  white-space: nowrap;
+	white-space: nowrap;
 }
-
-
-
 
 /* Narrow body (a 300px column ≈ 264px of content): tighten the row and
    shrink the chart so symbol + name + chart + change% + price all fit
    without truncation. */
 @container (max-width: 340px) {
-  .row {
-    gap: 10px;
-  }
-  .sparkline {
-    width: 40px;
-  }
-  /* The values column's 80px floor (a glance port) is wider than the room a
+	.row {
+		gap: 10px;
+	}
+	.sparkline {
+		width: 40px;
+	}
+	/* The values column's 80px floor (a glance port) is wider than the room a
      narrow tile leaves the symbol: drop it so a ticker keeps enough width to
      read, and let the right-aligned price take what is left. */
-  .values {
-    min-width: 0;
-  }
+	.values {
+		min-width: 0;
+	}
 }
 
 /* Very narrow tile (a span-3 column at tablet/phone width ≈ 136px): symbol,
@@ -122,13 +119,13 @@
    ~24px and every ticker ellipsised to a letter. Stack the identity block
    over the chart + values instead of dropping the chart (data ink). */
 @container (max-width: 200px) {
-  .row {
-    flex-wrap: wrap;
-    row-gap: 4px;
-  }
-  .rowLeft {
-    flex: 1 1 100%;
-  }
+	.row {
+		flex-wrap: wrap;
+		row-gap: 4px;
+	}
+	.rowLeft {
+		flex: 1 1 100%;
+	}
 }
 
 /* Per-symbol failure rows. Kit Stack + StatusDot + Text do the work; the
@@ -136,21 +133,20 @@
    No colour lives here — the dot owns the negative hue, and the symbol and its
    reason are both metadata, so both wear the `supporting` role. */
 .issues {
-  min-width: 0;
+	min-width: 0;
 }
 
 .issueSymbol {
-  min-width: 0;
-  max-width: 45%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+	min-width: 0;
+	max-width: 45%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 /* The row is tappable when the symbol resolves a Link, so it gets the same
    wash + lift pair every other tappable row in the app wears. */
 .row:is(:hover, :focus-within) {
-  background-color: var(--color-overlay-hover);
-  border-radius: var(--border-radius);
+	background-color: var(--color-overlay-hover);
+	border-radius: var(--border-radius);
 }
-

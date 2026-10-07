@@ -1,71 +1,71 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { Button, SegmentedControl, SegmentedControlItem, TextArea } from '@astryxdesign/core';
-import { Pause, Play, RotateCcw } from 'lucide-react';
-import { CHART_HUES } from 'astryx-dracula/shared/chart-hues';
-import { formatDuration, parseDuration, type TimerConfig } from '../../../shared/widgets/timer';
-import { localStateKey } from '../../../shared/widgets/local-state';
-import { WidgetChrome } from '../../components/WidgetChrome';
-import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import styles from './timer.module.css';
+import { Button, SegmentedControl, SegmentedControlItem, TextArea } from "@astryxdesign/core";
+import { CHART_HUES } from "astryx-dracula/shared/chart-hues";
+import { Pause, Play, RotateCcw } from "lucide-react";
+import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { localStateKey } from "../../../shared/widgets/local-state";
+import { formatDuration, parseDuration, type TimerConfig } from "../../../shared/widgets/timer";
+import { WidgetChrome } from "../../components/WidgetChrome";
+import { registerWidgetComponent, type WidgetComponentProps } from "../registry";
+import styles from "./timer.module.css";
 
-type Mode = 'timer' | 'stopwatch';
+type Mode = "timer" | "stopwatch";
 
 interface TimerState {
-  /** Remaining (timer) or elapsed (stopwatch) seconds at last tick. */
-  seconds: number;
-  running: boolean;
-  mode: Mode;
-  /** epoch ms when running started, for drift-free ticking. */
-  startedAt: number | null;
+	/** Remaining (timer) or elapsed (stopwatch) seconds at last tick. */
+	seconds: number;
+	running: boolean;
+	mode: Mode;
+	/** epoch ms when running started, for drift-free ticking. */
+	startedAt: number | null;
 }
 
 function loadState(key: string, defaultSeconds: number): TimerState {
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw) {
-      const s = JSON.parse(raw) as Partial<TimerState> & { notes?: string };
-      if (typeof s.seconds === 'number' && (s.mode === 'timer' || s.mode === 'stopwatch')) {
-        return {
-          seconds: s.seconds,
-          running: s.running === true,
-          mode: s.mode,
-          startedAt: s.running === true && typeof s.startedAt === 'number' ? s.startedAt : null,
-        };
-      }
-    }
-  } catch {
-    // corrupted state — fall through to defaults
-  }
-  return { seconds: defaultSeconds, running: false, mode: 'timer', startedAt: null };
+	try {
+		const raw = localStorage.getItem(key);
+		if (raw) {
+			const s = JSON.parse(raw) as Partial<TimerState> & { notes?: string };
+			if (typeof s.seconds === "number" && (s.mode === "timer" || s.mode === "stopwatch")) {
+				return {
+					seconds: s.seconds,
+					running: s.running === true,
+					mode: s.mode,
+					startedAt: s.running === true && typeof s.startedAt === "number" ? s.startedAt : null,
+				};
+			}
+		}
+	} catch {
+		// corrupted state — fall through to defaults
+	}
+	return { seconds: defaultSeconds, running: false, mode: "timer", startedAt: null };
 }
 
 /** Circle geometry — viewBox 100x100, r=44 leaves room for the stroke. */
 const R = 44;
 const CIRC = 2 * Math.PI * R;
 
-const RING_STYLE = { '--ring-hue': CHART_HUES.cyan } as React.CSSProperties;
+const RING_STYLE = { "--ring-hue": CHART_HUES.cyan } as React.CSSProperties;
 
 function loadNotes(key: string): string {
-  try {
-    return localStorage.getItem(`${key}.notes`) ?? '';
-  } catch {
-    return '';
-  }
+	try {
+		return localStorage.getItem(`${key}.notes`) ?? "";
+	} catch {
+		return "";
+	}
 }
 
 function persist(key: string, value: string): void {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    // storage unavailable — the timer just won't persist
-  }
+	try {
+		localStorage.setItem(key, value);
+	} catch {
+		// storage unavailable — the timer just won't persist
+	}
 }
 
 /** A stopped state at the start of `mode`: the configured duration for the
  *  countdown, zero for the stopwatch. Switching mode and Reset are the same
  *  move, so they share it. */
 function idle(mode: Mode, defaultSeconds: number): TimerState {
-  return { seconds: mode === 'timer' ? defaultSeconds : 0, running: false, mode, startedAt: null };
+	return { seconds: mode === "timer" ? defaultSeconds : 0, running: false, mode, startedAt: null };
 }
 
 /** Drift-free tick: each pass charges only the time since the last one, so a
@@ -74,35 +74,37 @@ function idle(mode: Mode, defaultSeconds: number): TimerState {
  *  Pause folds in only the final partial interval. A countdown that hits
  *  zero stops itself. */
 function advance(prev: TimerState): TimerState {
-  if (prev.startedAt === null) return prev;
-  const elapsed = (Date.now() - prev.startedAt) / 1000;
-  if (prev.mode === 'timer') {
-    const next = Math.max(0, prev.seconds - elapsed);
-    return next <= 0 ? { ...prev, seconds: 0, running: false, startedAt: null } : { ...prev, seconds: next, startedAt: Date.now() };
-  }
-  return { ...prev, seconds: prev.seconds + elapsed, startedAt: Date.now() };
+	if (prev.startedAt === null) return prev;
+	const elapsed = (Date.now() - prev.startedAt) / 1000;
+	if (prev.mode === "timer") {
+		const next = Math.max(0, prev.seconds - elapsed);
+		return next <= 0
+			? { ...prev, seconds: 0, running: false, startedAt: null }
+			: { ...prev, seconds: next, startedAt: Date.now() };
+	}
+	return { ...prev, seconds: prev.seconds + elapsed, startedAt: Date.now() };
 }
 
 /** Pause folds the elapsed time into `seconds`; a spent countdown that is not
  *  being retyped restarts from the configured duration. */
 function toggled(prev: TimerState, defaultSeconds: number, editing: boolean): TimerState {
-  if (prev.running) {
-    const elapsed = prev.startedAt !== null ? (Date.now() - prev.startedAt) / 1000 : 0;
-    const next =
-      prev.mode === 'timer' ? Math.max(0, prev.seconds - elapsed) : prev.seconds + elapsed;
-    return { ...prev, seconds: next, running: false, startedAt: null };
-  }
-  if (prev.mode === 'timer' && prev.seconds <= 0 && !editing) {
-    return { ...prev, seconds: defaultSeconds, running: true, startedAt: Date.now() };
-  }
-  return { ...prev, running: true, startedAt: Date.now() };
+	if (prev.running) {
+		const elapsed = prev.startedAt !== null ? (Date.now() - prev.startedAt) / 1000 : 0;
+		const next =
+			prev.mode === "timer" ? Math.max(0, prev.seconds - elapsed) : prev.seconds + elapsed;
+		return { ...prev, seconds: next, running: false, startedAt: null };
+	}
+	if (prev.mode === "timer" && prev.seconds <= 0 && !editing) {
+		return { ...prev, seconds: defaultSeconds, running: true, startedAt: Date.now() };
+	}
+	return { ...prev, running: true, startedAt: Date.now() };
 }
 
 /** Fraction of the countdown left, 0-1. A stopwatch has no arc, so it reads 0. */
 function ringFraction(state: TimerState, defaultSeconds: number): number {
-  if (state.mode !== 'timer') return 0;
-  const total = Math.max(defaultSeconds, state.seconds);
-  return total > 0 ? Math.max(0, Math.min(1, state.seconds / total)) : 0;
+	if (state.mode !== "timer") return 0;
+	const total = Math.max(defaultSeconds, state.seconds);
+	return total > 0 ? Math.max(0, Math.min(1, state.seconds / total)) : 0;
 }
 
 /** Timer-vs-stopwatch is a value, not a view, so this is a radio group rather
@@ -111,180 +113,185 @@ function ringFraction(state: TimerState, defaultSeconds: number): number {
  *  never had (that markup declared tabs with no tabpanel and no tablist
  *  keyboard handling). */
 function ModeTabs({ mode, onSelect }: { mode: Mode; onSelect: (mode: Mode) => void }) {
-  return (
-    <SegmentedControl
-      value={mode}
-      onChange={(value) => onSelect(value === 'stopwatch' ? 'stopwatch' : 'timer')}
-      label="Timer mode"
-    >
-      <SegmentedControlItem value="timer" label="Timer" />
-      <SegmentedControlItem value="stopwatch" label="Stopwatch" />
-    </SegmentedControl>
-  );
+	return (
+		<SegmentedControl
+			value={mode}
+			onChange={(value) => onSelect(value === "stopwatch" ? "stopwatch" : "timer")}
+			label="Timer mode"
+		>
+			<SegmentedControlItem value="timer" label="Timer" />
+			<SegmentedControlItem value="stopwatch" label="Stopwatch" />
+		</SegmentedControl>
+	);
 }
 
 /** The dial itself — identical whether the seconds are on display or being
  *  typed, so the two wrappers share it. */
 function RingDial({ mode, seconds, fraction }: { mode: Mode; seconds: number; fraction: number }) {
-  return (
-    <svg viewBox="0 0 100 100" className={styles.ring} aria-hidden="true">
-      <circle cx="50" cy="50" r={R} className={styles.ringTrack} />
-      {mode === 'timer' ? (
-        <circle
-          cx="50"
-          cy="50"
-          r={R}
-          className={`${styles.ringValue} ${seconds <= 0 ? styles.ringDone : ''}`}
-          strokeDasharray={CIRC}
-          strokeDashoffset={CIRC * (1 - fraction)}
-        />
-      ) : null}
-    </svg>
-  );
+	return (
+		<svg viewBox="0 0 100 100" className={styles.ring} aria-hidden="true">
+			<circle cx="50" cy="50" r={R} className={styles.ringTrack} />
+			{mode === "timer" ? (
+				<circle
+					cx="50"
+					cy="50"
+					r={R}
+					className={`${styles.ringValue} ${seconds <= 0 ? styles.ringDone : ""}`}
+					strokeDasharray={CIRC}
+					strokeDashoffset={CIRC * (1 - fraction)}
+				/>
+			) : null}
+		</svg>
+	);
 }
 
 function TimerControls({
-  running,
-  onToggle,
-  onReset,
+	running,
+	onToggle,
+	onReset,
 }: {
-  running: boolean;
-  onToggle: () => void;
-  onReset: () => void;
+	running: boolean;
+	onToggle: () => void;
+	onReset: () => void;
 }) {
-  return (
-    <div className={styles.controls}>
-      <Button label={running ? 'Pause' : 'Start'} onClick={onToggle} data-testid="timer-toggle">
-        {running ? <Pause size={14} aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}
-        {running ? 'Pause' : 'Start'}
-      </Button>
-      <Button label="Reset" isIconOnly onClick={onReset} aria-label="Reset" data-testid="timer-reset">
-        <RotateCcw size={14} aria-hidden="true" />
-      </Button>
-    </div>
-  );
+	return (
+		<div className={styles.controls}>
+			<Button label={running ? "Pause" : "Start"} onClick={onToggle} data-testid="timer-toggle">
+				{running ? <Pause size={14} aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}
+				{running ? "Pause" : "Start"}
+			</Button>
+			<Button
+				label="Reset"
+				isIconOnly
+				onClick={onReset}
+				aria-label="Reset"
+				data-testid="timer-reset"
+			>
+				<RotateCcw size={14} aria-hidden="true" />
+			</Button>
+		</div>
+	);
 }
 
 export function Timer({ config }: WidgetComponentProps) {
-  const cfg = config as unknown as TimerConfig;
-  const storageKey = localStateKey('timer', cfg.id);
-  const defaultSeconds = useMemo(() => parseDuration(cfg.duration ?? '25m'), [cfg.duration]);
+	const cfg = config as unknown as TimerConfig;
+	const storageKey = localStateKey("timer", cfg.id);
+	const defaultSeconds = useMemo(() => parseDuration(cfg.duration ?? "25m"), [cfg.duration]);
 
-  const [state, setState] = useState<TimerState>(() => loadState(storageKey, defaultSeconds));
-  const [notes, setNotes] = useState<string>(() => loadNotes(storageKey));
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState('');
-  const draftRef = useRef<HTMLInputElement>(null);
+	const [state, setState] = useState<TimerState>(() => loadState(storageKey, defaultSeconds));
+	const [notes, setNotes] = useState<string>(() => loadNotes(storageKey));
+	const [editing, setEditing] = useState(false);
+	const [draft, setDraft] = useState("");
+	const draftRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    persist(storageKey, JSON.stringify(state));
-  }, [state, storageKey]);
+	useEffect(() => {
+		persist(storageKey, JSON.stringify(state));
+	}, [state, storageKey]);
 
-  useEffect(() => {
-    persist(`${storageKey}.notes`, notes);
-  }, [notes, storageKey]);
+	useEffect(() => {
+		persist(`${storageKey}.notes`, notes);
+	}, [notes, storageKey]);
 
-  // Drift-free tick: derive seconds from startedAt each interval.
-  useEffect(() => {
-    if (!state.running || state.startedAt === null) return;
-    const id = window.setInterval(() => setState(advance), 250);
-    return () => window.clearInterval(id);
-  }, [state.running, state.startedAt, state.mode]);
+	// Drift-free tick: derive seconds from startedAt each interval.
+	useEffect(() => {
+		if (!state.running || state.startedAt === null) return;
+		const id = window.setInterval(() => setState(advance), 250);
+		return () => window.clearInterval(id);
+	}, [state.running, state.startedAt, state.mode]);
 
-  const toggle = useCallback(() => {
-    setState((prev) => toggled(prev, defaultSeconds, editing));
-  }, [defaultSeconds, editing]);
+	const toggle = useCallback(() => {
+		setState((prev) => toggled(prev, defaultSeconds, editing));
+	}, [defaultSeconds, editing]);
 
-  const reset = useCallback(() => {
-    setState((prev) => idle(prev.mode, defaultSeconds));
-  }, [defaultSeconds]);
+	const reset = useCallback(() => {
+		setState((prev) => idle(prev.mode, defaultSeconds));
+	}, [defaultSeconds]);
 
-  const setMode = useCallback((mode: Mode) => {
-    setState(() => idle(mode, defaultSeconds));
-  }, [defaultSeconds]);
+	const setMode = useCallback(
+		(mode: Mode) => {
+			setState(() => idle(mode, defaultSeconds));
+		},
+		[defaultSeconds],
+	);
 
-  const commitDraft = () => {
-    const parsed = parseDuration(draft);
-    if (parsed > 0) {
-      setState((prev) => ({ ...prev, seconds: parsed, running: false, startedAt: null }));
-    }
-    setEditing(false);
-  };
+	const commitDraft = () => {
+		const parsed = parseDuration(draft);
+		if (parsed > 0) {
+			setState((prev) => ({ ...prev, seconds: parsed, running: false, startedAt: null }));
+		}
+		setEditing(false);
+	};
 
-  const onDraftKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') commitDraft();
-    if (e.key === 'Escape') setEditing(false);
-  };
+	const onDraftKey = (e: KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === "Enter") commitDraft();
+		if (e.key === "Escape") setEditing(false);
+	};
 
-  const fraction = ringFraction(state, defaultSeconds);
+	const fraction = ringFraction(state, defaultSeconds);
 
-  const startEdit = () => {
-    setDraft(formatDuration(state.seconds));
-    setEditing(true);
-    setTimeout(() => draftRef.current?.select(), 0);
-  };
+	const startEdit = () => {
+		setDraft(formatDuration(state.seconds));
+		setEditing(true);
+		setTimeout(() => draftRef.current?.select(), 0);
+	};
 
-  return (
-    <WidgetChrome
-      title={cfg.title}
-      titleUrl={cfg['title-url']}
-      hideHeader={cfg['hide-header']}
-      cssClass={cfg['css-class']}
-    >
-      <div className={styles.wrap} data-testid="timer-widget" data-mode={state.mode}>
-        <ModeTabs mode={state.mode} onSelect={setMode} />
+	return (
+		<WidgetChrome
+			title={cfg.title}
+			titleUrl={cfg["title-url"]}
+			hideHeader={cfg["hide-header"]}
+			cssClass={cfg["css-class"]}
+		>
+			<div className={styles.wrap} data-testid="timer-widget" data-mode={state.mode}>
+				<ModeTabs mode={state.mode} onSelect={setMode} />
 
-        {editing ? (
-          <div
-            className={styles.ringButton}
-            data-testid="timer-ring"
-            style={RING_STYLE}
-          >
-            <RingDial mode={state.mode} seconds={state.seconds} fraction={fraction} />
-            <input
-              ref={draftRef}
-              className={styles.timeInput}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onBlur={commitDraft}
-              onKeyDown={onDraftKey}
-              aria-label="Duration"
-              autoFocus
-            />
-          </div>
-        ) : (
-          <button
-            type="button"
-            className={styles.ringButton}
-            onClick={startEdit}
-            aria-label="Edit duration"
-            data-testid="timer-ring"
-            style={RING_STYLE}
-          >
-            <RingDial mode={state.mode} seconds={state.seconds} fraction={fraction} />
-            <span className={styles.timeText} data-testid="timer-display">
-              {formatDuration(state.seconds)}
-            </span>
-          </button>
-        )}
+				{editing ? (
+					<div className={styles.ringButton} data-testid="timer-ring" style={RING_STYLE}>
+						<RingDial mode={state.mode} seconds={state.seconds} fraction={fraction} />
+						<input
+							ref={draftRef}
+							className={styles.timeInput}
+							value={draft}
+							onChange={(e) => setDraft(e.target.value)}
+							onBlur={commitDraft}
+							onKeyDown={onDraftKey}
+							aria-label="Duration"
+							autoFocus
+						/>
+					</div>
+				) : (
+					<button
+						type="button"
+						className={styles.ringButton}
+						onClick={startEdit}
+						aria-label="Edit duration"
+						data-testid="timer-ring"
+						style={RING_STYLE}
+					>
+						<RingDial mode={state.mode} seconds={state.seconds} fraction={fraction} />
+						<span className={styles.timeText} data-testid="timer-display">
+							{formatDuration(state.seconds)}
+						</span>
+					</button>
+				)}
 
-        <TimerControls running={state.running} onToggle={toggle} onReset={reset} />
+				<TimerControls running={state.running} onToggle={toggle} onReset={reset} />
 
-        {cfg.notes ? (
-          <TextArea
-            label="Notes"
-            isLabelHidden
-            width="100%"
-            rows={3}
-            value={notes}
-            onChange={setNotes}
-            placeholder="Notes…"
-            data-testid="timer-notes"
-          />
-        ) : null}
-      </div>
-    </WidgetChrome>
-  );
+				{cfg.notes ? (
+					<TextArea
+						label="Notes"
+						isLabelHidden
+						width="100%"
+						rows={3}
+						value={notes}
+						onChange={setNotes}
+						placeholder="Notes…"
+						data-testid="timer-notes"
+					/>
+				) : null}
+			</div>
+		</WidgetChrome>
+	);
 }
 
-registerWidgetComponent('timer', Timer);
+registerWidgetComponent("timer", Timer);

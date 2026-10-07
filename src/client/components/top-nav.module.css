@@ -2,14 +2,14 @@
    gap 25px). No card frame; in glance the bar is transparent with only the
    logo's right border separating it. */
 .header {
-  display: flex;
-  align-items: center;
-  height: 45px;
-  gap: 25px;
-  padding-inline: 0;
-  background: transparent;
-  border: none;
-  box-shadow: none;
+	display: flex;
+	align-items: center;
+	height: 45px;
+	gap: 25px;
+	padding-inline: 0;
+	background: transparent;
+	border: none;
+	box-shadow: none;
 }
 
 /* The logo is a real outbound link, so it stays a real <a> — a link is not
@@ -17,40 +17,40 @@
    accent unvisited, dimmed on hover. Depth comes from the separator border,
    not a shadow. */
 .logoLink {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  height: 100%;
-  flex-shrink: 0;
-  line-height: 45px;
-  font-size: 20px;
-  color: var(--color-primary);
-  border-right: 1px solid var(--color-separator);
-  padding-right: var(--widget-content-horizontal-padding);
-  text-decoration: none;
-  transition: opacity var(--duration-fast) var(--ease-standard);
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	height: 100%;
+	flex-shrink: 0;
+	line-height: 45px;
+	font-size: 20px;
+	color: var(--color-primary);
+	border-right: 1px solid var(--color-separator);
+	padding-right: var(--widget-content-horizontal-padding);
+	text-decoration: none;
+	transition: opacity var(--duration-fast) var(--ease-standard);
 }
 
 /* Hover dims 12%; press dims 20%. The logo is an <a>, so :focus-visible is a
    real channel — keyboard focus dims exactly as a pointer hover does, rather
    than only earning the ring the dim was standing in for. */
 .logoLink:is(:hover, :focus-visible) {
-  opacity: 0.88;
+	opacity: 0.88;
 }
 
 .logoLink:active {
-  opacity: 0.8;
+	opacity: 0.8;
 }
 
 .logoIcon {
-  width: 22px;
-  height: 22px;
-  border-radius: var(--radius-element);
-  flex-shrink: 0;
+	width: 22px;
+	height: 22px;
+	border-radius: var(--radius-element);
+	flex-shrink: 0;
 }
 
 .logoText {
-  line-height: 45px;
+	line-height: 45px;
 }
 
 /* Page links are kit TopNavItems — current-page state, hover/press washes and
@@ -60,13 +60,13 @@
    had no affordance at all — the one tier the doctrine says thumb-only bars
    must read on. */
 .navLinks {
-  display: flex;
-  align-items: center;
-  gap: 25px;
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-  overflow-x: auto;
+	display: flex;
+	align-items: center;
+	gap: 25px;
+	flex: 1;
+	min-width: 0;
+	height: 100%;
+	overflow-x: auto;
 }
 
 /* Brand: purple means tappable, so an unvisited page link wears the accent on
@@ -74,64 +74,64 @@
    so the accent is never asked to mean two things at once. */
 .navLinks a,
 .mobileNavLinks a {
-  color: var(--color-primary);
+	color: var(--color-primary);
 }
 
-.navLinks a[aria-current='page'],
-.mobileNavLinks a[aria-current='page'] {
-  color: var(--color-text-highlight);
+.navLinks a[aria-current="page"],
+.mobileNavLinks a[aria-current="page"] {
+	color: var(--color-text-highlight);
 }
 
 /* glance mobile.css bottom bar: hidden on desktop, fixed bar <768px with an
    expandable page-links list above the icons row (column-reverse keeps the
    icons anchored to the bottom edge). */
 .mobileNav {
-  display: none;
+	display: none;
 }
 
 .mobileNavIcons {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  height: var(--mobile-navigation-height);
-  flex-shrink: 0;
+	display: flex;
+	justify-content: space-around;
+	align-items: center;
+	height: var(--mobile-navigation-height);
+	flex-shrink: 0;
 }
 
 /* Mobile-only control: the button is the kit's, this rule only holds the
    44x44 touch target it measures 18x18 without. Transparent box around the
    18px Menu icon — the hit area grows, the visual box does not. */
 .mobileNavToggle {
-  min-width: 44px;
-  min-height: 44px;
+	min-width: 44px;
+	min-height: 44px;
 }
 
 .mobileNavLinks {
-  display: flex;
-  align-items: center;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  gap: 25px;
-  padding: 20px var(--content-bounds-padding);
-  border-top: 1px solid var(--color-widget-content-border);
-  border-bottom: 1px solid var(--color-widget-content-border);
+	display: flex;
+	align-items: center;
+	overflow-x: auto;
+	scrollbar-width: thin;
+	gap: 25px;
+	padding: 20px var(--content-bounds-padding);
+	border-top: 1px solid var(--color-widget-content-border);
+	border-bottom: 1px solid var(--color-widget-content-border);
 }
 
 @media (max-width: 768px) {
-  .header {
-    display: none;
-  }
+	.header {
+		display: none;
+	}
 
-  .mobileNav {
-    display: flex;
-    flex-direction: column-reverse;
-    position: fixed;
-    bottom: 0;
-    left: var(--content-bounds-padding);
-    right: var(--content-bounds-padding);
-    z-index: 11;
-    background-color: var(--color-widget-background);
-    border: 1px solid var(--color-widget-content-border);
-    border-bottom: 0;
-    border-radius: var(--border-radius) var(--border-radius) 0 0;
-  }
+	.mobileNav {
+		display: flex;
+		flex-direction: column-reverse;
+		position: fixed;
+		bottom: 0;
+		left: var(--content-bounds-padding);
+		right: var(--content-bounds-padding);
+		z-index: 11;
+		background-color: var(--color-widget-background);
+		border: 1px solid var(--color-widget-content-border);
+		border-bottom: 0;
+		border-radius: var(--border-radius) var(--border-radius) 0 0;
+	}
 }

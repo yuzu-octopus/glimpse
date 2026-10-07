@@ -1,20 +1,20 @@
-import type { WidgetType } from '../../shared/config';
-import { Singleflight, TtlCache } from '../cache';
+import type { WidgetType } from "../../shared/config";
+import type { Singleflight, TtlCache } from "../cache";
 
 /** Everything a widget fetcher may need. `fetch` is injected so tests pass
  * canned payloads and no widget ever touches the network in a test. */
 export interface WidgetFetchContext {
-  fetch: typeof fetch;
-  env: Record<string, string | undefined>;
-  cache: TtlCache;
-  singleflight: Singleflight;
+	fetch: typeof fetch;
+	env: Record<string, string | undefined>;
+	cache: TtlCache;
+	singleflight: Singleflight;
 }
 
 // Fetchers re-validate their config slice with zod per fetch: intentional
 // defense-in-depth (config is already validated at load) — keep it.
 export type WidgetFetcher = (
-  ctx: WidgetFetchContext,
-  config: Record<string, unknown>,
+	ctx: WidgetFetchContext,
+	config: Record<string, unknown>,
 ) => Promise<unknown>;
 
 /**
@@ -25,9 +25,6 @@ export type WidgetFetcher = (
  */
 export const serverWidgets = new Map<WidgetType, WidgetFetcher>();
 
-export function registerWidget(
-  type: WidgetType,
-  fetcher: WidgetFetcher,
-): void {
-  serverWidgets.set(type, fetcher);
+export function registerWidget(type: WidgetType, fetcher: WidgetFetcher): void {
+	serverWidgets.set(type, fetcher);
 }

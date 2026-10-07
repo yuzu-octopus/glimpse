@@ -1,17 +1,41 @@
-.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.row { display: flex; gap: 10px; align-items: center; }
-.rank { font-size: 12px; color: var(--color-text-base-muted); width: 16px; text-align: right; flex-shrink: 0; }
-.art { width: 40px; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+.list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	gap: 8px;
+}
+.row {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+}
+.rank {
+	font-size: 12px;
+	color: var(--color-text-base-muted);
+	width: 16px;
+	text-align: right;
+	flex-shrink: 0;
+}
+.art {
+	width: 40px;
+	aspect-ratio: 3 / 4;
+	object-fit: cover;
+	border-radius: 4px;
+	flex-shrink: 0;
+}
 /* `.name` is gone: the game name is a kit `Link`. astryx-dracula underlines
    every kit link at rest (its `@layer astryx-theme` beats core's
    `@layer astryx-base`), so `hasUnderline={false}` is inert here and the name
    now carries the app's standard link underline, focus included. */
-.empty { padding: 12px; color: var(--color-text-base-muted); }
+.empty {
+	padding: 12px;
+	color: var(--color-text-base-muted);
+}
 
 /* The row is tappable (the name is a Link), so it gets the same wash + lift
    pair every other tappable row in the app wears. */
 .row:is(:hover, :focus-within) {
-  background-color: var(--color-overlay-hover);
-  border-radius: var(--border-radius);
+	background-color: var(--color-overlay-hover);
+	border-radius: var(--border-radius);
 }
-

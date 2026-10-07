@@ -2,63 +2,65 @@
 
 /* glance .cards-horizontal */
 .cardRow {
-  display: flex;
-  gap: calc(var(--widget-content-vertical-padding) * 0.7);
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: thin;
-  padding-bottom: 7px;
+	display: flex;
+	gap: calc(var(--widget-content-vertical-padding) * 0.7);
+	overflow-x: auto;
+	scroll-snap-type: x mandatory;
+	scrollbar-width: thin;
+	padding-bottom: 7px;
 }
 
 /* glance .card.widget-content-frame — the frame, radius and clip are the
    ClickableCard's now; only the fixed tile width and snap point are local. */
 .card {
-  flex: 0 0 150px;
-  scroll-snap-align: start;
-  min-width: 0;
+	flex: 0 0 150px;
+	scroll-snap-align: start;
+	min-width: 0;
 }
 
 .cardThumb {
-  display: block;
-  width: 100%;
-  object-fit: cover;
+	display: block;
+	width: 100%;
+	object-fit: cover;
 }
 
 /* glance .thumbnail. The rest dim is gated on a real pointer — a touch
    device can never fire :hover, so an ungated dim would leave the
    thumbnails permanently greyed. :focus-within is the keyboard's channel. */
 @media (hover: hover) {
-  .cardThumb {
-    /* glance .thumbnail */
-    filter: grayscale(0.2) contrast(0.9);
-    opacity: 0.8;
-    transition: filter 0.2s, opacity 0.2s;
-  }
+	.cardThumb {
+		/* glance .thumbnail */
+		filter: grayscale(0.2) contrast(0.9);
+		opacity: 0.8;
+		transition:
+			filter 0.2s,
+			opacity 0.2s;
+	}
 
-  .card:is(:hover, :focus-within) .cardThumb {
-    filter: none;
-    opacity: 1;
-  }
+	.card:is(:hover, :focus-within) .cardThumb {
+		filter: none;
+		opacity: 1;
+	}
 }
 
 .cardThumbPlaceholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-widget-background-highlight);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--color-widget-background-highlight);
 }
 
 .cardThumbPlaceholderIcon {
-  width: 20px;
-  height: 20px;
+	width: 20px;
+	height: 20px;
 }
 
 /* glance .padding-inline-widget + .margin-bottom-widget */
 .cardContent {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  padding: 0 10px 10px;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	padding: 0 10px 10px;
 }
 
 /* glance .text-truncate-3-lines + .color-primary-if-not-visited. The tile is
@@ -66,83 +68,83 @@
    tappable purple stays put through the hover: a title that flipped to
    highlight would brighten exactly where the doctrine says hover dims. */
 .cardTitle {
-  margin-top: 7px;
-  margin-bottom: auto;
-  font-size: var(--font-size-base);
-  color: var(--color-primary);
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
+	margin-top: 7px;
+	margin-bottom: auto;
+	font-size: var(--font-size-base);
+	color: var(--color-primary);
+	overflow: hidden;
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
 }
 
 .cardMeta {
-  display: flex;
-  gap: 4px;
-  margin-top: 5px;
-  font-size: var(--font-size-base);
-  color: var(--color-text-base-muted);
+	display: flex;
+	gap: 4px;
+	margin-top: 5px;
+	font-size: var(--font-size-base);
+	color: var(--color-text-base-muted);
 }
 
 /* glance .rss-card-2 — the tile's own size and snap point; the frame is the
    ClickableCard's. It is also the containing block the gradient, the
    full-bleed thumb and the caption are positioned against. */
 .card2 {
-  position: relative;
-  flex: 0 0 150px;
-  scroll-snap-align: start;
-  min-width: 0;
-  height: 270px;
+	position: relative;
+	flex: 0 0 150px;
+	scroll-snap-align: start;
+	min-width: 0;
+	height: 270px;
 }
 
 .card2::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image: linear-gradient(
-    0deg,
-    var(--color-widget-background),
-    color-mix(in srgb, var(--color-widget-background) 80%, transparent) 60px,
-    transparent 140px
-  );
-  z-index: 2;
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background-image: linear-gradient(
+		0deg,
+		var(--color-widget-background),
+		color-mix(in srgb, var(--color-widget-background) 80%, transparent) 60px,
+		transparent 140px
+	);
+	z-index: 2;
 }
 
 .card2Thumb {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: calc(var(--border-radius) + 1px);
-  opacity: 0.9;
-  z-index: 1;
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	border-radius: calc(var(--border-radius) + 1px);
+	opacity: 0.9;
+	z-index: 1;
 }
 
 .card2ThumbPlaceholder {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  padding: 30px;
-  z-index: 1;
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	padding: 30px;
+	z-index: 1;
 }
 
 .card2Content {
-  position: absolute;
-  inset-inline: 0;
-  bottom: 10px;
-  padding-inline: 10px;
-  z-index: 3;
+	position: absolute;
+	inset-inline: 0;
+	bottom: 10px;
+	padding-inline: 10px;
+	z-index: 3;
 }
 
 /* Same resolve as `.cardTitle`: the ClickableCard's wash carries the hover,
    so the overlay tile's title holds its tappable purple through it. */
 .card2Title {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--font-size-base);
-  color: var(--color-primary);
+	display: block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: var(--font-size-base);
+	color: var(--color-primary);
 }

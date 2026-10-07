@@ -1,17 +1,17 @@
-import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { WidgetChrome } from './WidgetChrome';
+import { Component, type ErrorInfo, type ReactNode } from "react";
+import { WidgetChrome } from "./WidgetChrome";
 
 interface WidgetErrorBoundaryProps {
-  /** The widget's payload object. A new payload means a new `identity` here,
-   * which is how a widget that recovers stops being stuck on the degraded
-   * card. */
-  identity: unknown;
-  title?: string;
-  children: ReactNode;
+	/** The widget's payload object. A new payload means a new `identity` here,
+	 * which is how a widget that recovers stops being stuck on the degraded
+	 * card. */
+	identity: unknown;
+	title?: string;
+	children: ReactNode;
 }
 
 interface WidgetErrorBoundaryState {
-  error: Error | null;
+	error: Error | null;
 }
 
 /** One boundary per widget, not one around the app.
@@ -28,40 +28,40 @@ interface WidgetErrorBoundaryState {
  * like any other widget failure rather than inventing a second vocabulary.
  */
 export class WidgetErrorBoundary extends Component<
-  WidgetErrorBoundaryProps,
-  WidgetErrorBoundaryState
+	WidgetErrorBoundaryProps,
+	WidgetErrorBoundaryState
 > {
-  state: WidgetErrorBoundaryState = { error: null };
+	state: WidgetErrorBoundaryState = { error: null };
 
-  static getDerivedStateFromError(error: Error): WidgetErrorBoundaryState {
-    return { error };
-  }
+	static getDerivedStateFromError(error: Error): WidgetErrorBoundaryState {
+		return { error };
+	}
 
-  componentDidCatch(error: Error, info: ErrorInfo): void {
-    // React swallows the error otherwise, and a swallowed render error in a
-    // poll is indistinguishable from a widget that simply has no data.
-    console.error(
-      `[glimpse] widget "${this.props.title ?? 'untitled'}" failed to render`,
-      error,
-      info.componentStack,
-    );
-  }
+	componentDidCatch(error: Error, info: ErrorInfo): void {
+		// React swallows the error otherwise, and a swallowed render error in a
+		// poll is indistinguishable from a widget that simply has no data.
+		console.error(
+			`[glimpse] widget "${this.props.title ?? "untitled"}" failed to render`,
+			error,
+			info.componentStack,
+		);
+	}
 
-  componentDidUpdate(prev: WidgetErrorBoundaryProps): void {
-    if (this.state.error && prev.identity !== this.props.identity) {
-      this.setState({ error: null });
-    }
-  }
+	componentDidUpdate(prev: WidgetErrorBoundaryProps): void {
+		if (this.state.error && prev.identity !== this.props.identity) {
+			this.setState({ error: null });
+		}
+	}
 
-  render(): ReactNode {
-    if (this.state.error) {
-      return (
-        <WidgetChrome
-          title={this.props.title}
-          error={`${this.props.title ?? 'This widget'} failed to render`}
-        />
-      );
-    }
-    return this.props.children;
-  }
+	render(): ReactNode {
+		if (this.state.error) {
+			return (
+				<WidgetChrome
+					title={this.props.title}
+					error={`${this.props.title ?? "This widget"} failed to render`}
+				/>
+			);
+		}
+		return this.props.children;
+	}
 }

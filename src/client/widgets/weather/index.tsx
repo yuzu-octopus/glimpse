@@ -1,61 +1,61 @@
+import { Text } from "@astryxdesign/core";
 import {
-  CloudFog,
-  CloudLightning,
-  CloudRain,
-  CloudSnow,
-  CloudSun,
-  Droplets,
-  Sun,
-} from 'lucide-react';
-import { Text } from '@astryxdesign/core';
-import type { WeatherConfig } from '../../../shared/widgets/feeds';
-import { WidgetChrome } from '../../components/WidgetChrome';
-import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import type { WeatherData } from '../../../shared/widgets/payloads';
-import styles from './weather.module.css';
+	CloudFog,
+	CloudLightning,
+	CloudRain,
+	CloudSnow,
+	CloudSun,
+	Droplets,
+	Sun,
+} from "lucide-react";
+import type { WeatherConfig } from "../../../shared/widgets/feeds";
+import type { WeatherData } from "../../../shared/widgets/payloads";
+import { WidgetChrome } from "../../components/WidgetChrome";
+import { registerWidgetComponent, type WidgetComponentProps } from "../registry";
+import styles from "./weather.module.css";
 
 /** WMO weather code → lucide icon (open-meteo codes). */
 function weatherIcon(code: number | null) {
-  if (code === null || code === 0) return <Sun size={18} />;
-  if (code <= 3) return <CloudSun size={18} />;
-  if (code <= 48) return <CloudFog size={18} />;
-  if (code <= 67) return <CloudRain size={18} />; // drizzle + rain
-  if (code <= 77) return <CloudSnow size={18} />; // 71–77
-  if (code <= 82) return <CloudRain size={18} />; // rain showers
-  if (code <= 86) return <CloudSnow size={18} />; // snow showers
-  return <CloudLightning size={18} />;            // 95–99
+	if (code === null || code === 0) return <Sun size={18} />;
+	if (code <= 3) return <CloudSun size={18} />;
+	if (code <= 48) return <CloudFog size={18} />;
+	if (code <= 67) return <CloudRain size={18} />; // drizzle + rain
+	if (code <= 77) return <CloudSnow size={18} />; // 71–77
+	if (code <= 82) return <CloudRain size={18} />; // rain showers
+	if (code <= 86) return <CloudSnow size={18} />; // snow showers
+	return <CloudLightning size={18} />; // 95–99
 }
 
 /** WMO weather code → condition label (glance weatherCodeTable). */
 const WEATHER_CODES: Record<number, string> = {
-  0: 'Clear Sky',
-  1: 'Mainly Clear',
-  2: 'Partly Cloudy',
-  3: 'Overcast',
-  45: 'Fog',
-  48: 'Rime Fog',
-  51: 'Drizzle',
-  53: 'Drizzle',
-  55: 'Drizzle',
-  56: 'Drizzle',
-  57: 'Drizzle',
-  61: 'Rain',
-  63: 'Moderate Rain',
-  65: 'Heavy Rain',
-  66: 'Freezing Rain',
-  67: 'Freezing Rain',
-  71: 'Snow',
-  73: 'Moderate Snow',
-  75: 'Heavy Snow',
-  77: 'Snow Grains',
-  80: 'Rain',
-  81: 'Moderate Rain',
-  82: 'Heavy Rain',
-  85: 'Snow',
-  86: 'Snow',
-  95: 'Thunderstorm',
-  96: 'Thunderstorm',
-  99: 'Thunderstorm',
+	0: "Clear Sky",
+	1: "Mainly Clear",
+	2: "Partly Cloudy",
+	3: "Overcast",
+	45: "Fog",
+	48: "Rime Fog",
+	51: "Drizzle",
+	53: "Drizzle",
+	55: "Drizzle",
+	56: "Drizzle",
+	57: "Drizzle",
+	61: "Rain",
+	63: "Moderate Rain",
+	65: "Heavy Rain",
+	66: "Freezing Rain",
+	67: "Freezing Rain",
+	71: "Snow",
+	73: "Moderate Snow",
+	75: "Heavy Snow",
+	77: "Snow Grains",
+	80: "Rain",
+	81: "Moderate Rain",
+	82: "Heavy Rain",
+	85: "Snow",
+	86: "Snow",
+	95: "Thunderstorm",
+	96: "Thunderstorm",
+	99: "Thunderstorm",
 };
 
 /** Weekday of a bare `YYYY-MM-DD`, read in UTC so no offset can shift it.
@@ -63,7 +63,7 @@ const WEATHER_CODES: Record<number, string> = {
  * viewer's zone — so formatting it in a zone 13 hours behind renders the
  * previous day's weekday. The date here is a calendar day, not an instant,
  * and UTC is the identity zone for that. */
-const DAY_NAMES_UTC = new Intl.DateTimeFormat('en-GB', { weekday: 'short', timeZone: 'UTC' });
+const DAY_NAMES_UTC = new Intl.DateTimeFormat("en-GB", { weekday: "short", timeZone: "UTC" });
 
 /** Formatters are cached per zone — the same discipline clock/index.tsx uses
  * for its per-hour `Intl.DateTimeFormat` map. */
@@ -77,90 +77,115 @@ const todayFormatters = new Map<string, Intl.DateTimeFormat>();
  * with no zone (pre-field cache entry) falls back to the viewer's own, which
  * is what the weekday labels already assumed. */
 function todayKey(timeZone: string | null): string {
-  const zone = timeZone ?? '';
-  let fmt = todayFormatters.get(zone);
-  if (!fmt) {
-    fmt = new Intl.DateTimeFormat('en-GB', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      timeZone: timeZone ?? undefined,
-    });
-    todayFormatters.set(zone, fmt);
-  }
-  const parts = fmt.formatToParts(new Date());
-  const p = (t: string) => parts.find((x) => x.type === t)?.value ?? '';
-  return `${p('year')}-${p('month')}-${p('day')}`;
+	const zone = timeZone ?? "";
+	let fmt = todayFormatters.get(zone);
+	if (!fmt) {
+		fmt = new Intl.DateTimeFormat("en-GB", {
+			year: "numeric",
+			month: "2-digit",
+			day: "2-digit",
+			timeZone: timeZone ?? undefined,
+		});
+		todayFormatters.set(zone, fmt);
+	}
+	const parts = fmt.formatToParts(new Date());
+	const p = (t: string) => parts.find((x) => x.type === t)?.value ?? "";
+	return `${p("year")}-${p("month")}-${p("day")}`;
 }
 
 export function Weather({ config, data, error, isLoading }: WidgetComponentProps) {
-  const cfg = config as unknown as WeatherConfig;
-  const loading = isLoading ?? ((data as unknown) == null && !error);
-  const w = data as WeatherData | null;
-  if (loading) {
-    return (
-      <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']} isLoading error={error} showErrors={cfg['show-errors']} />
-    );
-  }
-  if (!w) {
-    return (
-      <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']} error={error} showErrors={cfg['show-errors']}>
-        <div className={styles.empty}>No weather data.</div>
-      </WidgetChrome>
-    );
-  }
-  const today = todayKey(w.timezone ?? null);
-  const day = (date: string) => (date === today ? 'Today' : DAY_NAMES_UTC.format(new Date(date + 'T00:00:00Z')));
+	const cfg = config as unknown as WeatherConfig;
+	const loading = isLoading ?? ((data as unknown) == null && !error);
+	const w = data as WeatherData | null;
+	if (loading) {
+		return (
+			<WidgetChrome
+				title={cfg.title}
+				titleUrl={cfg["title-url"]}
+				hideHeader={cfg["hide-header"]}
+				cssClass={cfg["css-class"]}
+				isLoading
+				error={error}
+				showErrors={cfg["show-errors"]}
+			/>
+		);
+	}
+	if (!w) {
+		return (
+			<WidgetChrome
+				title={cfg.title}
+				titleUrl={cfg["title-url"]}
+				hideHeader={cfg["hide-header"]}
+				cssClass={cfg["css-class"]}
+				error={error}
+				showErrors={cfg["show-errors"]}
+			>
+				<div className={styles.empty}>No weather data.</div>
+			</WidgetChrome>
+		);
+	}
+	const today = todayKey(w.timezone ?? null);
+	const day = (date: string) =>
+		date === today ? "Today" : DAY_NAMES_UTC.format(new Date(date + "T00:00:00Z"));
 
-  const unit = (cfg.units ?? 'metric') === 'metric' ? 'C' : 'F';
-  const condition = w.current.code != null ? WEATHER_CODES[w.current.code] : undefined;
+	const unit = (cfg.units ?? "metric") === "metric" ? "C" : "F";
+	const condition = w.current.code != null ? WEATHER_CODES[w.current.code] : undefined;
 
-  return (
-    <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']} error={error} showErrors={cfg['show-errors']}>
-      <div className={styles.current}>
-        <div className={styles.temp}>{w.current.temp != null ? `${Math.round(w.current.temp)}°` : '—'}</div>
-        <div className={styles.currentIcon}>{weatherIcon(w.current.code)}</div>
-      </div>
-      {condition ? <div className={styles.condition}>{condition}</div> : null}
-      {w.current.feelsLike != null ? (
-        <div className={styles.feelsLike}>
-          Feels like {Math.round(w.current.feelsLike)}°{unit}
-        </div>
-      ) : null}
+	return (
+		<WidgetChrome
+			title={cfg.title}
+			titleUrl={cfg["title-url"]}
+			hideHeader={cfg["hide-header"]}
+			cssClass={cfg["css-class"]}
+			error={error}
+			showErrors={cfg["show-errors"]}
+		>
+			<div className={styles.current}>
+				<div className={styles.temp}>
+					{w.current.temp != null ? `${Math.round(w.current.temp)}°` : "—"}
+				</div>
+				<div className={styles.currentIcon}>{weatherIcon(w.current.code)}</div>
+			</div>
+			{condition ? <div className={styles.condition}>{condition}</div> : null}
+			{w.current.feelsLike != null ? (
+				<div className={styles.feelsLike}>
+					Feels like {Math.round(w.current.feelsLike)}°{unit}
+				</div>
+			) : null}
 
-      {/* Humidity rides along in the open-meteo current block and was fetched
+			{/* Humidity rides along in the open-meteo current block and was fetched
           and thrown away. A quantity, so it goes through Text with tabular
           numerals at the 12px supporting floor, the way every other number in
           the app does. */}
-      {w.current.humidity != null ? (
-        <div className={styles.humidity}>
-          <Droplets size={13} aria-hidden />
-          <Text as="span" type="supporting" hasTabularNumbers>
-            Humidity {Math.round(w.current.humidity)}%
-          </Text>
-        </div>
-      ) : null}
+			{w.current.humidity != null ? (
+				<div className={styles.humidity}>
+					<Droplets size={13} aria-hidden />
+					<Text as="span" type="supporting" hasTabularNumbers>
+						Humidity {Math.round(w.current.humidity)}%
+					</Text>
+				</div>
+			) : null}
 
-      {!cfg['hide-location'] ? (
-        <div className={styles.location}>
-          <span className={styles.locationIcon} aria-hidden="true" />
-          <span className={styles.locationText}>{w.location}</span>
-        </div>
-      ) : null}
-      <div className={styles.daily}>
-        {w.daily.slice(0, 7).map((d) => (
-          <div key={d.date} className={styles.dayRow}>
-            <span className={styles.dayName}>{day(d.date)}</span>
-            {weatherIcon(d.code)}
-            <span className={styles.temps}>
-              {d.high != null ? `${Math.round(d.high)}°` : '—'}
-              <span className={styles.low}>{d.low != null ? ` ${Math.round(d.low)}°` : ''}</span>
-            </span>
-          </div>
-        ))}
-      </div>
-    </WidgetChrome>
-  );
+			{!cfg["hide-location"] ? (
+				<div className={styles.location}>
+					<span className={styles.locationIcon} aria-hidden="true" />
+					<span className={styles.locationText}>{w.location}</span>
+				</div>
+			) : null}
+			<div className={styles.daily}>
+				{w.daily.slice(0, 7).map((d) => (
+					<div key={d.date} className={styles.dayRow}>
+						<span className={styles.dayName}>{day(d.date)}</span>
+						{weatherIcon(d.code)}
+						<span className={styles.temps}>
+							{d.high != null ? `${Math.round(d.high)}°` : "—"}
+							<span className={styles.low}>{d.low != null ? ` ${Math.round(d.low)}°` : ""}</span>
+						</span>
+					</div>
+				))}
+			</div>
+		</WidgetChrome>
+	);
 }
 
-registerWidgetComponent('weather', Weather);
+registerWidgetComponent("weather", Weather);

@@ -1,4 +1,4 @@
-import { canonicalWidgetType } from './aliases';
+import { canonicalWidgetType } from "./aliases";
 
 /**
  * The widgets whose state lives in the browser rather than on the server:
@@ -6,16 +6,16 @@ import { canonicalWidgetType } from './aliases';
  * are the only widgets in the app that read or write localStorage, and the
  * only ones that need a per-instance identity.
  */
-export const LOCAL_STATE_TYPES = ['notepad', 'todo', 'timer'] as const;
+export const LOCAL_STATE_TYPES = ["notepad", "todo", "timer"] as const;
 
 const LOCAL_STATE: Record<string, true> = Object.fromEntries(
-  LOCAL_STATE_TYPES.map((t) => [t, true]),
+	LOCAL_STATE_TYPES.map((t) => [t, true]),
 ) as Record<string, true>;
 
 /** True for a config `type` that keeps its state in localStorage. Folds the
  * glance aliases first, because this runs before the schema does. */
 export function hasLocalState(type: unknown): boolean {
-  return typeof type === 'string' && LOCAL_STATE[canonicalWidgetType(type)] === true;
+	return typeof type === "string" && LOCAL_STATE[canonicalWidgetType(type)] === true;
 }
 
 /**
@@ -28,5 +28,5 @@ export function hasLocalState(type: unknown): boolean {
  * a config with no `id:` anywhere still gets one blob per instance.
  */
 export function localStateKey(type: string, id: string | undefined): string {
-  return `glimpse.${type}.${id ?? 'default'}`;
+	return `glimpse.${type}.${id ?? "default"}`;
 }

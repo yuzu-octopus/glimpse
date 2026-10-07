@@ -1,98 +1,107 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
-import DockerContainers from './index';
-import type { DockerData } from '../../../shared/widgets/payloads';
-import styles from './docker.module.css';
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import type { DockerData } from "../../../shared/widgets/payloads";
+import styles from "./docker.module.css";
+import DockerContainers from "./index";
 
 const data: DockerData = [
-  {
-    name: 'pihole',
-    image: 'pihole/pihole',
-    state: 'exited',
-    stateIcon: 'warn',
-    stateText: 'exited (1) 2 hours ago',
-    icon: { url: '/dockerhub.svg', autoInvert: true },
-  },
-  {
-    name: 'stack',
-    image: 'compose',
-    state: 'running',
-    stateIcon: 'ok',
-    stateText: 'up 5 days',
-    url: 'https://stack.lab',
-    description: 'Compose stack',
-    icon: { url: 'https://cdn.example/nginx.png', autoInvert: false },
-    children: [
-      {
-        name: 'nginx',
-        image: 'nginx',
-        state: 'running',
-        stateIcon: 'ok',
-        stateText: 'up 5 days',
-        icon: { url: '', autoInvert: false },
-      },
-    ],
-  },
+	{
+		name: "pihole",
+		image: "pihole/pihole",
+		state: "exited",
+		stateIcon: "warn",
+		stateText: "exited (1) 2 hours ago",
+		icon: { url: "/dockerhub.svg", autoInvert: true },
+	},
+	{
+		name: "stack",
+		image: "compose",
+		state: "running",
+		stateIcon: "ok",
+		stateText: "up 5 days",
+		url: "https://stack.lab",
+		description: "Compose stack",
+		icon: { url: "https://cdn.example/nginx.png", autoInvert: false },
+		children: [
+			{
+				name: "nginx",
+				image: "nginx",
+				state: "running",
+				stateIcon: "ok",
+				stateText: "up 5 days",
+				icon: { url: "", autoInvert: false },
+			},
+		],
+	},
 ];
 
-describe('docker-containers widget', () => {
-  it('renders containers with names and images', () => {
-    render(<DockerContainers config={{ type: 'docker-containers', title: 'Docker' }} data={data} />);
-    expect(screen.getByText('Docker')).toBeInTheDocument();
-    expect(screen.getByText('pihole')).toBeInTheDocument();
-    expect(screen.getByText('pihole/pihole')).toBeInTheDocument();
-    expect(screen.getByText('stack')).toBeInTheDocument();
-  });
+describe("docker-containers widget", () => {
+	it("renders containers with names and images", () => {
+		render(
+			<DockerContainers config={{ type: "docker-containers", title: "Docker" }} data={data} />,
+		);
+		expect(screen.getByText("Docker")).toBeInTheDocument();
+		expect(screen.getByText("pihole")).toBeInTheDocument();
+		expect(screen.getByText("pihole/pihole")).toBeInTheDocument();
+		expect(screen.getByText("stack")).toBeInTheDocument();
+	});
 
-  it('renders state badges per state icon', () => {
-    render(<DockerContainers config={{ type: 'docker-containers' }} data={data} />);
-    expect(screen.getAllByTestId('docker-state-warn').length).toBeGreaterThan(0);
-    expect(screen.getAllByTestId('docker-state-ok').length).toBeGreaterThan(0);
-    // The kit's Badge carries the state text; the raw state:stateText
-    // explanation is the kit Tooltip (a closed popover, hidden until hover),
-    // not a native `title` the kit's BaseProps deliberately omits.
-    expect(screen.getAllByRole('tooltip', { hidden: true }).map((t) => t.textContent)).toContain(
-      'exited: exited (1) 2 hours ago',
-    );
-  });
+	it("renders state badges per state icon", () => {
+		render(<DockerContainers config={{ type: "docker-containers" }} data={data} />);
+		expect(screen.getAllByTestId("docker-state-warn").length).toBeGreaterThan(0);
+		expect(screen.getAllByTestId("docker-state-ok").length).toBeGreaterThan(0);
+		// The kit's Badge carries the state text; the raw state:stateText
+		// explanation is the kit Tooltip (a closed popover, hidden until hover),
+		// not a native `title` the kit's BaseProps deliberately omits.
+		expect(screen.getAllByRole("tooltip", { hidden: true }).map((t) => t.textContent)).toContain(
+			"exited: exited (1) 2 hours ago",
+		);
+	});
 
-  it('links container name when url label set, honoring same-tab default (new tab)', () => {
-    render(<DockerContainers config={{ type: 'docker-containers' }} data={data} />);
-    const link = screen.getByRole('link', { name: 'stack' });
-    expect(link).toHaveAttribute('href', 'https://stack.lab');
-    expect(link).toHaveAttribute('target', '_blank');
-  });
+	it("links container name when url label set, honoring same-tab default (new tab)", () => {
+		render(<DockerContainers config={{ type: "docker-containers" }} data={data} />);
+		const link = screen.getByRole("link", { name: "stack" });
+		expect(link).toHaveAttribute("href", "https://stack.lab");
+		expect(link).toHaveAttribute("target", "_blank");
+	});
 
-  it('expands children on click and shows child rows', () => {
-    render(<DockerContainers config={{ type: 'docker-containers' }} data={data} />);
-    expect(screen.queryByText('nginx')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /1 container/ }));
-    expect(screen.getByText('nginx')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /1 container/ })).toHaveAttribute('aria-expanded', 'true');
-  });
+	it("expands children on click and shows child rows", () => {
+		render(<DockerContainers config={{ type: "docker-containers" }} data={data} />);
+		expect(screen.queryByText("nginx")).toBeNull();
+		fireEvent.click(screen.getByRole("button", { name: /1 container/ }));
+		expect(screen.getByText("nginx")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /1 container/ })).toHaveAttribute(
+			"aria-expanded",
+			"true",
+		);
+	});
 
-  it('inverts a black container icon and leaves a real logo alone', () => {
-    render(<DockerContainers config={{ type: 'docker-containers' }} data={data} />);
-    const icons = screen.getAllByTestId('docker-icon') as HTMLImageElement[];
-    // The bundled mark is a black currentColor path: unfilled, it is nothing
-    // on a dark-only theme, so the fetcher's flag has to reach the class.
-    expect(icons[0]!.getAttribute('src')).toBe('/dockerhub.svg');
-    expect(icons[0]!.className).toContain(styles.iconAutoInvert);
-    // A raster logo from a `glance.icon` label keeps its own colours.
-    expect(icons[1]!.getAttribute('src')).toBe('https://cdn.example/nginx.png');
-    expect(icons[1]!.className).not.toContain(styles.iconAutoInvert);
-  });
+	it("inverts a black container icon and leaves a real logo alone", () => {
+		render(<DockerContainers config={{ type: "docker-containers" }} data={data} />);
+		const icons = screen.getAllByTestId("docker-icon") as HTMLImageElement[];
+		// The bundled mark is a black currentColor path: unfilled, it is nothing
+		// on a dark-only theme, so the fetcher's flag has to reach the class.
+		expect(icons[0]!.getAttribute("src")).toBe("/dockerhub.svg");
+		expect(icons[0]!.className).toContain(styles.iconAutoInvert);
+		// A raster logo from a `glance.icon` label keeps its own colours.
+		expect(icons[1]!.getAttribute("src")).toBe("https://cdn.example/nginx.png");
+		expect(icons[1]!.className).not.toContain(styles.iconAutoInvert);
+	});
 
-  it('shows loading skeleton while data is null', () => {
-    render(<DockerContainers config={{ type: 'docker-containers' }} data={null} />);
-    expect(screen.getByTestId('widget-loading')).toBeInTheDocument();
-  });
+	it("shows loading skeleton while data is null", () => {
+		render(<DockerContainers config={{ type: "docker-containers" }} data={null} />);
+		expect(screen.getByTestId("widget-loading")).toBeInTheDocument();
+	});
 
-  it('surfaces fetch errors via chrome', () => {
-    render(
-      <DockerContainers config={{ type: 'docker-containers' }} data={null} error="docker socket unreachable" />,
-    );
-    expect(screen.getByText('docker socket unreachable')).toBeInTheDocument();
-    expect(screen.getByTestId('widget-error-dot')).toBeInTheDocument();
-  });
+	it("surfaces fetch errors via chrome", () => {
+		render(
+			<DockerContainers
+				config={{ type: "docker-containers" }}
+				data={null}
+				error="docker socket unreachable"
+			/>,
+		);
+		expect(screen.getByText("docker socket unreachable")).toBeInTheDocument();
+		expect(screen.getByTestId("widget-error-dot")).toBeInTheDocument();
+	});
 });

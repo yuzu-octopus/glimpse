@@ -1,44 +1,72 @@
-import { fetchJson } from '../../widgets/http';
-import type { WidgetFetchContext } from '../../widgets/registry';
-import { extractToken, type UsageSnapshot } from '../../../shared/widgets/quota-types';
+import { extractToken, type UsageSnapshot } from "../../../shared/widgets/quota-types";
+import { fetchJson } from "../../widgets/http";
+import type { WidgetFetchContext } from "../../widgets/registry";
 
 // token: xAI API key or Grok session token; tokenFile: ~/.grok/auth.json
 export async function fetchGrokUsage(
-  auth: { token: string; tokenFile?: string; baseUrl?: string; quotaUrl?: string },
-  ctx: WidgetFetchContext,
+	auth: { token: string; tokenFile?: string; baseUrl?: string; quotaUrl?: string },
+	ctx: WidgetFetchContext,
 ): Promise<UsageSnapshot> {
-  const readToken = async (path: string): Promise<string> => {
-    try {
-      const f = Bun.file(path);
-      return extractToken((await f.exists()) ? await f.text() : '') ?? '';
-    } catch {}
-    return '';
-  };
-  let token = auth.token || (auth.tokenFile ? await readToken(auth.tokenFile) : '') || (await readToken(`${process.env.HOME ?? ''}/.grok/auth.json`));
-  // API quota endpoint first
-  if (token) {
-    try {
-      const base = auth.quotaUrl ?? auth.baseUrl ?? 'https://api.x.ai';
-      const data = await fetchJson<{ used_percent?: number; usedPercent?: number; plan?: string }>(ctx, `${base}/v1/billing`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const used = Number(data.used_percent ?? data.usedPercent ?? 0);
-      if (used || data.plan) return { provider: 'grok', plan: data.plan, windows: [{ label: 'quota', usedPercent: used, windowMinutes: 0, resetsAt: 0 }], raw: data };
-    } catch { /* fall through to CLI probe */ }
-  }
-  // CLI probe: grok agent stdio JSON-RPC x.ai/billing with 10s timeout
-  try {
-    const bun = (globalThis as unknown as { Bun?: typeof Bun }).Bun;
-    if (!bun) throw new Error('grok: quota file not found');
-    const proc = bun.spawn(['grok', 'agent', 'stdio'], { stdout: 'pipe', stdin: 'pipe', stderr: 'pipe' });
-    const timer = setTimeout(() => { try { proc.kill(); } catch {} }, 10_000);
-    proc.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'x.ai/billing' }) + '\n');
-    proc.stdin.end();
-    const out = await new Response(proc.stdout).text();
-    clearTimeout(timer);
-    await proc.exited;
-    const used = Number(out.match(/"used_percent"\s*:\s*(\d+(?:\.\d+)?)/)?.[1] ?? 0);
-    if (proc.exitCode === 0 && used) return { provider: 'grok', windows: [{ label: 'quota', usedPercent: used, windowMinutes: 0, resetsAt: 0 }], raw: { out: out.slice(0, 500) } };
-  } catch {}
-  throw new Error('grok: quota file not found — set token or tokenFile or install grok CLI');
+	const readToken = async (path: string): Promise<string> => {
+		try {
+			const f = Bun.file(path);
+			return extractToken((await f.exists()) ? await f.text() : "") ?? "";
+		} catch {}
+		return "";
+	};
+	const token =
+		auth.token ||
+		(auth.tokenFile ? await readToken(auth.tokenFile) : "") ||
+		(await readToken(`${process.env.HOME ?? ""}/.grok/auth.json`));
+	// API quota endpoint first
+	if (token) {
+		try {
+			const base = auth.quotaUrl ?? auth.baseUrl ?? "https://api.x.ai";
+			const data = await fetchJson<{ used_percent?: number; usedPercent?: number; plan?: string }>(
+				ctx,
+				`${base}/v1/billing`,
+				{
+					headers: { Authorization: `Bearer ${token}` },
+				},
+			);
+			const used = Number(data.used_percent ?? data.usedPercent ?? 0);
+			if (used || data.plan)
+				return {
+					provider: "grok",
+					plan: data.plan,
+					windows: [{ label: "quota", usedPercent: used, windowMinutes: 0, resetsAt: 0 }],
+					raw: data,
+				};
+		} catch {
+			/* fall through to CLI probe */
+		}
+	}
+	// CLI probe: grok agent stdio JSON-RPC x.ai/billing with 10s timeout
+	try {
+		const bun = (globalThis as unknown as { Bun?: typeof Bun }).Bun;
+		if (!bun) throw new Error("grok: quota file not found");
+		const proc = bun.spawn(["grok", "agent", "stdio"], {
+			stdout: "pipe",
+			stdin: "pipe",
+			stderr: "pipe",
+		});
+		const timer = setTimeout(() => {
+			try {
+				proc.kill();
+			} catch {}
+		}, 10_000);
+		proc.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "x.ai/billing" }) + "\n");
+		proc.stdin.end();
+		const out = await new Response(proc.stdout).text();
+		clearTimeout(timer);
+		await proc.exited;
+		const used = Number(out.match(/"used_percent"\s*:\s*(\d+(?:\.\d+)?)/)?.[1] ?? 0);
+		if (proc.exitCode === 0 && used)
+			return {
+				provider: "grok",
+				windows: [{ label: "quota", usedPercent: used, windowMinutes: 0, resetsAt: 0 }],
+				raw: { out: out.slice(0, 500) },
+			};
+	} catch {}
+	throw new Error("grok: quota file not found — set token or tokenFile or install grok CLI");
 }

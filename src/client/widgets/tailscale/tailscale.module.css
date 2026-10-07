@@ -10,28 +10,28 @@
    other card in the kit. */
 
 .row {
-  padding-block: calc(var(--widget-content-vertical) / 2 - 0.5px);
+	padding-block: calc(var(--widget-content-vertical) / 2 - 0.5px);
 }
 
 .row + .row {
-  margin-top: calc(var(--widget-content-vertical) / 3);
-  border-top: 1px solid var(--color-separator);
+	margin-top: calc(var(--widget-content-vertical) / 3);
+	border-top: 1px solid var(--color-separator);
 }
 
 /* An unreachable node recedes: same 12px floor, less weight. The status dot
    and the "seen … ago" line still carry the state, so nothing is lost. */
 .rowOffline {
-  opacity: 0.62;
+	opacity: 0.62;
 }
 
 .body {
-  flex: 1;
-  min-width: 0;
+	flex: 1;
+	min-width: 0;
 }
 
 /* The tailnet address is data, not copy — mono, right-aligned, never a
    breakpoint away from its row. */
 .address {
-  flex-shrink: 0;
-  text-align: right;
+	flex-shrink: 0;
+	text-align: right;
 }

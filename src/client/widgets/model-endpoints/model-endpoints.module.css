@@ -4,16 +4,15 @@
    every hue, and status goes to StatusDot rather than a coloured cell. */
 
 .body {
-  min-width: 0;
+	min-width: 0;
 }
 
 /* The model id is a slug, not a word: give the cell room to breathe before it
    ellipsises, and let the link own the truncation so the tooltip lands on it. */
 .modelCell {
-  min-width: 0;
+	min-width: 0;
 }
 
 .model {
-  min-width: 0;
+	min-width: 0;
 }
-

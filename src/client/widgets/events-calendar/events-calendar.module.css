@@ -1,17 +1,17 @@
 .events {
-  display: flex;
-  flex-direction: column;
+	display: flex;
+	flex-direction: column;
 }
 
 .dayHeader {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-text-base-muted);
-  margin-top: 10px;
+	font-size: var(--font-size-sm);
+	font-weight: 600;
+	color: var(--color-text-base-muted);
+	margin-top: 10px;
 }
 
 .dayHeader:first-child {
-  margin-top: 0;
+	margin-top: 0;
 }
 
 /* An event chip is a div of two Texts: no link, no button, nothing to focus
@@ -20,44 +20,44 @@
    fired at all. Events are static per the doctrine, so the tint is gone
    rather than mirrored onto a node that can never receive focus. */
 .event {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding: 6px 8px;
-  border-radius: 6px;
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	padding: 6px 8px;
+	border-radius: 6px;
 }
 
 .top {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
 }
 
 .time {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-base-muted);
-  white-space: nowrap;
-  min-width: 84px;
+	font-size: var(--font-size-xs);
+	color: var(--color-text-base-muted);
+	white-space: nowrap;
+	min-width: 84px;
 }
 
 .title {
-  font-size: var(--font-size-base);
-  color: var(--color-text-highlight);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+	font-size: var(--font-size-base);
+	color: var(--color-text-highlight);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .location {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-base-muted);
-  padding-left: 92px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+	font-size: var(--font-size-xs);
+	color: var(--color-text-base-muted);
+	padding-left: 92px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .empty {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-base-muted);
+	font-size: var(--font-size-sm);
+	color: var(--color-text-base-muted);
 }

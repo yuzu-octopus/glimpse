@@ -1,103 +1,100 @@
-import { weatherSchema } from '../../shared/widgets/feeds';
-import { registerWidget, type WidgetFetchContext } from './registry';
-import { fetchJson, retryOptionsFrom, type RetryOptions } from './http';
-import type { WeatherData, WeatherDay } from '../../shared/widgets/payloads';
-
+import { weatherSchema } from "../../shared/widgets/feeds";
+import type { WeatherData, WeatherDay } from "../../shared/widgets/payloads";
+import { fetchJson, type RetryOptions, retryOptionsFrom } from "./http";
+import { registerWidget, type WidgetFetchContext } from "./registry";
 
 interface ForecastCurrent {
-  temperature_2m?: number;
-  apparent_temperature?: number;
-  relative_humidity_2m?: number;
-  weather_code?: number;
+	temperature_2m?: number;
+	apparent_temperature?: number;
+	relative_humidity_2m?: number;
+	weather_code?: number;
 }
 
 interface ForecastDaily {
-  time?: string[];
-  weather_code?: number[];
-  temperature_2m_max?: number[];
-  temperature_2m_min?: number[];
+	time?: string[];
+	weather_code?: number[];
+	temperature_2m_max?: number[];
+	temperature_2m_min?: number[];
 }
 
 interface ForecastResponse {
-  current?: ForecastCurrent;
-  daily?: ForecastDaily;
-  /** IANA name open-meteo resolved `timezone=auto` to. */
-  timezone?: string;
+	current?: ForecastCurrent;
+	daily?: ForecastDaily;
+	/** IANA name open-meteo resolved `timezone=auto` to. */
+	timezone?: string;
 }
 
 export interface GeocodePlace {
-  latitude?: number;
-  longitude?: number;
-  name?: string;
-  admin1?: string;
-  country?: string;
-  timezone?: string;
+	latitude?: number;
+	longitude?: number;
+	name?: string;
+	admin1?: string;
+	country?: string;
+	timezone?: string;
 }
 
 /** Shared open-meteo geocoding — used by weather + weather-radar. */
 export async function geocodeLocation(
-  ctx: WidgetFetchContext,
-  location: string,
-  retry: RetryOptions = retryOptionsFrom(undefined),
+	ctx: WidgetFetchContext,
+	location: string,
+	retry: RetryOptions = retryOptionsFrom(undefined),
 ): Promise<GeocodePlace> {
-  const geo = await fetchJson<{ results?: GeocodePlace[] }>(
-    ctx,
-    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1`,
-    {},
-    retry,
-  );
-  const place = geo.results?.[0];
-  if (!place || place.latitude == null || place.longitude == null) {
-    throw new Error(`location not found: ${location}`);
-  }
-  return place;
+	const geo = await fetchJson<{ results?: GeocodePlace[] }>(
+		ctx,
+		`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1`,
+		{},
+		retry,
+	);
+	const place = geo.results?.[0];
+	if (!place || place.latitude == null || place.longitude == null) {
+		throw new Error(`location not found: ${location}`);
+	}
+	return place;
 }
 
-registerWidget('weather', async (ctx, config) => {
-  const cfg = weatherSchema.parse(config);
-  const units = cfg.units ?? 'metric';
+registerWidget("weather", async (ctx, config) => {
+	const cfg = weatherSchema.parse(config);
+	const units = cfg.units ?? "metric";
 
-  const place = await geocodeLocation(ctx, cfg.location, retryOptionsFrom(cfg));
+	const place = await geocodeLocation(ctx, cfg.location, retryOptionsFrom(cfg));
 
-  const tempUnit = units === 'metric' ? 'celsius' : 'fahrenheit';
-  const windUnit = units === 'metric' ? 'kmh' : 'mph';
-  const forecast = await fetchJson<ForecastResponse>(
-    ctx,
-    `https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}` +
-      `&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code` +
-      `&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=7` +
-      `&temperature_unit=${tempUnit}&wind_speed_unit=${windUnit}&timezone=auto`,
-    {},
-    retryOptionsFrom(cfg),
-  );
+	const tempUnit = units === "metric" ? "celsius" : "fahrenheit";
+	const windUnit = units === "metric" ? "kmh" : "mph";
+	const forecast = await fetchJson<ForecastResponse>(
+		ctx,
+		`https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}` +
+			`&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code` +
+			`&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=7` +
+			`&temperature_unit=${tempUnit}&wind_speed_unit=${windUnit}&timezone=auto`,
+		{},
+		retryOptionsFrom(cfg),
+	);
 
-  const area =
-    [place.name, place.admin1, place.country].filter(Boolean).join(', ') ||
-    cfg.location;
+	const area = [place.name, place.admin1, place.country].filter(Boolean).join(", ") || cfg.location;
 
-  const daily: WeatherDay[] = [];
-  const d = forecast.daily;
-  if (d?.time) {
-    for (let i = 0; i < d.time.length; i++) {
-      daily.push({
-        date: d.time[i],
-        code: d.weather_code?.[i] ?? null,
-        high: d.temperature_2m_max?.[i] ?? null,
-        low: d.temperature_2m_min?.[i] ?? null,
-      });
-    }
-  }
+	const daily: WeatherDay[] = [];
+	const d = forecast.daily;
+	if (d?.time) {
+		for (let i = 0; i < d.time.length; i++) {
+			daily.push({
+				date: d.time[i],
+				code: d.weather_code?.[i] ?? null,
+				high: d.temperature_2m_max?.[i] ?? null,
+				low: d.temperature_2m_min?.[i] ?? null,
+			});
+		}
+	}
 
-  const data: WeatherData = {
-    location: area,
-    timezone: typeof forecast.timezone === 'string' ? forecast.timezone : null,
-    current: {
-      temp: forecast.current?.temperature_2m ?? null,
-      feelsLike: forecast.current?.apparent_temperature ?? null,
-      humidity: forecast.current?.relative_humidity_2m ?? null,
-      code: forecast.current?.weather_code ?? null,
-    },
-    daily,
-  };
-  return data;
+	const data: WeatherData = {
+		location: area,
+		timezone: typeof forecast.timezone === "string" ? forecast.timezone : null,
+		current: {
+			temp: forecast.current?.temperature_2m ?? null,
+			feelsLike: forecast.current?.apparent_temperature ?? null,
+			humidity: forecast.current?.relative_humidity_2m ?? null,
+			code: forecast.current?.weather_code ?? null,
+		},
+		daily,
+	};
+	return data;
 });

@@ -5,7 +5,7 @@
 // module-level state, so a later call would leave the first painted tree
 // rendering core's icons.
 
-import { registerIcons } from '@astryxdesign/core';
-import { draculaIconRegistry } from 'astryx-dracula';
+import { registerIcons } from "@astryxdesign/core";
+import { draculaIconRegistry } from "astryx-dracula";
 
 registerIcons(draculaIconRegistry);

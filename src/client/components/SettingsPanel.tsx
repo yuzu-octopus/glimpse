@@ -1,60 +1,51 @@
-import { useEffect, useRef, useState } from 'react';
 import {
-  Dialog,
-  DialogHeader,
-  Heading,
-  IconButton,
-  Link,
-  Markdown,
-  SideNavItem,
-  Table,
-  Text,
-  proportional,
-  type MarkdownComponents,
-} from '@astryxdesign/core';
-import { BookOpen, FileText, Info, Settings } from 'lucide-react';
-import type { ConfigResponse } from '../../shared/api';
-import { bangs } from '../../shared/widgets/bangs';
-import changelog from '../../../CHANGELOG.md?raw';
-import styles from './settings-panel.module.css';
+	Dialog,
+	DialogHeader,
+	Heading,
+	IconButton,
+	Link,
+	Markdown,
+	type MarkdownComponents,
+	proportional,
+	SideNavItem,
+	Table,
+	Text,
+} from "@astryxdesign/core";
+import { BookOpen, FileText, Info, Settings } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import changelog from "../../../CHANGELOG.md?raw";
+import type { ConfigResponse } from "../../shared/api";
+import { bangs } from "../../shared/widgets/bangs";
+import styles from "./settings-panel.module.css";
 
 // Strip maintainer HTML comments (they guide contributors in the file itself)
 // so they never render as literal text in the Changelog section.
-const changelogMarkdown = changelog.replace(/<!--[\s\S]*?-->/g, '');
+const changelogMarkdown = changelog.replace(/<!--[\s\S]*?-->/g, "");
 
 // Changelog markdown colourisation — maps structure onto existing dracula
 // tokens. Headings get presence (highlight), code spans use the syntax
 // family, links stay tappable-purple, body stays readable prose. No hex.
 const changelogComponents: MarkdownComponents = {
-  heading: ({ level, children }) => {
-    const Tag = `h${level}` as 'h3' | 'h4' | 'h5' | 'h6';
-    return <Tag className={styles.changelogHeading}>{children}</Tag>;
-  },
-  paragraph: ({ children }) => (
-    <p className={styles.changelogParagraph}>{children}</p>
-  ),
-  code: ({ code, language }) => (
-    <pre className={styles.changelogCodeBlock} data-language={language}>
-      <code>{code}</code>
-    </pre>
-  ),
-  inlineCode: ({ children }) => (
-    <code className={styles.changelogInlineCode}>{children}</code>
-  ),
-  link: ({ href, children }) => (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={styles.changelogLink}
-    >
-      {children}
-    </a>
-  ),
-  blockquote: ({ children }) => (
-    <blockquote className={styles.changelogBlockquote}>{children}</blockquote>
-  ),
-  hr: () => <hr className={styles.changelogHr} />,
+	heading: ({ level, children }) => {
+		const Tag = `h${level}` as "h3" | "h4" | "h5" | "h6";
+		return <Tag className={styles.changelogHeading}>{children}</Tag>;
+	},
+	paragraph: ({ children }) => <p className={styles.changelogParagraph}>{children}</p>,
+	code: ({ code, language }) => (
+		<pre className={styles.changelogCodeBlock} data-language={language}>
+			<code>{code}</code>
+		</pre>
+	),
+	inlineCode: ({ children }) => <code className={styles.changelogInlineCode}>{children}</code>,
+	link: ({ href, children }) => (
+		<a href={href} target="_blank" rel="noopener noreferrer" className={styles.changelogLink}>
+			{children}
+		</a>
+	),
+	blockquote: ({ children }) => (
+		<blockquote className={styles.changelogBlockquote}>{children}</blockquote>
+	),
+	hr: () => <hr className={styles.changelogHr} />,
 };
 
 // Settings dialog: section sidebar + spacious content pane. About lists app +
@@ -76,214 +67,201 @@ const changelogComponents: MarkdownComponents = {
 // its press from the kit. target="_blank" is all it needs — the kit derives
 // rel="noopener noreferrer" from it.
 
-type SettingsSection = 'about' | 'docs' | 'changelog';
+type SettingsSection = "about" | "docs" | "changelog";
 
 interface AboutInfo {
-  version: string;
-  configPath: string;
+	version: string;
+	configPath: string;
 }
 
 export function SettingsPanel() {
-  const [open, setOpen] = useState(false);
-  const [section, setSection] = useState<SettingsSection>('about');
-  const [about, setAbout] = useState<AboutInfo | null>(null);
-  // The About facts load from outside the dialog and can land after the panel
-  // is gone. `cancelled` is the same guard useConfig and GlimpseThemeProvider
-  // use; the AbortController also stops the request instead of only ignoring
-  // its answer.
-  const cancelledRef = useRef(false);
-  const aboutAbortRef = useRef<AbortController | null>(null);
-  useEffect(() => {
-    cancelledRef.current = false;
-    return () => {
-      cancelledRef.current = true;
-      aboutAbortRef.current?.abort();
-    };
-  }, []);
+	const [open, setOpen] = useState(false);
+	const [section, setSection] = useState<SettingsSection>("about");
+	const [about, setAbout] = useState<AboutInfo | null>(null);
+	// The About facts load from outside the dialog and can land after the panel
+	// is gone. `cancelled` is the same guard useConfig and GlimpseThemeProvider
+	// use; the AbortController also stops the request instead of only ignoring
+	// its answer.
+	const cancelledRef = useRef(false);
+	const aboutAbortRef = useRef<AbortController | null>(null);
+	useEffect(() => {
+		cancelledRef.current = false;
+		return () => {
+			cancelledRef.current = true;
+			aboutAbortRef.current?.abort();
+		};
+	}, []);
 
+	// Fired on every open (and every click of the About nav item): the facts
+	// must reflect the current package version and config path, so a config
+	// reload or upgrade is never masked by a cached answer. Any in-flight
+	// request is aborted before a new one starts, and the unmount guard above
+	// stops a late answer from being written.
+	const openAbout = () => {
+		setSection("about");
+		aboutAbortRef.current?.abort();
+		const ac = new AbortController();
+		aboutAbortRef.current = ac;
+		fetch("/api/config", { signal: ac.signal })
+			.then((res) => {
+				if (!res.ok) throw new Error(`HTTP ${res.status}`);
+				return res.json() as Promise<ConfigResponse>;
+			})
+			.then((data) => {
+				if (cancelledRef.current) return;
+				setAbout({
+					version: data.version ?? "unknown",
+					configPath: data.configPath ?? "config.yml",
+				});
+			})
+			.catch(() => {
+				if (cancelledRef.current) return;
+				setAbout({ version: "unknown", configPath: "config.yml" });
+			});
+	};
 
-  // Fired on every open (and every click of the About nav item): the facts
-  // must reflect the current package version and config path, so a config
-  // reload or upgrade is never masked by a cached answer. Any in-flight
-  // request is aborted before a new one starts, and the unmount guard above
-  // stops a late answer from being written.
-  const openAbout = () => {
-    setSection('about');
-    aboutAbortRef.current?.abort();
-    const ac = new AbortController();
-    aboutAbortRef.current = ac;
-    fetch('/api/config', { signal: ac.signal })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json() as Promise<ConfigResponse>;
-      })
-      .then((data) => {
-        if (cancelledRef.current) return;
-        setAbout({
-          version: data.version ?? 'unknown',
-          configPath: data.configPath ?? 'config.yml',
-        });
-      })
-      .catch(() => {
-        if (cancelledRef.current) return;
-        setAbout({ version: 'unknown', configPath: 'config.yml' });
-      });
-  };
+	// Closing the dialog aborts any in-flight About request: its answer would
+	// only be written to state that is refetched on the next open anyway.
+	const handleOpenChange = (next: boolean) => {
+		setOpen(next);
+		if (!next) aboutAbortRef.current?.abort();
+	};
 
-  // Closing the dialog aborts any in-flight About request: its answer would
-  // only be written to state that is refetched on the next open anyway.
-  const handleOpenChange = (next: boolean) => {
-    setOpen(next);
-    if (!next) aboutAbortRef.current?.abort();
-  };
-
-  return (
-    <>
-      <IconButton
-        label="Settings"
-        icon={<Settings size={18} aria-hidden="true" />}
-        variant="ghost"
-        className={styles.trigger}
-        onClick={() => {
-          handleOpenChange(true);
-          openAbout();
-        }}
-      />
-      <Dialog
-        isOpen={open}
-        onOpenChange={handleOpenChange}
-        width="min(960px, calc(100vw - 32px))"
-        maxHeight="85vh"
-        className={styles.dialog}
-      >
-        <DialogHeader title="Settings" onOpenChange={handleOpenChange} />
-        <div className={styles.body} data-testid="settings-panel">
-          <nav
-            className={styles.nav}
-            aria-label="Settings sections"
-            data-testid="settings-nav"
-          >
-            <SideNavItem
-              label="About"
-              icon={<Info size={16} aria-hidden="true" />}
-              isSelected={section === 'about'}
-              onClick={openAbout}
-            />
-            <SideNavItem
-              label="Docs"
-              icon={<BookOpen size={16} aria-hidden="true" />}
-              isSelected={section === 'docs'}
-              onClick={() => setSection('docs')}
-            />
-            <SideNavItem
-              label="Changelog"
-              icon={<FileText size={16} aria-hidden="true" />}
-              isSelected={section === 'changelog'}
-              onClick={() => setSection('changelog')}
-            />
-          </nav>
-          <div className={styles.content}>
-            {section === 'about' ? (
-              <section
-                className={styles.section}
-                id="settings-panel-about"
-                aria-label="About"
-              >
-                <Heading level={2} className={styles.sectionTitle}>
-                  About
-                </Heading>
-                <p className={styles.aboutBlurb}>Glimpse — a glance-style dashboard for your homelab.</p>
-                <dl className={styles.aboutList}>
-                  <div className={styles.aboutRow}>
-                    <dt>Version</dt>
-                    <dd>{about?.version ?? 'unknown'}</dd>
-                  </div>
-                  <div className={styles.aboutRow}>
-                    <dt>Config file</dt>
-                    <dd>
-                      <code className={styles.code}>{about?.configPath ?? 'config.yml'}</code>
-                    </dd>
-                  </div>
-                </dl>
-              </section>
-            ) : section === 'docs' ? (
-              <section
-                className={styles.section}
-                id="settings-panel-docs"
-                aria-label="Docs"
-              >
-                <Heading level={2} className={styles.sectionTitle}>
-                  Docs
-                </Heading>
-                <Heading level={3} className={styles.docsHeading}>
-                  Shebang
-                </Heading>
-                <p className={styles.aboutBlurb}>
-                  Bangs are shortcuts that route a query directly to a site. Prefix the search with{' '}
-                  <code className={styles.code}>!gh</code> or <code className={styles.code}>gh</code>{' '}
-                  followed by a space — e.g. <code className={styles.code}>gh glimpse dashboard</code> opens
-                  GitHub search. Source:{' '}
-                  <Link
-                    href="https://helium.computer/bangs"
-                    target="_blank"
-                    hasUnderline
-                    className={styles.proseLink}
-                  >
-                    helium.computer/bangs
-                  </Link>{' '}
-                  ({bangs.length} curated from 13k+).
-                </p>
-                <p className={styles.aboutBlurb}>
-                  Config override: set <code className={styles.code}>bangs</code> in the{' '}
-                  <code className={styles.code}>search</code> widget to replace this list; fallback is the curated helium set below.
-                </p>
-                <Table
-                  data={bangs.map((b) => ({ ...b }))}
-                  aria-label="Shebang bangs"
-                  density="compact"
-                  hasHover
-                  columns={[
-                    {
-                      key: 'shortcut',
-                      header: 'Shortcut',
-                      width: proportional(1),
-                      renderCell: (b) => <Text type="code">!{b.shortcut}</Text>,
-                    },
-                    { key: 'title', header: 'Title', width: proportional(2) },
-                    {
-                      key: 'url',
-                      header: 'URL',
-                      width: proportional(2),
-                      renderCell: (b) => (
-                        <Text type="code" wordBreak="break-all">
-                          {b.url}
-                        </Text>
-                      ),
-                    },
-                  ]}
-                />
-              </section>
-            ) : (
-              <section
-                className={styles.section}
-                id="settings-panel-changelog"
-                aria-label="Changelog"
-              >
-                <Heading level={2} className={styles.sectionTitle}>
-                  Changelog
-                </Heading>
-                <Markdown
-                  headingLevelStart={3}
-                  density="compact"
-                  components={changelogComponents}
-                >
-                  {changelogMarkdown}
-                </Markdown>
-              </section>
-            )}
-          </div>
-        </div>
-      </Dialog>
-    </>
-  );
+	return (
+		<>
+			<IconButton
+				label="Settings"
+				icon={<Settings size={18} aria-hidden="true" />}
+				variant="ghost"
+				className={styles.trigger}
+				onClick={() => {
+					handleOpenChange(true);
+					openAbout();
+				}}
+			/>
+			<Dialog
+				isOpen={open}
+				onOpenChange={handleOpenChange}
+				width="min(960px, calc(100vw - 32px))"
+				maxHeight="85vh"
+				className={styles.dialog}
+			>
+				<DialogHeader title="Settings" onOpenChange={handleOpenChange} />
+				<div className={styles.body} data-testid="settings-panel">
+					<nav className={styles.nav} aria-label="Settings sections" data-testid="settings-nav">
+						<SideNavItem
+							label="About"
+							icon={<Info size={16} aria-hidden="true" />}
+							isSelected={section === "about"}
+							onClick={openAbout}
+						/>
+						<SideNavItem
+							label="Docs"
+							icon={<BookOpen size={16} aria-hidden="true" />}
+							isSelected={section === "docs"}
+							onClick={() => setSection("docs")}
+						/>
+						<SideNavItem
+							label="Changelog"
+							icon={<FileText size={16} aria-hidden="true" />}
+							isSelected={section === "changelog"}
+							onClick={() => setSection("changelog")}
+						/>
+					</nav>
+					<div className={styles.content}>
+						{section === "about" ? (
+							<section className={styles.section} id="settings-panel-about" aria-label="About">
+								<Heading level={2} className={styles.sectionTitle}>
+									About
+								</Heading>
+								<p className={styles.aboutBlurb}>
+									Glimpse — a glance-style dashboard for your homelab.
+								</p>
+								<dl className={styles.aboutList}>
+									<div className={styles.aboutRow}>
+										<dt>Version</dt>
+										<dd>{about?.version ?? "unknown"}</dd>
+									</div>
+									<div className={styles.aboutRow}>
+										<dt>Config file</dt>
+										<dd>
+											<code className={styles.code}>{about?.configPath ?? "config.yml"}</code>
+										</dd>
+									</div>
+								</dl>
+							</section>
+						) : section === "docs" ? (
+							<section className={styles.section} id="settings-panel-docs" aria-label="Docs">
+								<Heading level={2} className={styles.sectionTitle}>
+									Docs
+								</Heading>
+								<Heading level={3} className={styles.docsHeading}>
+									Shebang
+								</Heading>
+								<p className={styles.aboutBlurb}>
+									Bangs are shortcuts that route a query directly to a site. Prefix the search with{" "}
+									<code className={styles.code}>!gh</code> or{" "}
+									<code className={styles.code}>gh</code> followed by a space — e.g.{" "}
+									<code className={styles.code}>gh glimpse dashboard</code> opens GitHub search.
+									Source:{" "}
+									<Link
+										href="https://helium.computer/bangs"
+										target="_blank"
+										hasUnderline
+										className={styles.proseLink}
+									>
+										helium.computer/bangs
+									</Link>{" "}
+									({bangs.length} curated from 13k+).
+								</p>
+								<p className={styles.aboutBlurb}>
+									Config override: set <code className={styles.code}>bangs</code> in the{" "}
+									<code className={styles.code}>search</code> widget to replace this list; fallback
+									is the curated helium set below.
+								</p>
+								<Table
+									data={bangs.map((b) => ({ ...b }))}
+									aria-label="Shebang bangs"
+									density="compact"
+									hasHover
+									columns={[
+										{
+											key: "shortcut",
+											header: "Shortcut",
+											width: proportional(1),
+											renderCell: (b) => <Text type="code">!{b.shortcut}</Text>,
+										},
+										{ key: "title", header: "Title", width: proportional(2) },
+										{
+											key: "url",
+											header: "URL",
+											width: proportional(2),
+											renderCell: (b) => (
+												<Text type="code" wordBreak="break-all">
+													{b.url}
+												</Text>
+											),
+										},
+									]}
+								/>
+							</section>
+						) : (
+							<section
+								className={styles.section}
+								id="settings-panel-changelog"
+								aria-label="Changelog"
+							>
+								<Heading level={2} className={styles.sectionTitle}>
+									Changelog
+								</Heading>
+								<Markdown headingLevelStart={3} density="compact" components={changelogComponents}>
+									{changelogMarkdown}
+								</Markdown>
+							</section>
+						)}
+					</div>
+				</div>
+			</Dialog>
+		</>
+	);
 }

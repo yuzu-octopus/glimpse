@@ -8,25 +8,25 @@
    revealed no state either, so the row is static per the doctrine. */
 
 .row {
-  padding-block: calc(var(--widget-content-vertical) / 2 - 0.5px);
+	padding-block: calc(var(--widget-content-vertical) / 2 - 0.5px);
 }
 
 .row + .row {
-  margin-top: calc(var(--widget-content-vertical) / 3);
-  border-top: 1px solid var(--color-separator);
+	margin-top: calc(var(--widget-content-vertical) / 3);
+	border-top: 1px solid var(--color-separator);
 }
 
 .body {
-  flex: 1;
-  min-width: 0;
+	flex: 1;
+	min-width: 0;
 }
 
 /* The entity id is metadata, and the row is 12px-floored everywhere. */
 .id {
-  opacity: 0.8;
+	opacity: 0.8;
 }
 
 .value {
-  flex-shrink: 0;
-  text-align: right;
+	flex-shrink: 0;
+	text-align: right;
 }

@@ -4,47 +4,47 @@
  * a Link, so what stays here is only what props cannot express. */
 
 .frameless {
-  display: block;
+	display: block;
 }
 
 .framelessError {
-  color: var(--color-negative);
-  padding: var(--widget-content-padding);
-  background: var(--color-widget-background);
-  border: 1px solid var(--color-widget-content-border);
-  border-radius: var(--border-radius);
+	color: var(--color-negative);
+	padding: var(--widget-content-padding);
+	background: var(--color-widget-background);
+	border: 1px solid var(--color-widget-content-border);
+	border-radius: var(--border-radius);
 }
 
 /* The kit Stack has no flex-grow, so the column that takes the leftover width
    beside the image stays a one-line local rule. */
 .rowBody {
-  flex: 1;
-  min-width: 0;
+	flex: 1;
+	min-width: 0;
 }
 
 .rowRight {
-  flex-shrink: 0;
+	flex-shrink: 0;
 }
 
 .row + .row {
-  margin-top: 5px;
-  border-top: 1px solid var(--color-separator);
-  padding-top: 5px;
+	margin-top: 5px;
+	border-top: 1px solid var(--color-separator);
+	padding-top: 5px;
 }
 
 .icon {
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-  object-fit: contain;
+	width: 24px;
+	height: 24px;
+	flex-shrink: 0;
+	object-fit: contain;
 }
 
 .image {
-  width: 48px;
-  height: 48px;
-  flex-shrink: 0;
-  object-fit: cover;
-  border-radius: var(--border-radius);
+	width: 48px;
+	height: 48px;
+	flex-shrink: 0;
+	object-fit: cover;
+	border-radius: var(--border-radius);
 }
 
 /* glance .thumbnail — desaturated at rest, full colour on hover. Both the dim
@@ -55,21 +55,23 @@
  * never fire :hover, so an ungated rest state would leave every thumbnail
  * permanently greyed out. :focus-within is the keyboard's equivalent channel. */
 @media (hover: hover) {
-  .row:has(a[href]) .image {
-    filter: grayscale(0.2) contrast(0.9);
-    opacity: 0.8;
-    transition: filter 0.2s, opacity 0.2s;
-  }
+	.row:has(a[href]) .image {
+		filter: grayscale(0.2) contrast(0.9);
+		opacity: 0.8;
+		transition:
+			filter 0.2s,
+			opacity 0.2s;
+	}
 
-  .row:has(a[href]):is(:hover, :focus-within) .image {
-    filter: none;
-    opacity: 1;
-  }
+	.row:has(a[href]):is(:hover, :focus-within) .image {
+		filter: none;
+		opacity: 1;
+	}
 }
 
 /* The same tappable-only wash Feed rows carry, so a hover reads the same in
    either list. */
 .row:has(a[href]):is(:hover, :focus-within) {
-  background-color: var(--color-overlay-hover);
-  border-radius: var(--border-radius);
+	background-color: var(--color-overlay-hover);
+	border-radius: var(--border-radius);
 }

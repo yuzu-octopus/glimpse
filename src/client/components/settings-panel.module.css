@@ -7,7 +7,7 @@
    on the same text step <body> uses, so unstyled rows read as page copy
    instead of a white-text leak. */
 .dialog {
-  color: var(--color-text-base);
+	color: var(--color-text-base);
 }
 
 /* Gear trigger — only the box is ours. The gear is an IconButton, so hover,
@@ -15,106 +15,106 @@
  * stretches it to the 45px header row and holds the 44px mobile touch floor
  * (measured 18x18 before). Transparent box, identical visual. */
 .trigger {
-  height: 100%;
-  min-width: 44px;
-  min-height: 44px;
+	height: 100%;
+	min-width: 44px;
+	min-height: 44px;
 }
 
 .body {
-  display: flex;
-  align-items: stretch;
-  min-height: 0;
+	display: flex;
+	align-items: stretch;
+	min-height: 0;
 }
 
 /* Left section rail. The items are kit SideNavItems — active state, hover and
    focus washes are theirs; the rail only owns the column geometry and the
    separator that splits it from the content pane. */
 .nav {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex-shrink: 0;
-  width: 190px;
-  padding: 8px;
-  border-right: 1px solid var(--color-separator);
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	flex-shrink: 0;
+	width: 190px;
+	padding: 8px;
+	border-right: 1px solid var(--color-separator);
 }
 
 /* Right content pane — generous padding, scrolls independently of the nav.
  * Fixed height (85vh minus dialog header + body chrome) so switching tabs
  * never resizes the dialog: the Docs table stays as tall as About. */
 .content {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-  padding: 28px 30px;
-  height: calc(85vh - 96px);
-  overflow-y: auto;
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 22px;
+	padding: 28px 30px;
+	height: calc(85vh - 96px);
+	overflow-y: auto;
 }
 
 .section {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	min-width: 0;
 }
 
 /* Section title — a level-2 heading. Size comes from the heading level,
    so the Docs sub-heading below it lands on a distinct tier. */
 .sectionTitle {
-  margin: 0;
-  color: var(--color-text-highlight);
+	margin: 0;
+	color: var(--color-text-highlight);
 }
 
 /* About pane. */
 .aboutBlurb {
-  margin: 0;
-  color: var(--color-text-paragraph);
+	margin: 0;
+	color: var(--color-text-paragraph);
 }
 
 /* A definition list is the semantics, not a layout: version and config path
    are term/definition pairs, so the <dl>/<dt>/<dd> stay exactly as written. */
 .aboutList {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
 }
 
 .aboutRow {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--color-separator);
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 16px;
+	padding-bottom: 10px;
+	border-bottom: 1px solid var(--color-separator);
 }
 
 .aboutRow:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+	border-bottom: none;
+	padding-bottom: 0;
 }
 
 .aboutRow dt {
-  color: var(--color-text-base-muted);
+	color: var(--color-text-base-muted);
 }
 
 .aboutRow dd {
-  margin: 0;
-  color: var(--color-text-highlight);
+	margin: 0;
+	color: var(--color-text-highlight);
 }
 
 .code {
-  font-family: inherit;
-  color: var(--color-text-highlight);
+	font-family: inherit;
+	color: var(--color-text-highlight);
 }
 
 /* Docs sub-heading — a level-3 heading, so it sits a tier below the
    level-2 section title instead of matching it. */
 .docsHeading {
-  margin: 16px 0 8px;
-  color: var(--color-text-highlight);
+	margin: 16px 0 8px;
+	color: var(--color-text-highlight);
 }
 
 /* The Docs source link is core's Link: the tappable accent, the persistent
@@ -125,7 +125,7 @@
    does not reveal it — so without this the resolve exists only for a device
    with a pointer. */
 .proseLink:focus-visible {
-  color: var(--color-text-highlight);
+	color: var(--color-text-highlight);
 }
 
 /* Changelog markdown — colourised structure on dracula tokens.
@@ -133,131 +133,130 @@
  * links stay tappable-purple, body stays readable prose. No hex. */
 
 .changelogHeading {
-  margin: 20px 0 8px;
-  color: var(--color-text-highlight);
-  font-weight: 600;
-  letter-spacing: 0.01em;
+	margin: 20px 0 8px;
+	color: var(--color-text-highlight);
+	font-weight: 600;
+	letter-spacing: 0.01em;
 }
 
 .changelogParagraph {
-  margin: 0 0 10px;
-  color: var(--color-text-paragraph);
-  line-height: 1.6;
+	margin: 0 0 10px;
+	color: var(--color-text-paragraph);
+	line-height: 1.6;
 }
 
 .changelogCodeBlock {
-  margin: 10px 0;
-  padding: 10px 12px;
-  background: var(--color-syntax-background);
-  border-radius: var(--radius-inner);
-  overflow-x: auto;
-  font-family: var(--font-family-code);
-  font-size: var(--font-size-sm);
-  line-height: 1.5;
-  color: var(--color-syntax-variable);
+	margin: 10px 0;
+	padding: 10px 12px;
+	background: var(--color-syntax-background);
+	border-radius: var(--radius-inner);
+	overflow-x: auto;
+	font-family: var(--font-family-code);
+	font-size: var(--font-size-sm);
+	line-height: 1.5;
+	color: var(--color-syntax-variable);
 }
 
 .changelogCodeBlock code {
-  font-family: inherit;
-  background: none;
-  padding: 0;
+	font-family: inherit;
+	background: none;
+	padding: 0;
 }
 
 .changelogInlineCode {
-  padding: 2px 5px;
-  background: var(--color-syntax-background);
-  border-radius: var(--radius-inner);
-  font-family: var(--font-family-code);
-  font-size: 0.875em;
-  color: var(--color-syntax-string);
+	padding: 2px 5px;
+	background: var(--color-syntax-background);
+	border-radius: var(--radius-inner);
+	font-family: var(--font-family-code);
+	font-size: 0.875em;
+	color: var(--color-syntax-string);
 }
 
 .changelogLink {
-  color: var(--color-text-accent);
-  text-decoration: underline;
-  text-underline-offset: 2px;
+	color: var(--color-text-accent);
+	text-decoration: underline;
+	text-underline-offset: 2px;
 }
 
 .changelogLink:is(:hover, :focus-visible) {
-  color: var(--color-text-highlight);
+	color: var(--color-text-highlight);
 }
 
 .changelogBlockquote {
-  margin: 10px 0;
-  padding: 8px 14px;
-  border-left: 3px solid var(--color-syntax-comment);
-  color: var(--color-text-base-muted);
-  font-style: italic;
+	margin: 10px 0;
+	padding: 8px 14px;
+	border-left: 3px solid var(--color-syntax-comment);
+	color: var(--color-text-base-muted);
+	font-style: italic;
 }
 
 .changelogHr {
-  margin: 16px 0;
-  border: none;
-  border-top: 1px solid var(--color-separator);
+	margin: 16px 0;
+	border: none;
+	border-top: 1px solid var(--color-separator);
 }
 
 /* Changelog lists — no components override exists, so CSS owns them. */
 .changelog :global(ul),
 .changelog :global(ol) {
-  margin: 6px 0 10px;
-  padding-left: 22px;
-  color: var(--color-text-paragraph);
+	margin: 6px 0 10px;
+	padding-left: 22px;
+	color: var(--color-text-paragraph);
 }
 
 .changelog :global(li) {
-  margin-bottom: 4px;
-  line-height: 1.55;
+	margin-bottom: 4px;
+	line-height: 1.55;
 }
 
 .changelog :global(li)::marker {
-  color: var(--color-syntax-function);
+	color: var(--color-syntax-function);
 }
 
 /* Changelog tables — no components override exists, so CSS owns them. */
 .changelog :global(table) {
-  width: 100%;
-  margin: 10px 0;
-  border-collapse: collapse;
-  font-size: var(--font-size-sm);
+	width: 100%;
+	margin: 10px 0;
+	border-collapse: collapse;
+	font-size: var(--font-size-sm);
 }
 
 .changelog :global(th) {
-  padding: 6px 10px;
-  text-align: left;
-  color: var(--color-text-highlight);
-  font-weight: 600;
-  border-bottom: 1px solid var(--color-separator);
+	padding: 6px 10px;
+	text-align: left;
+	color: var(--color-text-highlight);
+	font-weight: 600;
+	border-bottom: 1px solid var(--color-separator);
 }
 
 .changelog :global(td) {
-  padding: 6px 10px;
-  color: var(--color-text-paragraph);
-  border-bottom: 1px solid var(--color-separator);
+	padding: 6px 10px;
+	color: var(--color-text-paragraph);
+	border-bottom: 1px solid var(--color-separator);
 }
 
 .changelog :global(tr:last-child td) {
-  border-bottom: none;
+	border-bottom: none;
 }
-
 
 /* Narrow screens: the section rail becomes a row above the content. The
    items need no second set of active rules — the kit's selected treatment
    is orientation-agnostic, where the old left-border needed re-deriving as
    a bottom border here. */
 @media (max-width: 720px) {
-  .body {
-    flex-direction: column;
-  }
+	.body {
+		flex-direction: column;
+	}
 
-  .nav {
-    flex-direction: row;
-    width: auto;
-    border-right: none;
-    border-bottom: 1px solid var(--color-separator);
-  }
+	.nav {
+		flex-direction: row;
+		width: auto;
+		border-right: none;
+		border-bottom: 1px solid var(--color-separator);
+	}
 
-  .content {
-    padding: 20px;
-    height: 60vh;
-  }
+	.content {
+		padding: 20px;
+		height: 60vh;
+	}
 }

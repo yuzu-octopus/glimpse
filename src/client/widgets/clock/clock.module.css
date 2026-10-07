@@ -1,66 +1,66 @@
 .time {
-  text-align: center;
-  /* glance clock-time: --color-text-highlight; big display per glance's
+	text-align: center;
+	/* glance clock-time: --color-text-highlight; big display per glance's
      ~3.5-40px scale (35-40px at glance's 10px root) */
-  font-size: 38px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.1;
-  color: var(--color-text-highlight);
+	font-size: 38px;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	line-height: 1.1;
+	color: var(--color-text-highlight);
 }
 
 .date {
-  text-align: center;
-  font-size: var(--font-size-base);
-  color: var(--color-text-base-muted);
-  margin-top: 2px;
+	text-align: center;
+	font-size: var(--font-size-base);
+	color: var(--color-text-base-muted);
+	margin-top: 2px;
 }
 
 /* glance clock.html: <hr class="margin-block-10"> (1px --color-separator) */
 .separator {
-  height: 1px;
-  background-color: var(--color-separator);
-  margin: 10px 0;
+	height: 1px;
+	background-color: var(--color-separator);
+	margin: 10px 0;
 }
 
 /* glance clock.html: ul.list.list-gap-4 (4px = 4px between rows) */
 .zones {
-  display: grid;
-  gap: 4px;
+	display: grid;
+	gap: 4px;
 }
 
 /* glance: li.flex.items-center.gap-15 */
 .zone {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  font-size: var(--font-size-base);
+	display: flex;
+	align-items: center;
+	gap: 15px;
+	font-size: var(--font-size-base);
 }
 
 /* glance: .grow.min-width-0 > .text-truncate */
 .zoneLabel {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--color-text-base);
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--color-text-base);
 }
 
 /* glance: .color-subdue (time diff, small) */
 .zoneOffset {
-  font-size: var(--font-size-h6);
-  color: var(--color-text-base-muted);
-  cursor: default;
-  flex-shrink: 0;
+	font-size: var(--font-size-h6);
+	color: var(--color-text-base-muted);
+	cursor: default;
+	flex-shrink: 0;
 }
 
 /* glance: .size-h4.clock-time.shrink-0.text-right (span = highlight) */
 .zoneTime {
-  font-size: var(--font-size-h4);
-  color: var(--color-text-highlight);
-  font-variant-numeric: tabular-nums;
-  min-width: 8ch;
-  text-align: right;
-  flex-shrink: 0;
+	font-size: var(--font-size-h4);
+	color: var(--color-text-highlight);
+	font-variant-numeric: tabular-nums;
+	min-width: 8ch;
+	text-align: right;
+	flex-shrink: 0;
 }

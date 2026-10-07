@@ -1,6 +1,19 @@
-.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.row { display: grid; gap: 2px; }
-.top { display: flex; gap: 8px; align-items: center; }
+.list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	gap: 10px;
+}
+.row {
+	display: grid;
+	gap: 2px;
+}
+.top {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
 /* `.name` and `.snippet` are gone: the host is a kit `Link` — semibold, and
    `maxLines={1}` for the truncation the ellipsis CSS used to own — and the
    diff is `Text maxLines={2}`. astryx-dracula underlines every kit link at
@@ -12,21 +25,26 @@
    border (visual.md: status surfaces are washes with a border, never a direct
    fill). No pills: 5px elements, 4px inner (spacing.md). */
 .badge {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 1px 8px;
-  border-radius: var(--radius-element);
-  background: color-mix(in srgb, var(--color-data-categorical-cyan) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-data-categorical-cyan) 28%, transparent);
-  color: var(--color-data-categorical-cyan);
+	font-size: 12px;
+	font-weight: 600;
+	padding: 1px 8px;
+	border-radius: var(--radius-element);
+	background: color-mix(in srgb, var(--color-data-categorical-cyan) 10%, transparent);
+	border: 1px solid color-mix(in srgb, var(--color-data-categorical-cyan) 28%, transparent);
+	color: var(--color-data-categorical-cyan);
 }
-.meta { font-size: 12px; color: var(--color-text-base-muted); }
-.empty { padding: 12px; color: var(--color-text-base-muted); }
+.meta {
+	font-size: 12px;
+	color: var(--color-text-base-muted);
+}
+.empty {
+	padding: 12px;
+	color: var(--color-text-base-muted);
+}
 
 /* The row is tappable (the host is a Link), so it gets the same wash + lift
    pair every other tappable row in the app wears. */
 .row:is(:hover, :focus-within) {
-  background-color: var(--color-overlay-hover);
-  border-radius: var(--border-radius);
+	background-color: var(--color-overlay-hover);
+	border-radius: var(--border-radius);
 }
-

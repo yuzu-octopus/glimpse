@@ -8,25 +8,25 @@
  * full-bleed exactly like the rss card frame. */
 
 .cards {
-  padding-bottom: 4px;
+	padding-bottom: 4px;
 }
 
 .rail {
-  overflow-x: auto;
+	overflow-x: auto;
 }
 
 .card {
-  flex: 0 0 150px;
-  min-width: 0;
-  /* Card rounds its own corners but does not clip them. */
-  overflow: hidden;
+	flex: 0 0 150px;
+	min-width: 0;
+	/* Card rounds its own corners but does not clip them. */
+	overflow: hidden;
 }
 
 .cardThumb {
-  display: block;
-  width: 100%;
-  height: 80px;
-  object-fit: cover;
+	display: block;
+	width: 100%;
+	height: 80px;
+	object-fit: cover;
 }
 
 /* glance .thumbnail — desaturated at rest, full colour on hover. The dim is
@@ -34,29 +34,31 @@
  * ungated dim would leave the tiles permanently greyed. :focus-within is the
  * keyboard's equivalent channel. */
 @media (hover: hover) {
-  .cardThumb {
-    filter: grayscale(0.2) contrast(0.9);
-    opacity: 0.8;
-    transition: filter 0.2s, opacity 0.2s;
-  }
+	.cardThumb {
+		filter: grayscale(0.2) contrast(0.9);
+		opacity: 0.8;
+		transition:
+			filter 0.2s,
+			opacity 0.2s;
+	}
 
-  .card:is(:hover, :focus-within) .cardThumb {
-    filter: none;
-    opacity: 1;
-  }
+	.card:is(:hover, :focus-within) .cardThumb {
+		filter: none;
+		opacity: 1;
+	}
 }
 
 .cardThumbPlaceholder {
-  height: 80px;
-  background: var(--color-widget-background-highlight);
+	height: 80px;
+	background: var(--color-widget-background-highlight);
 }
 
 .cardBody {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 0 10px 10px;
-  min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 0 10px 10px;
+	min-width: 0;
 }
 
 /* The tile is a ClickableCard, so the title is the card's own link label: it
@@ -65,5 +67,5 @@
  * highlight would brighten exactly where the doctrine says hover dims. The
  * score footer below it stays plain body. */
 .cardTitle {
-  color: var(--color-primary);
+	color: var(--color-primary);
 }

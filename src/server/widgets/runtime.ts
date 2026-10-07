@@ -1,5 +1,5 @@
-import { getDefaultTtl, parseCacheDuration } from '../cache';
-import type { WidgetFetchContext } from './registry';
+import { getDefaultTtl, parseCacheDuration } from "../cache";
+import type { WidgetFetchContext } from "./registry";
 
 /**
  * Deep WidgetData module — small interface, deep behaviour.
@@ -24,36 +24,32 @@ import type { WidgetFetchContext } from './registry';
  */
 
 type Fetcher<T = unknown> = (
-  ctx: WidgetFetchContext,
-  config: Record<string, unknown>,
+	ctx: WidgetFetchContext,
+	config: Record<string, unknown>,
 ) => Promise<T>;
 
 export async function fetchWidgetData<T = unknown>(
-  ctx: WidgetFetchContext,
-  type: string,
-  config: Record<string, unknown>,
-  cacheKey: string,
-  fetcher: Fetcher<T>,
+	ctx: WidgetFetchContext,
+	type: string,
+	config: Record<string, unknown>,
+	cacheKey: string,
+	fetcher: Fetcher<T>,
 ): Promise<T> {
-  const ttlMs =
-    typeof config.cache === 'string'
-      ? parseCacheDuration(config.cache)
-      : getDefaultTtl(type);
+	const ttlMs =
+		typeof config.cache === "string" ? parseCacheDuration(config.cache) : getDefaultTtl(type);
 
-  const cached = ctx.cache.get<T>(cacheKey);
-  if (cached !== undefined) return cached;
+	const cached = ctx.cache.get<T>(cacheKey);
+	if (cached !== undefined) return cached;
 
-  let data: T;
-  try {
-    data = await ctx.singleflight.run(cacheKey, () => fetcher(ctx, config));
-  } catch (err) {
-    // Stale-on-error: prefer last good value over propagating the failure.
-    const stale = ctx.cache.getStale<T>(cacheKey);
-    if (stale !== undefined) return stale;
-    throw err;
-  }
-  ctx.cache.set(cacheKey, data, ttlMs);
-  return data;
+	let data: T;
+	try {
+		data = await ctx.singleflight.run(cacheKey, () => fetcher(ctx, config));
+	} catch (err) {
+		// Stale-on-error: prefer last good value over propagating the failure.
+		const stale = ctx.cache.getStale<T>(cacheKey);
+		if (stale !== undefined) return stale;
+		throw err;
+	}
+	ctx.cache.set(cacheKey, data, ttlMs);
+	return data;
 }
-
-

@@ -1,8 +1,8 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
-import { Theme } from '@astryxdesign/core/theme';
-import { LinkProvider } from '@astryxdesign/core/Link';
-import { astryxDraculaTheme } from 'astryx-dracula';
+import { LinkProvider } from "@astryxdesign/core/Link";
+import { Theme } from "@astryxdesign/core/theme";
+import { astryxDraculaTheme } from "astryx-dracula";
+import { type ReactNode, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 /**
  * One brand theme, dark-only. `astryx-dracula` ships its tokens as an
@@ -13,36 +13,36 @@ import { astryxDraculaTheme } from 'astryx-dracula';
 
 /** Injects the YAML custom-css-file contents (glance appends it last). */
 function useCustomCss(): string | null {
-  const [css, setCss] = useState<string | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/theme')
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json() as Promise<{ customCss?: string | null }>;
-      })
-      .then((body) => {
-        if (!cancelled) setCss(body.customCss ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) setCss(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  return css;
+	const [css, setCss] = useState<string | null>(null);
+	useEffect(() => {
+		let cancelled = false;
+		fetch("/api/theme")
+			.then((r) => {
+				if (!r.ok) throw new Error(`HTTP ${r.status}`);
+				return r.json() as Promise<{ customCss?: string | null }>;
+			})
+			.then((body) => {
+				if (!cancelled) setCss(body.customCss ?? null);
+			})
+			.catch(() => {
+				if (!cancelled) setCss(null);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, []);
+	return css;
 }
 
 export function GlimpseThemeProvider({ children }: { children: ReactNode }) {
-  const customCss = useCustomCss();
+	const customCss = useCustomCss();
 
-  return (
-    <>
-      <Theme theme={astryxDraculaTheme} mode="dark">
-        <LinkProvider component={Link}>{children}</LinkProvider>
-      </Theme>
-      {customCss ? <style data-glimpse-custom>{customCss}</style> : null}
-    </>
-  );
+	return (
+		<>
+			<Theme theme={astryxDraculaTheme} mode="dark">
+				<LinkProvider component={Link}>{children}</LinkProvider>
+			</Theme>
+			{customCss ? <style data-glimpse-custom>{customCss}</style> : null}
+		</>
+	);
 }

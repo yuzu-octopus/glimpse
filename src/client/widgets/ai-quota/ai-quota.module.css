@@ -4,18 +4,18 @@
    radius and the row rhythm. */
 
 .plan {
-  align-self: flex-start;
-  /* The kit's Badge ships `--radius-full`, i.e. a pill. The brand is flat and
+	align-self: flex-start;
+	/* The kit's Badge ships `--radius-full`, i.e. a pill. The brand is flat and
      crisp — 5px on elements, no pills except dots and avatars — so pin it back
      to the element radius. This also preserves the sibling's de-pill across the
      swap; the kit still owns the yellow wash and the 12px label type. */
-  border-radius: var(--radius-element);
+	border-radius: var(--radius-element);
 }
 
 .row + .row {
-  margin-top: 2px;
+	margin-top: 2px;
 }
 
 .balance {
-  margin-top: 2px;
+	margin-top: 2px;
 }

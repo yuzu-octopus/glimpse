@@ -1,7 +1,27 @@
-.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.row { display: flex; gap: 10px; align-items: flex-start; }
-.thumb { width: 96px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
-.body { display: grid; gap: 2px; min-width: 0; }
+.list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	gap: 10px;
+}
+.row {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
+}
+.thumb {
+	width: 96px;
+	aspect-ratio: 16 / 9;
+	object-fit: cover;
+	border-radius: 6px;
+	flex-shrink: 0;
+}
+.body {
+	display: grid;
+	gap: 2px;
+	min-width: 0;
+}
 /* `.name` keeps only the row rhythm. The name itself is a kit `Link` and
    `.title` is `Text maxLines={2}`; astryx-dracula underlines every kit link at
    rest (its `@layer astryx-theme` beats core's `@layer astryx-base`), so
@@ -9,18 +29,27 @@
    span, so the StatusDot and the display name are siblings inside that span
    rather than inside the anchor, and the 6px beat is the span's job. */
 .name > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
 }
-.meta { font-size: 12px; color: var(--color-text-base-muted); display: flex; gap: 8px; }
-.offline { opacity: 0.65; }
-.empty { padding: 12px; color: var(--color-text-base-muted); }
+.meta {
+	font-size: 12px;
+	color: var(--color-text-base-muted);
+	display: flex;
+	gap: 8px;
+}
+.offline {
+	opacity: 0.65;
+}
+.empty {
+	padding: 12px;
+	color: var(--color-text-base-muted);
+}
 
 /* The row is tappable (the name is a Link), so it gets the same wash + lift
    pair every other tappable row in the app wears. */
 .row:is(:hover, :focus-within) {
-  background-color: var(--color-overlay-hover);
-  border-radius: var(--border-radius);
+	background-color: var(--color-overlay-hover);
+	border-radius: var(--border-radius);
 }
-

@@ -1,16 +1,16 @@
 /* Layout classes land on the widget card root; the card body (WidgetChrome's
  * widget-body) becomes the scroll rail / grid, glance cards-horizontal/grid. */
 .cards [data-testid="widget-body"] {
-  display: flex;
-  gap: var(--widget-gap);
-  overflow-x: auto;
-  padding-bottom: 4px;
+	display: flex;
+	gap: var(--widget-gap);
+	overflow-x: auto;
+	padding-bottom: 4px;
 }
 
 .gridWrap [data-testid="widget-body"] {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--widget-gap);
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap: var(--widget-gap);
 }
 
 /* `auto-fill` with a 220px track can only fit two columns once the widget is
@@ -22,124 +22,124 @@
  * the vertical-list style already draws — 16:9 thumb beside the title — so
  * the feed reads as a list of videos instead of a stack of posters. */
 .gridWrap {
-  container-type: inline-size;
+	container-type: inline-size;
 }
 
 @container (max-width: 480px) {
-  /* Two columns: 16:9 thumb beside the title, meta under it. The card's
+	/* Two columns: 16:9 thumb beside the title, meta under it. The card's
      children are its own now — there is no wrapper to place them in.
      The inset rides on the kit's container padding tokens: the card reads
      them (minus its border width), so it still lands content exactly
      8px/10px from the card's edge. */
-  .gridWrap .card {
-    --container-padding-inline-start: 10px;
-    --container-padding-inline-end: 10px;
-    --container-padding-block-start: 8px;
-    --container-padding-block-end: 8px;
-    display: grid;
-    grid-template-columns: 112px minmax(0, 1fr);
-    grid-template-areas:
-      "thumb title"
-      "thumb meta";
-    align-items: center;
-    column-gap: 10px;
-  }
+	.gridWrap .card {
+		--container-padding-inline-start: 10px;
+		--container-padding-inline-end: 10px;
+		--container-padding-block-start: 8px;
+		--container-padding-block-end: 8px;
+		display: grid;
+		grid-template-columns: 112px minmax(0, 1fr);
+		grid-template-areas:
+			"thumb title"
+			"thumb meta";
+		align-items: center;
+		column-gap: 10px;
+	}
 
-  .gridWrap .cardThumb,
-  .gridWrap .cardThumbPlaceholder {
-    grid-area: thumb;
-    border-radius: var(--border-radius);
-  }
+	.gridWrap .cardThumb,
+	.gridWrap .cardThumbPlaceholder {
+		grid-area: thumb;
+		border-radius: var(--border-radius);
+	}
 
-  .gridWrap .cardTitle {
-    grid-area: title;
-    align-self: end;
-    padding: 0;
-  }
+	.gridWrap .cardTitle {
+		grid-area: title;
+		align-self: end;
+		padding: 0;
+	}
 
-  .gridWrap .cardMeta {
-    grid-area: meta;
-    align-self: start;
-    margin: 2px 0 0;
-  }
+	.gridWrap .cardMeta {
+		grid-area: meta;
+		align-self: start;
+		margin: 2px 0 0;
+	}
 }
 
 /* glance .card (widget-content-frame): the frame, radius and clip come from
    the ClickableCard; the column stack of thumb over title over meta is all
    that is left local. */
 .card {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
 }
 
 .cards .card {
-  flex: 0 0 180px;
+	flex: 0 0 180px;
 }
 
 /* glance .video-thumbnail: 16/8.9, radius top — flat, always full colour */
 .cardThumb,
 .cardThumbPlaceholder {
-  width: 100%;
-  aspect-ratio: 16 / 8.9;
-  object-fit: cover;
-  border-radius: var(--border-radius) var(--border-radius) 0 0;
-  opacity: 1;
-  filter: none;
-  background: var(--color-widget-background-highlight);
+	width: 100%;
+	aspect-ratio: 16 / 8.9;
+	object-fit: cover;
+	border-radius: var(--border-radius) var(--border-radius) 0 0;
+	opacity: 1;
+	filter: none;
+	background: var(--color-widget-background-highlight);
 }
 
 /* glance video-card-contents: 2-line clamp title. Grid cards read better
    white-at-rest + purple-on-hover; compact rows keep purple at rest. */
 .cardTitle {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  padding: 8px 10px 0;
-  font-size: var(--text-body-size);
-  line-height: 1.4;
-  color: var(--color-text-base);
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	padding: 8px 10px 0;
+	font-size: var(--text-body-size);
+	line-height: 1.4;
+	color: var(--color-text-base);
 }
 
 /* Compact rows (narrow widget) keep the tappable purple at rest. */
 @container (max-width: 480px) {
-  .gridWrap .cardTitle {
-    color: var(--color-primary);
-  }
+	.gridWrap .cardTitle {
+		color: var(--color-primary);
+	}
 }
 
 /* The card carries the link, so the title's resolve follows the card's
    pointer and its focus. */
 .card:is(:hover, :focus-within) .cardTitle {
-  color: var(--color-text-highlight);
+	color: var(--color-text-highlight);
 }
 
 .cardMeta {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin: 6px 10px 10px;
-  font-size: var(--font-size-h5);
-  color: var(--color-text-base-muted);
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin: 6px 10px 10px;
+	font-size: var(--font-size-h5);
+	color: var(--color-text-base-muted);
 }
 
 .cardTime {
-  flex-shrink: 0;
+	flex-shrink: 0;
 }
 
 .cardChannel {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 /* glance list-horizontal-text: '•' between meta items */
 .cardTime::after {
-  content: '•';
-  margin-left: 4px;
-  color: var(--color-text-base-muted);
+	content: "•";
+	margin-left: 4px;
+	color: var(--color-text-base-muted);
 }
 
 /* Per-source failure rows. Kit Stack + StatusDot + Text do the work; the
@@ -147,19 +147,19 @@
  * card. No colour lives here — the dot owns the negative hue, and the source
  * and its reason are both metadata, so both wear the `supporting` role. */
 .issues {
-  min-width: 0;
+	min-width: 0;
 }
 
 .issueSource {
-  min-width: 0;
-  max-width: 45%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+	min-width: 0;
+	max-width: 45%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .placeholder {
-  padding: 12px 0;
-  font-size: var(--font-size-h5);
-  color: var(--color-text-base-muted);
+	padding: 12px 0;
+	font-size: var(--font-size-h5);
+	color: var(--color-text-base-muted);
 }

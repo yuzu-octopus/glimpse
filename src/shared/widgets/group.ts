@@ -1,9 +1,17 @@
-import { z } from 'zod';
-import { sharedWidgetFields, type Pref, type SkeletonShape } from './shared';
+import { z } from "zod";
+import { type Pref, type SkeletonShape, sharedWidgetFields } from "./shared";
 
 // ── per-widget defaults (file header owns DEFAULTS + Schema + PREF) ──
-export const GROUP_PREF: Pref = { cols: 4, rows: 3, resizable: false, priority: 5, zone: 'main', preferredWidth: 340, preferredHeight: 320 };
-export const GROUP_SKELETON: SkeletonShape = 'rows';
+export const GROUP_PREF: Pref = {
+	cols: 4,
+	rows: 3,
+	resizable: false,
+	priority: 5,
+	zone: "main",
+	preferredWidth: 340,
+	preferredHeight: 320,
+};
+export const GROUP_SKELETON: SkeletonShape = "rows";
 
 /**
  * Container widgets. The child union (WidgetSchema in index.ts) is wired in
@@ -14,27 +22,35 @@ export const GROUP_SKELETON: SkeletonShape = 'rows';
 let widgetSchemaRef: z.ZodType | null = null;
 
 function recursiveWidgets(): z.ZodType {
-  if (!widgetSchemaRef) throw new Error('widget schemas not initialized');
-  return widgetSchemaRef;
+	if (!widgetSchemaRef) throw new Error("widget schemas not initialized");
+	return widgetSchemaRef;
 }
 
 export function setWidgetSchemaRef(schema: z.ZodType): void {
-  widgetSchemaRef = schema;
+	widgetSchemaRef = schema;
 }
 
 export const groupSchema = z.object({
-  type: z.literal('group'),
-  ...sharedWidgetFields,
-  widgets: z.array(z.lazy(recursiveWidgets)).min(1),
+	type: z.literal("group"),
+	...sharedWidgetFields,
+	widgets: z.array(z.lazy(recursiveWidgets)).min(1),
 });
 
 export const splitColumnSchema = z.object({
-  type: z.literal('split-column'),
-  ...sharedWidgetFields,
-  // glance: MaxColumns, min-2 default (widget-split-column.go:14,24)
-  widgets: z.array(z.lazy(recursiveWidgets)).min(2),
-  'max-columns': z.number().int().min(2).optional(),
+	type: z.literal("split-column"),
+	...sharedWidgetFields,
+	// glance: MaxColumns, min-2 default (widget-split-column.go:14,24)
+	widgets: z.array(z.lazy(recursiveWidgets)).min(2),
+	"max-columns": z.number().int().min(2).optional(),
 });
 
-export const SPLIT_COLUMN_PREF: Pref = { cols: null, rows: 3, resizable: true, priority: 5, zone: 'main', preferredWidth: null, preferredHeight: 320 };
-export const SPLIT_COLUMN_SKELETON: SkeletonShape = 'rows';
+export const SPLIT_COLUMN_PREF: Pref = {
+	cols: null,
+	rows: 3,
+	resizable: true,
+	priority: 5,
+	zone: "main",
+	preferredWidth: null,
+	preferredHeight: 320,
+};
+export const SPLIT_COLUMN_SKELETON: SkeletonShape = "rows";

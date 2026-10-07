@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * Glance type names that differ from ours. Glance's widget registry
@@ -8,8 +8,8 @@ import { z } from 'zod';
  * A glance config ported verbatim must still load, so map on the way in.
  */
 const TYPE_ALIASES: Record<string, string> = {
-  'to-do': 'todo',
-  stocks: 'markets',
+	"to-do": "todo",
+	stocks: "markets",
 };
 
 /** Accepted alias spellings, for tooling that validates raw config text. */
@@ -19,24 +19,24 @@ export const TYPE_ALIAS_KEYS = Object.keys(TYPE_ALIASES);
  * are folded by `withTypeAliases` at parse time, so a transform that runs
  * *before* the schema has to fold them itself or it will miss a `to-do`. */
 export function canonicalWidgetType(type: string): string {
-  return TYPE_ALIASES[type] ?? type;
+	return TYPE_ALIASES[type] ?? type;
 }
 
 /** Rewrite alias `type` values anywhere in a config tree. Only plain objects
  * are rebuilt — a YAML scalar that arrived as a Date must survive as-is. */
 function normalize(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(normalize);
-  if (value === null || typeof value !== 'object') return value;
-  const proto = Object.getPrototypeOf(value) as object | null;
-  if (proto !== null && proto !== Object.prototype) return value;
-  const src = value as Record<string, unknown>;
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(src)) out[k] = normalize(v);
-  const t = out['type'];
-  if (typeof t === 'string' && TYPE_ALIASES[t]) out['type'] = TYPE_ALIASES[t];
-  return out;
+	if (Array.isArray(value)) return value.map(normalize);
+	if (value === null || typeof value !== "object") return value;
+	const proto = Object.getPrototypeOf(value) as object | null;
+	if (proto !== null && proto !== Object.prototype) return value;
+	const src = value as Record<string, unknown>;
+	const out: Record<string, unknown> = {};
+	for (const [k, v] of Object.entries(src)) out[k] = normalize(v);
+	const t = out["type"];
+	if (typeof t === "string" && TYPE_ALIASES[t]) out["type"] = TYPE_ALIASES[t];
+	return out;
 }
 
 /** The widget union with glance type aliases folded to our canonical names. */
 export const withTypeAliases = <T extends z.ZodType>(schema: T) =>
-  z.preprocess(normalize, schema) as unknown as T;
+	z.preprocess(normalize, schema) as unknown as T;

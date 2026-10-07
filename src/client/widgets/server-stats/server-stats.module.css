@@ -5,99 +5,99 @@
    family were all unreferenced and are gone. */
 
 .server + .server {
-  border-top: 1px solid var(--color-separator);
+	border-top: 1px solid var(--color-separator);
 }
 
 .serverDown .serverName {
-  color: var(--color-text-base-muted);
+	color: var(--color-text-base-muted);
 }
 
 .serverIconUp {
-  color: var(--color-positive);
-  flex-shrink: 0;
+	color: var(--color-positive);
+	flex-shrink: 0;
 }
 
 .serverIconDown {
-  color: var(--color-negative);
-  flex-shrink: 0;
+	color: var(--color-negative);
+	flex-shrink: 0;
 }
 
 .serverName {
-  flex: 1;
-  min-width: 0;
+	flex: 1;
+	min-width: 0;
 }
 
 .uptime {
-  flex-shrink: 0;
+	flex-shrink: 0;
 }
 
 /* os.distro strings run long ("Debian GNU/Linux 12 (bookworm)"), so the
    platform is the one header field allowed to shrink and clamp. */
 .platform {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .rowIcon {
-  flex-shrink: 0;
-  color: var(--color-text-base-muted);
+	flex-shrink: 0;
+	color: var(--color-text-base-muted);
 }
 
 .rowLabel {
-  flex-shrink: 0;
+	flex-shrink: 0;
 }
 
 .rowDetail {
-  flex: 1;
-  min-width: 0;
+	flex: 1;
+	min-width: 0;
 }
 
 .rowValue,
 .rowTemp {
-  flex-shrink: 0;
-  color: var(--color-text-base);
+	flex-shrink: 0;
+	color: var(--color-text-base);
 }
 
 .rowTemp {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
 }
 
 /* Flat and crisp, not a pill: 2px reads as a bar on a 5px track where 999px
    reads as a lozenge. */
 .bar {
-  display: block;
-  width: 100%;
-  height: 5px;
-  border: none;
-  border-radius: 2px;
-  background: var(--color-track, var(--color-widget-background-highlight));
-  overflow: hidden;
-  appearance: none;
+	display: block;
+	width: 100%;
+	height: 5px;
+	border: none;
+	border-radius: 2px;
+	background: var(--color-track, var(--color-widget-background-highlight));
+	overflow: hidden;
+	appearance: none;
 }
 
 .bar::before {
-  content: '';
-  display: block;
-  height: 100%;
-  width: var(--progress, 0%);
-  border-radius: inherit;
-  background: var(--color-positive);
+	content: "";
+	display: block;
+	height: 100%;
+	width: var(--progress, 0%);
+	border-radius: inherit;
+	background: var(--color-positive);
 }
 .bar[data-high="true"]::before {
-  background: var(--color-warning);
+	background: var(--color-warning);
 }
 .bar[data-critical="true"]::before {
-  background: var(--color-negative);
+	background: var(--color-negative);
 }
 
 .barUnavailable {
-  opacity: 0.45;
+	opacity: 0.45;
 }
 
 .unreachable {
-  color: var(--color-negative);
+	color: var(--color-negative);
 }

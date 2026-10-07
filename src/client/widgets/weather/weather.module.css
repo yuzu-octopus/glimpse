@@ -1,125 +1,125 @@
 /* Icon + big temperature (glance weather has no big temp; the largest
    weather text is size-h2, so keep our headline display) */
 .current {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
 }
 
 .temp {
-  font-size: 34px;
-  font-weight: 600;
-  line-height: 1;
-  color: var(--color-text-highlight);
+	font-size: 34px;
+	font-weight: 600;
+	line-height: 1;
+	color: var(--color-text-highlight);
 }
 
 .currentIcon {
-  color: var(--color-tag-orange);
+	color: var(--color-tag-orange);
 }
 
 /* glance weather.html: condition = size-h2, feels-like = size-h4 */
 .condition {
-  font-size: var(--font-size-h2);
-  color: var(--color-text-paragraph);
-  text-align: center;
-  margin-top: 2px;
+	font-size: var(--font-size-h2);
+	color: var(--color-text-paragraph);
+	text-align: center;
+	margin-top: 2px;
 }
 
 .feelsLike {
-  font-size: var(--font-size-h4);
-  color: var(--color-text-base-muted);
-  text-align: center;
-  margin-top: 4px;
+	font-size: var(--font-size-h4);
+	color: var(--color-text-base-muted);
+	text-align: center;
+	margin-top: 4px;
 }
 
 /* One more supporting line under feels-like. Text type=supporting owns the
    12px floor and the muted colour; the module only centres the pair. */
 .humidity {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 4px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	margin-top: 4px;
 }
 
 /* glance weather.html: location row, size-h5 + location-icon, margin-top-15 */
 .location {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  font-size: var(--font-size-h5);
-  margin-top: 15px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 7px;
+	font-size: var(--font-size-h5);
+	margin-top: 15px;
 }
 
 .locationIcon {
-  width: 0.8em;
-  height: 0.8em;
-  border-radius: 0 50% 50% 50%;
-  background-color: currentColor;
-  transform: rotate(225deg) translate(0.1em, 0.1em);
-  position: relative;
-  flex-shrink: 0;
+	width: 0.8em;
+	height: 0.8em;
+	border-radius: 0 50% 50% 50%;
+	background-color: currentColor;
+	transform: rotate(225deg) translate(0.1em, 0.1em);
+	position: relative;
+	flex-shrink: 0;
 }
 
 .locationIcon::after {
-  content: '';
-  position: absolute;
-  z-index: 2;
-  width: 0.4em;
-  height: 0.4em;
-  border-radius: 50%;
-  background-color: var(--color-widget-background);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+	content: "";
+	position: absolute;
+	z-index: 2;
+	width: 0.4em;
+	height: 0.4em;
+	border-radius: 50%;
+	background-color: var(--color-widget-background);
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
 }
 
 .locationText {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 /* Daily forecast: glance .list-with-separator (1px --color-separator, 5px gaps) */
 .daily {
-  display: grid;
-  margin-top: 15px;
+	display: grid;
+	margin-top: 15px;
 }
 
 .dayRow {
-  display: grid;
-  grid-template-columns: 48px 20px 1fr;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--font-size-base);
-  margin-top: 5px;
-  padding-top: 5px;
-  border-top: 1px solid var(--color-separator);
+	display: grid;
+	grid-template-columns: 48px 20px 1fr;
+	align-items: center;
+	gap: 8px;
+	font-size: var(--font-size-base);
+	margin-top: 5px;
+	padding-top: 5px;
+	border-top: 1px solid var(--color-separator);
 }
 
 .dayRow:first-child {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: 0;
+	margin-top: 0;
+	padding-top: 0;
+	border-top: 0;
 }
 
 .dayName {
-  color: var(--color-text-base);
+	color: var(--color-text-base);
 }
 
 .temps {
-  text-align: end;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-tag-orange);
+	text-align: end;
+	font-variant-numeric: tabular-nums;
+	color: var(--color-tag-orange);
 }
 
 .low {
-  color: var(--color-tag-cyan);
+	color: var(--color-tag-cyan);
 }
 
 .empty {
-  font-size: var(--font-size-base);
-  color: var(--color-text-base-muted);
+	font-size: var(--font-size-base);
+	color: var(--color-text-base-muted);
 }

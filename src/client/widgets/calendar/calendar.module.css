@@ -2,31 +2,31 @@
    (glance/internal/glance/static/css/widget-calendar.css:40-48); 32px also
    clears the WCAG 2.2 AA 24px pointer-target floor. */
 .nav {
-  min-width: 32px;
-  min-height: 32px;
+	min-width: 32px;
+	min-height: 32px;
 }
 
 .dow {
-  color: var(--color-text-base-muted);
+	color: var(--color-text-base-muted);
 }
 
 .day {
-  width: 100%;
-  text-align: center;
-  padding: 3px 0;
-  border-radius: var(--border-radius);
+	width: 100%;
+	text-align: center;
+	padding: 3px 0;
+	border-radius: var(--border-radius);
 }
 
 /* Glance marks today with a neutral surface, not an accent
    (glance/.../widget-calendar.css:30-34): purple means tappable, so the
    current date must never wear the primary accent as decoration. */
 .today {
-  background-color: var(--color-popover-border);
-  color: var(--color-text-highlight);
+	background-color: var(--color-popover-border);
+	color: var(--color-text-highlight);
 }
 
 .other {
-  color: var(--color-text-base-muted);
+	color: var(--color-text-base-muted);
 }
 
 /* Month scrub: a short direction-aware entrance. Glance slides the dates out
@@ -34,30 +34,30 @@
    ships one duration token and one easing, so only the visible half of that
    pair is rendered here. */
 .slideNext {
-  animation: slide-next var(--duration-medium) var(--ease-standard) both;
+	animation: slide-next var(--duration-medium) var(--ease-standard) both;
 }
 
 .slidePrev {
-  animation: slide-prev var(--duration-medium) var(--ease-standard) both;
+	animation: slide-prev var(--duration-medium) var(--ease-standard) both;
 }
 
 @keyframes slide-next {
-  from {
-    opacity: 0;
-    transform: translateX(12px);
-  }
+	from {
+		opacity: 0;
+		transform: translateX(12px);
+	}
 }
 
 @keyframes slide-prev {
-  from {
-    opacity: 0;
-    transform: translateX(-12px);
-  }
+	from {
+		opacity: 0;
+		transform: translateX(-12px);
+	}
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .slideNext,
-  .slidePrev {
-    animation: none;
-  }
+	.slideNext,
+	.slidePrev {
+		animation: none;
+	}
 }

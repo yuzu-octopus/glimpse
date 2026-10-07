@@ -6,7 +6,7 @@
    pushing the actions off the row. */
 
 .form {
-  margin-bottom: 12px;
+	margin-bottom: 12px;
 }
 
 /* The kit TextInput is width="100%", so in a narrow card it claims the whole
@@ -14,28 +14,28 @@
    in the 2-column band. Same fix as .itemText: let the text field shrink and
    wrap, keep the action at its natural width. */
 .form > :first-child {
-  flex: 1 1 auto;
-  min-width: 0;
+	flex: 1 1 auto;
+	min-width: 0;
 }
 
 .form > :last-child {
-  flex: none;
+	flex: none;
 }
 
 .item {
-  padding-block: 5px;
+	padding-block: 5px;
 }
 
 .itemDivided {
-  border-top: 1px solid var(--color-separator);
+	border-top: 1px solid var(--color-separator);
 }
 
 .itemText {
-  flex: 1;
-  min-width: 0;
-  overflow-wrap: anywhere;
+	flex: 1;
+	min-width: 0;
+	overflow-wrap: anywhere;
 }
 
 .empty {
-  display: block;
+	display: block;
 }

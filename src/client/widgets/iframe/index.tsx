@@ -1,35 +1,42 @@
-import type { IframeConfig, HtmlConfig } from '../../../shared/widgets/iframe';
-import { WidgetChrome } from '../../components/WidgetChrome';
-import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import styles from './iframe.module.css';
+import type { HtmlConfig, IframeConfig } from "../../../shared/widgets/iframe";
+import { WidgetChrome } from "../../components/WidgetChrome";
+import { registerWidgetComponent, type WidgetComponentProps } from "../registry";
+import styles from "./iframe.module.css";
 
 function Iframe({ config }: WidgetComponentProps) {
-  const cfg = config as unknown as IframeConfig;
-  return (
-    <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
-      <iframe
-        src={cfg.source}
-        className={styles.frame}
-        title={cfg.title ?? 'Embedded content'}
-        style={{ minHeight: cfg.height ?? 300 }}
-      />
-    </WidgetChrome>
-  );
+	const cfg = config as unknown as IframeConfig;
+	return (
+		<WidgetChrome
+			title={cfg.title}
+			titleUrl={cfg["title-url"]}
+			hideHeader={cfg["hide-header"]}
+			cssClass={cfg["css-class"]}
+		>
+			<iframe
+				src={cfg.source}
+				className={styles.frame}
+				title={cfg.title ?? "Embedded content"}
+				style={{ minHeight: cfg.height ?? 300 }}
+			/>
+		</WidgetChrome>
+	);
 }
 
 function Html({ config }: WidgetComponentProps) {
-  const cfg = config as unknown as HtmlConfig;
-  return (
-    <WidgetChrome title={cfg.title} titleUrl={cfg['title-url']} hideHeader={cfg['hide-header']} cssClass={cfg['css-class']}>
-      <div
-        className={styles.html}
-        dangerouslySetInnerHTML={{ __html: cfg.source }}
-      />
-    </WidgetChrome>
-  );
+	const cfg = config as unknown as HtmlConfig;
+	return (
+		<WidgetChrome
+			title={cfg.title}
+			titleUrl={cfg["title-url"]}
+			hideHeader={cfg["hide-header"]}
+			cssClass={cfg["css-class"]}
+		>
+			<div className={styles.html} dangerouslySetInnerHTML={{ __html: cfg.source }} />
+		</WidgetChrome>
+	);
 }
 
-registerWidgetComponent('iframe', Iframe);
-registerWidgetComponent('html', Html);
+registerWidgetComponent("iframe", Iframe);
+registerWidgetComponent("html", Html);
 
 export default Iframe;

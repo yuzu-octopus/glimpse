@@ -1,24 +1,24 @@
-import { z } from 'zod';
-import { sharedWidgetFields, type Pref, type SkeletonShape } from './shared';
+import { z } from "zod";
+import { type Pref, type SkeletonShape, sharedWidgetFields } from "./shared";
 
 export const RADAR_DEFAULTS = { zoom: 7 } as const;
 export const RADAR_PREF: Pref = {
-  cols: 3,
-  rows: 2,
-  resizable: false,
-  priority: 8,
-  zone: 'main',
-  preferredWidth: 320,
-  preferredHeight: 320,
+	cols: 3,
+	rows: 2,
+	resizable: false,
+	priority: 8,
+	zone: "main",
+	preferredWidth: 320,
+	preferredHeight: 320,
 };
 
 /** A 2x2 tile grid filling the widget. Closest of the four to a map. */
-export const RADAR_SKELETON: SkeletonShape = 'chart';
+export const RADAR_SKELETON: SkeletonShape = "chart";
 
 export const radarSchema = z.object({
-  type: z.literal('weather-radar'),
-  ...sharedWidgetFields,
-  location: z.string(),
-  zoom: z.number().int().min(3).max(10).optional(),
+	type: z.literal("weather-radar"),
+	...sharedWidgetFields,
+	location: z.string(),
+	zoom: z.number().int().min(3).max(10).optional(),
 });
 export type RadarConfig = z.infer<typeof radarSchema>;

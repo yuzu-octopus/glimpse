@@ -1,55 +1,55 @@
 .map {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 5px;
-  overflow: hidden;
-  background: var(--color-widget-content-border);
+	position: relative;
+	width: 100%;
+	aspect-ratio: 1;
+	border-radius: 5px;
+	overflow: hidden;
+	background: var(--color-widget-content-border);
 }
 
 .tiles {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(2, 1fr);
-  width: 200%;
-  height: 200%;
-  position: absolute;
-  left: 0;
-  top: 0;
-  /* --ox/--oy are layer offsets in viewport widths; 100% of this 200%-wide
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	grid-template-rows: repeat(2, 1fr);
+	width: 200%;
+	height: 200%;
+	position: absolute;
+	left: 0;
+	top: 0;
+	/* --ox/--oy are layer offsets in viewport widths; 100% of this 200%-wide
      layer is two viewports, so the factor is -50% per unit. */
-  transform: translate(calc(var(--ox) * -50%), calc(var(--oy) * -50%));
+	transform: translate(calc(var(--ox) * -50%), calc(var(--oy) * -50%));
 }
 
 .cell {
-  position: relative;
-  overflow: hidden;
+	position: relative;
+	overflow: hidden;
 }
 
 .base,
 .overlay {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	display: block;
 }
 
 /* radar overlay sits on top of the OSM base tiles */
 .overlay {
-  opacity: 0.75;
-  pointer-events: none;
+	opacity: 0.75;
+	pointer-events: none;
 }
 
 .timestamp {
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--color-text-base-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+	margin-top: 8px;
+	font-size: 12px;
+	color: var(--color-text-base-muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .empty {
-  color: var(--color-text-base-muted);
+	color: var(--color-text-base-muted);
 }

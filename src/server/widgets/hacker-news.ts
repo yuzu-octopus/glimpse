@@ -1,84 +1,91 @@
-import { hackerNewsSchema } from '../../shared/widgets/feeds';
-import { registerWidget } from './registry';
-import { fetchJson, retryOptionsFrom } from './http';
-import type { HnPost } from '../../shared/widgets/payloads';
+import { hackerNewsSchema } from "../../shared/widgets/feeds";
+import type { HnPost } from "../../shared/widgets/payloads";
+import { fetchJson, retryOptionsFrom } from "./http";
+import { registerWidget } from "./registry";
 
 interface HnItem {
-  id: number;
-  title?: string;
-  url?: string;
-  score?: number;
-  descendants?: number;
-  time?: number;
+	id: number;
+	title?: string;
+	url?: string;
+	score?: number;
+	descendants?: number;
+	time?: number;
 }
 
 function pLimit(concurrency: number) {
-  let active = 0;
-  const queue: Array<() => void> = [];
-  const next = () => {
-    active--;
-    const fn = queue.shift();
-    if (fn) fn();
-  };
-  return <T>(fn: () => Promise<T>): Promise<T> => {
-    if (active >= concurrency) {
-      const { promise, resolve } = Promise.withResolvers<void>();
-      queue.push(() => resolve());
-      return promise.then(() => run(fn));
-    }
-    return run(fn);
-  };
-  function run<T>(fn: () => Promise<T>): Promise<T> {
-    active++;
-    return fn().finally(next);
-  }
+	let active = 0;
+	const queue: Array<() => void> = [];
+	const next = () => {
+		active--;
+		const fn = queue.shift();
+		if (fn) fn();
+	};
+	return <T>(fn: () => Promise<T>): Promise<T> => {
+		if (active >= concurrency) {
+			const { promise, resolve } = Promise.withResolvers<void>();
+			queue.push(() => resolve());
+			return promise.then(() => run(fn));
+		}
+		return run(fn);
+	};
+	function run<T>(fn: () => Promise<T>): Promise<T> {
+		active++;
+		return fn().finally(next);
+	}
 }
 
-registerWidget('hacker-news', async (ctx, config) => {
-  const cfg = hackerNewsSchema.parse(config);
-  const retry = retryOptionsFrom(cfg);
-  const sort = cfg['sort-by'] ?? 'top';
+registerWidget("hacker-news", async (ctx, config) => {
+	const cfg = hackerNewsSchema.parse(config);
+	const retry = retryOptionsFrom(cfg);
+	const sort = cfg["sort-by"] ?? "top";
 
-  const ids = await fetchJson<number[]>(
-    ctx,
-    `https://hacker-news.firebaseio.com/v0/${sort}stories.json`,
-    {},
-    retry,
-  );
-  const wanted = Math.min(ids.length, Math.max(cfg.limit * 2, 30));
-  const limit6 = pLimit(6);
-  const settled = await Promise.allSettled(
-    ids.slice(0, wanted).map((id) =>
-      limit6(() =>
-        ctx.singleflight.run(`hn:item:${id}`, () =>
-          fetchJson<HnItem | null>(ctx, `https://hacker-news.firebaseio.com/v0/item/${id}.json`, {}, retry),
-        ),
-      ),
-    ),
-  );
-  const items: (HnItem | null)[] = [];
-  for (const r of settled) {
-    if (r.status === 'fulfilled') items.push((r as PromiseFulfilledResult<HnItem | null>).value);
-  }
+	const ids = await fetchJson<number[]>(
+		ctx,
+		`https://hacker-news.firebaseio.com/v0/${sort}stories.json`,
+		{},
+		retry,
+	);
+	const wanted = Math.min(ids.length, Math.max(cfg.limit * 2, 30));
+	const limit6 = pLimit(6);
+	const settled = await Promise.allSettled(
+		ids
+			.slice(0, wanted)
+			.map((id) =>
+				limit6(() =>
+					ctx.singleflight.run(`hn:item:${id}`, () =>
+						fetchJson<HnItem | null>(
+							ctx,
+							`https://hacker-news.firebaseio.com/v0/item/${id}.json`,
+							{},
+							retry,
+						),
+					),
+				),
+			),
+	);
+	const items: (HnItem | null)[] = [];
+	for (const r of settled) {
+		if (r.status === "fulfilled") items.push((r as PromiseFulfilledResult<HnItem | null>).value);
+	}
 
-  const posts: HnPost[] = [];
-  for (const i of items) {
-    if (i !== null && typeof i.title === 'string') {
-      posts.push({
-        id: i.id,
-        title: i.title as string,
-        url: i.url ?? `https://news.ycombinator.com/item?id=${i.id}`,
-        commentsUrl:
-          cfg['comments-url-template']?.replace('{ID}', String(i.id)) ??
-          `https://news.ycombinator.com/item?id=${i.id}`,
-        score: i.score ?? 0,
-        comments: i.descendants ?? 0,
-        ageSeconds: i.time ? Math.floor(Date.now() / 1000) - i.time : 0,
-      });
-    }
-  }
-  if (cfg['extra-sort-by'] === 'engagement') {
-    posts.sort((a, b) => b.score + b.comments - (a.score + a.comments));
-  }
-  return { posts: posts.slice(0, cfg.limit) };
+	const posts: HnPost[] = [];
+	for (const i of items) {
+		if (i !== null && typeof i.title === "string") {
+			posts.push({
+				id: i.id,
+				title: i.title as string,
+				url: i.url ?? `https://news.ycombinator.com/item?id=${i.id}`,
+				commentsUrl:
+					cfg["comments-url-template"]?.replace("{ID}", String(i.id)) ??
+					`https://news.ycombinator.com/item?id=${i.id}`,
+				score: i.score ?? 0,
+				comments: i.descendants ?? 0,
+				ageSeconds: i.time ? Math.floor(Date.now() / 1000) - i.time : 0,
+			});
+		}
+	}
+	if (cfg["extra-sort-by"] === "engagement") {
+		posts.sort((a, b) => b.score + b.comments - (a.score + a.comments));
+	}
+	return { posts: posts.slice(0, cfg.limit) };
 });

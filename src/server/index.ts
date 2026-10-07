@@ -1,56 +1,55 @@
-import { existsSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join, normalize, resolve, sep } from 'node:path';
-import { etagMatches } from './etag';
-import { initConfig, getConfig } from './config';
-import { Singleflight, TtlCache } from './cache';
-import { buildPagePayload, skeletonPagePayload, streamPagePayload } from './api';
-import type { WidgetFetchContext } from './widgets/registry';
-import { warmCache } from './warmup';
-import './widgets'; // side-effect: registers all widget fetchers
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { dirname, join, normalize, resolve, sep } from "node:path";
+import { buildPagePayload, skeletonPagePayload, streamPagePayload } from "./api";
+import { Singleflight, TtlCache } from "./cache";
+import { getConfig, initConfig } from "./config";
+import { etagMatches } from "./etag";
+import { warmCache } from "./warmup";
+import type { WidgetFetchContext } from "./widgets/registry";
+import "./widgets"; // side-effect: registers all widget fetchers
 
-const CONFIG_PATH =
-  process.argv[2] ?? process.env.GLIMPSE_CONFIG ?? './config.yml';
+const CONFIG_PATH = process.argv[2] ?? process.env.GLIMPSE_CONFIG ?? "./config.yml";
 const PORT = Number(process.env.GLIMPSE_PORT ?? 3000);
 // Bind loopback by default; Caddy is the only external listener.
 // Override with GLIMPSE_HOST only for debugging behind the firewall.
-const HOST = process.env.GLIMPSE_HOST ?? '127.0.0.1';
+const HOST = process.env.GLIMPSE_HOST ?? "127.0.0.1";
 
 // Version from package.json (relative to repo root; the server runs with
 // cwd = repo root). Never fatal — the About pane falls back to 'unknown'.
 function readVersion(): string {
-  try {
-    const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as {
-      version?: string;
-    };
-    return pkg.version ?? 'unknown';
-  } catch {
-    return 'unknown';
-  }
+	try {
+		const pkg = JSON.parse(readFileSync("package.json", "utf8")) as {
+			version?: string;
+		};
+		return pkg.version ?? "unknown";
+	} catch {
+		return "unknown";
+	}
 }
 const VERSION = readVersion();
 
 const ctx: WidgetFetchContext = {
-  fetch: globalThis.fetch.bind(globalThis),
-  env: process.env as Record<string, string>,
-  cache: new TtlCache(),
-  singleflight: new Singleflight(),
+	fetch: globalThis.fetch.bind(globalThis),
+	env: process.env as Record<string, string>,
+	cache: new TtlCache(),
+	singleflight: new Singleflight(),
 };
 
 initConfig(CONFIG_PATH, (r) => {
-  console.log(r.ok ? '[config] reloaded' : `[config] reload failed: ${r.errors?.join('; ')}`);
-  if (r.ok) void warmCache(ctx).catch(() => {});
+	console.log(r.ok ? "[config] reloaded" : `[config] reload failed: ${r.errors?.join("; ")}`);
+	if (r.ok) void warmCache(ctx).catch(() => {});
 });
 void warmCache(ctx).catch(() => {});
 
 // Bun 1.4: drop the widget cache under memory pressure — entries re-fetch on
 // next request, so this is a safe (if briefly slower) way to relieve RSS.
-process.on('memoryPressure', () => ctx.cache.clear());
+process.on("memoryPressure", () => ctx.cache.clear());
 
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}): Response =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json', ...headers },
-  });
+	new Response(JSON.stringify(body), {
+		status,
+		headers: { "content-type": "application/json", ...headers },
+	});
 
 // Custom CSS file is re-read on every /api/theme hit; cache it with a 5s
 // re-stat + mtime check so edits still appear quickly without per-request reads.
@@ -59,201 +58,194 @@ let themeCssCache: { file: string; mtimeMs: number; content: string } | null = n
 let themeCssCheckedAt = 0;
 
 function readThemeCss(cssFile: string): string | null {
-  const now = Date.now();
-  if (
-    themeCssCache?.file === cssFile &&
-    now - themeCssCheckedAt < THEME_CSS_CHECK_MS
-  ) {
-    return themeCssCache.content;
-  }
-  const path = resolve(dirname(CONFIG_PATH), cssFile);
-  try {
-    const { mtimeMs } = statSync(path);
-    if (themeCssCache?.file === cssFile && themeCssCache.mtimeMs === mtimeMs) {
-      themeCssCheckedAt = now;
-      return themeCssCache.content;
-    }
-    const content = readFileSync(path, 'utf8');
-    themeCssCache = { file: cssFile, mtimeMs, content };
-    themeCssCheckedAt = now;
-    return content;
-  } catch (e) {
-    console.log(`[glimpse] cannot read custom css file: ${(e as Error).message}`);
-    themeCssCache = null;
-    themeCssCheckedAt = now;
-    return null;
-  }
+	const now = Date.now();
+	if (themeCssCache?.file === cssFile && now - themeCssCheckedAt < THEME_CSS_CHECK_MS) {
+		return themeCssCache.content;
+	}
+	const path = resolve(dirname(CONFIG_PATH), cssFile);
+	try {
+		const { mtimeMs } = statSync(path);
+		if (themeCssCache?.file === cssFile && themeCssCache.mtimeMs === mtimeMs) {
+			themeCssCheckedAt = now;
+			return themeCssCache.content;
+		}
+		const content = readFileSync(path, "utf8");
+		themeCssCache = { file: cssFile, mtimeMs, content };
+		themeCssCheckedAt = now;
+		return content;
+	} catch (e) {
+		console.log(`[glimpse] cannot read custom css file: ${(e as Error).message}`);
+		themeCssCache = null;
+		themeCssCheckedAt = now;
+		return null;
+	}
 }
 
-
-
-const distDirCache = join(process.cwd(), 'dist');
+const distDirCache = join(process.cwd(), "dist");
 let distExistsCache: boolean | null = null;
 const existsCache = new Map<string, boolean>();
 
 function cachedExistsSync(p: string): boolean {
-  const hit = existsCache.get(p);
-  if (hit !== undefined) return hit;
-  const result = existsSync(p);
-  existsCache.set(p, result);
-  if (existsCache.size > 200) {
-    const first = existsCache.keys().next().value;
-    if (first !== undefined) existsCache.delete(first);
-  }
-  return result;
+	const hit = existsCache.get(p);
+	if (hit !== undefined) return hit;
+	const result = existsSync(p);
+	existsCache.set(p, result);
+	if (existsCache.size > 200) {
+		const first = existsCache.keys().next().value;
+		if (first !== undefined) existsCache.delete(first);
+	}
+	return result;
 }
 
 /** Serve the built SPA from dist/ (production path; dev uses Vite). */
 function serveDist(pathname: string): Response {
-  const dist = distDirCache;
-  if (distExistsCache === null) distExistsCache = cachedExistsSync(dist);
-  if (!distExistsCache) return json({ error: 'not found' }, 404);
+	const dist = distDirCache;
+	if (distExistsCache === null) distExistsCache = cachedExistsSync(dist);
+	if (!distExistsCache) return json({ error: "not found" }, 404);
 
-  let filePath: string;
-  try {
-    filePath = normalize(
-      join(dist, pathname === '/' ? 'index.html' : decodeURIComponent(pathname.slice(1))),
-    );
-  } catch {
-    // malformed percent-encoding (e.g. %zz) → SPA fallback, same as unknown path
-    filePath = join(dist, 'index.html');
-  }
-  if (!filePath.startsWith(dist + sep) && filePath !== dist + sep + 'index.html') {
-    return json({ error: 'forbidden' }, 403);
-  }
-  if (!cachedExistsSync(filePath) || !filePath.startsWith(dist + sep)) {
-    filePath = join(dist, 'index.html'); // SPA fallback
-  }
-  const headers: Record<string, string> = {
-    'content-type': Bun.file(filePath).type || 'application/octet-stream',
-  };
-  const rel = filePath.slice(dist.length + 1);
-  if (rel.startsWith('assets/')) {
-    // Vite hashes these filenames — cache forever.
-    headers['cache-control'] = 'public, max-age=31536000, immutable';
-  } else if (
-    rel === 'index.html' ||
-    rel.endsWith('.webmanifest') ||
-    rel === 'sw.js' ||
-    rel === 'registerSW.js' ||
-    rel === 'favicon.svg' ||
-    rel === 'icon.svg'
-  ) {
-    headers['cache-control'] = 'no-cache'; // unhashed root files: revalidate every load
-  } else if (rel.endsWith('.woff2')) {
-    // Fonts ship with the build — immutable for a year so repeat views skip
-    // revalidation entirely (304s disappear; a new deploy URL-busts via hashed assets).
-    headers['cache-control'] = 'public, max-age=31536000, immutable';
-  }
-  // Bun.file enables sendfile(2) zero-copy when served via Bun.serve
-  return new Response(Bun.file(filePath), { headers });
+	let filePath: string;
+	try {
+		filePath = normalize(
+			join(dist, pathname === "/" ? "index.html" : decodeURIComponent(pathname.slice(1))),
+		);
+	} catch {
+		// malformed percent-encoding (e.g. %zz) → SPA fallback, same as unknown path
+		filePath = join(dist, "index.html");
+	}
+	if (!filePath.startsWith(dist + sep) && filePath !== dist + sep + "index.html") {
+		return json({ error: "forbidden" }, 403);
+	}
+	if (!cachedExistsSync(filePath) || !filePath.startsWith(dist + sep)) {
+		filePath = join(dist, "index.html"); // SPA fallback
+	}
+	const headers: Record<string, string> = {
+		"content-type": Bun.file(filePath).type || "application/octet-stream",
+	};
+	const rel = filePath.slice(dist.length + 1);
+	if (rel.startsWith("assets/")) {
+		// Vite hashes these filenames — cache forever.
+		headers["cache-control"] = "public, max-age=31536000, immutable";
+	} else if (
+		rel === "index.html" ||
+		rel.endsWith(".webmanifest") ||
+		rel === "sw.js" ||
+		rel === "registerSW.js" ||
+		rel === "favicon.svg" ||
+		rel === "icon.svg"
+	) {
+		headers["cache-control"] = "no-cache"; // unhashed root files: revalidate every load
+	} else if (rel.endsWith(".woff2")) {
+		// Fonts ship with the build — immutable for a year so repeat views skip
+		// revalidation entirely (304s disappear; a new deploy URL-busts via hashed assets).
+		headers["cache-control"] = "public, max-age=31536000, immutable";
+	}
+	// Bun.file enables sendfile(2) zero-copy when served via Bun.serve
+	return new Response(Bun.file(filePath), { headers });
 }
 const server = Bun.serve({
-  port: PORT,
-  hostname: HOST,
-  routes: {
-    '/health': new Response('OK', { headers: { 'content-type': 'text/plain; charset=utf-8' } }),
-  },
-  async fetch(req) {
-    const url = new URL(req.url);
-    const pathname = url.pathname;
+	port: PORT,
+	hostname: HOST,
+	routes: {
+		"/health": new Response("OK", { headers: { "content-type": "text/plain; charset=utf-8" } }),
+	},
+	async fetch(req) {
+		const url = new URL(req.url);
+		const pathname = url.pathname;
 
-    if (pathname === '/api/config') {
-      const r = getConfig();
-      const headers = { 'cache-control': 'no-store' };
-      return r.ok
-        ? json(
-            { ok: true, config: r.config, configPath: CONFIG_PATH, version: VERSION },
-            200,
-            headers,
-          )
-        : json({ ok: false, errors: r.errors }, 400, headers);
-    }
+		if (pathname === "/api/config") {
+			const r = getConfig();
+			const headers = { "cache-control": "no-store" };
+			return r.ok
+				? json(
+						{ ok: true, config: r.config, configPath: CONFIG_PATH, version: VERSION },
+						200,
+						headers,
+					)
+				: json({ ok: false, errors: r.errors }, 400, headers);
+		}
 
-    if (pathname === '/api/theme') {
-      const r = getConfig();
-      let customCss: string | null = null;
-      const cssFile = r.ok && r.config ? r.config['custom-css-file'] : undefined;
-      if (cssFile) {
-        customCss = readThemeCss(cssFile);
-      }
-      return json(
-        { customCss },
-        200,
-        { 'cache-control': 'public, max-age=60' },
-      );
-    }
+		if (pathname === "/api/theme") {
+			const r = getConfig();
+			let customCss: string | null = null;
+			const cssFile = r.ok && r.config ? r.config["custom-css-file"] : undefined;
+			if (cssFile) {
+				customCss = readThemeCss(cssFile);
+			}
+			return json({ customCss }, 200, { "cache-control": "public, max-age=60" });
+		}
 
-    const pageMatch = /^\/api\/page\/([^/]+)$/.exec(pathname);
-    if (pageMatch) {
-      const r = getConfig();
-      if (!r.ok) return json({ ok: false, errors: r.errors }, 400);
-      const slug = decodeURIComponent(pageMatch[1]);
-      const page = r.config?.pages.find((p) => p.slug === slug);
-      if (!page) return json({ error: `page "${slug}" not found` }, 404);
-      // Explicit reload (client reload(true)) should bypass server cache
-      // so the next widget fetches actually hit the upstream APIs.
-      if (url.searchParams.has('force')) {
-        ctx.cache.deleteByPrefix(`${slug}:`);
-      }
-      if (url.searchParams.has('stream')) {
-        const abortController = new AbortController();
-        const enc = new TextEncoder();
-        const streamCtx: WidgetFetchContext = {
-          ...ctx,
-          fetch: ((input: string | URL | Request, init?: RequestInit) => {
-            const innerSignal = init?.signal as AbortSignal | undefined;
-            const signal = innerSignal
-              ? (typeof AbortSignal.any === 'function'
-                  ? AbortSignal.any([innerSignal, abortController.signal])
-                  : abortController.signal)
-              : abortController.signal;
-            return ctx.fetch(input as string, { ...init, signal } as RequestInit);
-          }) as typeof ctx.fetch,
-        };
-        const stream = new ReadableStream({
-          async start(controller) {
-            try {
-              // Layout-first line so cold loads paint the full skeleton before
-              // any widget fetch settles.
-              controller.enqueue(
-                enc.encode(`${JSON.stringify({ path: '$skeleton', payload: skeletonPagePayload(page) })}\n`),
-              );
-              for await (const chunk of streamPagePayload(page, streamCtx)) {
-                controller.enqueue(enc.encode(`${JSON.stringify(chunk)}\n`));
-              }
-              controller.close();
-            } catch (e) {
-              controller.error(e);
-            }
-          },
-          cancel() {
-            abortController.abort();
-          },
-        });
-        return new Response(stream, {
-          headers: {
-            'content-type': 'application/x-ndjson',
-            'cache-control': 'no-store',
-          },
-        });
-      }
-      const payload = await buildPagePayload(page, ctx);
-      const body = JSON.stringify(payload);
-      const etag = `W/"${Bun.hash(body).toString(16)}"`;
-      if (etagMatches(req.headers.get('if-none-match'), etag)) {
-        return new Response(null, { status: 304, headers: { etag } });
-      }
-      return new Response(body, {
-        headers: {
-          'content-type': 'application/json',
-          etag,
-          'cache-control': 'private, max-age=10, stale-while-revalidate=30',
-        },
-      });
-    }
-    return serveDist(pathname);
-  },
+		const pageMatch = /^\/api\/page\/([^/]+)$/.exec(pathname);
+		if (pageMatch) {
+			const r = getConfig();
+			if (!r.ok) return json({ ok: false, errors: r.errors }, 400);
+			const slug = decodeURIComponent(pageMatch[1]);
+			const page = r.config?.pages.find((p) => p.slug === slug);
+			if (!page) return json({ error: `page "${slug}" not found` }, 404);
+			// Explicit reload (client reload(true)) should bypass server cache
+			// so the next widget fetches actually hit the upstream APIs.
+			if (url.searchParams.has("force")) {
+				ctx.cache.deleteByPrefix(`${slug}:`);
+			}
+			if (url.searchParams.has("stream")) {
+				const abortController = new AbortController();
+				const enc = new TextEncoder();
+				const streamCtx: WidgetFetchContext = {
+					...ctx,
+					fetch: ((input: string | URL | Request, init?: RequestInit) => {
+						const innerSignal = init?.signal as AbortSignal | undefined;
+						const signal = innerSignal
+							? typeof AbortSignal.any === "function"
+								? AbortSignal.any([innerSignal, abortController.signal])
+								: abortController.signal
+							: abortController.signal;
+						return ctx.fetch(input as string, { ...init, signal } as RequestInit);
+					}) as typeof ctx.fetch,
+				};
+				const stream = new ReadableStream({
+					async start(controller) {
+						try {
+							// Layout-first line so cold loads paint the full skeleton before
+							// any widget fetch settles.
+							controller.enqueue(
+								enc.encode(
+									`${JSON.stringify({ path: "$skeleton", payload: skeletonPagePayload(page) })}\n`,
+								),
+							);
+							for await (const chunk of streamPagePayload(page, streamCtx)) {
+								controller.enqueue(enc.encode(`${JSON.stringify(chunk)}\n`));
+							}
+							controller.close();
+						} catch (e) {
+							controller.error(e);
+						}
+					},
+					cancel() {
+						abortController.abort();
+					},
+				});
+				return new Response(stream, {
+					headers: {
+						"content-type": "application/x-ndjson",
+						"cache-control": "no-store",
+					},
+				});
+			}
+			const payload = await buildPagePayload(page, ctx);
+			const body = JSON.stringify(payload);
+			const etag = `W/"${Bun.hash(body).toString(16)}"`;
+			if (etagMatches(req.headers.get("if-none-match"), etag)) {
+				return new Response(null, { status: 304, headers: { etag } });
+			}
+			return new Response(body, {
+				headers: {
+					"content-type": "application/json",
+					etag,
+					"cache-control": "private, max-age=10, stale-while-revalidate=30",
+				},
+			});
+		}
+		return serveDist(pathname);
+	},
 });
 
 console.log(`[glimpse] server listening on http://localhost:${server.port}`);

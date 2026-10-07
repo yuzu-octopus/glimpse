@@ -1,64 +1,63 @@
 /* glance site.css/page-content.html port. `.page` doubles as the
    content-bounds wrapper (maxWidth inline from the page width prop). */
 .page {
-  margin: 0 auto;
-  padding-block: var(--space-gap);
-  /* uniform bottom gap like glance .page — explicit !important to survive grid stretch / flex collapse
+	margin: 0 auto;
+	padding-block: var(--space-gap);
+	/* uniform bottom gap like glance .page — explicit !important to survive grid stretch / flex collapse
      and ensure SHOW LESS lobsters never touches viewport bottom */
-  padding-bottom: var(--widget-gap) !important;
-  padding-inline: var(--space-viewport);
-  width: 100%;
-  box-sizing: border-box;
-  /* ensure bottom padding is outside any flex/overflow clipping context;
+	padding-bottom: var(--widget-gap) !important;
+	padding-inline: var(--space-viewport);
+	width: 100%;
+	box-sizing: border-box;
+	/* ensure bottom padding is outside any flex/overflow clipping context;
      display: flow-root prevents last-child margin collapse from eating it */
-  display: flow-root;
+	display: flow-root;
 }
 
 .page:not(.centered)::after {
-  content: '';
-  display: block;
-  height: var(--widget-gap);
-  flex-shrink: 0;
+	content: "";
+	display: block;
+	height: var(--widget-gap);
+	flex-shrink: 0;
 }
 
 .centered {
-  min-height: calc(100vh - 56px);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+	min-height: calc(100vh - 56px);
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
 }
 
 /* Page-name header for mobile only (glance `show-mobile-header` →
    mobile-reachability-header: sticky top strip). */
 .mobileHeader {
-  display: none;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  height: var(--mobile-navigation-height);
-  align-items: center;
-  justify-content: center;
-  background: var(--color-widget-background);
-  border-bottom: 1px solid var(--color-separator);
-  font-size: var(--font-size-h3);
-  font-weight: 600;
-  color: var(--color-text-highlight);
-  margin: calc(-1 * var(--widget-gap)) calc(-1 * var(--content-bounds-padding))
-    var(--widget-gap);
+	display: none;
+	position: sticky;
+	top: 0;
+	z-index: 10;
+	height: var(--mobile-navigation-height);
+	align-items: center;
+	justify-content: center;
+	background: var(--color-widget-background);
+	border-bottom: 1px solid var(--color-separator);
+	font-size: var(--font-size-h3);
+	font-weight: 600;
+	color: var(--color-text-highlight);
+	margin: calc(-1 * var(--widget-gap)) calc(-1 * var(--content-bounds-padding)) var(--widget-gap);
 }
 
 .headWidgets {
-  display: grid;
-  gap: var(--widget-gap);
-  margin-bottom: var(--widget-gap);
+	display: grid;
+	gap: var(--widget-gap);
+	margin-bottom: var(--widget-gap);
 }
 
 /* page-columns: 12-col grid, gap var(--widget-gap). Column sizing via --col-span. */
 .columns {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: clamp(12px, 1.6vw, var(--widget-gap));
-  align-content: start;
+	display: grid;
+	grid-template-columns: repeat(12, minmax(0, 1fr));
+	gap: clamp(12px, 1.6vw, var(--widget-gap));
+	align-content: start;
 }
 
 /* tiling: auto — balanced grid tiles. small/full are ignored here; the
@@ -69,14 +68,11 @@
    bottom padding (var(--widget-gap)) is the only footer gap — consistent
    across Home/Dev/Social regardless of column heights. */
 .autoTiling {
-  display: grid;
-  grid-template-columns: repeat(
-    auto-fit,
-    minmax(min(var(--min-column-width, 300px), 100%), 1fr)
-  );
-  grid-auto-flow: dense;
-  align-items: start; /* ragged bottoms; no row equalization */
-  align-content: start;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(var(--min-column-width, 300px), 100%), 1fr));
+	grid-auto-flow: dense;
+	align-items: start; /* ragged bottoms; no row equalization */
+	align-content: start;
 }
 
 /* tiling: collage — place()-driven bento grid. Track count and row unit
@@ -86,12 +82,12 @@
    degrades to 12 explicit tracks with auto rows. align-content: start keeps
    the page's bottom padding (var(--widget-gap)) the only footer gap. */
 .collageTiling {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-auto-flow: dense;
-  grid-auto-rows: minmax(var(--tile-row, 96px), auto);
-  align-items: stretch; /* tiles fill their spanned cell */
-  align-content: start;
+	display: grid;
+	grid-template-columns: repeat(12, minmax(0, 1fr));
+	grid-auto-flow: dense;
+	grid-auto-rows: minmax(var(--tile-row, 96px), auto);
+	align-items: stretch; /* tiles fill their spanned cell */
+	align-content: start;
 }
 
 /* auto/collage mode treats every column as a tile — kill the explicit-mode
@@ -100,179 +96,179 @@
    element's natural size instead of stretching to ~500px per track. */
 .autoTiling .smallColumn,
 .collageTiling .smallColumn {
-  width: 100%;
-  max-width: 360px;
-  justify-self: start;
-  flex-shrink: 1;
+	width: 100%;
+	max-width: 360px;
+	justify-self: start;
+	flex-shrink: 1;
 }
 .autoTiling .fullColumn,
 .collageTiling .fullColumn {
-  width: 100%;
-  min-width: 0;
-  flex-shrink: 1;
+	width: 100%;
+	min-width: 0;
+	flex-shrink: 1;
 }
 
 /* Auto-mode span hints. Small spans take auto-fit tracks; large spans are
    12-col units in a ~300px-track grid, so they go full width instead of
    forcing implicit tracks. (Columns/collage footprints ride --col-span and
    inline grid-row from place() — no rules needed.) */
-.autoTiling [data-span='2'] {
-  grid-column: span 2;
+.autoTiling [data-span="2"] {
+	grid-column: span 2;
 }
-.autoTiling [data-span='3'] {
-  grid-column: span 3;
+.autoTiling [data-span="3"] {
+	grid-column: span 3;
 }
-.autoTiling [data-span='4'] {
-  grid-column: span 4;
+.autoTiling [data-span="4"] {
+	grid-column: span 4;
 }
-.autoTiling [data-span='5'],
-.autoTiling [data-span='6'],
-.autoTiling [data-span='7'],
-.autoTiling [data-span='8'],
-.autoTiling [data-span='9'],
-.autoTiling [data-span='10'],
-.autoTiling [data-span='11'],
-.autoTiling [data-span='12'] {
-  grid-column: 1 / -1;
+.autoTiling [data-span="5"],
+.autoTiling [data-span="6"],
+.autoTiling [data-span="7"],
+.autoTiling [data-span="8"],
+.autoTiling [data-span="9"],
+.autoTiling [data-span="10"],
+.autoTiling [data-span="11"],
+.autoTiling [data-span="12"] {
+	grid-column: 1 / -1;
 }
 
 .column {
-  grid-column: span var(--col-span, 12);
-  min-width: 0;
-  /* Tile query container: widget interiors adapt to their allocated tile
+	grid-column: span var(--col-span, 12);
+	min-width: 0;
+	/* Tile query container: widget interiors adapt to their allocated tile
    * width (stack vs row, font scale). Page layout — tracks, spans — stays
    * in place() plus media queries; never query the page container here. */
-  container-type: inline-size;
-  container-name: tile;
+	container-type: inline-size;
+	container-name: tile;
 }
 
 .fullColumn {
-  width: 100%;
-  min-width: 0;
+	width: 100%;
+	min-width: 0;
 }
 
 .smallColumn {
-  width: 100%;
-  max-width: none;
+	width: 100%;
+	max-width: none;
 }
 
 .columnWidgets {
-  display: grid;
-  gap: var(--widget-gap);
-  align-content: start;
-  height: auto;
-  min-width: 0;
+	display: grid;
+	gap: var(--widget-gap);
+	align-content: start;
+	height: auto;
+	min-width: 0;
 }
 
 /* Grid items default to min-width:auto — allow cards to shrink to the
    track (long unbroken titles otherwise blow out mobile layouts). */
 .columnWidgets > *,
 .headWidgets > * {
-  min-width: 0;
+	min-width: 0;
 }
 
 /* Mobile column toggle — the column's label tier. It is supporting text
    (12px) directly above the level-3 widget headers inside it, so the two
    tiers never share a size. Uppercase + separator border, flat. */
 .mobileToggle {
-  display: none;
-  align-items: center;
-  gap: 5px;
-  width: 100%;
-  padding: 5px 0;
-  margin-bottom: var(--widget-gap);
-  border: none;
-  border-bottom: 1px solid var(--color-separator);
-  background: transparent;
-  /* Thumb floor: this header is the only way into a column on mobile, and
+	display: none;
+	align-items: center;
+	gap: 5px;
+	width: 100%;
+	padding: 5px 0;
+	margin-bottom: var(--widget-gap);
+	border: none;
+	border-bottom: 1px solid var(--color-separator);
+	background: transparent;
+	/* Thumb floor: this header is the only way into a column on mobile, and
      every other mobile-only control in the app (the settings gear, the
      page-list toggle) sits on 44px. */
-  min-height: 44px;
-  font-size: var(--font-size-h5);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-text-base);
-  cursor: pointer;
-  text-align: start;
-  transition: background-color var(--duration-fast) var(--ease-standard);
+	min-height: 44px;
+	font-size: var(--font-size-h5);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--color-text-base);
+	cursor: pointer;
+	text-align: start;
+	transition: background-color var(--duration-fast) var(--ease-standard);
 }
 
 /* Hover dims 12%, press dims 20% — no lift. The column toggle is a <button>,
    so :focus-visible is a real second channel: a keyboard user opening a
    column gets the same wash a pointer gets, not only the outline. */
 .mobileToggle:is(:hover, :focus-visible) {
-  background-color: var(--color-overlay-hover);
+	background-color: var(--color-overlay-hover);
 }
 
 .mobileToggle:active {
-  background-color: var(--color-overlay-pressed);
+	background-color: var(--color-overlay-pressed);
 }
 
 .mobileToggle:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+	outline: 2px solid var(--color-primary);
+	outline-offset: 2px;
 }
 
 .chevronUp {
-  transform: rotate(180deg);
+	transform: rotate(180deg);
 }
 
 .splitColumn {
-  display: grid;
-  grid-template-columns: repeat(var(--split-cols, 2), minmax(0, 1fr));
-  gap: var(--widget-gap);
-  align-items: start;
+	display: grid;
+	grid-template-columns: repeat(var(--split-cols, 2), minmax(0, 1fr));
+	gap: var(--widget-gap);
+	align-items: start;
 }
 
 /* Narrow tile: stack split columns by container width, not viewport — the
    same side-by-side content reflows when dropped in a sidebar tile. The
    ≤600px media rule below stays as the no-container-query fallback. */
 @container tile (max-width: 560px) {
-  .splitColumn {
-    grid-template-columns: minmax(0, 1fr);
-  }
+	.splitColumn {
+		grid-template-columns: minmax(0, 1fr);
+	}
 }
 
 .groupStack {
-  display: grid;
-  gap: var(--widget-gap);
+	display: grid;
+	gap: var(--widget-gap);
 }
 
 /* Group tabs (widget-group.css port): flat inline text, uppercase, no pills.
    Overrides Astryx TabList/Tab stylex (hover pill + white bottom indicator)
    to match the flat philosophy — borders and a dim, never a shadow. */
 .groupTabs {
-  display: flex;
-  gap: 18px;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  padding: var(--widget-content-vertical-padding)
-    var(--widget-content-horizontal-padding);
-  border-bottom: 1px solid var(--color-widget-content-border);
-  font-size: var(--font-size-h4);
-  background: transparent !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
+	display: flex;
+	gap: 18px;
+	overflow-x: auto;
+	scrollbar-width: thin;
+	padding: var(--widget-content-vertical-padding) var(--widget-content-horizontal-padding);
+	border-bottom: 1px solid var(--color-widget-content-border);
+	font-size: var(--font-size-h4);
+	background: transparent !important;
+	box-shadow: none !important;
+	border-radius: 0 !important;
 }
 
 .groupTabs button,
 .groupTabs [data-tab-value] {
-  background: transparent !important;
-  border: none !important;
-  border-bottom: 2px solid transparent !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  font: inherit !important;
-  font-size: var(--font-size-h4) !important;
-  text-transform: uppercase;
-  color: var(--color-text-base-muted) !important;
-  line-height: calc(1.6em - 2px);
-  cursor: pointer;
-  flex-shrink: 0;
-  padding: 0 !important;
-  transition: color var(--duration-fast) var(--ease-standard),
-    border-color var(--duration-fast) var(--ease-standard);
+	background: transparent !important;
+	border: none !important;
+	border-bottom: 2px solid transparent !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+	font: inherit !important;
+	font-size: var(--font-size-h4) !important;
+	text-transform: uppercase;
+	color: var(--color-text-base-muted) !important;
+	line-height: calc(1.6em - 2px);
+	cursor: pointer;
+	flex-shrink: 0;
+	padding: 0 !important;
+	transition:
+		color var(--duration-fast) var(--ease-standard),
+		border-color var(--duration-fast) var(--ease-standard);
 }
 
 /* Tabs are tappable: hover and press resolve to foreground. The accent
@@ -281,8 +277,8 @@
    pair of keyboard users the hover was written for. */
 .groupTabs button:is(:hover, :focus-visible),
 .groupTabs [data-tab-value]:is(:hover, :focus-visible) {
-  color: var(--color-text-highlight) !important;
-  border-bottom-color: var(--color-text-subdue) !important;
+	color: var(--color-text-highlight) !important;
+	border-bottom-color: var(--color-text-subdue) !important;
 }
 
 /* Press dims 20%. Hover has already resolved the label to highlight, so the
@@ -292,20 +288,20 @@
    opacity to outrank. */
 .groupTabs button:active,
 .groupTabs [data-tab-value]:active {
-  color: var(--color-text-highlight) !important;
-  border-bottom-color: var(--color-primary) !important;
-  opacity: 0.8;
+	color: var(--color-text-highlight) !important;
+	border-bottom-color: var(--color-primary) !important;
+	opacity: 0.8;
 }
 
 .groupTabs button:focus-visible,
 .groupTabs [data-tab-value]:focus-visible {
-  outline: 2px solid var(--color-primary) !important;
-  outline-offset: 2px !important;
+	outline: 2px solid var(--color-primary) !important;
+	outline-offset: 2px !important;
 }
 
 .groupTabs .groupTabCurrent {
-  border-bottom-color: var(--color-primary) !important;
-  color: var(--color-text-highlight) !important;
+	border-bottom-color: var(--color-primary) !important;
+	color: var(--color-text-highlight) !important;
 }
 
 /* Kill Astryx hover pill (first span) and selected white indicator (last span) */
@@ -313,12 +309,12 @@
 .groupTabs [data-tab-value] > span:last-child,
 .groupTabs button > span:first-child,
 .groupTabs button > span:last-child {
-  display: none !important;
+	display: none !important;
 }
 
 .tabContent {
-  padding: var(--widget-content-padding);
-  min-width: 0;
+	padding: var(--widget-content-padding);
+	min-width: 0;
 }
 
 /* Tablet (at or below 900px) — the grid follows the span vocabulary, never
@@ -337,60 +333,60 @@
    auto-fit would otherwise collapse to 1-2 tracks this narrow and let a
    span-4 hint open implicit tracks. Pin it to 6. */
 @media (max-width: 900px) {
-  .autoTiling {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
+	.autoTiling {
+		grid-template-columns: repeat(6, minmax(0, 1fr));
+	}
 }
 
 /* Mobile (at or below 600px) — single track, all spans to 1, rows auto. */
 @media (max-width: 600px) {
-  .columns {
-    grid-template-columns: 1fr;
-  }
-  .columns .column {
-    grid-column: 1 / -1;
-  }
-  /* auto grid collapses to a single track; span hints must not open
+	.columns {
+		grid-template-columns: 1fr;
+	}
+	.columns .column {
+		grid-column: 1 / -1;
+	}
+	/* auto grid collapses to a single track; span hints must not open
      implicit tracks (1 / -1 forces full width of the one explicit track) */
-  .autoTiling {
-    grid-template-columns: 1fr;
-  }
-  .autoTiling [data-span],
-  .collageTiling [data-span] {
-    grid-column: 1 / -1;
-  }
-  /* collage: single track AND force measured row spans back to 1 so a
+	.autoTiling {
+		grid-template-columns: 1fr;
+	}
+	.autoTiling [data-span],
+	.collageTiling [data-span] {
+		grid-column: 1 / -1;
+	}
+	/* collage: single track AND force measured row spans back to 1 so a
      multi-row tile can't overflow the one column */
-  .collageTiling {
-    grid-template-columns: 1fr;
-  }
-  .collageTiling [data-row-span],
-  .collageTiling > * {
-    grid-row: span 1 !important;
-  }
-  .smallColumn {
-    width: 100%;
-    flex-shrink: 1;
-  }
-  .mobileToggle {
-    display: inline-flex;
-  }
-  .mobileHeader {
-    display: flex;
-  }
-  .splitColumn {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  /* pure bento: one track per row on mobile; !important beats the base
+	.collageTiling {
+		grid-template-columns: 1fr;
+	}
+	.collageTiling [data-row-span],
+	.collageTiling > * {
+		grid-row: span 1 !important;
+	}
+	.smallColumn {
+		width: 100%;
+		flex-shrink: 1;
+	}
+	.mobileToggle {
+		display: inline-flex;
+	}
+	.mobileHeader {
+		display: flex;
+	}
+	.splitColumn {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	/* pure bento: one track per row on mobile; !important beats the base
      rule and the inline --bento-* placement vars so a compositor-placed
      tile can't open implicit tracks or overflow the single column */
-  .bentoGrid {
-    grid-template-columns: 1fr !important;
-  }
-  .bentoItem {
-    grid-column: 1 / -1 !important;
-    grid-row: auto !important;
-  }
+	.bentoGrid {
+		grid-template-columns: 1fr !important;
+	}
+	.bentoItem {
+		grid-column: 1 / -1 !important;
+		grid-row: auto !important;
+	}
 }
 
 /* Pure bento — flat widgets, compositor places via x/y/w/h. No manual columns.
@@ -398,24 +394,23 @@
    Each item is placed with grid-column/grid-row via inline --bento-* vars. */
 /* Pure bento — flat widgets, compositor places via x/y/w/h. No manual columns. */
 .bentoGrid {
-  display: grid;
-  grid-template-columns: repeat(var(--bento-cols, 12), minmax(0, 1fr));
-  grid-auto-rows: minmax(var(--bento-row, 96px), auto);
-  grid-auto-flow: dense;
-  gap: var(--widget-gap);
-  align-content: start;
+	display: grid;
+	grid-template-columns: repeat(var(--bento-cols, 12), minmax(0, 1fr));
+	grid-auto-rows: minmax(var(--bento-row, 96px), auto);
+	grid-auto-flow: dense;
+	gap: var(--widget-gap);
+	align-content: start;
 }
 .bentoItem {
-  min-width: 0;
-  grid-column: var(--bento-x, auto) / span var(--bento-w, 1);
-  grid-row: var(--bento-y, auto) / span var(--bento-h, 1);
-  container-type: inline-size;
-  container-name: tile;
+	min-width: 0;
+	grid-column: var(--bento-x, auto) / span var(--bento-w, 1);
+	grid-row: var(--bento-y, auto) / span var(--bento-h, 1);
+	container-type: inline-size;
+	container-name: tile;
 }
 
-.bentoItem[data-resizable='true'] {
-  /* resizable keeps compositor Y but lets content dictate height via minmax rows */
-  grid-row-start: var(--bento-y, auto);
-  grid-row-end: auto;
+.bentoItem[data-resizable="true"] {
+	/* resizable keeps compositor Y but lets content dictate height via minmax rows */
+	grid-row-start: var(--bento-y, auto);
+	grid-row-end: auto;
 }
-

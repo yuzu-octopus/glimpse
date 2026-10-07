@@ -1,19 +1,19 @@
 .widget {
-  min-width: 0;
+	min-width: 0;
 }
 
 /* glance widgets.css .widget-header — sits ABOVE the bordered content box,
    not inside it. Left-aligned, uppercase, mono. The title's size comes from
    the Heading level (3), not from here — two-tier hierarchy owns type. */
 .header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 calc(var(--widget-content-horizontal-padding) + 1px);
-  margin-bottom: 9px;
-  line-height: 1.4;
-  color: var(--color-text-highlight);
-  text-align: left;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 0 calc(var(--widget-content-horizontal-padding) + 1px);
+	margin-bottom: 9px;
+	line-height: 1.4;
+	color: var(--color-text-highlight);
+	text-align: left;
 }
 
 /* glance widgets.css .widget-error-header — negative status surface bleeding
@@ -22,37 +22,37 @@
    resolves through a 10% muted wash plus a semantic border, never a direct
    tint fill, and depth is the border — no soft shadow. */
 .errorHeader {
-  position: relative;
-  z-index: 1;
-  margin-bottom: 18px;
+	position: relative;
+	z-index: 1;
+	margin-bottom: 18px;
 }
 
 .errorHeader::before {
-  content: '';
-  position: absolute;
-  inset: calc(0px - (var(--widget-content-vertical-padding) / 2))
-    calc(0px - (var(--widget-content-horizontal-padding) / 2));
-  background: color-mix(in srgb, var(--color-negative) 10%, transparent);
-  border: 1px solid var(--color-error);
-  border-radius: var(--border-radius);
-  z-index: -1;
+	content: "";
+	position: absolute;
+	inset: calc(0px - (var(--widget-content-vertical-padding) / 2))
+		calc(0px - (var(--widget-content-horizontal-padding) / 2));
+	background: color-mix(in srgb, var(--color-negative) 10%, transparent);
+	border: 1px solid var(--color-error);
+	border-radius: var(--border-radius);
+	z-index: -1;
 }
 
 /* The kit Stack owns the row itself; all the title needs is a box that is
    allowed to shrink so its ellipsis can take over. */
 .titleRow {
-  min-width: 0;
+	min-width: 0;
 }
 
 .title {
-  margin: 0;
-  text-transform: uppercase;
-  color: inherit;
-  text-decoration: none;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
+	margin: 0;
+	text-transform: uppercase;
+	color: inherit;
+	text-decoration: none;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	min-width: 0;
 }
 
 /* Purple = tappable. A title that is a link wears the accent unvisited and
@@ -61,12 +61,12 @@
    the <a> nested inside it, so the keyboard channel is :focus-within — the kit
    ring lands on the link and the title follows focus down. */
 .titleLink {
-  color: var(--color-primary);
+	color: var(--color-primary);
 }
 
 .titleLink:is(:hover, :focus-within) {
-  color: var(--color-text-highlight);
-  text-decoration: underline;
+	color: var(--color-text-highlight);
+	text-decoration: underline;
 }
 
 /* Press dims 20% — every widget title on the dashboard, so the press is the
@@ -74,60 +74,60 @@
    spends itself on colour + underline, so the press steps the whole title
    down rather than restating the same resolve. */
 .titleLink:active {
-  opacity: 0.8;
+	opacity: 0.8;
 }
 
 .body {
-  min-width: 0;
+	min-width: 0;
 }
 
 /* The notice is chrome around the body, not a body row: one gap down, and it
  * never participates in the grid or rail the body may be running. */
 .notice {
-  min-width: 0;
-  padding-bottom: var(--widget-gap);
+	min-width: 0;
+	padding-bottom: var(--widget-gap);
 }
 
 .skeleton {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
 }
 
 .shapeList {
-  gap: 10px;
+	gap: 10px;
 }
 
 .shapeStat {
-  gap: 10px;
+	gap: 10px;
 }
 
 .shapeChart {
-  gap: 8px;
+	gap: 8px;
 }
 
 .shapeRows {
-  gap: 8px;
+	gap: 8px;
 }
 
 /* A skeleton line's text block fills the row and keeps shrinking. */
 .listLines {
-  flex: 1;
-  min-width: 0;
+	flex: 1;
+	min-width: 0;
 }
 
 /* The chevron beside a toggle's label, collapsed (down). The rotation is the
    expand action answering, which motion is for. */
 .chevron {
-  position: relative;
-  top: -2px;
-  flex-shrink: 0;
-  transform: rotate(90deg);
-  transition: transform var(--duration-fast) var(--ease-standard);
+	position: relative;
+	top: -2px;
+	flex-shrink: 0;
+	transform: rotate(90deg);
+	transition: transform var(--duration-fast) var(--ease-standard);
 }
 
 .chevronExpanded {
-  transform: rotate(-90deg);
+	transform: rotate(-90deg);
 }
 
 /* The shared chrome's toggle is the kit's ghost Button: the kit owns the
@@ -135,8 +135,7 @@
    glance block shape it does not — full-bleed, start-aligned, and the
    widget's own vertical padding as the hit area. */
 .toggle {
-  justify-content: flex-start;
-  text-transform: uppercase;
-  padding: var(--widget-content-vertical-padding) 0;
+	justify-content: flex-start;
+	text-transform: uppercase;
+	padding: var(--widget-content-vertical-padding) 0;
 }
-

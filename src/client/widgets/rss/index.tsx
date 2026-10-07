@@ -1,231 +1,257 @@
-import { useState } from 'react';
-import { Button, ClickableCard } from '@astryxdesign/core';
-import { ChevronRight } from 'lucide-react';
-import type { RssConfig } from '../../../shared/widgets/feeds';
-import { WidgetChrome } from '../../components/WidgetChrome';
-import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import { formatAge, useRelativeTime } from '../_hooks/useRelativeTime';
-import type { RssItem } from '../../../shared/widgets/payloads';
-import styles from './rss.module.css';
-import Feed, { type FeedItem } from '../feed/feed';
-
+import { Button, ClickableCard } from "@astryxdesign/core";
+import { ChevronRight } from "lucide-react";
+import { useState } from "react";
+import type { RssConfig } from "../../../shared/widgets/feeds";
+import type { RssItem } from "../../../shared/widgets/payloads";
+import { WidgetChrome } from "../../components/WidgetChrome";
+import { formatAge, useRelativeTime } from "../_hooks/useRelativeTime";
+import Feed, { type FeedItem } from "../feed/feed";
+import { registerWidgetComponent, type WidgetComponentProps } from "../registry";
+import styles from "./rss.module.css";
 
 // glance image-placeholder icon (heroicons photo, stroke inherits)
 const IMAGE_ICON_PATH =
-  'm2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z';
+	"m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z";
 
 function ImageIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="var(--color-text-base-muted)"
-      strokeWidth={1.5}
-      aria-hidden="true"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d={IMAGE_ICON_PATH} />
-    </svg>
-  );
+	return (
+		<svg
+			className={className}
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="var(--color-text-base-muted)"
+			strokeWidth={1.5}
+			aria-hidden="true"
+		>
+			<path strokeLinecap="round" strokeLinejoin="round" d={IMAGE_ICON_PATH} />
+		</svg>
+	);
 }
 
 function toFeedItems(items: RssItem[], detailed: boolean): FeedItem[] {
-  return items.map((item) => {
-    const ageSec = item.published ? (Date.now() - Date.parse(item.published)) / 1000 : 0;
-    const meta = item.published ? `${item.source} · ${formatAge(ageSec)}` : item.source;
-    return {
-      title: item.title,
-      url: item.url,
-      meta,
-      description: detailed ? item.description : null,
-      tags: detailed ? item.categories ?? [] : [],
-      image: detailed ? item.thumbnail : null,
-    };
-  });
+	return items.map((item) => {
+		const ageSec = item.published ? (Date.now() - Date.parse(item.published)) / 1000 : 0;
+		const meta = item.published ? `${item.source} · ${formatAge(ageSec)}` : item.source;
+		return {
+			title: item.title,
+			url: item.url,
+			meta,
+			description: detailed ? item.description : null,
+			tags: detailed ? (item.categories ?? []) : [],
+			image: detailed ? item.thumbnail : null,
+		};
+	});
 }
 
-function Cards({ items, title, titleUrl, hideHeader, cssClass, cardHeight, thumbnailHeight, overlay, error, showErrors, isLoading }: {
-  items: RssItem[]; title?: string; titleUrl?: string; hideHeader?: boolean; cssClass?: string;
-  cardHeight?: number; thumbnailHeight?: number; overlay?: boolean; error?: string; showErrors?: boolean; isLoading?: boolean;
+function Cards({
+	items,
+	title,
+	titleUrl,
+	hideHeader,
+	cssClass,
+	cardHeight,
+	thumbnailHeight,
+	overlay,
+	error,
+	showErrors,
+	isLoading,
+}: {
+	items: RssItem[];
+	title?: string;
+	titleUrl?: string;
+	hideHeader?: boolean;
+	cssClass?: string;
+	cardHeight?: number;
+	thumbnailHeight?: number;
+	overlay?: boolean;
+	error?: string;
+	showErrors?: boolean;
+	isLoading?: boolean;
 }) {
-  return (
-    <WidgetChrome title={title} titleUrl={titleUrl} hideHeader={hideHeader} cssClass={cssClass} error={error} showErrors={showErrors} isLoading={isLoading}>
-      <div className={styles.cardRow}>
-        {items.map((item) =>
-          overlay ? (
-            <ClickableCard
-              key={item.url}
-              label={item.title}
-              href={item.url}
-              target="_blank"
-              padding={0}
-              className={styles.card2}
-              // The height rides inline, not on the `height` prop: a card
-              // with a fixed height switches the kit to `overflow: auto`,
-              // and this tile's gradient overlay must stay clipped, not
-              // scrollable.
-              style={cardHeight ? { height: cardHeight } : undefined}
-            >
-              {item.thumbnail ? (
-                <img src={item.thumbnail} alt="" loading="lazy" className={styles.card2Thumb} />
-              ) : (
-                <ImageIcon className={styles.card2ThumbPlaceholder} />
-              )}
-              <div className={styles.card2Content}>
-                <span className={styles.card2Title}>{item.title}</span>
-                <div className={styles.cardMeta}>
-                  <span>{item.source}</span>
-                  {item.published ? <span>· {formatAge((Date.now() - Date.parse(item.published)) / 1000)}</span> : null}
-                </div>
-              </div>
-            </ClickableCard>
-          ) : (
-            <ClickableCard
-              key={item.url}
-              label={item.title}
-              href={item.url}
-              target="_blank"
-              padding={0}
-              className={styles.card}
-            >
-              {item.thumbnail ? (
-                <img
-                  src={item.thumbnail}
-                  alt=""
-                  loading="lazy"
-                  className={styles.cardThumb}
-                  style={{ height: thumbnailHeight ?? 160 }}
-                />
-              ) : (
-                <div className={styles.cardThumbPlaceholder} style={{ height: thumbnailHeight ?? 160 }}>
-                  <ImageIcon className={styles.cardThumbPlaceholderIcon} />
-                </div>
-              )}
-              <div className={styles.cardContent}>
-                <span className={styles.cardTitle}>{item.title}</span>
-                <div className={styles.cardMeta}>
-                  <span>{item.source}</span>
-                  {item.published ? <span>· {formatAge((Date.now() - Date.parse(item.published)) / 1000)}</span> : null}
-                </div>
-              </div>
-            </ClickableCard>
-          ),
-        )}
-      </div>
-    </WidgetChrome>
-  );
+	return (
+		<WidgetChrome
+			title={title}
+			titleUrl={titleUrl}
+			hideHeader={hideHeader}
+			cssClass={cssClass}
+			error={error}
+			showErrors={showErrors}
+			isLoading={isLoading}
+		>
+			<div className={styles.cardRow}>
+				{items.map((item) =>
+					overlay ? (
+						<ClickableCard
+							key={item.url}
+							label={item.title}
+							href={item.url}
+							target="_blank"
+							padding={0}
+							className={styles.card2}
+							// The height rides inline, not on the `height` prop: a card
+							// with a fixed height switches the kit to `overflow: auto`,
+							// and this tile's gradient overlay must stay clipped, not
+							// scrollable.
+							style={cardHeight ? { height: cardHeight } : undefined}
+						>
+							{item.thumbnail ? (
+								<img src={item.thumbnail} alt="" loading="lazy" className={styles.card2Thumb} />
+							) : (
+								<ImageIcon className={styles.card2ThumbPlaceholder} />
+							)}
+							<div className={styles.card2Content}>
+								<span className={styles.card2Title}>{item.title}</span>
+								<div className={styles.cardMeta}>
+									<span>{item.source}</span>
+									{item.published ? (
+										<span>· {formatAge((Date.now() - Date.parse(item.published)) / 1000)}</span>
+									) : null}
+								</div>
+							</div>
+						</ClickableCard>
+					) : (
+						<ClickableCard
+							key={item.url}
+							label={item.title}
+							href={item.url}
+							target="_blank"
+							padding={0}
+							className={styles.card}
+						>
+							{item.thumbnail ? (
+								<img
+									src={item.thumbnail}
+									alt=""
+									loading="lazy"
+									className={styles.cardThumb}
+									style={{ height: thumbnailHeight ?? 160 }}
+								/>
+							) : (
+								<div
+									className={styles.cardThumbPlaceholder}
+									style={{ height: thumbnailHeight ?? 160 }}
+								>
+									<ImageIcon className={styles.cardThumbPlaceholderIcon} />
+								</div>
+							)}
+							<div className={styles.cardContent}>
+								<span className={styles.cardTitle}>{item.title}</span>
+								<div className={styles.cardMeta}>
+									<span>{item.source}</span>
+									{item.published ? (
+										<span>· {formatAge((Date.now() - Date.parse(item.published)) / 1000)}</span>
+									) : null}
+								</div>
+							</div>
+						</ClickableCard>
+					),
+				)}
+			</div>
+		</WidgetChrome>
+	);
 }
 
 /** glance semantics: only a non-negative `collapse-after` truncates, and only
  *  when there is actually something hidden behind the toggle. `hidden` is the
  *  count the button promises, so the two never disagree. */
 function collapseSlice<T>(
-  items: T[],
-  after: number | undefined,
-  expanded: boolean,
+	items: T[],
+	after: number | undefined,
+	expanded: boolean,
 ): { has: boolean; hidden: number; visible: T[] } {
-  const has = typeof after === 'number' && after >= 0 && items.length > after;
-  return {
-    has,
-    hidden: has ? items.length - (after as number) : 0,
-    visible: has && !expanded ? items.slice(0, after) : items,
-  };
+	const has = typeof after === "number" && after >= 0 && items.length > after;
+	return {
+		has,
+		hidden: has ? items.length - (after as number) : 0,
+		visible: has && !expanded ? items.slice(0, after) : items,
+	};
 }
 
 function ShowMore({
-  expanded,
-  hidden,
-  onToggle,
+	expanded,
+	hidden,
+	onToggle,
 }: {
-  expanded: boolean;
-  hidden: number;
-  onToggle: () => void;
+	expanded: boolean;
+	hidden: number;
+	onToggle: () => void;
 }) {
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      label={expanded ? 'Show less' : `Show more (${hidden})`}
-      endContent={<ChevronRight size={12} />}
-      onClick={onToggle}
-    />
-  );
+	return (
+		<Button
+			variant="ghost"
+			size="sm"
+			label={expanded ? "Show less" : `Show more (${hidden})`}
+			endContent={<ChevronRight size={12} />}
+			onClick={onToggle}
+		/>
+	);
 }
 
 function Rss({ config, data, error, isLoading }: WidgetComponentProps) {
-  // ticker drives relative times live without per-row timers
-  useRelativeTime(0);
-  const cfg = config as unknown as RssConfig;
-  const loading = isLoading ?? ((data as unknown) == null && !error);
-  const items = ((data as { items?: RssItem[] } | null)?.items ?? []) as RssItem[];
-  const style = cfg.style ?? 'vertical-list';
-  const collapseAfter = cfg['collapse-after'];
-  const title =
-    cfg.title ?? (cfg['source-header'] ? cfg.feeds[0]?.title ?? 'RSS' : undefined);
-  const detailed = style === 'detailed-list';
-  const singleLine = cfg['single-line-titles'] === true;
-  const feedItems = toFeedItems(items, detailed);
-  const [expanded, setExpanded] = useState(false);
-  const { has: hasCollapse, hidden, visible } = collapseSlice(
-    feedItems,
-    collapseAfter,
-    expanded,
-  );
+	// ticker drives relative times live without per-row timers
+	useRelativeTime(0);
+	const cfg = config as unknown as RssConfig;
+	const loading = isLoading ?? ((data as unknown) == null && !error);
+	const items = ((data as { items?: RssItem[] } | null)?.items ?? []) as RssItem[];
+	const style = cfg.style ?? "vertical-list";
+	const collapseAfter = cfg["collapse-after"];
+	const title = cfg.title ?? (cfg["source-header"] ? (cfg.feeds[0]?.title ?? "RSS") : undefined);
+	const detailed = style === "detailed-list";
+	const singleLine = cfg["single-line-titles"] === true;
+	const feedItems = toFeedItems(items, detailed);
+	const [expanded, setExpanded] = useState(false);
+	const { has: hasCollapse, hidden, visible } = collapseSlice(feedItems, collapseAfter, expanded);
 
-  if (loading) {
-    return (
-      <WidgetChrome
-        title={title}
-        titleUrl={cfg['title-url']}
-        hideHeader={cfg['hide-header']}
-        cssClass={cfg['css-class']}
-        isLoading
-        error={error}
-        showErrors={cfg['show-errors']}
-      />
-    );
-  }
+	if (loading) {
+		return (
+			<WidgetChrome
+				title={title}
+				titleUrl={cfg["title-url"]}
+				hideHeader={cfg["hide-header"]}
+				cssClass={cfg["css-class"]}
+				isLoading
+				error={error}
+				showErrors={cfg["show-errors"]}
+			/>
+		);
+	}
 
-  if (style === 'horizontal-cards' || style === 'horizontal-cards-2') {
-    return (
-      <Cards
-        items={items}
-        title={title}
-        titleUrl={cfg['title-url']}
-        hideHeader={cfg['hide-header']}
-        cssClass={cfg['css-class']}
-        cardHeight={cfg['card-height']}
-        thumbnailHeight={cfg['thumbnail-height']}
-        overlay={cfg['overlay'] === true}
-        error={error}
-        showErrors={cfg['show-errors']}
-        isLoading={loading}
-      />
-    );
-  }
+	if (style === "horizontal-cards" || style === "horizontal-cards-2") {
+		return (
+			<Cards
+				items={items}
+				title={title}
+				titleUrl={cfg["title-url"]}
+				hideHeader={cfg["hide-header"]}
+				cssClass={cfg["css-class"]}
+				cardHeight={cfg["card-height"]}
+				thumbnailHeight={cfg["thumbnail-height"]}
+				overlay={cfg["overlay"] === true}
+				error={error}
+				showErrors={cfg["show-errors"]}
+				isLoading={loading}
+			/>
+		);
+	}
 
-  return (
-    <WidgetChrome
-      title={title}
-      titleUrl={cfg['title-url']}
-      hideHeader={cfg['hide-header']}
-      cssClass={cfg['css-class']}
-      isLoading={loading}
-      error={error}
-      showErrors={cfg['show-errors']}
-    >
-      <Feed items={visible} layout="list" singleLine={singleLine} emptyText="No feed items" />
-      {hasCollapse ? (
-        <ShowMore
-          expanded={expanded}
-          hidden={hidden}
-          onToggle={() => setExpanded(!expanded)}
-        />
-      ) : null}
-    </WidgetChrome>
-  );
+	return (
+		<WidgetChrome
+			title={title}
+			titleUrl={cfg["title-url"]}
+			hideHeader={cfg["hide-header"]}
+			cssClass={cfg["css-class"]}
+			isLoading={loading}
+			error={error}
+			showErrors={cfg["show-errors"]}
+		>
+			<Feed items={visible} layout="list" singleLine={singleLine} emptyText="No feed items" />
+			{hasCollapse ? (
+				<ShowMore expanded={expanded} hidden={hidden} onToggle={() => setExpanded(!expanded)} />
+			) : null}
+		</WidgetChrome>
+	);
 }
 
-registerWidgetComponent('rss', Rss);
+registerWidgetComponent("rss", Rss);
 
 export default Rss;

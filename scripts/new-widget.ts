@@ -11,28 +11,28 @@
  * - loader line in src/client/widgets/index.ts
  * Prints a YAML example snippet on success.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
-const root = join(dirname(new URL(import.meta.url).pathname), '..');
+const root = join(dirname(new URL(import.meta.url).pathname), "..");
 
 function fail(msg: string): never {
-  console.error(`new-widget: ${msg}`);
-  process.exit(1);
+	console.error(`new-widget: ${msg}`);
+	process.exit(1);
 }
 
 const kebab = process.argv[2];
-if (!kebab) fail('usage: bun run new-widget <kebab-name>');
+if (!kebab) fail("usage: bun run new-widget <kebab-name>");
 if (!/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/.test(kebab)) {
-  fail(`"${kebab}" is not kebab-case (e.g. my-widget)`);
+	fail(`"${kebab}" is not kebab-case (e.g. my-widget)`);
 }
 
 const pascal = kebab
-  .split('-')
-  .map((s) => s[0].toUpperCase() + s.slice(1))
-  .join('');
+	.split("-")
+	.map((s) => s[0].toUpperCase() + s.slice(1))
+	.join("");
 const camel = pascal[0].toLowerCase() + pascal.slice(1);
-const upper = kebab.replace(/-/g, '_').toUpperCase();
+const upper = kebab.replace(/-/g, "_").toUpperCase();
 const schemaVar = `${camel}Schema`;
 const prefVar = `${upper}_PREF`;
 const skelVar = `${upper}_SKELETON`;
@@ -44,22 +44,22 @@ const sharedFile = join(root, `src/shared/widgets/${kebab}.ts`);
 const serverFile = join(root, `src/server/widgets/${kebab}.ts`);
 const serverTest = join(root, `src/server/widgets/${kebab}.test.ts`);
 const clientDir = join(root, `src/client/widgets/${kebab}`);
-const clientFile = join(clientDir, 'index.tsx');
+const clientFile = join(clientDir, "index.tsx");
 const clientTest = join(clientDir, `${kebab}.test.tsx`);
 
 for (const f of [sharedFile, serverFile, serverTest, clientFile, clientTest]) {
-  if (existsSync(f)) fail(`${f} already exists`);
+	if (existsSync(f)) fail(`${f} already exists`);
 }
 
 function insertOnce(file: string, anchor: string, replacement: string): void {
-  const src = readFileSync(file, 'utf8');
-  if (!src.includes(anchor)) fail(`${file}: anchor not found: ${JSON.stringify(anchor)}`);
-  writeFileSync(file, src.replace(anchor, replacement));
+	const src = readFileSync(file, "utf8");
+	if (!src.includes(anchor)) fail(`${file}: anchor not found: ${JSON.stringify(anchor)}`);
+	writeFileSync(file, src.replace(anchor, replacement));
 }
 
 writeFileSync(
-  sharedFile,
-  `import { z } from 'zod';
+	sharedFile,
+	`import { z } from 'zod';
 import { sharedWidgetFields, type Pref, type SkeletonShape } from './shared';
 
 export const ${defaultsVar} = { text: 'hello' } as const;
@@ -87,22 +87,22 @@ export type ${configType} = z.infer<typeof ${schemaVar}>;
 );
 
 // Wire the schema into the shared registry (import + union entry + meta row).
-const sharedIndex = join(root, 'src/shared/widgets/index.ts');
+const sharedIndex = join(root, "src/shared/widgets/index.ts");
 insertOnce(
-  sharedIndex,
-  `import type { Pref, SkeletonShape } from './shared';`,
-  `import { ${schemaVar}, ${prefVar}, ${skelVar} } from './${kebab}';\nimport type { Pref, SkeletonShape } from './shared';`,
+	sharedIndex,
+	`import type { Pref, SkeletonShape } from './shared';`,
+	`import { ${schemaVar}, ${prefVar}, ${skelVar} } from './${kebab}';\nimport type { Pref, SkeletonShape } from './shared';`,
 );
 insertOnce(sharedIndex, `] as const;`, `  ${schemaVar},\n] as const;`);
 insertOnce(
-  sharedIndex,
-  `} as const satisfies`,
-  `  '${kebab}': { schema: ${schemaVar}, pref: ${prefVar}, skeleton: ${skelVar} },\n} as const satisfies`,
+	sharedIndex,
+	`} as const satisfies`,
+	`  '${kebab}': { schema: ${schemaVar}, pref: ${prefVar}, skeleton: ${skelVar} },\n} as const satisfies`,
 );
 
 writeFileSync(
-  serverFile,
-  `import { ${schemaVar} } from '../../shared/widgets/${kebab}';
+	serverFile,
+	`import { ${schemaVar} } from '../../shared/widgets/${kebab}';
 import { registerWidget } from './registry';
 
 export interface ${dataType} {
@@ -117,8 +117,8 @@ registerWidget('${kebab}', async (_ctx, config): Promise<${dataType}> => {
 );
 
 writeFileSync(
-  serverTest,
-  `import { describe, expect, it } from 'vitest';
+	serverTest,
+	`import { describe, expect, it } from 'vitest';
 import { Singleflight, TtlCache } from '../cache';
 import { serverWidgets, type WidgetFetchContext } from './registry';
 import './${kebab}';
@@ -155,19 +155,19 @@ describe('${kebab} fetcher', () => {
 );
 
 // Server registry: side-effect import alongside the other widgets.
-const serverIndex = join(root, 'src/server/widgets/index.ts');
+const serverIndex = join(root, "src/server/widgets/index.ts");
 {
-  const lines = readFileSync(serverIndex, 'utf8').split('\n');
-  const last = lines.reduce((acc, l, i) => (l.startsWith("import './") ? i : acc), -1);
-  if (last === -1) fail(`${serverIndex}: no side-effect imports found`);
-  lines.splice(last + 1, 0, `import './${kebab}';`);
-  writeFileSync(serverIndex, lines.join('\n'));
+	const lines = readFileSync(serverIndex, "utf8").split("\n");
+	const last = lines.reduce((acc, l, i) => (l.startsWith("import './") ? i : acc), -1);
+	if (last === -1) fail(`${serverIndex}: no side-effect imports found`);
+	lines.splice(last + 1, 0, `import './${kebab}';`);
+	writeFileSync(serverIndex, lines.join("\n"));
 }
 
 mkdirSync(clientDir, { recursive: true });
 writeFileSync(
-  clientFile,
-  `import type { ${configType} } from '../../../shared/widgets/${kebab}';
+	clientFile,
+	`import type { ${configType} } from '../../../shared/widgets/${kebab}';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
 
@@ -195,8 +195,8 @@ export default ${pascal};
 );
 
 writeFileSync(
-  clientTest,
-  `import { render, screen } from '@testing-library/react';
+	clientTest,
+	`import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import ${pascal} from './index';
 
@@ -220,12 +220,8 @@ describe('${kebab} widget', () => {
 );
 
 // Client registry: lazy loader chunk.
-const clientIndex = join(root, 'src/client/widgets/index.ts');
-insertOnce(
-  clientIndex,
-  `\n};`,
-  `\n  '${kebab}': () => import('./${kebab}'),\n};`,
-);
+const clientIndex = join(root, "src/client/widgets/index.ts");
+insertOnce(clientIndex, `\n};`, `\n  '${kebab}': () => import('./${kebab}'),\n};`);
 
 console.log(`created:
   ${sharedFile}

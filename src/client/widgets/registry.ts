@@ -1,11 +1,11 @@
-import type { ComponentType } from 'react';
-import type { WidgetType } from '../../shared/config';
+import type { ComponentType } from "react";
+import type { WidgetType } from "../../shared/config";
 
 export interface WidgetComponentProps {
-  config: Record<string, unknown>;
-  data: unknown;
-  error?: string;
-  isLoading?: boolean;
+	config: Record<string, unknown>;
+	data: unknown;
+	error?: string;
+	isLoading?: boolean;
 }
 
 export type WidgetComponent = ComponentType<WidgetComponentProps>;
@@ -17,9 +17,6 @@ export type WidgetComponent = ComponentType<WidgetComponentProps>;
  */
 export const clientWidgets = new Map<WidgetType, WidgetComponent>();
 
-export function registerWidgetComponent(
-  type: WidgetType,
-  component: WidgetComponent,
-): void {
-  clientWidgets.set(type, component);
+export function registerWidgetComponent(type: WidgetType, component: WidgetComponent): void {
+	clientWidgets.set(type, component);
 }

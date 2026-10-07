@@ -9,48 +9,48 @@
    exists for: without it the card body is an empty rail that reads as a
    failed render rather than an all-clear. */
 .empty {
-  padding: 12px;
-  color: var(--color-text-base-muted);
+	padding: 12px;
+	color: var(--color-text-base-muted);
 }
 
 .row {
-  padding-block: 2px;
+	padding-block: 2px;
 }
 
 /* A row whose child is a link is tappable, so it wears the same translucent
    overlay wash Feed, Docker and Markets rows carry — a hover reads the same
    in any list. The link is the row's focus channel. */
 .row:is(:hover, :focus-within) {
-  background-color: var(--color-overlay-hover);
-  border-radius: var(--border-radius);
+	background-color: var(--color-overlay-hover);
+	border-radius: var(--border-radius);
 }
 
 .row + .row {
-  margin-top: 8px;
-  border-top: 1px solid var(--color-separator);
-  padding-top: 8px;
+	margin-top: 8px;
+	border-top: 1px solid var(--color-separator);
+	padding-top: 8px;
 }
 
 .compact .row {
-  padding-block: 0;
+	padding-block: 0;
 }
 
 .compact .row + .row {
-  margin-top: 8px;
-  border-top: none;
-  padding-top: 0;
+	margin-top: 8px;
+	border-top: none;
+	padding-top: 0;
 }
 
 .compact .title,
 .compact .url,
 .compact .ms {
-  font-size: 12px;
+	font-size: 12px;
 }
 
 /* The dot is 8px and the row baseline is the 14px text baseline: nudge the
    dot so it sits on the text's optical centre rather than the line box top. */
 .row > :first-child {
-  align-self: center;
+	align-self: center;
 }
 
 /* glance .monitor-site-icon: 3.2rem square, desaturated until hover. The
@@ -60,29 +60,29 @@
    :focus-within is the keyboard's equivalent channel — the row's link is
    its focusable child. */
 .icon {
-  display: block;
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-  flex-shrink: 0;
+	display: block;
+	width: 24px;
+	height: 24px;
+	object-fit: contain;
+	flex-shrink: 0;
 }
 
 @media (hover: hover) {
-  .icon {
-    opacity: 0.8;
-    filter: grayscale(0.4);
-  }
+	.icon {
+		opacity: 0.8;
+		filter: grayscale(0.4);
+	}
 
-  .row:is(:hover, :focus-within) .icon {
-    opacity: 1;
-    filter: grayscale(0);
-  }
+	.row:is(:hover, :focus-within) .icon {
+		opacity: 1;
+		filter: grayscale(0);
+	}
 }
 
 /* glance .flat-icon: simple-icons and mdi glyphs are black paths with no
    fill, so on a dark-only theme they are invisible until inverted. */
 .iconAutoInvert {
-  filter: invert(1);
+	filter: invert(1);
 }
 
 /* The hover rule above is (0,3,0) and wins over a bare .iconAutoInvert
@@ -90,35 +90,35 @@
    glyphs that cannot render without it. Same value one class deeper, so the
    invert survives hover and focus alike. */
 .row:is(:hover, :focus-within) .iconAutoInvert {
-  filter: invert(1);
+	filter: invert(1);
 }
 
 .rowBody {
-  flex: 1;
-  min-width: 0;
-  align-items: baseline;
+	flex: 1;
+	min-width: 0;
+	align-items: baseline;
 }
 
 .title {
-  flex-shrink: 1;
-  min-width: 0;
-  /* WCAG 2.5.8: a site title is one 20px line box, so without a floor the
+	flex-shrink: 1;
+	min-width: 0;
+	/* WCAG 2.5.8: a site title is one 20px line box, so without a floor the
    * link is a 20px target. The row gives back the 4px it took in padding
    * above, so the row height is unchanged. */
-  min-height: 24px;
+	min-height: 24px;
 }
 
 .url {
-  flex: 1;
-  min-width: 0;
+	flex: 1;
+	min-width: 0;
 }
 
 .ms {
-  flex-shrink: 0;
+	flex-shrink: 0;
 }
 
 /* The HTTP code, left of the latency. Both are fixed-width facts, so neither
    may be squeezed when a long URL needs the room. */
 .status {
-  flex-shrink: 0;
+	flex-shrink: 0;
 }

@@ -1,22 +1,22 @@
 /* Timer widget — circular ring + center time + tabs + notepad. */
 
 .wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: var(--widget-content-vertical-padding) var(--widget-content-horizontal-padding);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	padding: var(--widget-content-vertical-padding) var(--widget-content-horizontal-padding);
 }
 
 .ringButton {
-  position: relative;
-  width: 140px;
-  height: 140px;
-  padding: 0;
-  border: none;
-  background: none;
-  cursor: pointer;
-  border-radius: 50%;
+	position: relative;
+	width: 140px;
+	height: 140px;
+	padding: 0;
+	border: none;
+	background: none;
+	cursor: pointer;
+	border-radius: 50%;
 }
 
 /* The dial is a real <button> and the widget's primary tap target, so it
@@ -26,76 +26,75 @@
    Scoped to `button` so the editing state — the same class on a plain div
    around the duration input — stays static. */
 button.ringButton:is(:hover, :focus-visible) {
-  background-color: var(--color-overlay-hover);
+	background-color: var(--color-overlay-hover);
 }
 
 button.ringButton:active {
-  background-color: var(--color-overlay-pressed);
+	background-color: var(--color-overlay-pressed);
 }
 
 .ringButton:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+	outline: 2px solid var(--color-primary);
+	outline-offset: 2px;
 }
 
 .ring {
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
+	width: 100%;
+	height: 100%;
+	transform: rotate(-90deg);
 }
 
 /* `--ring-hue` is supplied inline from the kit's CHART_HUES. Purple is
    deliberately not an option: it means tappable, so it never encodes data. */
 .ringTrack {
-  fill: none;
-  /* The arc reads against the track, so the track is the same hue at 10%
+	fill: none;
+	/* The arc reads against the track, so the track is the same hue at 10%
      — a wash, not a second full-strength stroke. */
-  stroke: color-mix(in srgb, var(--ring-hue) 10%, transparent);
-  stroke-width: 6;
+	stroke: color-mix(in srgb, var(--ring-hue) 10%, transparent);
+	stroke-width: 6;
 }
 
 .ringValue {
-  fill: none;
-  stroke: var(--ring-hue);
-  stroke-width: 6;
-  stroke-linecap: round;
-  transition: stroke-dashoffset 0.25s linear;
+	fill: none;
+	stroke: var(--ring-hue);
+	stroke-width: 6;
+	stroke-linecap: round;
+	transition: stroke-dashoffset 0.25s linear;
 }
 
 .ringDone {
-  stroke: var(--color-positive);
+	stroke: var(--color-positive);
 }
 
 .timeText {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--font-size-h1);
-  font-weight: 600;
-  color: var(--color-text-highlight);
-  font-variant-numeric: tabular-nums;
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: var(--font-size-h1);
+	font-weight: 600;
+	color: var(--color-text-highlight);
+	font-variant-numeric: tabular-nums;
 }
 
 .timeInput {
-  position: absolute;
-  inset: 0;
-  width: 80%;
-  margin: auto;
-  height: var(--font-size-h1);
-  border: none;
-  background: transparent;
-  color: var(--color-text-highlight);
-  font-family: inherit;
-  font-size: var(--font-size-h1);
-  font-weight: 600;
-  text-align: center;
-  outline: none;
+	position: absolute;
+	inset: 0;
+	width: 80%;
+	margin: auto;
+	height: var(--font-size-h1);
+	border: none;
+	background: transparent;
+	color: var(--color-text-highlight);
+	font-family: inherit;
+	font-size: var(--font-size-h1);
+	font-weight: 600;
+	text-align: center;
+	outline: none;
 }
 
 .controls {
-  display: flex;
-  gap: 8px;
+	display: flex;
+	gap: 8px;
 }
-

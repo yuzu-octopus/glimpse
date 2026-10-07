@@ -1,30 +1,31 @@
-import { videosSchema } from '../../shared/widgets/keyed';
-import { fetchText, fetchWithRetry, retryOptionsFrom, type RetryOptions } from './http';
-import { registerWidget } from './registry';
-import type { Video, VideoSourceIssue, VideosData } from '../../shared/widgets/payloads';
-import type { WidgetFetchContext } from './registry';
-import { STATIC_TTL_MS } from '../../shared/live';
-import { getBXML } from './xml';
+import { STATIC_TTL_MS } from "../../shared/live";
+import { videosSchema } from "../../shared/widgets/keyed";
+import type { Video, VideoSourceIssue, VideosData } from "../../shared/widgets/payloads";
+import { fetchText, fetchWithRetry, type RetryOptions, retryOptionsFrom } from "./http";
+import type { WidgetFetchContext } from "./registry";
+import { registerWidget } from "./registry";
+import { getBXML } from "./xml";
 
-const YT_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+const YT_UA =
+	"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 const FALLBACK_LIMIT = 15;
-const YTDATA_MARKERS = ['var ytInitialData = ', 'window["ytInitialData"] = ', 'ytInitialData = '];
+const YTDATA_MARKERS = ["var ytInitialData = ", 'window["ytInitialData"] = ', "ytInitialData = "];
 
 /** Legacy channel-grid renderers, all of which carry `videoId` + `title`. */
 const RENDERER_ID_KEYS: Record<string, true> = {
-  videoRenderer: true,
-  gridVideoRenderer: true,
-  compactVideoRenderer: true,
-  playlistVideoRenderer: true,
-  reelItemRenderer: true,
+	videoRenderer: true,
+	gridVideoRenderer: true,
+	compactVideoRenderer: true,
+	playlistVideoRenderer: true,
+	reelItemRenderer: true,
 };
 
 /** A YouTube video id is exactly 11 url-safe base64 chars. Used both to pick
  * real videos out of the channel page and — the regression guard — to reject
  * any title that is really just an id that leaked through as a title. */
 function isVideoId(value: string): boolean {
-  return /^[A-Za-z0-9_-]{11}$/.test(value.trim());
+	return /^[A-Za-z0-9_-]{11}$/.test(value.trim());
 }
 
 /** Read a YouTube text node in every documented shape: `{content}` (lockup
@@ -32,54 +33,54 @@ function isVideoId(value: string): boolean {
  * bare strings. Node keys change when YouTube redesigns; the text shape does
  * not, so walk the keys instead of pinning one renderer. */
 function readText(node: unknown): string {
-  if (typeof node === 'string') return node;
-  if (Array.isArray(node)) return node.map(readText).join('');
-  if (!node || typeof node !== 'object') return '';
-  const obj = node as Record<string, unknown>;
-  for (const key of ['content', 'simpleText', 'text', 'runs']) {
-    if (obj[key] === undefined) continue;
-    const text = readText(obj[key]);
-    if (text) return text;
-  }
-  return '';
+	if (typeof node === "string") return node;
+	if (Array.isArray(node)) return node.map(readText).join("");
+	if (!node || typeof node !== "object") return "";
+	const obj = node as Record<string, unknown>;
+	for (const key of ["content", "simpleText", "text", "runs"]) {
+		if (obj[key] === undefined) continue;
+		const text = readText(obj[key]);
+		if (text) return text;
+	}
+	return "";
 }
 
 /** Index of the `}` closing the `{` at `start`, string-literal aware. */
 function matchBraces(src: string, start: number): number {
-  let depth = 0;
-  let inString = false;
-  let escaped = false;
-  for (let i = start; i < src.length; i++) {
-    const c = src[i];
-    if (inString) {
-      if (escaped) escaped = false;
-      else if (c === '\\') escaped = true;
-      else if (c === '"') inString = false;
-      continue;
-    }
-    if (c === '"') inString = true;
-    else if (c === '{') depth++;
-    else if (c === '}' && --depth === 0) return i;
-  }
-  return -1;
+	let depth = 0;
+	let inString = false;
+	let escaped = false;
+	for (let i = start; i < src.length; i++) {
+		const c = src[i];
+		if (inString) {
+			if (escaped) escaped = false;
+			else if (c === "\\") escaped = true;
+			else if (c === '"') inString = false;
+			continue;
+		}
+		if (c === '"') inString = true;
+		else if (c === "{") depth++;
+		else if (c === "}" && --depth === 0) return i;
+	}
+	return -1;
 }
 
 /** YouTube ships the whole channel page as one `ytInitialData` JSON blob. */
 function extractYtInitialData(html: string): unknown {
-  for (const marker of YTDATA_MARKERS) {
-    const at = html.indexOf(marker);
-    if (at === -1) continue;
-    const start = html.indexOf('{', at + marker.length);
-    if (start === -1) continue;
-    const end = matchBraces(html, start);
-    if (end === -1) continue;
-    try {
-      return JSON.parse(html.slice(start, end + 1)) as unknown;
-    } catch {
-      // malformed blob (truncated page, consent interstitial) — try the next marker
-    }
-  }
-  return null;
+	for (const marker of YTDATA_MARKERS) {
+		const at = html.indexOf(marker);
+		if (at === -1) continue;
+		const start = html.indexOf("{", at + marker.length);
+		if (start === -1) continue;
+		const end = matchBraces(html, start);
+		if (end === -1) continue;
+		try {
+			return JSON.parse(html.slice(start, end + 1)) as unknown;
+		} catch {
+			// malformed blob (truncated page, consent interstitial) — try the next marker
+		}
+	}
+	return null;
 }
 
 /** Parse a channel's /videos page into feed-shaped items.
@@ -96,81 +97,83 @@ function extractYtInitialData(html: string): unknown {
  * per-source failure.
  */
 export function parseChannelPage(html: string): {
-  title?: string;
-  items: Array<Record<string, unknown>>;
-  playlists: Array<{ id: string; title: string }>;
+	title?: string;
+	items: Array<Record<string, unknown>>;
+	playlists: Array<{ id: string; title: string }>;
 } {
-  const data = extractYtInitialData(html);
-  // No blob means the page is not the page we think it is: a consent wall, a
-  // 404 stub, or a redesign that moved the grid. Returning `{items: []}` here
-  // is what made a broken scraper indistinguishable from a quiet channel, so
-  // this is a hard throw and the caller reports it as a source failure.
-  if (!data || typeof data !== 'object') {
-    throw new Error(`markup changed: no ytInitialData (${html.length} bytes)`);
-  }
+	const data = extractYtInitialData(html);
+	// No blob means the page is not the page we think it is: a consent wall, a
+	// 404 stub, or a redesign that moved the grid. Returning `{items: []}` here
+	// is what made a broken scraper indistinguishable from a quiet channel, so
+	// this is a hard throw and the caller reports it as a source failure.
+	if (!data || typeof data !== "object") {
+		throw new Error(`markup changed: no ytInitialData (${html.length} bytes)`);
+	}
 
-  const found: Array<{ videoId: string; title: string }> = [];
-  const playlists: Array<{ id: string; title: string }> = [];
-  const seen = new Set<string>();
-  const seenPlaylists = new Set<string>();
-  let channel: string | undefined;
+	const found: Array<{ videoId: string; title: string }> = [];
+	const playlists: Array<{ id: string; title: string }> = [];
+	const seen = new Set<string>();
+	const seenPlaylists = new Set<string>();
+	let channel: string | undefined;
 
-  const add = (videoId: string, title: string) => {
-    if (seen.has(videoId)) return;
-    seen.add(videoId);
-    found.push({ videoId, title });
-  };
+	const add = (videoId: string, title: string) => {
+		if (seen.has(videoId)) return;
+		seen.add(videoId);
+		found.push({ videoId, title });
+	};
 
-  const addPlaylist = (id: string, title: string) => {
-    if (seenPlaylists.has(id)) return;
-    seenPlaylists.add(id);
-    playlists.push({ id, title });
-  };
+	const addPlaylist = (id: string, title: string) => {
+		if (seenPlaylists.has(id)) return;
+		seenPlaylists.add(id);
+		playlists.push({ id, title });
+	};
 
-  const visit = (node: unknown): void => {
-    if (!node || typeof node !== 'object') return;
-    if (Array.isArray(node)) {
-      for (const child of node) visit(child);
-      return;
-    }
-    for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
-      if (!value || typeof value !== 'object') continue;
-      const renderer = value as Record<string, unknown>;
-      if (key === 'channelMetadataRenderer' || key === 'microformatDataRenderer') {
-        channel ??= readText(renderer.title) || undefined;
-      } else if (key === 'lockupViewModel') {
-        const id = renderer.contentId;
-        const meta = renderer.metadata as Record<string, unknown> | undefined;
-        const lockupMeta = meta?.lockupMetadataViewModel as Record<string, unknown> | undefined;
-        if (typeof id === 'string' && isVideoId(id)) add(id, readText(lockupMeta?.title));
-        else if (typeof id === 'string' && PLAYLIST_ID_RE.test(id)) {
-          const title = readText(lockupMeta?.title);
-          if (title !== '') addPlaylist(id, title);
-        }
-      } else if (RENDERER_ID_KEYS[key] === true) {
-        const id = renderer.videoId;
-        if (typeof id === 'string' && isVideoId(id)) add(id, readText(renderer.title));
-      }
-      visit(value);
-    }
-  };
-  visit(data);
+	const visit = (node: unknown): void => {
+		if (!node || typeof node !== "object") return;
+		if (Array.isArray(node)) {
+			for (const child of node) visit(child);
+			return;
+		}
+		for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+			if (!value || typeof value !== "object") continue;
+			const renderer = value as Record<string, unknown>;
+			if (key === "channelMetadataRenderer" || key === "microformatDataRenderer") {
+				channel ??= readText(renderer.title) || undefined;
+			} else if (key === "lockupViewModel") {
+				const id = renderer.contentId;
+				const meta = renderer.metadata as Record<string, unknown> | undefined;
+				const lockupMeta = meta?.lockupMetadataViewModel as Record<string, unknown> | undefined;
+				if (typeof id === "string" && isVideoId(id)) add(id, readText(lockupMeta?.title));
+				else if (typeof id === "string" && PLAYLIST_ID_RE.test(id)) {
+					const title = readText(lockupMeta?.title);
+					if (title !== "") addPlaylist(id, title);
+				}
+			} else if (RENDERER_ID_KEYS[key] === true) {
+				const id = renderer.videoId;
+				if (typeof id === "string" && isVideoId(id)) add(id, readText(renderer.title));
+			}
+			visit(value);
+		}
+	};
+	visit(data);
 
-  // A video whose title could not be resolved is dropped, never rendered as its
-  // own id — an 11-char id in the title slot is the bug, not a fallback.
-  const items = found
-    .filter((v) => v.title !== '' && !isVideoId(v.title))
-    .slice(0, FALLBACK_LIMIT)
-    .map((v) => ({
-      title: v.title,
-      link: `https://www.youtube.com/watch?v=${v.videoId}`,
-      published: null,
-      'media:group': { 'media:thumbnail': { '@url': `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg` } },
-    }));
-  return { title: channel, items, playlists };
+	// A video whose title could not be resolved is dropped, never rendered as its
+	// own id — an 11-char id in the title slot is the bug, not a fallback.
+	const items = found
+		.filter((v) => v.title !== "" && !isVideoId(v.title))
+		.slice(0, FALLBACK_LIMIT)
+		.map((v) => ({
+			title: v.title,
+			link: `https://www.youtube.com/watch?v=${v.videoId}`,
+			published: null,
+			"media:group": {
+				"media:thumbnail": { "@url": `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg` },
+			},
+		}));
+	return { title: channel, items, playlists };
 }
 
-const PLAYLIST_PREFIX = 'playlist:';
+const PLAYLIST_PREFIX = "playlist:";
 
 /** A YouTube playlist id is `PL` + url-safe base64 chars. */
 const PLAYLIST_ID_RE = /^PL[A-Za-z0-9_-]+$/;
@@ -180,7 +183,7 @@ const PLAYLIST_ID_RE = /^PL[A-Za-z0-9_-]+$/;
  * Asking the handle resolver about one produced `channel_id=UC1`, a URL that
  * can never answer, so the decision is by shape and not by validity. */
 function looksLikeChannelId(value: string): boolean {
-  return value.startsWith('UC');
+	return value.startsWith("UC");
 }
 
 /** The public page a source can be scraped from when its feed comes back
@@ -189,9 +192,10 @@ function looksLikeChannelId(value: string): boolean {
  * simply vanished whenever its RSS feed died. Each path segment is encoded on
  * its own; the whole path never is. */
 function videosPageUrl(source: string): string | null {
-  if (source.startsWith('@')) return `https://www.youtube.com/${encodeURIComponent(source)}/videos`;
-  if (source.startsWith('UC')) return `https://www.youtube.com/channel/${encodeURIComponent(source)}/videos`;
-  return null;
+	if (source.startsWith("@")) return `https://www.youtube.com/${encodeURIComponent(source)}/videos`;
+	if (source.startsWith("UC"))
+		return `https://www.youtube.com/channel/${encodeURIComponent(source)}/videos`;
+	return null;
 }
 
 /** A channel id is `UC` + 22 url-safe base64 chars. */
@@ -205,17 +209,17 @@ const CHANNEL_ID_RE = /^UC[A-Za-z0-9_-]{22}$/;
  * to stop rendering. Verified correct 7/7 against the page canonical
  * (docs/research/youtube-fetching-2026/REPORT.md, finding 2). */
 export function extractChannelId(html: string): string | null {
-  const patterns = [
-    /"externalId"\s*:\s*"(UC[A-Za-z0-9_-]{22})"/,
-    /"browseId"\s*:\s*"(UC[A-Za-z0-9_-]{22})"/,
-    /"channelId"\s*:\s*"(UC[A-Za-z0-9_-]{22})"/,
-    /channel_id=(UC[A-Za-z0-9_-]{22})/,
-  ];
-  for (const re of patterns) {
-    const m = re.exec(html);
-    if (m) return m[1];
-  }
-  return null;
+	const patterns = [
+		/"externalId"\s*:\s*"(UC[A-Za-z0-9_-]{22})"/,
+		/"browseId"\s*:\s*"(UC[A-Za-z0-9_-]{22})"/,
+		/"channelId"\s*:\s*"(UC[A-Za-z0-9_-]{22})"/,
+		/channel_id=(UC[A-Za-z0-9_-]{22})/,
+	];
+	for (const re of patterns) {
+		const m = re.exec(html);
+		if (m) return m[1];
+	}
+	return null;
 }
 
 /** The `UC…` the page states about itself in `<link rel="canonical">` or
@@ -227,16 +231,16 @@ export function extractChannelId(html: string): string | null {
  * handle page can canonicalise to its `/@handle` form. Only two ids that
  * disagree are a rejection. */
 export function extractCanonicalChannelId(html: string): string | null {
-  const tag =
-    /<link\b[^>]*\brel=["']canonical["'][^>]*>/i.exec(html)?.[0] ??
-    /<meta\b[^>]*\bproperty=["']og:url["'][^>]*>/i.exec(html)?.[0];
-  const url = tag ? /\b(?:href|content)=["']([^"']+)["']/i.exec(tag)?.[1] : undefined;
-  if (!url) return null;
-  return (
-    /\/channel\/(UC[A-Za-z0-9_-]{22})/.exec(url)?.[1] ??
-    /[?&]channel_id=(UC[A-Za-z0-9_-]{22})/.exec(url)?.[1] ??
-    null
-  );
+	const tag =
+		/<link\b[^>]*\brel=["']canonical["'][^>]*>/i.exec(html)?.[0] ??
+		/<meta\b[^>]*\bproperty=["']og:url["'][^>]*>/i.exec(html)?.[0];
+	const url = tag ? /\b(?:href|content)=["']([^"']+)["']/i.exec(tag)?.[1] : undefined;
+	if (!url) return null;
+	return (
+		/\/channel\/(UC[A-Za-z0-9_-]{22})/.exec(url)?.[1] ??
+		/[?&]channel_id=(UC[A-Za-z0-9_-]{22})/.exec(url)?.[1] ??
+		null
+	);
 }
 
 /** The page scrape, gated on the page agreeing with itself: a candidate the
@@ -245,13 +249,13 @@ export function extractCanonicalChannelId(html: string): string | null {
  * that drops it is exactly the redesign that breaks scrapers generally
  * (docs/research/youtube-fetching-2026/REPORT.md, finding 2). */
 function channelIdFromPage(html: string): string {
-  const candidate = extractChannelId(html);
-  if (!candidate) throw new Error('the page carried no channel id');
-  const canonical = extractCanonicalChannelId(html);
-  if (canonical && canonical !== candidate) {
-    throw new Error('the page canonical names another channel');
-  }
-  return candidate;
+	const candidate = extractChannelId(html);
+	if (!candidate) throw new Error("the page carried no channel id");
+	const canonical = extractCanonicalChannelId(html);
+	if (canonical && canonical !== candidate) {
+		throw new Error("the page canonical names another channel");
+	}
+	return candidate;
 }
 
 // Why channel_id and not UULF (glance's UC→UULF playlist trick):
@@ -264,27 +268,26 @@ function channelIdFromPage(html: string): string {
 // Handles (@handle) resolve through InnerTube's resolve_url first and the
 // channel page second — see resolveViaInnerTube for why that order.
 function feedUrlForId(id: string, _includeShorts: boolean): string {
-  if (id.startsWith(PLAYLIST_PREFIX)) {
-    const pid = id.slice(PLAYLIST_PREFIX.length);
-    return `https://www.youtube.com/feeds/videos.xml?playlist_id=${encodeURIComponent(pid)}`;
-  }
-  return `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(id)}`;
+	if (id.startsWith(PLAYLIST_PREFIX)) {
+		const pid = id.slice(PLAYLIST_PREFIX.length);
+		return `https://www.youtube.com/feeds/videos.xml?playlist_id=${encodeURIComponent(pid)}`;
+	}
+	return `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(id)}`;
 }
 
-const RESOLVE_URL =
-  'https://www.youtube.com/youtubei/v1/navigation/resolve_url?prettyPrint=false';
+const RESOLVE_URL = "https://www.youtube.com/youtubei/v1/navigation/resolve_url?prettyPrint=false";
 /** A pinned WEB client version. Proven keyless on 2026-09-27; the research
  * calls a hardcoded version low-risk for resolution, so no rotation
  * machinery is warranted. */
-const WEB_CLIENT_VERSION = '2.20260708.00.00';
+const WEB_CLIENT_VERSION = "2.20260708.00.00";
 
 const HANDLE_TTL_MS = 24 * 60 * 60 * 1000;
 
 /** resolve_url's answer, in the two shapes it is read in: the documented
  * `response.`-wrapped one and the top-level one. */
 interface ResolveEndpoint {
-  endpoint?: { browseEndpoint?: { browseId?: unknown } };
-  response?: ResolveEndpoint;
+	endpoint?: { browseEndpoint?: { browseId?: unknown } };
+	response?: ResolveEndpoint;
 }
 
 /** resolve_url answered, and answered "no such thing". Kept distinct from
@@ -301,73 +304,73 @@ class HandleNotFound extends Error {}
  * changes, not our first choice
  * (docs/research/youtube-fetching-2026/REPORT.md, findings 1, 3 and 4). */
 async function resolveViaInnerTube(
-  ctx: WidgetFetchContext,
-  handle: string,
-  retry: RetryOptions,
+	ctx: WidgetFetchContext,
+	handle: string,
+	retry: RetryOptions,
 ): Promise<string> {
-  const body = JSON.stringify({
-    context: {
-      client: {
-        hl: 'en',
-        gl: 'US',
-        clientName: 'WEB',
-        clientVersion: WEB_CLIENT_VERSION,
-        userAgent: YT_UA,
-      },
-    },
-    url: `https://www.youtube.com/${handle}`,
-  });
-  let res: Response;
-  try {
-    res = await fetchWithRetry(
-      ctx,
-      RESOLVE_URL,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': YT_UA,
-          'Origin': 'https://www.youtube.com',
-          'X-YouTube-Client-Name': '1',
-          'X-YouTube-Client-Version': WEB_CLIENT_VERSION,
-        },
-        body,
-      },
-      retry,
-    );
-  } catch (err) {
-    // `{"error":{"message":"Requested entity was not found."}}` on 404 is the
-    // signal; everything else (400 on a changed contract, 5xx, a network
-    // blip) is an outage the scrape may still survive.
-    if (reasonFor(err) === 'HTTP 404') {
-      throw new HandleNotFound(err instanceof Error ? err.message : String(err));
-    }
-    throw err;
-  }
+	const body = JSON.stringify({
+		context: {
+			client: {
+				hl: "en",
+				gl: "US",
+				clientName: "WEB",
+				clientVersion: WEB_CLIENT_VERSION,
+				userAgent: YT_UA,
+			},
+		},
+		url: `https://www.youtube.com/${handle}`,
+	});
+	let res: Response;
+	try {
+		res = await fetchWithRetry(
+			ctx,
+			RESOLVE_URL,
+			{
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"User-Agent": YT_UA,
+					Origin: "https://www.youtube.com",
+					"X-YouTube-Client-Name": "1",
+					"X-YouTube-Client-Version": WEB_CLIENT_VERSION,
+				},
+				body,
+			},
+			retry,
+		);
+	} catch (err) {
+		// `{"error":{"message":"Requested entity was not found."}}` on 404 is the
+		// signal; everything else (400 on a changed contract, 5xx, a network
+		// blip) is an outage the scrape may still survive.
+		if (reasonFor(err) === "HTTP 404") {
+			throw new HandleNotFound(err instanceof Error ? err.message : String(err));
+		}
+		throw err;
+	}
 
-  let payload: unknown;
-  try {
-    payload = await res.json();
-  } catch {
-    throw new Error('resolve_url returned an unreadable body');
-  }
-  // The report documents the id at `response.endpoint.browseEndpoint.browseId`.
-  // Every live probe from this host on 2026-09-27 — 7/7 handles, on
-  // www.youtube.com and youtubei.googleapis.com, with and without
-  // `prettyPrint=false` — put it at the TOP level instead, with the same ids
-  // the report's own table lists. Both shapes are read, because reading only
-  // the documented one silently demotes the primary to the scrape.
-  //
-  // A 200 that carries no `UC…` in either is unresolved, not an empty string:
-  // the research is explicit that this shape must fail loudly (REPORT.md,
-  // "Failing loudly"). Defaulting it would send `channel_id=` to the feed and
-  // manufacture a 404 of our own.
-  const shapes: unknown[] = [payload, (payload as ResolveEndpoint)?.response];
-  for (const shape of shapes) {
-    const browseId = (shape as ResolveEndpoint)?.endpoint?.browseEndpoint?.browseId;
-    if (typeof browseId === 'string' && CHANNEL_ID_RE.test(browseId)) return browseId;
-  }
-  throw new Error('resolve_url returned no channel id');
+	let payload: unknown;
+	try {
+		payload = await res.json();
+	} catch {
+		throw new Error("resolve_url returned an unreadable body");
+	}
+	// The report documents the id at `response.endpoint.browseEndpoint.browseId`.
+	// Every live probe from this host on 2026-09-27 — 7/7 handles, on
+	// www.youtube.com and youtubei.googleapis.com, with and without
+	// `prettyPrint=false` — put it at the TOP level instead, with the same ids
+	// the report's own table lists. Both shapes are read, because reading only
+	// the documented one silently demotes the primary to the scrape.
+	//
+	// A 200 that carries no `UC…` in either is unresolved, not an empty string:
+	// the research is explicit that this shape must fail loudly (REPORT.md,
+	// "Failing loudly"). Defaulting it would send `channel_id=` to the feed and
+	// manufacture a 404 of our own.
+	const shapes: unknown[] = [payload, (payload as ResolveEndpoint)?.response];
+	for (const shape of shapes) {
+		const browseId = (shape as ResolveEndpoint)?.endpoint?.browseEndpoint?.browseId;
+		if (typeof browseId === "string" && CHANNEL_ID_RE.test(browseId)) return browseId;
+	}
+	throw new Error("resolve_url returned no channel id");
 }
 
 /** The fallback channel: the handle's own page. No retry budget of its own —
@@ -375,55 +378,55 @@ async function resolveViaInnerTube(
  * rescuing should cost one look, not a second full backoff ladder. The same
  * rule the feed's page rescue follows. */
 async function resolveViaChannelPage(
-  ctx: WidgetFetchContext,
-  handle: string,
-  retry: RetryOptions,
+	ctx: WidgetFetchContext,
+	handle: string,
+	retry: RetryOptions,
 ): Promise<string> {
-  const html = await fetchText(
-    ctx,
-    `https://www.youtube.com/${handle}`,
-    { headers: { 'User-Agent': YT_UA } },
-    { ...retry, retries: 0 },
-  );
-  return channelIdFromPage(html);
+	const html = await fetchText(
+		ctx,
+		`https://www.youtube.com/${handle}`,
+		{ headers: { "User-Agent": YT_UA } },
+		{ ...retry, retries: 0 },
+	);
+	return channelIdFromPage(html);
 }
 
 async function resolveHandleToChannelId(
-  ctx: WidgetFetchContext,
-  rawHandle: string,
-  retry: RetryOptions,
+	ctx: WidgetFetchContext,
+	rawHandle: string,
+	retry: RetryOptions,
 ): Promise<string> {
-  const handle = rawHandle.startsWith('@') ? rawHandle : `@${rawHandle}`;
-  const cacheKey = `videos:handle:${handle.toLowerCase()}`;
-  const cached = ctx.cache.get<string>(cacheKey);
-  if (cached) return cached;
-  const stale = ctx.cache.getStale<string>(cacheKey);
-  return ctx.singleflight.run(cacheKey, async () => {
-    const cached2 = ctx.cache.get<string>(cacheKey);
-    if (cached2) return cached2;
-    try {
-      const id = await resolveViaInnerTube(ctx, handle, retry);
-      ctx.cache.set(cacheKey, id, HANDLE_TTL_MS);
-      return id;
-    } catch (resolveErr) {
-      if (resolveErr instanceof HandleNotFound) {
-        if (stale) return stale;
-        throw resolveErr;
-      }
-      try {
-        const id = await resolveViaChannelPage(ctx, handle, retry);
-        ctx.cache.set(cacheKey, id, HANDLE_TTL_MS);
-        return id;
-      } catch (scrapeErr) {
-        if (stale) return stale;
-        // The scrape went last, so its reason is the honest one to report: a
-        // 404 there is the same "no such channel" the resolve would have
-        // said, and a broken scraper names the failure better than the
-        // InnerTube error that sent us to it.
-        throw scrapeErr;
-      }
-    }
-  });
+	const handle = rawHandle.startsWith("@") ? rawHandle : `@${rawHandle}`;
+	const cacheKey = `videos:handle:${handle.toLowerCase()}`;
+	const cached = ctx.cache.get<string>(cacheKey);
+	if (cached) return cached;
+	const stale = ctx.cache.getStale<string>(cacheKey);
+	return ctx.singleflight.run(cacheKey, async () => {
+		const cached2 = ctx.cache.get<string>(cacheKey);
+		if (cached2) return cached2;
+		try {
+			const id = await resolveViaInnerTube(ctx, handle, retry);
+			ctx.cache.set(cacheKey, id, HANDLE_TTL_MS);
+			return id;
+		} catch (resolveErr) {
+			if (resolveErr instanceof HandleNotFound) {
+				if (stale) return stale;
+				throw resolveErr;
+			}
+			try {
+				const id = await resolveViaChannelPage(ctx, handle, retry);
+				ctx.cache.set(cacheKey, id, HANDLE_TTL_MS);
+				return id;
+			} catch (scrapeErr) {
+				if (stale) return stale;
+				// The scrape went last, so its reason is the honest one to report: a
+				// 404 there is the same "no such channel" the resolve would have
+				// said, and a broken scraper names the failure better than the
+				// InnerTube error that sent us to it.
+				throw scrapeErr;
+			}
+		}
+	});
 }
 
 /** Why a handle could not be turned into a feedable id. A 404 is a typo or a
@@ -431,166 +434,195 @@ async function resolveHandleToChannelId(
  * (a 5xx, a consent wall that hid the id) is a resolution failure and is
  * reported as one, because "handle not found" would be a guess. */
 function handleFailure(handle: string, err: unknown): string {
-  const reason = reasonFor(err);
-  return reason === 'HTTP 404' ? `handle not found: ${handle}` : `could not resolve ${handle}: ${reason}`;
+	const reason = reasonFor(err);
+	return reason === "HTTP 404"
+		? `handle not found: ${handle}`
+		: `could not resolve ${handle}: ${reason}`;
 }
 
 /** One configured source, resolved to everything the fetch needs: the RSS
  * feed, the page to scrape when that feed is empty, and the config string a
  * diagnostic must name. */
 interface FeedSpec {
-  source: string;
-  url: string;
-  cacheKey: string;
-  /** null when we have no page to fall back to for this source */
-  pageUrl: string | null;
-  /** set when the config value could not be resolved to a feedable id at all */
-  resolveError?: string;
-  /** the bare `PL…` when this source is a playlist, so the fetcher can list
-   * the whole playlist when the feed window turns out to be its oldest end */
-  playlistId?: string;
+	source: string;
+	url: string;
+	cacheKey: string;
+	/** null when we have no page to fall back to for this source */
+	pageUrl: string | null;
+	/** set when the config value could not be resolved to a feedable id at all */
+	resolveError?: string;
+	/** the bare `PL…` when this source is a playlist, so the fetcher can list
+	 * the whole playlist when the feed window turns out to be its oldest end */
+	playlistId?: string;
 }
 
 async function feedSpecsForChannels(
-  ctx: WidgetFetchContext,
-  channels: string[],
-  includeShorts: boolean,
-  retry: RetryOptions,
+	ctx: WidgetFetchContext,
+	channels: string[],
+	includeShorts: boolean,
+	retry: RetryOptions,
 ): Promise<FeedSpec[]> {
-  const results = await Promise.all(
-    channels.map(async (ch) => {
-      const isId = looksLikeChannelId(ch);
-      // Named the way YouTube spells it, resolved or not, so the diagnostic
-      // points at the handle the user has to fix.
-      const source = isId ? ch : ch.startsWith('@') ? ch : `@${ch}`;
-      let id = ch;
-      let resolveError: string | undefined;
-      if (!isId) {
-        try {
-          id = await resolveHandleToChannelId(ctx, source, retry);
-        } catch (err) {
-          // The old `catch { id = ch }` sent the raw handle to
-          // `channel_id=@typo` — a URL that cannot possibly answer — so a
-          // misspelt handle read as a quiet widget. Say what is wrong instead.
-          resolveError = handleFailure(source, err);
-        }
-      }
-      return {
-        url: feedUrlForId(id, includeShorts),
-        source,
-        cacheKey: id,
-        pageUrl: videosPageUrl(source),
-        resolveError,
-      };
-    }),
-  );
-  return results;
+	const results = await Promise.all(
+		channels.map(async (ch) => {
+			const isId = looksLikeChannelId(ch);
+			// Named the way YouTube spells it, resolved or not, so the diagnostic
+			// points at the handle the user has to fix.
+			const source = isId ? ch : ch.startsWith("@") ? ch : `@${ch}`;
+			let id = ch;
+			let resolveError: string | undefined;
+			if (!isId) {
+				try {
+					id = await resolveHandleToChannelId(ctx, source, retry);
+				} catch (err) {
+					// The old `catch { id = ch }` sent the raw handle to
+					// `channel_id=@typo` — a URL that cannot possibly answer — so a
+					// misspelt handle read as a quiet widget. Say what is wrong instead.
+					resolveError = handleFailure(source, err);
+				}
+			}
+			return {
+				url: feedUrlForId(id, includeShorts),
+				source,
+				cacheKey: id,
+				pageUrl: videosPageUrl(source),
+				resolveError,
+			};
+		}),
+	);
+	return results;
 }
 
 function videoUrlFor(link: string, template: string | undefined): string {
-  if (!template) return link;
-  try {
-    const id = new URL(link).searchParams.get('v') ?? '';
-    if (!id) return link;
-    return template.replace('{VIDEO-ID}', id).replace('{VIDEO-URL}', link);
-  } catch {
-    return link;
-  }
+	if (!template) return link;
+	try {
+		const id = new URL(link).searchParams.get("v") ?? "";
+		if (!id) return link;
+		return template.replace("{VIDEO-ID}", id).replace("{VIDEO-URL}", link);
+	} catch {
+		return link;
+	}
 }
 
-function parseVideoFeed(raw: string): { title?: string; items: Array<Record<string, unknown>>; playlists: Array<{ id: string; title: string }> } {
-  const parsed = getBXML().parse(raw) as Record<string, unknown>;
-  const feed = parsed.feed as Record<string, unknown> | undefined;
-  if (feed) {
-    const rawTitle = feed.title;
-    const title = typeof rawTitle === 'string' ? rawTitle : (rawTitle as Record<string, unknown> | undefined)?.['#text'] as string | undefined;
-    const rawEntries = feed.entry;
-    const entries = rawEntries == null ? [] : Array.isArray(rawEntries) ? rawEntries : [rawEntries];
-    return { title: title as string | undefined, items: entries as Array<Record<string, unknown>>, playlists: [] };
-  }
-  const rss = parsed.rss as Record<string, unknown> | undefined;
-  if (rss) {
-    const channel = rss.channel as Record<string, unknown> | undefined;
-    if (channel) {
-      const rawTitle = channel.title;
-      const title = typeof rawTitle === 'string' ? rawTitle : undefined;
-      const rawItems = channel.item;
-      const items = rawItems == null ? [] : Array.isArray(rawItems) ? rawItems : [rawItems];
-      return { title: title as string | undefined, items: items as Array<Record<string, unknown>>, playlists: [] };
-    }
-  }
-  return { title: undefined, items: [], playlists: [] };
+function parseVideoFeed(raw: string): {
+	title?: string;
+	items: Array<Record<string, unknown>>;
+	playlists: Array<{ id: string; title: string }>;
+} {
+	const parsed = getBXML().parse(raw) as Record<string, unknown>;
+	const feed = parsed.feed as Record<string, unknown> | undefined;
+	if (feed) {
+		const rawTitle = feed.title;
+		const title =
+			typeof rawTitle === "string"
+				? rawTitle
+				: ((rawTitle as Record<string, unknown> | undefined)?.["#text"] as string | undefined);
+		const rawEntries = feed.entry;
+		const entries = rawEntries == null ? [] : Array.isArray(rawEntries) ? rawEntries : [rawEntries];
+		return {
+			title: title as string | undefined,
+			items: entries as Array<Record<string, unknown>>,
+			playlists: [],
+		};
+	}
+	const rss = parsed.rss as Record<string, unknown> | undefined;
+	if (rss) {
+		const channel = rss.channel as Record<string, unknown> | undefined;
+		if (channel) {
+			const rawTitle = channel.title;
+			const title = typeof rawTitle === "string" ? rawTitle : undefined;
+			const rawItems = channel.item;
+			const items = rawItems == null ? [] : Array.isArray(rawItems) ? rawItems : [rawItems];
+			return {
+				title: title as string | undefined,
+				items: items as Array<Record<string, unknown>>,
+				playlists: [],
+			};
+		}
+	}
+	return { title: undefined, items: [], playlists: [] };
 }
 
 /** One feed item -> one Video. Returns null when the item cannot produce a
  * real title: an empty title or a bare 11-char video id is the bug this guards,
  * so the entry is dropped rather than rendered. */
 function toVideo(
-  item: Record<string, unknown>,
-  channel: string,
-  opts: { template: string | undefined; includeShorts: boolean },
+	item: Record<string, unknown>,
+	channel: string,
+	opts: { template: string | undefined; includeShorts: boolean },
 ): Video | null {
-  let title = '';
-  const t = item.title;
-  if (typeof t === 'string') title = t;
-  else if (t && typeof t === 'object' && typeof (t as Record<string, unknown>)['#text'] === 'string')
-    title = (t as Record<string, unknown>)['#text'] as string;
-  if (title === '' || isVideoId(title)) return null;
+	let title = "";
+	const t = item.title;
+	if (typeof t === "string") title = t;
+	else if (
+		t &&
+		typeof t === "object" &&
+		typeof (t as Record<string, unknown>)["#text"] === "string"
+	)
+		title = (t as Record<string, unknown>)["#text"] as string;
+	if (title === "" || isVideoId(title)) return null;
 
-  let link = '';
-  const rawLink = item.link;
-  if (typeof rawLink === 'string') link = rawLink;
-  else if (rawLink && typeof rawLink === 'object') {
-    const o = rawLink as Record<string, unknown>;
-    if (typeof o['@href'] === 'string') link = o['@href'] as string;
-    else if (Array.isArray(rawLink)) {
-      for (const l of rawLink as unknown[]) {
-        if (l && typeof l === 'object' && typeof (l as Record<string, unknown>)['@href'] === 'string') {
-          link = (l as Record<string, unknown>)['@href'] as string;
-          break;
-        }
-      }
-    }
-  }
-  if (!opts.includeShorts && link.includes('/shorts/')) return null;
+	let link = "";
+	const rawLink = item.link;
+	if (typeof rawLink === "string") link = rawLink;
+	else if (rawLink && typeof rawLink === "object") {
+		const o = rawLink as Record<string, unknown>;
+		if (typeof o["@href"] === "string") link = o["@href"] as string;
+		else if (Array.isArray(rawLink)) {
+			for (const l of rawLink as unknown[]) {
+				if (
+					l &&
+					typeof l === "object" &&
+					typeof (l as Record<string, unknown>)["@href"] === "string"
+				) {
+					link = (l as Record<string, unknown>)["@href"] as string;
+					break;
+				}
+			}
+		}
+	}
+	if (!opts.includeShorts && link.includes("/shorts/")) return null;
 
-  const isoDate =
-    (typeof item.published === 'string' ? item.published : undefined) ??
-    (typeof item.pubDate === 'string' ? item.pubDate : undefined) ??
-    (typeof item.updated === 'string' ? item.updated : undefined) ??
-    (typeof item.isoDate === 'string' ? item.isoDate : undefined) ??
-    null;
-  let thumb: string | null = null;
-  const mg = item['media:group'] as Record<string, unknown> | undefined;
-  if (mg) {
-    const mt = mg['media:thumbnail'] as unknown;
-    if (mt && typeof mt === 'object' && typeof (mt as Record<string, unknown>)['@url'] === 'string')
-      thumb = (mt as Record<string, unknown>)['@url'] as string;
-    else if (Array.isArray(mt) && mt[0] && typeof (mt[0] as Record<string, unknown>)['@url'] === 'string')
-      thumb = (mt[0] as Record<string, unknown>)['@url'] as string;
-  }
-  if (!thumb) {
-    const enc = item.enclosure as Record<string, unknown> | undefined;
-    if (enc && typeof enc['@url'] === 'string') thumb = enc['@url'] as string;
-  }
+	const isoDate =
+		(typeof item.published === "string" ? item.published : undefined) ??
+		(typeof item.pubDate === "string" ? item.pubDate : undefined) ??
+		(typeof item.updated === "string" ? item.updated : undefined) ??
+		(typeof item.isoDate === "string" ? item.isoDate : undefined) ??
+		null;
+	let thumb: string | null = null;
+	const mg = item["media:group"] as Record<string, unknown> | undefined;
+	if (mg) {
+		const mt = mg["media:thumbnail"] as unknown;
+		if (mt && typeof mt === "object" && typeof (mt as Record<string, unknown>)["@url"] === "string")
+			thumb = (mt as Record<string, unknown>)["@url"] as string;
+		else if (
+			Array.isArray(mt) &&
+			mt[0] &&
+			typeof (mt[0] as Record<string, unknown>)["@url"] === "string"
+		)
+			thumb = (mt[0] as Record<string, unknown>)["@url"] as string;
+	}
+	if (!thumb) {
+		const enc = item.enclosure as Record<string, unknown> | undefined;
+		if (enc && typeof enc["@url"] === "string") thumb = enc["@url"] as string;
+	}
 
-  return {
-    title,
-    url: videoUrlFor(link, opts.template),
-    channel,
-    published: isoDate,
-    thumbnail: thumb,
-  };
+	return {
+		title,
+		url: videoUrlFor(link, opts.template),
+		channel,
+		published: isoDate,
+		thumbnail: thumb,
+	};
 }
 
 /** InnerTube `browse` on `VL<playlistId>` returns a playlist's WHOLE listing,
  * keyless: no API key, no cookie, no PO token (report §Findings — PO tokens
  * are scoped to video *streaming*, and `_tab.py` does all the listing). This
  * is the only listing source that is not a positional window. */
-const INNERTUBE_BROWSE = 'https://www.youtube.com/youtubei/v1/browse';
+const INNERTUBE_BROWSE = "https://www.youtube.com/youtubei/v1/browse";
 /** The WEB context the research matrix used. `_tab.py` carries no po_token
  * reference at all, so no `visitorData`, `authorization` or key is needed. */
-const INNERTUBE_CLIENT = { clientName: 'WEB', clientVersion: '2.20250930.00.00', hl: 'en' };
+const INNERTUBE_CLIENT = { clientName: "WEB", clientVersion: "2.20250930.00.00", hl: "en" };
 
 /** How many `browse` pages one playlist listing may cost. A playlist that
  * fits answers in one page and its continuation token yields an empty page,
@@ -600,8 +632,8 @@ const MAX_PLAYLIST_PAGES = 3;
 
 /** One video in the playlist's own order, as `browse` reports it. */
 export interface PlaylistEntry {
-  videoId: string;
-  title: string;
+	videoId: string;
+	title: string;
 }
 
 /** Pull the ordered video list out of one `browse` response.
@@ -615,46 +647,46 @@ export interface PlaylistEntry {
  * the caller as a reason the widget can show, never as an empty playlist.
  */
 export function parsePlaylistBrowse(raw: string): {
-  entries: PlaylistEntry[];
-  continuation: string | null;
+	entries: PlaylistEntry[];
+	continuation: string | null;
 } {
-  let data: unknown;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    throw new Error(`browse response was not JSON (${raw.length} bytes)`);
-  }
-  const entries: PlaylistEntry[] = [];
-  const seen = new Set<string>();
-  let continuation: string | null = null;
+	let data: unknown;
+	try {
+		data = JSON.parse(raw);
+	} catch {
+		throw new Error(`browse response was not JSON (${raw.length} bytes)`);
+	}
+	const entries: PlaylistEntry[] = [];
+	const seen = new Set<string>();
+	let continuation: string | null = null;
 
-  const visit = (node: unknown): void => {
-    if (!node || typeof node !== 'object') return;
-    if (Array.isArray(node)) {
-      for (const child of node) visit(child);
-      return;
-    }
-    for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
-      if (!value || typeof value !== 'object') continue;
-      const renderer = value as Record<string, unknown>;
-      if (key === 'lockupViewModel') {
-        const id = renderer.contentId;
-        const meta = renderer.metadata as Record<string, unknown> | undefined;
-        const lockupMeta = meta?.lockupMetadataViewModel as Record<string, unknown> | undefined;
-        const title = readText(lockupMeta?.title);
-        if (typeof id === 'string' && isVideoId(id) && title !== '' && !seen.has(id)) {
-          seen.add(id);
-          entries.push({ videoId: id, title });
-        }
-      } else if (key === 'continuationCommand' && continuation === null) {
-        const token = renderer.token;
-        if (typeof token === 'string') continuation = token;
-      }
-      visit(value);
-    }
-  };
-  visit(data);
-  return { entries, continuation };
+	const visit = (node: unknown): void => {
+		if (!node || typeof node !== "object") return;
+		if (Array.isArray(node)) {
+			for (const child of node) visit(child);
+			return;
+		}
+		for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+			if (!value || typeof value !== "object") continue;
+			const renderer = value as Record<string, unknown>;
+			if (key === "lockupViewModel") {
+				const id = renderer.contentId;
+				const meta = renderer.metadata as Record<string, unknown> | undefined;
+				const lockupMeta = meta?.lockupMetadataViewModel as Record<string, unknown> | undefined;
+				const title = readText(lockupMeta?.title);
+				if (typeof id === "string" && isVideoId(id) && title !== "" && !seen.has(id)) {
+					seen.add(id);
+					entries.push({ videoId: id, title });
+				}
+			} else if (key === "continuationCommand" && continuation === null) {
+				const token = renderer.token;
+				if (typeof token === "string") continuation = token;
+			}
+			visit(value);
+		}
+	};
+	visit(data);
+	return { entries, continuation };
 }
 
 /** The whole playlist in the owner's order, following continuation tokens
@@ -662,38 +694,42 @@ export function parsePlaylistBrowse(raw: string): {
  * table when the page budget ran out, so the caller knows the tail it holds
  * is not the playlist's end. */
 async function playlistListing(
-  ctx: WidgetFetchContext,
-  playlistId: string,
-  retry: RetryOptions,
+	ctx: WidgetFetchContext,
+	playlistId: string,
+	retry: RetryOptions,
 ): Promise<{ entries: PlaylistEntry[]; capped: boolean }> {
-  const entries: PlaylistEntry[] = [];
-  const seen = new Set<string>();
-  let continuation: string | null = null;
-  let pages = 0;
-  for (;;) {
-    const body: Record<string, unknown> = continuation
-      ? { context: { client: INNERTUBE_CLIENT }, continuation }
-      : { context: { client: INNERTUBE_CLIENT }, browseId: `VL${playlistId}` };
-    const raw = await fetchText(
-      ctx,
-      INNERTUBE_BROWSE,
-      { method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': YT_UA }, body: JSON.stringify(body) },
-      // The first page is the only route to correct data, so it spends the
-      // configured budget. Continuation pages are depth, not a rescue: they
-      // get one look each, like the page fallback.
-      pages === 0 ? retry : { ...retry, retries: 0 },
-    );
-    const page = parsePlaylistBrowse(raw);
-    for (const entry of page.entries) {
-      if (seen.has(entry.videoId)) continue;
-      seen.add(entry.videoId);
-      entries.push(entry);
-    }
-    continuation = page.continuation;
-    pages++;
-    if (!continuation || page.entries.length === 0 || pages >= MAX_PLAYLIST_PAGES) break;
-  }
-  return { entries, capped: continuation !== null };
+	const entries: PlaylistEntry[] = [];
+	const seen = new Set<string>();
+	let continuation: string | null = null;
+	let pages = 0;
+	for (;;) {
+		const body: Record<string, unknown> = continuation
+			? { context: { client: INNERTUBE_CLIENT }, continuation }
+			: { context: { client: INNERTUBE_CLIENT }, browseId: `VL${playlistId}` };
+		const raw = await fetchText(
+			ctx,
+			INNERTUBE_BROWSE,
+			{
+				method: "POST",
+				headers: { "Content-Type": "application/json", "User-Agent": YT_UA },
+				body: JSON.stringify(body),
+			},
+			// The first page is the only route to correct data, so it spends the
+			// configured budget. Continuation pages are depth, not a rescue: they
+			// get one look each, like the page fallback.
+			pages === 0 ? retry : { ...retry, retries: 0 },
+		);
+		const page = parsePlaylistBrowse(raw);
+		for (const entry of page.entries) {
+			if (seen.has(entry.videoId)) continue;
+			seen.add(entry.videoId);
+			entries.push(entry);
+		}
+		continuation = page.continuation;
+		pages++;
+		if (!continuation || page.entries.length === 0 || pages >= MAX_PLAYLIST_PAGES) break;
+	}
+	return { entries, capped: continuation !== null };
 }
 
 /** True when the feed's entries run oldest→newest in the order the feed
@@ -710,22 +746,22 @@ async function playlistListing(
  * way for a healthy newest-first playlist to be mistaken for a stale one.
  */
 function runsOldestFirst(items: Array<Record<string, unknown>>): boolean {
-  const times: number[] = [];
-  for (const item of items) {
-    const raw =
-      (typeof item.published === 'string' ? item.published : undefined) ??
-      (typeof item.updated === 'string' ? item.updated : undefined);
-    if (typeof raw !== 'string') continue;
-    const t = Date.parse(raw);
-    if (Number.isFinite(t)) times.push(t);
-  }
-  if (times.length < 2) return false;
-  let steppedUp = false;
-  for (let i = 1; i < times.length; i++) {
-    if (times[i] < times[i - 1]) return false;
-    if (times[i] > times[i - 1]) steppedUp = true;
-  }
-  return steppedUp;
+	const times: number[] = [];
+	for (const item of items) {
+		const raw =
+			(typeof item.published === "string" ? item.published : undefined) ??
+			(typeof item.updated === "string" ? item.updated : undefined);
+		if (typeof raw !== "string") continue;
+		const t = Date.parse(raw);
+		if (Number.isFinite(t)) times.push(t);
+	}
+	if (times.length < 2) return false;
+	let steppedUp = false;
+	for (let i = 1; i < times.length; i++) {
+		if (times[i] < times[i - 1]) return false;
+		if (times[i] > times[i - 1]) steppedUp = true;
+	}
+	return steppedUp;
 }
 
 /** A listing entry has no publish date to carry — only the feed has those,
@@ -733,14 +769,14 @@ function runsOldestFirst(items: Array<Record<string, unknown>>): boolean {
  * the config, so a corrected row looks like every other row except that it
  * has no age, and the issue beside it says why. */
 function entryToVideo(entry: PlaylistEntry, channel: string, template: string | undefined): Video {
-  const link = `https://www.youtube.com/watch?v=${entry.videoId}`;
-  return {
-    title: entry.title,
-    url: videoUrlFor(link, template),
-    channel,
-    published: null,
-    thumbnail: `https://i.ytimg.com/vi/${entry.videoId}/hqdefault.jpg`,
-  };
+	const link = `https://www.youtube.com/watch?v=${entry.videoId}`;
+	return {
+		title: entry.title,
+		url: videoUrlFor(link, template),
+		channel,
+		published: null,
+		thumbnail: `https://i.ytimg.com/vi/${entry.videoId}/hqdefault.jpg`,
+	};
 }
 
 /** The newest end of a playlist whose feed window was provably its oldest.
@@ -755,36 +791,42 @@ function entryToVideo(entry: PlaylistEntry, channel: string, template: string | 
  * nothing about that playlist was stale, and the caller keeps them.
  */
 async function correctOldestFirstPlaylist(
-  ctx: WidgetFetchContext,
-  playlistId: string,
-  feed: { title?: string; items: Array<Record<string, unknown>> },
-  opts: { source: string; limit: number; template: string | undefined; retry: RetryOptions },
-  cache: { get: () => Video[] | undefined; set: (videos: Video[]) => void },
+	ctx: WidgetFetchContext,
+	playlistId: string,
+	feed: { title?: string; items: Array<Record<string, unknown>> },
+	opts: { source: string; limit: number; template: string | undefined; retry: RetryOptions },
+	cache: { get: () => Video[] | undefined; set: (videos: Video[]) => void },
 ): Promise<SourceOutcome | null> {
-  const channel = feed.title ?? opts.source;
-  try {
-    const { entries, capped } = await playlistListing(ctx, playlistId, opts.retry);
-    // The feed had the whole playlist: its order is the owner's order and
-    // there is nothing stale to correct.
-    if (entries.length <= feed.items.length) return null;
-    const newest = entries.slice(-opts.limit).reverse();
-    const videos = newest.map((entry) => entryToVideo(entry, channel, opts.template));
-    if (videos.length === 0) return null;
-    cache.set(videos);
-    const total = capped ? `the first ${entries.length} listed` : `${entries.length}`;
-    return {
-      videos,
-      issue: { source: opts.source, reason: `oldest-first playlist: newest ${videos.length} of ${total}` },
-    };
-  } catch (err) {
-    // We know the window is the oldest end and we could not list the playlist
-    // properly, so a stale window must not pass as current: name it, and show
-    // what we last knew rather than a fresh window we know to be wrong.
-    return {
-      videos: cache.get() ?? [],
-      issue: { source: opts.source, reason: `oldest-first playlist could not be listed: ${reasonFor(err)}` },
-    };
-  }
+	const channel = feed.title ?? opts.source;
+	try {
+		const { entries, capped } = await playlistListing(ctx, playlistId, opts.retry);
+		// The feed had the whole playlist: its order is the owner's order and
+		// there is nothing stale to correct.
+		if (entries.length <= feed.items.length) return null;
+		const newest = entries.slice(-opts.limit).reverse();
+		const videos = newest.map((entry) => entryToVideo(entry, channel, opts.template));
+		if (videos.length === 0) return null;
+		cache.set(videos);
+		const total = capped ? `the first ${entries.length} listed` : `${entries.length}`;
+		return {
+			videos,
+			issue: {
+				source: opts.source,
+				reason: `oldest-first playlist: newest ${videos.length} of ${total}`,
+			},
+		};
+	} catch (err) {
+		// We know the window is the oldest end and we could not list the playlist
+		// properly, so a stale window must not pass as current: name it, and show
+		// what we last knew rather than a fresh window we know to be wrong.
+		return {
+			videos: cache.get() ?? [],
+			issue: {
+				source: opts.source,
+				reason: `oldest-first playlist could not be listed: ${reasonFor(err)}`,
+			},
+		};
+	}
 }
 
 /** The second channel, for any source whose RSS feed comes back empty or
@@ -796,36 +838,45 @@ async function correctOldestFirstPlaylist(
  * can no longer read all have to reach the caller as a reason the widget can
  * show. A silent null is what let a dead source look like a quiet one. */
 async function scrapeChannelPage(
-  ctx: WidgetFetchContext,
-  pageUrl: string,
-  retry: RetryOptions,
-): Promise<{ title?: string; items: Array<Record<string, unknown>>; playlists: Array<{ id: string; title: string }> }> {
-  // The rescue gets no retry budget of its own. The feed has already spent the
-  // configured one, and a source that is down should cost one look, not two
-  // full backoff ladders — that doubles the worst-case latency of a dead
-  // source for half a second of extra odds. A blip is covered by the stale
-  // cache and by the next poll.
-  const html = await fetchText(ctx, pageUrl, { headers: { 'User-Agent': YT_UA } }, { ...retry, retries: 0 });
-  return parseChannelPage(html);
+	ctx: WidgetFetchContext,
+	pageUrl: string,
+	retry: RetryOptions,
+): Promise<{
+	title?: string;
+	items: Array<Record<string, unknown>>;
+	playlists: Array<{ id: string; title: string }>;
+}> {
+	// The rescue gets no retry budget of its own. The feed has already spent the
+	// configured one, and a source that is down should cost one look, not two
+	// full backoff ladders — that doubles the worst-case latency of a dead
+	// source for half a second of extra odds. A blip is covered by the stale
+	// cache and by the next poll.
+	const html = await fetchText(
+		ctx,
+		pageUrl,
+		{ headers: { "User-Agent": YT_UA } },
+		{ ...retry, retries: 0 },
+	);
+	return parseChannelPage(html);
 }
 
 /** `HTTP 404 for https://…` is the one shape fetchWithRetry throws, so the
  * status is worth keeping and the URL is not — the widget names the source. */
 function reasonFor(err: unknown): string {
-  const msg = err instanceof Error ? err.message : String(err);
-  const status = /^HTTP (\d{3})\b/.exec(msg)?.[1];
-  if (status) return `HTTP ${status}`;
-  return msg.length > 60 ? `${msg.slice(0, 57)}…` : msg;
+	const msg = err instanceof Error ? err.message : String(err);
+	const status = /^HTTP (\d{3})\b/.exec(msg)?.[1];
+	if (status) return `HTTP ${status}`;
+	return msg.length > 60 ? `${msg.slice(0, 57)}…` : msg;
 }
 
 /** Every channel answered but none of them produced a video. */
-const NO_VIDEOS = 'no videos found';
+const NO_VIDEOS = "no videos found";
 
 /** What one source contributed: its videos, and — when it contributed none —
  * why, so the widget can say so instead of looking merely quiet. */
 interface SourceOutcome {
-  videos: Video[];
-  issue?: VideoSourceIssue;
+	videos: Video[];
+	issue?: VideoSourceIssue;
 }
 
 /** Resolve playlist lockups found on a channel page into videos.
@@ -835,192 +886,200 @@ interface SourceOutcome {
  * Resolve up to 3 of them through the existing listing machinery and attribute
  * the newest entries to the channel. */
 async function resolvePlaylistLockups(
-  ctx: WidgetFetchContext,
-  playlists: Array<{ id: string; title: string }>,
-  channel: string,
-  opts: { source: string; limit: number; template: string | undefined; retry: RetryOptions },
-  cache: { get: () => Video[] | undefined; set: (videos: Video[]) => void },
+	ctx: WidgetFetchContext,
+	playlists: Array<{ id: string; title: string }>,
+	channel: string,
+	opts: { source: string; limit: number; template: string | undefined; retry: RetryOptions },
+	cache: { get: () => Video[] | undefined; set: (videos: Video[]) => void },
 ): Promise<SourceOutcome | null> {
-  if (playlists.length === 0) return null;
-  const toResolve = playlists.slice(0, 3);
-  const share = Math.ceil(opts.limit / toResolve.length);
-  const videos: Video[] = [];
-  const failures: string[] = [];
-  for (const pl of toResolve) {
-    try {
-      const { entries } = await playlistListing(ctx, pl.id, opts.retry);
-      const newest = entries.slice(-share).reverse();
-      for (const entry of newest) {
-        videos.push(entryToVideo(entry, channel, opts.template));
-      }
-    } catch (err) {
-      failures.push(`playlist ${pl.id} could not be listed: ${reasonFor(err)}`);
-    }
-  }
-  if (videos.length > 0) {
-    cache.set(videos);
-    const issue = failures.length > 0
-      ? { source: opts.source, reason: failures.join('; ') }
-      : undefined;
-    return { videos, issue };
-  }
-  if (failures.length > 0) {
-    return { videos: [], issue: { source: opts.source, reason: failures.join('; ') } };
-  }
-  return null;
+	if (playlists.length === 0) return null;
+	const toResolve = playlists.slice(0, 3);
+	const share = Math.ceil(opts.limit / toResolve.length);
+	const videos: Video[] = [];
+	const failures: string[] = [];
+	for (const pl of toResolve) {
+		try {
+			const { entries } = await playlistListing(ctx, pl.id, opts.retry);
+			const newest = entries.slice(-share).reverse();
+			for (const entry of newest) {
+				videos.push(entryToVideo(entry, channel, opts.template));
+			}
+		} catch (err) {
+			failures.push(`playlist ${pl.id} could not be listed: ${reasonFor(err)}`);
+		}
+	}
+	if (videos.length > 0) {
+		cache.set(videos);
+		const issue =
+			failures.length > 0 ? { source: opts.source, reason: failures.join("; ") } : undefined;
+		return { videos, issue };
+	}
+	if (failures.length > 0) {
+		return { videos: [], issue: { source: opts.source, reason: failures.join("; ") } };
+	}
+	return null;
 }
 
-registerWidget('videos', async (ctx, config) => {
-  const cfg = videosSchema.parse(config);
-  const includeShorts = cfg['include-shorts'] ?? false;
-  const retry = retryOptionsFrom(cfg);
+registerWidget("videos", async (ctx, config) => {
+	const cfg = videosSchema.parse(config);
+	const includeShorts = cfg["include-shorts"] ?? false;
+	const retry = retryOptionsFrom(cfg);
 
-  const channelFeeds = await feedSpecsForChannels(ctx, cfg.channels, includeShorts, retry);
-  // A playlist is a source like any other: `playlist:` is prefixed for the
-  // feed, and the public playlist page is its second channel, so a feed that
-  // 404s or comes back empty no longer costs the whole source.
-  const playlistFeeds = cfg.playlists.map((p): FeedSpec => {
-    const pid = p.startsWith(PLAYLIST_PREFIX) ? p.slice(PLAYLIST_PREFIX.length) : p;
-    const prefixed = `${PLAYLIST_PREFIX}${pid}`;
-    return {
-      url: feedUrlForId(prefixed, includeShorts),
-      source: p,
-      cacheKey: prefixed,
-      pageUrl: `https://www.youtube.com/playlist?list=${encodeURIComponent(pid)}`,
-      playlistId: pid,
-    };
-  });
-  const feeds: FeedSpec[] = [...channelFeeds, ...playlistFeeds];
+	const channelFeeds = await feedSpecsForChannels(ctx, cfg.channels, includeShorts, retry);
+	// A playlist is a source like any other: `playlist:` is prefixed for the
+	// feed, and the public playlist page is its second channel, so a feed that
+	// 404s or comes back empty no longer costs the whole source.
+	const playlistFeeds = cfg.playlists.map((p): FeedSpec => {
+		const pid = p.startsWith(PLAYLIST_PREFIX) ? p.slice(PLAYLIST_PREFIX.length) : p;
+		const prefixed = `${PLAYLIST_PREFIX}${pid}`;
+		return {
+			url: feedUrlForId(prefixed, includeShorts),
+			source: p,
+			cacheKey: prefixed,
+			pageUrl: `https://www.youtube.com/playlist?list=${encodeURIComponent(pid)}`,
+			playlistId: pid,
+		};
+	});
+	const feeds: FeedSpec[] = [...channelFeeds, ...playlistFeeds];
 
-  const settled = await Promise.allSettled(
-    feeds.map(async ({ url, source, cacheKey, pageUrl, resolveError, playlistId }): Promise<SourceOutcome> => {
-      const fullCacheKey = `videos:feed:${cacheKey}::${cfg['video-url-template'] ?? ''}::${includeShorts ? 'shorts' : 'noshorts'}`;
-      // TtlCache.set retains a stale copy for 24h internally, so one key suffices.
-      const getCached = (): Video[] | undefined =>
-        ctx.cache.get<Video[]>(fullCacheKey) ?? ctx.cache.getStale<Video[]>(fullCacheKey);
-      const setCached = (videos: Video[]) => {
-        ctx.cache.set(fullCacheKey, videos, STATIC_TTL_MS);
-      };
-      const opts = { template: cfg['video-url-template'], includeShorts };
-      const mapItems = (items: Array<Record<string, unknown>>, channel: string) =>
-        items.flatMap((item) => toVideo(item, channel, opts) ?? []);
-      // An unresolvable handle gets no feed request at all: `channel_id=@typo`
-      // is a URL that cannot answer, so asking only turns one 404 into two.
-      // Whatever we last knew for it still renders — with the typo named.
-      if (resolveError) {
-        return { videos: getCached() ?? [], issue: { source, reason: resolveError } };
-      }
-      try {
-        const raw = await fetchText(ctx, url, { headers: { 'User-Agent': YT_UA } }, retry);
-        let parsed = parseVideoFeed(raw);
-        let reason = NO_VIDEOS;
-        // Empty feed: the channel/playlist page still has the grid. If that
-        // page is what failed, its reason is the honest one to report.
-        if (parsed.items.length === 0 && pageUrl) {
-          try {
-            parsed = await scrapeChannelPage(ctx, pageUrl, retry);
-          } catch (err) {
-            reason = reasonFor(err);
-          }
-        }
-        // A page whose grid holds only playlist lockups (no video lockups)
-        // still names the channel's content: resolve the playlists and
-        // attribute their newest entries to the channel.
-        if (parsed.items.length === 0 && parsed.playlists.length > 0) {
-          const resolved = await resolvePlaylistLockups(
-            ctx,
-            parsed.playlists,
-            parsed.title ?? source,
-            { source, limit: cfg.limit, template: cfg['video-url-template'], retry },
-            { get: getCached, set: setCached },
-          );
-          if (resolved) return resolved;
-        }
-        // A playlist whose feed window runs oldest→newest is the positional
-        // feed showing its OLDEST slots — the "frozen forever" bug. List the
-        // playlist properly and show its newest end, or say why we cannot.
-        if (playlistId && runsOldestFirst(parsed.items)) {
-          const corrected = await correctOldestFirstPlaylist(
-            ctx,
-            playlistId,
-            parsed,
-            { source, limit: cfg.limit, template: cfg['video-url-template'], retry },
-            { get: getCached, set: setCached },
-          );
-          if (corrected) return corrected;
-        }
-        // Cap at `limit`: feeds arrive newest-first, so the global top-`limit`
-        // can never need more than `limit` rows from one source. Bounds a
-        // pathological source without changing what the merge can output.
-        const videos = mapItems(parsed.items, parsed.title ?? source).slice(0, cfg.limit);
-        setCached(videos);
-        return videos.length === 0 ? { videos, issue: { source, reason } } : { videos };
-      } catch (err) {
-        if (pageUrl) {
-          try {
-            const scraped = await scrapeChannelPage(ctx, pageUrl, retry);
-            const fallback = mapItems(scraped.items, scraped.title ?? source).slice(0, cfg.limit);
-            if (fallback.length > 0) {
-              setCached(fallback);
-              return { videos: fallback };
-            }
-            if (scraped.playlists.length > 0) {
-              const resolved = await resolvePlaylistLockups(
-                ctx,
-                scraped.playlists,
-                scraped.title ?? source,
-                { source, limit: cfg.limit, template: cfg['video-url-template'], retry },
-                { get: getCached, set: setCached },
-              );
-              if (resolved) return resolved;
-            }
-          } catch {
-            // the page failed too — the feed's error is the one worth naming
-          }
-        }
-        const cached = getCached();
-        if (cached) return { videos: cached };
-        return { videos: [], issue: { source, reason: reasonFor(err) } };
-      }
-    }),
-  );
+	const settled = await Promise.allSettled(
+		feeds.map(
+			async ({
+				url,
+				source,
+				cacheKey,
+				pageUrl,
+				resolveError,
+				playlistId,
+			}): Promise<SourceOutcome> => {
+				const fullCacheKey = `videos:feed:${cacheKey}::${cfg["video-url-template"] ?? ""}::${includeShorts ? "shorts" : "noshorts"}`;
+				// TtlCache.set retains a stale copy for 24h internally, so one key suffices.
+				const getCached = (): Video[] | undefined =>
+					ctx.cache.get<Video[]>(fullCacheKey) ?? ctx.cache.getStale<Video[]>(fullCacheKey);
+				const setCached = (videos: Video[]) => {
+					ctx.cache.set(fullCacheKey, videos, STATIC_TTL_MS);
+				};
+				const opts = { template: cfg["video-url-template"], includeShorts };
+				const mapItems = (items: Array<Record<string, unknown>>, channel: string) =>
+					items.flatMap((item) => toVideo(item, channel, opts) ?? []);
+				// An unresolvable handle gets no feed request at all: `channel_id=@typo`
+				// is a URL that cannot answer, so asking only turns one 404 into two.
+				// Whatever we last knew for it still renders — with the typo named.
+				if (resolveError) {
+					return { videos: getCached() ?? [], issue: { source, reason: resolveError } };
+				}
+				try {
+					const raw = await fetchText(ctx, url, { headers: { "User-Agent": YT_UA } }, retry);
+					let parsed = parseVideoFeed(raw);
+					let reason = NO_VIDEOS;
+					// Empty feed: the channel/playlist page still has the grid. If that
+					// page is what failed, its reason is the honest one to report.
+					if (parsed.items.length === 0 && pageUrl) {
+						try {
+							parsed = await scrapeChannelPage(ctx, pageUrl, retry);
+						} catch (err) {
+							reason = reasonFor(err);
+						}
+					}
+					// A page whose grid holds only playlist lockups (no video lockups)
+					// still names the channel's content: resolve the playlists and
+					// attribute their newest entries to the channel.
+					if (parsed.items.length === 0 && parsed.playlists.length > 0) {
+						const resolved = await resolvePlaylistLockups(
+							ctx,
+							parsed.playlists,
+							parsed.title ?? source,
+							{ source, limit: cfg.limit, template: cfg["video-url-template"], retry },
+							{ get: getCached, set: setCached },
+						);
+						if (resolved) return resolved;
+					}
+					// A playlist whose feed window runs oldest→newest is the positional
+					// feed showing its OLDEST slots — the "frozen forever" bug. List the
+					// playlist properly and show its newest end, or say why we cannot.
+					if (playlistId && runsOldestFirst(parsed.items)) {
+						const corrected = await correctOldestFirstPlaylist(
+							ctx,
+							playlistId,
+							parsed,
+							{ source, limit: cfg.limit, template: cfg["video-url-template"], retry },
+							{ get: getCached, set: setCached },
+						);
+						if (corrected) return corrected;
+					}
+					// Cap at `limit`: feeds arrive newest-first, so the global top-`limit`
+					// can never need more than `limit` rows from one source. Bounds a
+					// pathological source without changing what the merge can output.
+					const videos = mapItems(parsed.items, parsed.title ?? source).slice(0, cfg.limit);
+					setCached(videos);
+					return videos.length === 0 ? { videos, issue: { source, reason } } : { videos };
+				} catch (err) {
+					if (pageUrl) {
+						try {
+							const scraped = await scrapeChannelPage(ctx, pageUrl, retry);
+							const fallback = mapItems(scraped.items, scraped.title ?? source).slice(0, cfg.limit);
+							if (fallback.length > 0) {
+								setCached(fallback);
+								return { videos: fallback };
+							}
+							if (scraped.playlists.length > 0) {
+								const resolved = await resolvePlaylistLockups(
+									ctx,
+									scraped.playlists,
+									scraped.title ?? source,
+									{ source, limit: cfg.limit, template: cfg["video-url-template"], retry },
+									{ get: getCached, set: setCached },
+								);
+								if (resolved) return resolved;
+							}
+						} catch {
+							// the page failed too — the feed's error is the one worth naming
+						}
+					}
+					const cached = getCached();
+					if (cached) return { videos: cached };
+					return { videos: [], issue: { source, reason: reasonFor(err) } };
+				}
+			},
+		),
+	);
 
-  const issues: VideoSourceIssue[] = [];
-  const seenIssues = new Set<string>();
-  const report = (issue: VideoSourceIssue): void => {
-    // The same source listed twice in one config is one problem, not two dots.
-    const id = `${issue.source}${issue.reason}`;
-    if (seenIssues.has(id)) return;
-    seenIssues.add(id);
-    issues.push(issue);
-  };
+	const issues: VideoSourceIssue[] = [];
+	const seenIssues = new Set<string>();
+	const report = (issue: VideoSourceIssue): void => {
+		// The same source listed twice in one config is one problem, not two dots.
+		const id = `${issue.source}${issue.reason}`;
+		if (seenIssues.has(id)) return;
+		seenIssues.add(id);
+		issues.push(issue);
+	};
 
-  // Newest-first across all sources: pool everything, order by date, take
-  // the top `limit`. A quiet channel simply contributes fewer rows — that is
-  // the honest shape of recency, not a crowding bug.
-  const seen = new Set<string>();
-  const videos: Video[] = [];
+	// Newest-first across all sources: pool everything, order by date, take
+	// the top `limit`. A quiet channel simply contributes fewer rows — that is
+	// the honest shape of recency, not a crowding bug.
+	const seen = new Set<string>();
+	const videos: Video[] = [];
 
-  settled.forEach((r, i) => {
-    if (r.status === 'rejected') {
-      // Nothing in the mapper rethrows, so this is a bug rather than an
-      // upstream failure — name the source instead of dropping it.
-      report({ source: feeds[i]?.source ?? 'unknown', reason: reasonFor(r.reason) });
-      return;
-    }
-    if (r.value.issue) report(r.value.issue);
-    for (const v of r.value.videos) {
-      if (seen.has(v.url)) continue;
-      seen.add(v.url);
-      videos.push(v);
-    }
-  });
+	settled.forEach((r, i) => {
+		if (r.status === "rejected") {
+			// Nothing in the mapper rethrows, so this is a bug rather than an
+			// upstream failure — name the source instead of dropping it.
+			report({ source: feeds[i]?.source ?? "unknown", reason: reasonFor(r.reason) });
+			return;
+		}
+		if (r.value.issue) report(r.value.issue);
+		for (const v of r.value.videos) {
+			if (seen.has(v.url)) continue;
+			seen.add(v.url);
+			videos.push(v);
+		}
+	});
 
-  videos.sort((a, b) => {
-    const ta = a.published ? Date.parse(a.published) : 0;
-    const tb = b.published ? Date.parse(b.published) : 0;
-    return tb - ta;
-  });
+	videos.sort((a, b) => {
+		const ta = a.published ? Date.parse(a.published) : 0;
+		const tb = b.published ? Date.parse(b.published) : 0;
+		return tb - ta;
+	});
 
-  return { videos: videos.slice(0, cfg.limit), issues } satisfies VideosData;
+	return { videos: videos.slice(0, cfg.limit), issues } satisfies VideosData;
 });

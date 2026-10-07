@@ -10,9 +10,9 @@
    native <meter> semantics the tests assert on. */
 
 .row + .row {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--color-separator);
+	margin-top: 8px;
+	padding-top: 8px;
+	border-top: 1px solid var(--color-separator);
 }
 
 /* 4.75rem holds the longest label (GPU LOAD) at the label type size, so the
@@ -20,10 +20,10 @@
    is sized to its content but floors at 0, so a narrow column clips the tail
    of `100.0 GB / 500.0 GB` rather than pushing the row past the card. */
 .rowGrid {
-  display: grid;
-  grid-template-columns: 4.75rem minmax(0, 1fr) minmax(0, max-content);
-  align-items: center;
-  column-gap: 12px;
+	display: grid;
+	grid-template-columns: 4.75rem minmax(0, 1fr) minmax(0, max-content);
+	align-items: center;
+	column-gap: 12px;
 }
 
 /* Both elastic tracks need an explicit min-width: 0 — a grid item's default
@@ -32,7 +32,7 @@
    into an ellipsis. */
 .value,
 .sub {
-  min-width: 0;
+	min-width: 0;
 }
 
 /* Narrow tile (sidebar, small span): the three-column row grid collapses the
@@ -40,43 +40,43 @@
    to a second line and let the value fill the tile. The meter stays full-
    width and readable. */
 @container tile (max-width: 220px) {
-  .rowGrid {
-    grid-template-columns: 4.75rem minmax(0, 1fr);
-  }
+	.rowGrid {
+		grid-template-columns: 4.75rem minmax(0, 1fr);
+	}
 
-  .sub {
-    grid-column: 1 / -1;
-    justify-self: end;
-  }
+	.sub {
+		grid-column: 1 / -1;
+		justify-self: end;
+	}
 }
 
 /* Neutral track, single fill escalating by severity. Track is Comment, never a
    tinted second series. Not a pill: the brand is flat and crisp, 2px on a 5px bar. */
 .meter {
-  display: block;
-  width: 100%;
-  height: 5px;
-  margin-top: 6px;
-  border: none;
-  border-radius: 2px;
-  background: var(--color-track, var(--color-widget-background-highlight));
-  overflow: hidden;
-  appearance: none;
+	display: block;
+	width: 100%;
+	height: 5px;
+	margin-top: 6px;
+	border: none;
+	border-radius: 2px;
+	background: var(--color-track, var(--color-widget-background-highlight));
+	overflow: hidden;
+	appearance: none;
 }
 
 .meter::before {
-  content: '';
-  display: block;
-  height: 100%;
-  width: var(--progress, 0%);
-  border-radius: inherit;
-  background: var(--color-positive);
+	content: "";
+	display: block;
+	height: 100%;
+	width: var(--progress, 0%);
+	border-radius: inherit;
+	background: var(--color-positive);
 }
 
-.meter[data-high='true']::before {
-  background: var(--color-warning);
+.meter[data-high="true"]::before {
+	background: var(--color-warning);
 }
 
-.meter[data-critical='true']::before {
-  background: var(--color-negative);
+.meter[data-critical="true"]::before {
+	background: var(--color-negative);
 }

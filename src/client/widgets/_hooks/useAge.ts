@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { useRelativeTime } from './useRelativeTime';
+import { useMemo } from "react";
+import { useRelativeTime } from "./useRelativeTime";
 
 /**
  * Deep seam: string (ISO published) -> string (live age like "2h").
@@ -7,12 +7,12 @@ import { useRelativeTime } from './useRelativeTime';
  * Returns "" for null/empty/invalid so callers can conditionally hide meta.
  */
 export function useAge(published: string | null | undefined): string {
-  const valid = !!published && !Number.isNaN(Date.parse(published));
-  const baseAgeSeconds = useMemo(() => {
-    if (!valid || !published) return 0;
-    return (Date.now() - Date.parse(published)) / 1000;
-  }, [published, valid]);
-  const live = useRelativeTime(baseAgeSeconds);
-  if (!valid) return '';
-  return live;
+	const valid = !!published && !Number.isNaN(Date.parse(published));
+	const baseAgeSeconds = useMemo(() => {
+		if (!valid || !published) return 0;
+		return (Date.now() - Date.parse(published)) / 1000;
+	}, [published, valid]);
+	const live = useRelativeTime(baseAgeSeconds);
+	if (!valid) return "";
+	return live;
 }

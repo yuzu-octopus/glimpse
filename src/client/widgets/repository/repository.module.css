@@ -1,59 +1,58 @@
 .header {
-  display: grid;
-  /* An implicit `auto` track is sized to its items' max-content, so a long
+	display: grid;
+	/* An implicit `auto` track is sized to its items' max-content, so a long
    * description grew the column past the card. minmax(0, 1fr) pins the track
    * to the card's content width and lets the clamp do its job. */
-  grid-template-columns: minmax(0, 1fr);
-  gap: 2px;
-  min-width: 0;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 2px;
+	min-width: 0;
 }
 
 /* glance repository.html: name is size-h4 link — a link, so it wears the
  * tappable purple at rest. */
 .repoName {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  width: fit-content;
-  font-size: var(--font-size-h4);
-  font-weight: 600;
-  color: var(--color-primary);
-  text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	width: fit-content;
+	font-size: var(--font-size-h4);
+	font-weight: 600;
+	color: var(--color-primary);
+	text-decoration: none;
 }
 
 /* The header is tappable (the repoName is a Link), so it gets the same wash
    every other tappable row in the app wears. */
 .header:is(:hover, :focus-within) {
-  background-color: var(--color-overlay-hover);
-  border-radius: var(--border-radius);
+	background-color: var(--color-overlay-hover);
+	border-radius: var(--border-radius);
 }
-
 
 /* glance list-horizontal-text: stars/forks in subdue */
 .stars {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 12px;
-  color: var(--color-text-base-muted);
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	font-size: 12px;
+	color: var(--color-text-base-muted);
 }
 
 .desc {
-  font-size: var(--font-size-base);
-  color: var(--color-text-paragraph);
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  overflow-wrap: anywhere;
+	font-size: var(--font-size-base);
+	color: var(--color-text-paragraph);
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	overflow-wrap: anywhere;
 }
 
 /* glance: hr margin-block-8 between sections */
 .subList {
-  padding: 8px 0;
-  border-top: 1px solid var(--color-separator);
-  min-width: 0;
+	padding: 8px 0;
+	border-top: 1px solid var(--color-separator);
+	min-width: 0;
 }
 
 /* An implicit `auto` track is sized to its items' max-content, so the nowrap
@@ -61,27 +60,27 @@
    minmax(0, 1fr) pins the track to the card and lets each row's own
    ellipsis clamp do its job. */
 .subRows {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 2px;
-  min-width: 0;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 2px;
+	min-width: 0;
 }
 
 /* A heading, not metadata: the 12px floor applies in full, so it does not
    drop to the 11px metadata step. */
 .subHeader {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-text-base-muted);
-  margin-bottom: 4px;
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--color-text-base-muted);
+	margin-bottom: 4px;
 }
 
 /* glance list-horizontal-text: the row is a kit ListItem — the number is its
@@ -93,15 +92,13 @@
    --_item-label-color is the seam the kit's label span reads (see Item's
    label rule in astryx.css). */
 .subRow {
-  min-width: 0;
-  --_item-label-color: var(--color-primary);
+	min-width: 0;
+	--_item-label-color: var(--color-primary);
 }
-
 
 .subNumber {
-  font-size: 12px;
-  color: var(--color-text-base-muted);
-  flex-shrink: 0;
-  font-variant-numeric: tabular-nums;
+	font-size: 12px;
+	color: var(--color-text-base-muted);
+	flex-shrink: 0;
+	font-variant-numeric: tabular-nums;
 }
-

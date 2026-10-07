@@ -1,794 +1,857 @@
-import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
-import { ConfigSchema, resolveSpan } from './config';
-import { calendarSchema } from './widgets/calendar';
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+import { ConfigSchema, resolveSpan } from "./config";
+import { calendarSchema } from "./widgets/calendar";
 
 declare const Bun: { YAML: { parse(s: string): unknown } } | undefined;
 
 const validYaml = {
-  pages: [
-    {
-      name: 'Home',
-      columns: [
-        { size: 'small', widgets: [{ type: 'clock' }] },
-        { size: 'full', widgets: [{ type: 'rss', feeds: [{ url: 'https://example.com/feed.xml' }] }] },
-      ],
-    },
-  ],
+	pages: [
+		{
+			name: "Home",
+			columns: [
+				{ size: "small", widgets: [{ type: "clock" }] },
+				{
+					size: "full",
+					widgets: [{ type: "rss", feeds: [{ url: "https://example.com/feed.xml" }] }],
+				},
+			],
+		},
+	],
 };
 
 /** Container children are typed `unknown[]` (the recursive ref is a bare
  * z.ZodType), so read their discriminators through a real runtime guard. */
 function childTypes(widgets: unknown): string[] {
-  if (!Array.isArray(widgets)) throw new Error('expected an array of widgets');
-  return widgets.map((w) => {
-    if (w === null || typeof w !== 'object' || !('type' in w)) {
-      throw new Error('expected a widget object');
-    }
-    const { type } = w;
-    if (typeof type !== 'string') throw new Error('expected a string type');
-    return type;
-  });
+	if (!Array.isArray(widgets)) throw new Error("expected an array of widgets");
+	return widgets.map((w) => {
+		if (w === null || typeof w !== "object" || !("type" in w)) {
+			throw new Error("expected a widget object");
+		}
+		const { type } = w;
+		if (typeof type !== "string") throw new Error("expected a string type");
+		return type;
+	});
 }
 
-describe('ConfigSchema', () => {
-  it('accepts a valid pages/columns/widgets config', () => {
-    const r = ConfigSchema.safeParse(validYaml);
-    expect(r.success).toBe(true);
-  });
+describe("ConfigSchema", () => {
+	it("accepts a valid pages/columns/widgets config", () => {
+		const r = ConfigSchema.safeParse(validYaml);
+		expect(r.success).toBe(true);
+	});
 
-  it('rejects an unknown widget type', () => {
-    const r = ConfigSchema.safeParse({
-      pages: [{ name: 'Home', columns: [{ size: 'full', widgets: [{ type: 'definitely-not-a-widget' }] }] }],
-    });
-    expect(r.success).toBe(false);
-  });
+	it("rejects an unknown widget type", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [
+				{
+					name: "Home",
+					columns: [{ size: "full", widgets: [{ type: "definitely-not-a-widget" }] }],
+				},
+			],
+		});
+		expect(r.success).toBe(false);
+	});
 
-  it('rejects a page with no columns', () => {
-    const r = ConfigSchema.safeParse({ pages: [{ name: 'Home' }] });
-    expect(r.success).toBe(false);
-  });
+	it("rejects a page with no columns", () => {
+		const r = ConfigSchema.safeParse({ pages: [{ name: "Home" }] });
+		expect(r.success).toBe(false);
+	});
 
-  it('rejects more than three columns', () => {
-    const col = { size: 'small' as const, widgets: [] };
-    const r = ConfigSchema.safeParse({
-      pages: [{ name: 'Home', columns: [col, col, col, col] }],
-    });
-    expect(r.success).toBe(false);
-  });
+	it("rejects more than three columns", () => {
+		const col = { size: "small" as const, widgets: [] };
+		const r = ConfigSchema.safeParse({
+			pages: [{ name: "Home", columns: [col, col, col, col] }],
+		});
+		expect(r.success).toBe(false);
+	});
 
-  it('accepts flat widgets without columns', () => {
-    const r = ConfigSchema.safeParse({ pages: [{ name: 'Home', widgets: [{ type: 'clock' }] }] });
-    expect(r.success).toBe(true);
-    if (r.success) {
-      expect(r.data.pages[0].widgets![0].type).toBe('clock');
-      expect(r.data.pages[0].columns).toBeUndefined();
-    }
-  });
+	it("accepts flat widgets without columns", () => {
+		const r = ConfigSchema.safeParse({ pages: [{ name: "Home", widgets: [{ type: "clock" }] }] });
+		expect(r.success).toBe(true);
+		if (r.success) {
+			expect(r.data.pages[0].widgets![0].type).toBe("clock");
+			expect(r.data.pages[0].columns).toBeUndefined();
+		}
+	});
 
-  it('parses flat widget hints', () => {
-    const r = ConfigSchema.safeParse({
-      pages: [{ name: 'X', widgets: [{ type: 'clock', priority: 9, zone: 'sidebar', span: 2 }] }],
-    });
-    expect(r.success).toBe(true);
-    if (r.success) {
-      const w = r.data.pages[0].widgets![0];
-      expect(w.priority).toBe(9);
-      expect(w.zone).toBe('sidebar');
-      expect(w.span).toBe(2);
-    }
-  });
+	it("parses flat widget hints", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [{ name: "X", widgets: [{ type: "clock", priority: 9, zone: "sidebar", span: 2 }] }],
+		});
+		expect(r.success).toBe(true);
+		if (r.success) {
+			const w = r.data.pages[0].widgets![0];
+			expect(w.priority).toBe(9);
+			expect(w.zone).toBe("sidebar");
+			expect(w.span).toBe(2);
+		}
+	});
 
-  it('parses grid-columns and grid-row-height', () => {
-    const r = ConfigSchema.safeParse({
-      pages: [{ name: 'Home', 'grid-columns': 12, 'grid-row-height': 96, widgets: [{ type: 'clock' }] }],
-    });
-    expect(r.success).toBe(true);
-    if (r.success) {
-      expect(r.data.pages[0]['grid-columns']).toBe(12);
-      expect(r.data.pages[0]['grid-row-height']).toBe(96);
-    }
-  });
+	it("parses grid-columns and grid-row-height", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [
+				{ name: "Home", "grid-columns": 12, "grid-row-height": 96, widgets: [{ type: "clock" }] },
+			],
+		});
+		expect(r.success).toBe(true);
+		if (r.success) {
+			expect(r.data.pages[0]["grid-columns"]).toBe(12);
+			expect(r.data.pages[0]["grid-row-height"]).toBe(96);
+		}
+	});
 
-  it('rejects out-of-range grid-columns and grid-row-height', () => {
-    const base = { name: 'Home', widgets: [{ type: 'clock' }] };
-    expect(ConfigSchema.safeParse({ pages: [{ ...base, 'grid-columns': 1 }] }).success).toBe(false);
-    expect(ConfigSchema.safeParse({ pages: [{ ...base, 'grid-columns': 13 }] }).success).toBe(false);
-    expect(ConfigSchema.safeParse({ pages: [{ ...base, 'grid-row-height': 31 }] }).success).toBe(false);
-    expect(ConfigSchema.safeParse({ pages: [{ ...base, 'grid-row-height': 201 }] }).success).toBe(false);
-  });
+	it("rejects out-of-range grid-columns and grid-row-height", () => {
+		const base = { name: "Home", widgets: [{ type: "clock" }] };
+		expect(ConfigSchema.safeParse({ pages: [{ ...base, "grid-columns": 1 }] }).success).toBe(false);
+		expect(ConfigSchema.safeParse({ pages: [{ ...base, "grid-columns": 13 }] }).success).toBe(
+			false,
+		);
+		expect(ConfigSchema.safeParse({ pages: [{ ...base, "grid-row-height": 31 }] }).success).toBe(
+			false,
+		);
+		expect(ConfigSchema.safeParse({ pages: [{ ...base, "grid-row-height": 201 }] }).success).toBe(
+			false,
+		);
+	});
 
-  it('rejects a missing pages array', () => {
-    expect(ConfigSchema.safeParse({}).success).toBe(false);
-  });
+	it("rejects a missing pages array", () => {
+		expect(ConfigSchema.safeParse({}).success).toBe(false);
+	});
 
-  it('rejects a theme block with a migration message, once, not per key', () => {
-    const r = ConfigSchema.safeParse({
-      ...validYaml,
-      theme: { light: true, 'background-color': '240 21 15', presets: { brand: {} } },
-    });
-    expect(r.success).toBe(false);
-    if (r.success) return;
-    const issues = r.error.issues;
-    expect(issues).toHaveLength(1);
-    expect(issues[0].path).toEqual(['theme']);
-    expect(issues[0].message).toContain('block removed');
-    expect(issues[0].message).toContain('astryx-dracula');
-    expect(issues[0].message).toContain('delete the theme block');
-  });
+	it("rejects a theme block with a migration message, once, not per key", () => {
+		const r = ConfigSchema.safeParse({
+			...validYaml,
+			theme: { light: true, "background-color": "240 21 15", presets: { brand: {} } },
+		});
+		expect(r.success).toBe(false);
+		if (r.success) return;
+		const issues = r.error.issues;
+		expect(issues).toHaveLength(1);
+		expect(issues[0].path).toEqual(["theme"]);
+		expect(issues[0].message).toContain("block removed");
+		expect(issues[0].message).toContain("astryx-dracula");
+		expect(issues[0].message).toContain("delete the theme block");
+	});
 
-  // The dns-stats fetcher cannot skip TLS verification, so glance's
-  // `allow-insecure` parses clean and does nothing — a config that looks
-  // honoured and is not. The schema refuses it and names the key instead.
-  it('rejects a dns-stats widget that sets allow-insecure', () => {
-    const page = (extra: Record<string, unknown>) => ({
-      pages: [{ name: 'H', widgets: [{ type: 'dns-stats', url: 'http://dns.local', ...extra }] }],
-    });
-    expect(ConfigSchema.safeParse(page({})).success).toBe(true);
-    const r = ConfigSchema.safeParse(page({ 'allow-insecure': true }));
-    expect(r.success).toBe(false);
-    if (r.success) return;
-    const issue = r.error.issues.find((i) => i.path.at(-1) === 'allow-insecure');
-    expect(issue?.message).toContain('cannot skip TLS verification');
-    expect(issue?.message).toContain('delete it from the config');
-  });
+	// The dns-stats fetcher cannot skip TLS verification, so glance's
+	// `allow-insecure` parses clean and does nothing — a config that looks
+	// honoured and is not. The schema refuses it and names the key instead.
+	it("rejects a dns-stats widget that sets allow-insecure", () => {
+		const page = (extra: Record<string, unknown>) => ({
+			pages: [{ name: "H", widgets: [{ type: "dns-stats", url: "http://dns.local", ...extra }] }],
+		});
+		expect(ConfigSchema.safeParse(page({})).success).toBe(true);
+		const r = ConfigSchema.safeParse(page({ "allow-insecure": true }));
+		expect(r.success).toBe(false);
+		if (r.success) return;
+		const issue = r.error.issues.find((i) => i.path.at(-1) === "allow-insecure");
+		expect(issue?.message).toContain("cannot skip TLS verification");
+		expect(issue?.message).toContain("delete it from the config");
+	});
 
-  // The renderer lowercased the value and fell back to Monday on a miss, so
-  // every typo rendered as a plausible week. Case and padding still parse;
-  // a name that is not a day is now a load-time error.
-  it('normalizes first-day-of-week and rejects a spelling that is not a day', () => {
-    expect(
-      calendarSchema.parse({ type: 'calendar', 'first-day-of-week': ' Sunday ' })['first-day-of-week'],
-    ).toBe('sunday');
-    const page = (value: string) => ({
-      pages: [{ name: 'H', widgets: [{ type: 'calendar', 'first-day-of-week': value }] }],
-    });
-    for (const day of ['Sunday', 'monday', 'TUESDAY', 'wednesday', 'thursday', 'friday', 'saturday']) {
-      expect(ConfigSchema.safeParse(page(day)).success).toBe(true);
-    }
-    const r = ConfigSchema.safeParse(page('mon'));
-    expect(r.success).toBe(false);
-    if (!r.success) {
-      expect(r.error.issues.some((i) => i.path.at(-1) === 'first-day-of-week')).toBe(true);
-    }
-    for (const bad of ['funday', '', 'mondayy', '1']) {
-      expect(ConfigSchema.safeParse(page(bad)).success).toBe(false);
-    }
-  });
+	// The renderer lowercased the value and fell back to Monday on a miss, so
+	// every typo rendered as a plausible week. Case and padding still parse;
+	// a name that is not a day is now a load-time error.
+	it("normalizes first-day-of-week and rejects a spelling that is not a day", () => {
+		expect(
+			calendarSchema.parse({ type: "calendar", "first-day-of-week": " Sunday " })[
+				"first-day-of-week"
+			],
+		).toBe("sunday");
+		const page = (value: string) => ({
+			pages: [{ name: "H", widgets: [{ type: "calendar", "first-day-of-week": value }] }],
+		});
+		for (const day of [
+			"Sunday",
+			"monday",
+			"TUESDAY",
+			"wednesday",
+			"thursday",
+			"friday",
+			"saturday",
+		]) {
+			expect(ConfigSchema.safeParse(page(day)).success).toBe(true);
+		}
+		const r = ConfigSchema.safeParse(page("mon"));
+		expect(r.success).toBe(false);
+		if (!r.success) {
+			expect(r.error.issues.some((i) => i.path.at(-1) === "first-day-of-week")).toBe(true);
+		}
+		for (const bad of ["funday", "", "mondayy", "1"]) {
+			expect(ConfigSchema.safeParse(page(bad)).success).toBe(false);
+		}
+	});
 
-  it('accepts a top-level custom-css-file', () => {
-    const r = ConfigSchema.safeParse({ ...validYaml, 'custom-css-file': 'custom.css' });
-    expect(r.success).toBe(true);
-    if (!r.success) return;
-    expect(r.data['custom-css-file']).toBe('custom.css');
-  });
+	it("accepts a top-level custom-css-file", () => {
+		const r = ConfigSchema.safeParse({ ...validYaml, "custom-css-file": "custom.css" });
+		expect(r.success).toBe(true);
+		if (!r.success) return;
+		expect(r.data["custom-css-file"]).toBe("custom.css");
+	});
 
-  it('parses tiling, min-column-width, and column span', () => {
-    const r = ConfigSchema.safeParse({
-      pages: [
-        {
-          name: 'Home',
-          tiling: 'auto',
-          'min-column-width': 340,
-          columns: [
-            { size: 'small', span: 2, widgets: [{ type: 'clock' }] },
-            { size: 'small', widgets: [{ type: 'clock' }] },
-          ],
-        },
-      ],
-    });
-    expect(r.success).toBe(true);
-    if (r.success) {
-      const page = r.data.pages[0];
-      expect(page.tiling).toBe('auto');
-      expect(page['min-column-width']).toBe(340);
-      expect(page.columns![0].span).toBe(2);
-      expect(page.columns![1].span).toBeUndefined();
-    }
-  });
+	it("parses tiling, min-column-width, and column span", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [
+				{
+					name: "Home",
+					tiling: "auto",
+					"min-column-width": 340,
+					columns: [
+						{ size: "small", span: 2, widgets: [{ type: "clock" }] },
+						{ size: "small", widgets: [{ type: "clock" }] },
+					],
+				},
+			],
+		});
+		expect(r.success).toBe(true);
+		if (r.success) {
+			const page = r.data.pages[0];
+			expect(page.tiling).toBe("auto");
+			expect(page["min-column-width"]).toBe(340);
+			expect(page.columns![0].span).toBe(2);
+			expect(page.columns![1].span).toBeUndefined();
+		}
+	});
 
-  it('accepts tiling collage alongside auto', () => {
-    const r = ConfigSchema.safeParse({
-      pages: [
-        {
-          name: 'Home',
-          tiling: 'collage',
-          'min-column-width': 340,
-          columns: [
-            { size: 'small', span: 2, widgets: [{ type: 'clock' }] },
-            { size: 'small', widgets: [{ type: 'rss', feeds: [{ url: 'https://example.com/feed.xml' }] }] },
-          ],
-        },
-      ],
-    });
-    expect(r.success).toBe(true);
-    if (r.success) {
-      expect(r.data.pages[0].tiling).toBe('collage');
-    }
-  });
+	it("accepts tiling collage alongside auto", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [
+				{
+					name: "Home",
+					tiling: "collage",
+					"min-column-width": 340,
+					columns: [
+						{ size: "small", span: 2, widgets: [{ type: "clock" }] },
+						{
+							size: "small",
+							widgets: [{ type: "rss", feeds: [{ url: "https://example.com/feed.xml" }] }],
+						},
+					],
+				},
+			],
+		});
+		expect(r.success).toBe(true);
+		if (r.success) {
+			expect(r.data.pages[0].tiling).toBe("collage");
+		}
+	});
 
-  it('defaults tiling and span to undefined (columns mode)', () => {
-    const r = ConfigSchema.safeParse(validYaml);
-    expect(r.success).toBe(true);
-    if (r.success) {
-      expect(r.data.pages[0].tiling).toBeUndefined();
-      expect(r.data.pages[0]['min-column-width']).toBeUndefined();
-      expect(r.data.pages[0].columns![0].span).toBeUndefined();
-    }
-  });
+	it("defaults tiling and span to undefined (columns mode)", () => {
+		const r = ConfigSchema.safeParse(validYaml);
+		expect(r.success).toBe(true);
+		if (r.success) {
+			expect(r.data.pages[0].tiling).toBeUndefined();
+			expect(r.data.pages[0]["min-column-width"]).toBeUndefined();
+			expect(r.data.pages[0].columns![0].span).toBeUndefined();
+		}
+	});
 
-  it('rejects an unknown tiling value', () => {
-    const r = ConfigSchema.safeParse({
-      pages: [
-        {
-          name: 'Home',
-          tiling: 'bogus',
-          columns: [{ size: 'full', widgets: [{ type: 'clock' }] }],
-        },
-      ],
-    });
-    expect(r.success).toBe(false);
-  });
+	it("rejects an unknown tiling value", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [
+				{
+					name: "Home",
+					tiling: "bogus",
+					columns: [{ size: "full", widgets: [{ type: "clock" }] }],
+				},
+			],
+		});
+		expect(r.success).toBe(false);
+	});
 
-  it('rejects a non-number min-column-width', () => {
-    const r = ConfigSchema.safeParse({
-      pages: [
-        {
-          name: 'Home',
-          'min-column-width': '340',
-          columns: [{ size: 'full', widgets: [{ type: 'clock' }] }],
-        },
-      ],
-    });
-    expect(r.success).toBe(false);
-  });
+	it("rejects a non-number min-column-width", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [
+				{
+					name: "Home",
+					"min-column-width": "340",
+					columns: [{ size: "full", widgets: [{ type: "clock" }] }],
+				},
+			],
+		});
+		expect(r.success).toBe(false);
+	});
 
-  it('rejects a min-column-width below 1', () => {
-    for (const value of [0, -50, 1.5]) {
-      const r = ConfigSchema.safeParse({
-        pages: [
-          {
-            name: 'Home',
-            'min-column-width': value,
-            columns: [{ size: 'full', widgets: [{ type: 'clock' }] }],
-          },
-        ],
-      });
-      expect(r.success).toBe(false);
-    }
-  });
+	it("rejects a min-column-width below 1", () => {
+		for (const value of [0, -50, 1.5]) {
+			const r = ConfigSchema.safeParse({
+				pages: [
+					{
+						name: "Home",
+						"min-column-width": value,
+						columns: [{ size: "full", widgets: [{ type: "clock" }] }],
+					},
+				],
+			});
+			expect(r.success).toBe(false);
+		}
+	});
 
-  it('rejects out-of-range or non-number column spans', () => {
-    for (const span of [0, 13, '2', 1.5, -1]) {
-      const r = ConfigSchema.safeParse({
-        pages: [
-          {
-            name: 'Home',
-            tiling: 'auto',
-            columns: [{ size: 'small', span, widgets: [{ type: 'clock' }] }],
-          },
-        ],
-      });
-      expect(r.success).toBe(false);
-    }
-  });
+	it("rejects out-of-range or non-number column spans", () => {
+		for (const span of [0, 13, "2", 1.5, -1]) {
+			const r = ConfigSchema.safeParse({
+				pages: [
+					{
+						name: "Home",
+						tiling: "auto",
+						columns: [{ size: "small", span, widgets: [{ type: "clock" }] }],
+					},
+				],
+			});
+			expect(r.success).toBe(false);
+		}
+	});
 
-  it('rejects fractional or out-of-range integer-shaped widget fields', () => {
-    const fixtures: { type: string; base: Record<string, unknown>; fields: string[] }[] = [
-      {
-        type: 'rss',
-        base: { feeds: [{ url: 'https://example.com/feed.xml' }] },
-        fields: ['limit', 'collapse-after', 'thumbnail-height', 'card-height'],
-      },
-      { type: 'hacker-news', base: {}, fields: ['limit', 'collapse-after'] },
-      { type: 'videos', base: {}, fields: ['limit', 'collapse-after', 'collapse-after-rows'] },
-      {
-        type: 'repository',
-        base: { repository: 'owner/repo' },
-        fields: ['pull-requests-limit', 'issues-limit'],
-      },
-      { type: 'iframe', base: { source: 'https://example.com' }, fields: ['height'] },
-    ];
-    const parseWidget = (widget: Record<string, unknown>) =>
-      ConfigSchema.safeParse({
-        pages: [{ name: 'Home', columns: [{ size: 'full', widgets: [widget] }] }],
-      });
+	it("rejects fractional or out-of-range integer-shaped widget fields", () => {
+		const fixtures: { type: string; base: Record<string, unknown>; fields: string[] }[] = [
+			{
+				type: "rss",
+				base: { feeds: [{ url: "https://example.com/feed.xml" }] },
+				fields: ["limit", "collapse-after", "thumbnail-height", "card-height"],
+			},
+			{ type: "hacker-news", base: {}, fields: ["limit", "collapse-after"] },
+			{ type: "videos", base: {}, fields: ["limit", "collapse-after", "collapse-after-rows"] },
+			{
+				type: "repository",
+				base: { repository: "owner/repo" },
+				fields: ["pull-requests-limit", "issues-limit"],
+			},
+			{ type: "iframe", base: { source: "https://example.com" }, fields: ["height"] },
+		];
+		const parseWidget = (widget: Record<string, unknown>) =>
+			ConfigSchema.safeParse({
+				pages: [{ name: "Home", columns: [{ size: "full", widgets: [widget] }] }],
+			});
 
-    // glance parity: 'collapse-after*' accepts -1 (never collapse) and 0 (collapse all);
-    // 'limit' accepts 0 (no additional per-feed limit); the rest must be positive ints.
-    const invalidFor = (field: string): number[] =>
-      field === 'collapse-after' || field === 'collapse-after-rows'
-        ? [-2, 1.5]
-        : field === 'limit'
-          ? [-2, -1, 1.5]
-          : [-1, 0, 1.5];
+		// glance parity: 'collapse-after*' accepts -1 (never collapse) and 0 (collapse all);
+		// 'limit' accepts 0 (no additional per-feed limit); the rest must be positive ints.
+		const invalidFor = (field: string): number[] =>
+			field === "collapse-after" || field === "collapse-after-rows"
+				? [-2, 1.5]
+				: field === "limit"
+					? [-2, -1, 1.5]
+					: [-1, 0, 1.5];
 
-    for (const { type, base, fields } of fixtures) {
-      for (const field of fields) {
-        for (const value of invalidFor(field)) {
-          const r = parseWidget({ type, ...base, [field]: value });
-          expect(r.success, `${type}.${field} = ${value} should fail`).toBe(false);
-        }
-      }
-    }
-  });
+		for (const { type, base, fields } of fixtures) {
+			for (const field of fields) {
+				for (const value of invalidFor(field)) {
+					const r = parseWidget({ type, ...base, [field]: value });
+					expect(r.success, `${type}.${field} = ${value} should fail`).toBe(false);
+				}
+			}
+		}
+	});
 
-  it('rejects fractional or non-positive monitor status codes', () => {
-    for (const code of [200.5, -1, 0]) {
-      const r = ConfigSchema.safeParse({
-        pages: [
-          {
-            name: 'Home',
-            columns: [
-              {
-                size: 'full',
-                widgets: [
-                  {
-                    type: 'monitor',
-                    sites: [
-                      {
-                        url: 'https://example.com',
-                        'expected-status-code': code,
-                        'alt-status-codes': [code],
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      });
-      expect(r.success, `status code ${code} should fail`).toBe(false);
-    }
-  });
+	it("rejects fractional or non-positive monitor status codes", () => {
+		for (const code of [200.5, -1, 0]) {
+			const r = ConfigSchema.safeParse({
+				pages: [
+					{
+						name: "Home",
+						columns: [
+							{
+								size: "full",
+								widgets: [
+									{
+										type: "monitor",
+										sites: [
+											{
+												url: "https://example.com",
+												"expected-status-code": code,
+												"alt-status-codes": [code],
+											},
+										],
+									},
+								],
+							},
+						],
+					},
+				],
+			});
+			expect(r.success, `status code ${code} should fail`).toBe(false);
+		}
+	});
 
-  it('accepts integer boundary values for all swept fields', () => {
-    const fixtures: { type: string; base: Record<string, unknown>; fields: string[] }[] = [
-      {
-        type: 'rss',
-        base: { feeds: [{ url: 'https://example.com/feed.xml' }] },
-        fields: ['limit', 'collapse-after', 'thumbnail-height', 'card-height'],
-      },
-      { type: 'hacker-news', base: {}, fields: ['limit', 'collapse-after'] },
-      { type: 'videos', base: {}, fields: ['limit', 'collapse-after', 'collapse-after-rows'] },
-      {
-        type: 'repository',
-        base: { repository: 'owner/repo' },
-        fields: ['pull-requests-limit', 'issues-limit'],
-      },
-      { type: 'iframe', base: { source: 'https://example.com' }, fields: ['height'] },
-    ];
-    for (const { type, base, fields } of fixtures) {
-      const widget: Record<string, unknown> = { type, ...base };
-      for (const field of fields) widget[field] = field === 'height' ? 100 : 2;
-      const r = ConfigSchema.safeParse({
-        pages: [{ name: 'Home', columns: [{ size: 'full', widgets: [widget] }] }],
-      });
-      expect(r.success, `${type} with integer fields set should pass`).toBe(true);
-    }
+	it("accepts integer boundary values for all swept fields", () => {
+		const fixtures: { type: string; base: Record<string, unknown>; fields: string[] }[] = [
+			{
+				type: "rss",
+				base: { feeds: [{ url: "https://example.com/feed.xml" }] },
+				fields: ["limit", "collapse-after", "thumbnail-height", "card-height"],
+			},
+			{ type: "hacker-news", base: {}, fields: ["limit", "collapse-after"] },
+			{ type: "videos", base: {}, fields: ["limit", "collapse-after", "collapse-after-rows"] },
+			{
+				type: "repository",
+				base: { repository: "owner/repo" },
+				fields: ["pull-requests-limit", "issues-limit"],
+			},
+			{ type: "iframe", base: { source: "https://example.com" }, fields: ["height"] },
+		];
+		for (const { type, base, fields } of fixtures) {
+			const widget: Record<string, unknown> = { type, ...base };
+			for (const field of fields) widget[field] = field === "height" ? 100 : 2;
+			const r = ConfigSchema.safeParse({
+				pages: [{ name: "Home", columns: [{ size: "full", widgets: [widget] }] }],
+			});
+			expect(r.success, `${type} with integer fields set should pass`).toBe(true);
+		}
 
-    // glance parity boundary values: collapse-after* -1 (never collapse), limit 0 (no per-feed limit)
-    for (const { type, base, fields } of fixtures) {
-      const widget: Record<string, unknown> = { type, ...base };
-      for (const field of fields) {
-        widget[field] =
-          field === 'collapse-after' || field === 'collapse-after-rows'
-            ? -1
-            : field === 'limit'
-              ? 0
-              : field === 'height'
-                ? 100
-                : 2;
-      }
-      const r = ConfigSchema.safeParse({
-        pages: [{ name: 'Home', columns: [{ size: 'full', widgets: [widget] }] }],
-      });
-      expect(r.success, `${type} with boundary values should pass`).toBe(true);
-    }
+		// glance parity boundary values: collapse-after* -1 (never collapse), limit 0 (no per-feed limit)
+		for (const { type, base, fields } of fixtures) {
+			const widget: Record<string, unknown> = { type, ...base };
+			for (const field of fields) {
+				widget[field] =
+					field === "collapse-after" || field === "collapse-after-rows"
+						? -1
+						: field === "limit"
+							? 0
+							: field === "height"
+								? 100
+								: 2;
+			}
+			const r = ConfigSchema.safeParse({
+				pages: [{ name: "Home", columns: [{ size: "full", widgets: [widget] }] }],
+			});
+			expect(r.success, `${type} with boundary values should pass`).toBe(true);
+		}
 
-    const monitor = ConfigSchema.safeParse({
-      pages: [
-        {
-          name: 'Home',
-          columns: [
-            {
-              size: 'full',
-              widgets: [
-                {
-                  type: 'monitor',
-                  sites: [
-                    {
-                      url: 'https://example.com',
-                      'expected-status-code': 200,
-                      'alt-status-codes': [204],
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    });
-    expect(monitor.success).toBe(true);
-  });
+		const monitor = ConfigSchema.safeParse({
+			pages: [
+				{
+					name: "Home",
+					columns: [
+						{
+							size: "full",
+							widgets: [
+								{
+									type: "monitor",
+									sites: [
+										{
+											url: "https://example.com",
+											"expected-status-code": 200,
+											"alt-status-codes": [204],
+										},
+									],
+								},
+							],
+						},
+					],
+				},
+			],
+		});
+		expect(monitor.success).toBe(true);
+	});
 
-  it('minecraft example limit is 9', () => {
-    const raw = readFileSync('config.example.yml', 'utf8');
-    expect(raw).toMatch(/Minecraft[\s\S]*?limit:\s*9/);
-  });
+	it("minecraft example limit is 9", () => {
+		const raw = readFileSync("config.example.yml", "utf8");
+		expect(raw).toMatch(/Minecraft[\s\S]*?limit:\s*9/);
+	});
 
-  // This guard used to read `keyed.ts` and assert it held no `twitch`, written
-  // when twitch was being removed from the keyed family. It was vacuous: the
-  // `WidgetType` union is built from `schemaEntries` in `src/shared/widgets/index.ts`,
-  // not from that file, and keyed.ts never carried a twitch symbol — so the
-  // regex matched nothing no matter what the code did. The subject moved into
-  // `src/shared/widgets/twitch.ts` during that refactor and the guard was left
-  // behind. What is actually load-bearing now is the opposite claim: the twitch
-  // types are registered and a user config naming one must load.
-  it('accepts a twitch-channels widget with its channel list intact', () => {
-    const r = ConfigSchema.safeParse({
-      pages: [
-        {
-          name: 'H',
-          widgets: [
-            { type: 'twitch-channels', channels: ['xqc', 'shroud'], 'sort-by': 'live', 'collapse-after': -1 },
-          ],
-        },
-      ],
-    });
-    expect(r.success).toBe(true);
-    if (!r.success) return;
-    const w = r.data.pages[0].widgets![0];
-    if (w.type !== 'twitch-channels') throw new Error('expected a twitch-channels widget');
-    expect(w.channels).toEqual(['xqc', 'shroud']);
-    expect(w['sort-by']).toBe('live');
-  });
+	// This guard used to read `keyed.ts` and assert it held no `twitch`, written
+	// when twitch was being removed from the keyed family. It was vacuous: the
+	// `WidgetType` union is built from `schemaEntries` in `src/shared/widgets/index.ts`,
+	// not from that file, and keyed.ts never carried a twitch symbol — so the
+	// regex matched nothing no matter what the code did. The subject moved into
+	// `src/shared/widgets/twitch.ts` during that refactor and the guard was left
+	// behind. What is actually load-bearing now is the opposite claim: the twitch
+	// types are registered and a user config naming one must load.
+	it("accepts a twitch-channels widget with its channel list intact", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [
+				{
+					name: "H",
+					widgets: [
+						{
+							type: "twitch-channels",
+							channels: ["xqc", "shroud"],
+							"sort-by": "live",
+							"collapse-after": -1,
+						},
+					],
+				},
+			],
+		});
+		expect(r.success).toBe(true);
+		if (!r.success) return;
+		const w = r.data.pages[0].widgets![0];
+		if (w.type !== "twitch-channels") throw new Error("expected a twitch-channels widget");
+		expect(w.channels).toEqual(["xqc", "shroud"]);
+		expect(w["sort-by"]).toBe("live");
+	});
 
-  it('accepts a twitch-top-games widget at the limit boundaries', () => {
-    const page = (cfg: Record<string, unknown>) => ({
-      pages: [{ name: 'H', widgets: [{ type: 'twitch-top-games', ...cfg }] }],
-    });
-    expect(ConfigSchema.safeParse(page({ limit: 1 })).success).toBe(true);
-    expect(ConfigSchema.safeParse(page({ limit: 25 })).success).toBe(true);
-    // A twitch widget that collapses after fewer than every item would render
-    // an empty list behind a "show more" affordance, so 0 is out of range and
-    // -1 is the never-collapse sentinel.
-    expect(ConfigSchema.safeParse(page({ limit: 0 })).success).toBe(false);
-    expect(ConfigSchema.safeParse(page({ limit: 26 })).success).toBe(false);
-    expect(ConfigSchema.safeParse(page({ 'collapse-after': -1 })).success).toBe(true);
-    expect(ConfigSchema.safeParse(page({ 'collapse-after': -2 })).success).toBe(false);
-  });
+	it("accepts a twitch-top-games widget at the limit boundaries", () => {
+		const page = (cfg: Record<string, unknown>) => ({
+			pages: [{ name: "H", widgets: [{ type: "twitch-top-games", ...cfg }] }],
+		});
+		expect(ConfigSchema.safeParse(page({ limit: 1 })).success).toBe(true);
+		expect(ConfigSchema.safeParse(page({ limit: 25 })).success).toBe(true);
+		// A twitch widget that collapses after fewer than every item would render
+		// an empty list behind a "show more" affordance, so 0 is out of range and
+		// -1 is the never-collapse sentinel.
+		expect(ConfigSchema.safeParse(page({ limit: 0 })).success).toBe(false);
+		expect(ConfigSchema.safeParse(page({ limit: 26 })).success).toBe(false);
+		expect(ConfigSchema.safeParse(page({ "collapse-after": -1 })).success).toBe(true);
+		expect(ConfigSchema.safeParse(page({ "collapse-after": -2 })).success).toBe(false);
+	});
 
-  it('rejects a twitch-channels widget with an empty channel list', () => {
-    // Empty is a config the user can only have written by accident, and it
-    // fetches nothing — a permanent empty widget with no way to tell it apart
-    // from an upstream failure.
-    const r = ConfigSchema.safeParse({
-      pages: [{ name: 'H', widgets: [{ type: 'twitch-channels', channels: [] }] }],
-    });
-    expect(r.success).toBe(false);
-  });
+	it("rejects a twitch-channels widget with an empty channel list", () => {
+		// Empty is a config the user can only have written by accident, and it
+		// fetches nothing — a permanent empty widget with no way to tell it apart
+		// from an upstream failure.
+		const r = ConfigSchema.safeParse({
+			pages: [{ name: "H", widgets: [{ type: "twitch-channels", channels: [] }] }],
+		});
+		expect(r.success).toBe(false);
+	});
 
-  it('rejects an unknown twitch sort-by', () => {
-    const r = ConfigSchema.safeParse({
-      pages: [
-        { name: 'H', widgets: [{ type: 'twitch-channels', channels: ['xqc'], 'sort-by': 'followers' }] },
-      ],
-    });
-    expect(r.success).toBe(false);
-  });
+	it("rejects an unknown twitch sort-by", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [
+				{
+					name: "H",
+					widgets: [{ type: "twitch-channels", channels: ["xqc"], "sort-by": "followers" }],
+				},
+			],
+		});
+		expect(r.success).toBe(false);
+	});
 
-  it('infers span 9/3 for full+small via ConfigSchema and resolveSpan', () => {
-    const r = ConfigSchema.safeParse({
-      pages: [
-        {
-          name: 'X',
-          columns: [
-            { size: 'full', widgets: [{ type: 'clock' }] },
-            { size: 'small', widgets: [{ type: 'clock' }] },
-          ],
-        },
-      ],
-    });
-    expect(r.success).toBe(true);
-    if (r.success) {
-      expect(resolveSpan(r.data.pages[0].columns!)).toEqual([9, 3]);
-    }
-    // reverse order
-    expect(resolveSpan([{ size: 'small', widgets: [] }, { size: 'full', widgets: [] }])).toEqual([3, 9]);
-    // single
-    expect(resolveSpan([{ size: 'full', widgets: [] }])).toEqual([12]);
-    expect(resolveSpan([{ size: 'small', widgets: [] }])).toEqual([3]);
-  });
+	it("infers span 9/3 for full+small via ConfigSchema and resolveSpan", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [
+				{
+					name: "X",
+					columns: [
+						{ size: "full", widgets: [{ type: "clock" }] },
+						{ size: "small", widgets: [{ type: "clock" }] },
+					],
+				},
+			],
+		});
+		expect(r.success).toBe(true);
+		if (r.success) {
+			expect(resolveSpan(r.data.pages[0].columns!)).toEqual([9, 3]);
+		}
+		// reverse order
+		expect(
+			resolveSpan([
+				{ size: "small", widgets: [] },
+				{ size: "full", widgets: [] },
+			]),
+		).toEqual([3, 9]);
+		// single
+		expect(resolveSpan([{ size: "full", widgets: [] }])).toEqual([12]);
+		expect(resolveSpan([{ size: "small", widgets: [] }])).toEqual([3]);
+	});
 
-  it('infers span 6/6 for full+full', () => {
-    expect(resolveSpan([{ size: 'full', widgets: [] }, { size: 'full', widgets: [] }])).toEqual([6, 6]);
-  });
+	it("infers span 6/6 for full+full", () => {
+		expect(
+			resolveSpan([
+				{ size: "full", widgets: [] },
+				{ size: "full", widgets: [] },
+			]),
+		).toEqual([6, 6]);
+	});
 
-  it('infers span 4/4/4 for three full', () => {
-    expect(
-      resolveSpan([
-        { size: 'full', widgets: [] },
-        { size: 'full', widgets: [] },
-        { size: 'full', widgets: [] },
-      ]),
-    ).toEqual([4, 4, 4]);
-  });
+	it("infers span 4/4/4 for three full", () => {
+		expect(
+			resolveSpan([
+				{ size: "full", widgets: [] },
+				{ size: "full", widgets: [] },
+				{ size: "full", widgets: [] },
+			]),
+		).toEqual([4, 4, 4]);
+	});
 
-  it('infers span 6/3/3 with full position varies', () => {
-    expect(
-      resolveSpan([
-        { size: 'full', widgets: [] },
-        { size: 'small', widgets: [] },
-        { size: 'small', widgets: [] },
-      ]),
-    ).toEqual([6, 3, 3]);
-    expect(
-      resolveSpan([
-        { size: 'small', widgets: [] },
-        { size: 'full', widgets: [] },
-        { size: 'small', widgets: [] },
-      ]),
-    ).toEqual([3, 6, 3]);
-    expect(
-      resolveSpan([
-        { size: 'small', widgets: [] },
-        { size: 'small', widgets: [] },
-        { size: 'full', widgets: [] },
-      ]),
-    ).toEqual([3, 3, 6]);
-  });
+	it("infers span 6/3/3 with full position varies", () => {
+		expect(
+			resolveSpan([
+				{ size: "full", widgets: [] },
+				{ size: "small", widgets: [] },
+				{ size: "small", widgets: [] },
+			]),
+		).toEqual([6, 3, 3]);
+		expect(
+			resolveSpan([
+				{ size: "small", widgets: [] },
+				{ size: "full", widgets: [] },
+				{ size: "small", widgets: [] },
+			]),
+		).toEqual([3, 6, 3]);
+		expect(
+			resolveSpan([
+				{ size: "small", widgets: [] },
+				{ size: "small", widgets: [] },
+				{ size: "full", widgets: [] },
+			]),
+		).toEqual([3, 3, 6]);
+	});
 
-  it('explicit span 4/8 wins over size', () => {
-    const r = ConfigSchema.safeParse({
-      pages: [
-        {
-          name: 'X',
-          columns: [
-            { size: 'full', span: 4, widgets: [{ type: 'clock' }] },
-            { size: 'full', span: 8, widgets: [{ type: 'clock' }] },
-          ],
-        },
-      ],
-    });
-    expect(r.success).toBe(true);
-    if (r.success) {
-      expect(resolveSpan(r.data.pages[0].columns!)).toEqual([4, 8]);
-    }
-    // direct explicit without ConfigSchema
-    expect(
-      resolveSpan([
-        { size: 'small', span: 4, widgets: [] },
-        { size: 'small', span: 8, widgets: [] },
-      ]),
-    ).toEqual([4, 8]);
-  });
+	it("explicit span 4/8 wins over size", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [
+				{
+					name: "X",
+					columns: [
+						{ size: "full", span: 4, widgets: [{ type: "clock" }] },
+						{ size: "full", span: 8, widgets: [{ type: "clock" }] },
+					],
+				},
+			],
+		});
+		expect(r.success).toBe(true);
+		if (r.success) {
+			expect(resolveSpan(r.data.pages[0].columns!)).toEqual([4, 8]);
+		}
+		// direct explicit without ConfigSchema
+		expect(
+			resolveSpan([
+				{ size: "small", span: 4, widgets: [] },
+				{ size: "small", span: 8, widgets: [] },
+			]),
+		).toEqual([4, 8]);
+	});
 
-  it('all explicit spans return directly', () => {
-    expect(
-      resolveSpan([
-        { size: 'full', span: 2, widgets: [] },
-        { size: 'full', span: 10, widgets: [] },
-      ]),
-    ).toEqual([2, 10]);
-    expect(
-      resolveSpan([
-        { size: 'full', span: 4, widgets: [] },
-        { size: 'full', span: 4, widgets: [] },
-        { size: 'full', span: 4, widgets: [] },
-      ]),
-    ).toEqual([4, 4, 4]);
-  });
+	it("all explicit spans return directly", () => {
+		expect(
+			resolveSpan([
+				{ size: "full", span: 2, widgets: [] },
+				{ size: "full", span: 10, widgets: [] },
+			]),
+		).toEqual([2, 10]);
+		expect(
+			resolveSpan([
+				{ size: "full", span: 4, widgets: [] },
+				{ size: "full", span: 4, widgets: [] },
+				{ size: "full", span: 4, widgets: [] },
+			]),
+		).toEqual([4, 4, 4]);
+	});
 
-  it('throws on mixed explicit and size-derived spans', () => {
-    expect(() => resolveSpan([{ size: 'full', span: 4, widgets: [] }, { size: 'small', widgets: [] }])).toThrow(
-      /mix of explicit span and size not allowed/,
-    );
-  });
+	it("throws on mixed explicit and size-derived spans", () => {
+		expect(() =>
+			resolveSpan([
+				{ size: "full", span: 4, widgets: [] },
+				{ size: "small", widgets: [] },
+			]),
+		).toThrow(/mix of explicit span and size not allowed/);
+	});
 
-  it('ConfigSchema still parses old size-only configs', () => {
-    const r = ConfigSchema.safeParse({
-      pages: [
-        {
-          name: 'Home',
-          columns: [
-            { size: 'small', widgets: [{ type: 'clock' }] },
-            { size: 'full', widgets: [{ type: 'rss', feeds: [{ url: 'https://example.com/feed.xml' }] }] },
-          ],
-        },
-      ],
-    });
-    expect(r.success).toBe(true);
-    if (r.success) {
-      expect(r.data.pages[0].columns![0].span).toBeUndefined();
-      expect(resolveSpan(r.data.pages[0].columns!)).toEqual([3, 9]);
-    }
-  });
+	it("ConfigSchema still parses old size-only configs", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [
+				{
+					name: "Home",
+					columns: [
+						{ size: "small", widgets: [{ type: "clock" }] },
+						{
+							size: "full",
+							widgets: [{ type: "rss", feeds: [{ url: "https://example.com/feed.xml" }] }],
+						},
+					],
+				},
+			],
+		});
+		expect(r.success).toBe(true);
+		if (r.success) {
+			expect(r.data.pages[0].columns![0].span).toBeUndefined();
+			expect(resolveSpan(r.data.pages[0].columns!)).toEqual([3, 9]);
+		}
+	});
 
-  it('example config is handle-only with Social 4/8 spans', () => {
-    const raw = readFileSync('config.example.yml', 'utf8');
-    expect(raw).not.toMatch(/UC[A-Za-z0-9_-]{22}/);
-    expect(raw).toContain('@SpokeIsHere');
-    expect(raw).toContain('@Evourai');
-    expect(raw).toContain('@wemmbumc');
-    expect(raw).toContain('@ParrotX2');
-    // Bun.YAML is available when running under Bun; fallback to raw checks under Node vitest
-    if (typeof Bun !== 'undefined' && Bun.YAML) {
-      const parsed: unknown = Bun.YAML.parse(raw);
-      expect(parsed).toBeTruthy();
-      const r = ConfigSchema.safeParse(parsed);
-      expect(r.success).toBe(true);
-      if (r.success) {
-        const social = r.data.pages.find((p) => p.slug === 'social');
-        expect(social).toBeDefined();
-        expect(social!.columns).toHaveLength(2);
-        expect(social!.columns![0].span).toBe(4);
-        expect(social!.columns![1].span).toBe(8);
-        expect(social!.columns![0].size).toBe('full');
-        expect(social!.columns![1].size).toBe('full');
-        const leftVideos = social!.columns![0].widgets.find((w) => w.type === 'videos') as unknown as {
-          channels: string[];
-          limit: number;
-          style: string;
-        };
-        expect(leftVideos.channels).toEqual(['@Fireship', '@ByCloud', '@BetterStack']);
-        expect(leftVideos.limit).toBe(6);
-        expect(leftVideos.style).toBe('vertical-list');
-        const rightVideos = social!.columns![1].widgets.find((w) => w.type === 'videos') as unknown as {
-          channels: string[];
-          limit: number;
-          style: string;
-        };
-        expect(rightVideos.channels).toEqual([
-          '@wemmbumc',
-          '@ParrotX2',
-          '@FlameFrags',
-          '@SpokeIsHere',
-          '@Evourai',
-          '@Minotaurmc',
-          '@TheNamesSX',
-        ]);
-        expect(rightVideos.limit).toBe(9);
-        expect(rightVideos.style).toBe('grid-cards');
-        const reddit = social!.columns![0].widgets.find((w) => w.type === 'reddit') as unknown as Record<
-          string,
-          unknown
-        >;
-        expect(reddit['limit']).toBe(8);
-        expect(reddit['collapse-after']).toBe(5);
-      }
-    } else {
-      expect(raw).toMatch(/span:\s*4/);
-      expect(raw).toMatch(/span:\s*8/);
-      expect(raw).toMatch(/Tech creators[\s\S]*?limit:\s*6/);
-      expect(raw).toMatch(/Minecraft[\s\S]*?limit:\s*9/);
-      expect(raw).toMatch(/@Evourai/);
-    }
-  });
+	it("example config is handle-only with Social 4/8 spans", () => {
+		const raw = readFileSync("config.example.yml", "utf8");
+		expect(raw).not.toMatch(/UC[A-Za-z0-9_-]{22}/);
+		expect(raw).toContain("@SpokeIsHere");
+		expect(raw).toContain("@Evourai");
+		expect(raw).toContain("@wemmbumc");
+		expect(raw).toContain("@ParrotX2");
+		// Bun.YAML is available when running under Bun; fallback to raw checks under Node vitest
+		if (typeof Bun !== "undefined" && Bun.YAML) {
+			const parsed: unknown = Bun.YAML.parse(raw);
+			expect(parsed).toBeTruthy();
+			const r = ConfigSchema.safeParse(parsed);
+			expect(r.success).toBe(true);
+			if (r.success) {
+				const social = r.data.pages.find((p) => p.slug === "social");
+				expect(social).toBeDefined();
+				expect(social!.columns).toHaveLength(2);
+				expect(social!.columns![0].span).toBe(4);
+				expect(social!.columns![1].span).toBe(8);
+				expect(social!.columns![0].size).toBe("full");
+				expect(social!.columns![1].size).toBe("full");
+				const leftVideos = social!.columns![0].widgets.find(
+					(w) => w.type === "videos",
+				) as unknown as {
+					channels: string[];
+					limit: number;
+					style: string;
+				};
+				expect(leftVideos.channels).toEqual(["@Fireship", "@ByCloud", "@BetterStack"]);
+				expect(leftVideos.limit).toBe(6);
+				expect(leftVideos.style).toBe("vertical-list");
+				const rightVideos = social!.columns![1].widgets.find(
+					(w) => w.type === "videos",
+				) as unknown as {
+					channels: string[];
+					limit: number;
+					style: string;
+				};
+				expect(rightVideos.channels).toEqual([
+					"@wemmbumc",
+					"@ParrotX2",
+					"@FlameFrags",
+					"@SpokeIsHere",
+					"@Evourai",
+					"@Minotaurmc",
+					"@TheNamesSX",
+				]);
+				expect(rightVideos.limit).toBe(9);
+				expect(rightVideos.style).toBe("grid-cards");
+				const reddit = social!.columns![0].widgets.find(
+					(w) => w.type === "reddit",
+				) as unknown as Record<string, unknown>;
+				expect(reddit["limit"]).toBe(8);
+				expect(reddit["collapse-after"]).toBe(5);
+			}
+		} else {
+			expect(raw).toMatch(/span:\s*4/);
+			expect(raw).toMatch(/span:\s*8/);
+			expect(raw).toMatch(/Tech creators[\s\S]*?limit:\s*6/);
+			expect(raw).toMatch(/Minecraft[\s\S]*?limit:\s*9/);
+			expect(raw).toMatch(/@Evourai/);
+		}
+	});
 
-  it("accepts glance's to-do type and normalizes it to todo", () => {
-    const r = ConfigSchema.safeParse({
-      pages: [{ name: 'H', widgets: [{ type: 'to-do', id: 'work' }] }],
-    });
-    expect(r.success).toBe(true);
-    if (!r.success) return;
-    const w = r.data.pages[0].widgets![0];
-    expect(w.type).toBe('todo');
-    if (w.type !== 'todo') throw new Error('expected a todo widget');
-    expect(w.id).toBe('work');
-  });
+	it("accepts glance's to-do type and normalizes it to todo", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [{ name: "H", widgets: [{ type: "to-do", id: "work" }] }],
+		});
+		expect(r.success).toBe(true);
+		if (!r.success) return;
+		const w = r.data.pages[0].widgets![0];
+		expect(w.type).toBe("todo");
+		if (w.type !== "todo") throw new Error("expected a todo widget");
+		expect(w.id).toBe("work");
+	});
 
-  it("accepts glance's stocks alias and normalizes it to markets", () => {
-    const r = ConfigSchema.safeParse({
-      pages: [{ name: 'H', widgets: [{ type: 'stocks', markets: [{ symbol: 'SPY' }] }] }],
-    });
-    expect(r.success).toBe(true);
-    if (r.success) expect(r.data.pages[0].widgets![0].type).toBe('markets');
-  });
+	it("accepts glance's stocks alias and normalizes it to markets", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [{ name: "H", widgets: [{ type: "stocks", markets: [{ symbol: "SPY" }] }] }],
+		});
+		expect(r.success).toBe(true);
+		if (r.success) expect(r.data.pages[0].widgets![0].type).toBe("markets");
+	});
 
-  it('normalizes aliases nested inside a group and a split-column', () => {
-    const r = ConfigSchema.safeParse({
-      pages: [
-        {
-          name: 'H',
-          widgets: [
-            { type: 'group', widgets: [{ type: 'to-do' }, { type: 'stocks', markets: [{ symbol: 'SPY' }] }] },
-            { type: 'split-column', widgets: [{ type: 'to-do' }, { type: 'clock' }] },
-          ],
-        },
-      ],
-    });
-    expect(r.success).toBe(true);
-    if (!r.success) return;
-    const [group, split] = r.data.pages[0].widgets!;
-    if (group.type !== 'group' || split.type !== 'split-column') {
-      throw new Error('expected a group and a split-column');
-    }
-    expect(childTypes(group.widgets)).toEqual(['todo', 'markets']);
-    expect(childTypes(split.widgets)).toEqual(['todo', 'clock']);
-  });
+	it("normalizes aliases nested inside a group and a split-column", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [
+				{
+					name: "H",
+					widgets: [
+						{
+							type: "group",
+							widgets: [{ type: "to-do" }, { type: "stocks", markets: [{ symbol: "SPY" }] }],
+						},
+						{ type: "split-column", widgets: [{ type: "to-do" }, { type: "clock" }] },
+					],
+				},
+			],
+		});
+		expect(r.success).toBe(true);
+		if (!r.success) return;
+		const [group, split] = r.data.pages[0].widgets!;
+		if (group.type !== "group" || split.type !== "split-column") {
+			throw new Error("expected a group and a split-column");
+		}
+		expect(childTypes(group.widgets)).toEqual(["todo", "markets"]);
+		expect(childTypes(split.widgets)).toEqual(["todo", "clock"]);
+	});
 
-  it('normalizes aliases in head-widgets and column widgets', () => {
-    const r = ConfigSchema.safeParse({
-      pages: [
-        {
-          name: 'H',
-          'head-widgets': [{ type: 'stocks', markets: [{ symbol: 'SPY' }] }],
-          columns: [{ size: 'full', widgets: [{ type: 'to-do' }] }],
-        },
-      ],
-    });
-    expect(r.success).toBe(true);
-    if (!r.success) return;
-    expect(r.data.pages[0]['head-widgets']![0].type).toBe('markets');
-    expect(r.data.pages[0].columns![0].widgets[0].type).toBe('todo');
-  });
+	it("normalizes aliases in head-widgets and column widgets", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [
+				{
+					name: "H",
+					"head-widgets": [{ type: "stocks", markets: [{ symbol: "SPY" }] }],
+					columns: [{ size: "full", widgets: [{ type: "to-do" }] }],
+				},
+			],
+		});
+		expect(r.success).toBe(true);
+		if (!r.success) return;
+		expect(r.data.pages[0]["head-widgets"]![0].type).toBe("markets");
+		expect(r.data.pages[0].columns![0].widgets[0].type).toBe("todo");
+	});
 
-  it('still rejects a genuinely unknown type', () => {
-    const r = ConfigSchema.safeParse({
-      pages: [{ name: 'H', widgets: [{ type: 'definitely-not-a-widget' }] }],
-    });
-    expect(r.success).toBe(false);
-  });
+	it("still rejects a genuinely unknown type", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [{ name: "H", widgets: [{ type: "definitely-not-a-widget" }] }],
+		});
+		expect(r.success).toBe(false);
+	});
 
-  it('still rejects a nested genuinely unknown type', () => {
-    const r = ConfigSchema.safeParse({
-      pages: [{ name: 'H', widgets: [{ type: 'group', widgets: [{ type: 'nope' }] }] }],
-    });
-    expect(r.success).toBe(false);
-  });
+	it("still rejects a nested genuinely unknown type", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [{ name: "H", widgets: [{ type: "group", widgets: [{ type: "nope" }] }] }],
+		});
+		expect(r.success).toBe(false);
+	});
 
-  it('leaves an existing canonical todo widget untouched', () => {
-    const r = ConfigSchema.safeParse({
-      pages: [{ name: 'H', widgets: [{ type: 'todo', id: 'x' }] }],
-    });
-    if (!r.success) return;
-    const w = r.data.pages[0].widgets![0];
-    expect(w.type).toBe('todo');
-    if (w.type !== 'todo') throw new Error('expected a todo widget');
-    expect(w.id).toBe('x');
-  });
+	it("leaves an existing canonical todo widget untouched", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [{ name: "H", widgets: [{ type: "todo", id: "x" }] }],
+		});
+		if (!r.success) return;
+		const w = r.data.pages[0].widgets![0];
+		expect(w.type).toBe("todo");
+		if (w.type !== "todo") throw new Error("expected a todo widget");
+		expect(w.id).toBe("x");
+	});
 
-  it('accepts a split-column with more than two children', () => {
-    const r = ConfigSchema.safeParse({
-      pages: [
-        {
-          name: 'H',
-          widgets: [
-            {
-              type: 'split-column',
-              'max-columns': 3,
-              widgets: [{ type: 'clock' }, { type: 'calendar' }, { type: 'todo' }],
-            },
-          ],
-        },
-      ],
-    });
-    expect(r.success).toBe(true);
-  });
+	it("accepts a split-column with more than two children", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [
+				{
+					name: "H",
+					widgets: [
+						{
+							type: "split-column",
+							"max-columns": 3,
+							widgets: [{ type: "clock" }, { type: "calendar" }, { type: "todo" }],
+						},
+					],
+				},
+			],
+		});
+		expect(r.success).toBe(true);
+	});
 
-  it('still rejects a split-column with a single child', () => {
-    const r = ConfigSchema.safeParse({
-      pages: [{ name: 'H', widgets: [{ type: 'split-column', widgets: [{ type: 'clock' }] }] }],
-    });
-    expect(r.success).toBe(false);
-  });
+	it("still rejects a split-column with a single child", () => {
+		const r = ConfigSchema.safeParse({
+			pages: [{ name: "H", widgets: [{ type: "split-column", widgets: [{ type: "clock" }] }] }],
+		});
+		expect(r.success).toBe(false);
+	});
 
-  it('rejects a max-columns below 2', () => {
-    for (const max of [0, 1, 1.5]) {
-      const r = ConfigSchema.safeParse({
-        pages: [
-          {
-            name: 'H',
-            widgets: [
-              { type: 'split-column', 'max-columns': max, widgets: [{ type: 'clock' }, { type: 'todo' }] },
-            ],
-          },
-        ],
-      });
-      expect(r.success).toBe(false);
-    }
-  });
+	it("rejects a max-columns below 2", () => {
+		for (const max of [0, 1, 1.5]) {
+			const r = ConfigSchema.safeParse({
+				pages: [
+					{
+						name: "H",
+						widgets: [
+							{
+								type: "split-column",
+								"max-columns": max,
+								widgets: [{ type: "clock" }, { type: "todo" }],
+							},
+						],
+					},
+				],
+			});
+			expect(r.success).toBe(false);
+		}
+	});
 });

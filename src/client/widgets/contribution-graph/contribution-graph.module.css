@@ -1,45 +1,52 @@
 .wrap {
-  --cell-size: 10px;
-  min-width: 0;
+	--cell-size: 10px;
+	min-width: 0;
 }
 
 .summary {
-  margin-bottom: 8px;
-  font-size: 12px;
-  color: var(--color-text-base-muted);
+	margin-bottom: 8px;
+	font-size: 12px;
+	color: var(--color-text-base-muted);
 }
 
 /* one column per week, 7 day-rows; --weeks sizes the label row to the same track grid */
 .grid {
-  display: grid;
-  grid-template-columns: repeat(var(--weeks, 53), 1fr);
-  grid-template-rows: repeat(7, var(--cell-size));
-  grid-auto-flow: column;
-  gap: 3px;
-  justify-content: start;
+	display: grid;
+	grid-template-columns: repeat(var(--weeks, 53), 1fr);
+	grid-template-rows: repeat(7, var(--cell-size));
+	grid-auto-flow: column;
+	gap: 3px;
+	justify-content: start;
 }
 
 .month {
-  grid-row: 1;
-  font-size: var(--font-size-h6);
-  /* Track with the type: the month row is one --cell-size tall, so a
+	grid-row: 1;
+	font-size: var(--font-size-h6);
+	/* Track with the type: the month row is one --cell-size tall, so a
      line-height below the font's own box would clip the caps. */
-  line-height: var(--font-size-h6);
+	line-height: var(--font-size-h6);
 
-  /* month labels live in their own grid above */
+	/* month labels live in their own grid above */
 }
 
 .cell {
-  width: var(--cell-size);
-  height: var(--cell-size);
-  border-radius: 2px;
-  background: var(--color-separator);
+	width: var(--cell-size);
+	height: var(--cell-size);
+	border-radius: 2px;
+	background: var(--color-separator);
 }
 
 /* sequential shamrock ramp, light -> strong. Counts are data, so they take a
  * real sequential ramp; purple is the tappable hue and never encodes data. */
-.l1 { background: var(--color-data-shamrock-2); }
-.l2 { background: var(--color-data-shamrock-3); }
-.l3 { background: var(--color-data-shamrock-4); }
-.l4 { background: var(--color-data-shamrock-5); }
-
+.l1 {
+	background: var(--color-data-shamrock-2);
+}
+.l2 {
+	background: var(--color-data-shamrock-3);
+}
+.l3 {
+	background: var(--color-data-shamrock-4);
+}
+.l4 {
+	background: var(--color-data-shamrock-5);
+}

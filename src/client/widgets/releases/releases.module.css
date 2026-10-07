@@ -1,39 +1,38 @@
 .row {
-  min-width: 0;
+	min-width: 0;
 }
 
 .row + .row {
-  margin-top: 8px;
-  border-top: 1px solid var(--color-separator);
-  padding-top: 8px;
+	margin-top: 8px;
+	border-top: 1px solid var(--color-separator);
+	padding-top: 8px;
 }
 
 .meta {
-  margin-top: 4px;
+	margin-top: 4px;
 }
 
 /* WCAG 2.5.8: the release name is one 20px line box, so the anchor needs its
    own floor. */
 .title {
-  min-height: 24px;
+	min-height: 24px;
 }
 
 /* The row is tappable (the title is a Link), so it gets the same wash + lift
    pair every other tappable row in the app wears. */
 .row:is(:hover, :focus-within) {
-  background-color: var(--color-overlay-hover);
-  border-radius: var(--border-radius);
+	background-color: var(--color-overlay-hover);
+	border-radius: var(--border-radius);
 }
-
 
 /* Core Badge ships a 9999px pill; brand principle 7 is "flat and crisp, 5px
    radii, no pills". Visual-over-spec deviation, recorded at the site of the
    choice: keep the Badge's yellow tag wash, drop the pill and the
    button-scale padding so it reads as a tag, not a control. */
 .tag {
-  border-radius: var(--radius-element);
-  padding-inline: 4px;
-  line-height: 1.4;
+	border-radius: var(--radius-element);
+	padding-inline: 4px;
+	line-height: 1.4;
 }
 
 /* The disclosure is core Collapsible: it owns the trigger chrome, the chevron
@@ -41,17 +40,17 @@
    padding, so this only makes up the rest of the 8px beat between the metadata
    row and the inset. */
 .disclosure {
-  margin-top: 4px;
+	margin-top: 4px;
 }
 
 .notesCard {
-  max-width: 100%;
+	max-width: 100%;
 }
 
 /* Release notes are reading copy, not tokens or commands — the `body` role,
    not `code`. `pre-wrap` keeps the upstream line structure; `anywhere` stops
    long identifiers (issue refs, function names) from overflowing the inset. */
 .notes {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
 }

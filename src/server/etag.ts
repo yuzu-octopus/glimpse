@@ -14,10 +14,10 @@
  * weak prefix, or `*`.
  */
 export function etagMatches(header: string | null, etag: string): boolean {
-  if (!header) return false;
-  // RFC 9110: weak comparison strips the `W/` prefix from both sides.
-  const normalize = (v: string): string => v.trim().replace(/^W\//i, '');
-  const want = normalize(etag);
-  if (header.trim() === '*') return true;
-  return header.split(',').some((part) => normalize(part) === want || part.trim() === '*');
+	if (!header) return false;
+	// RFC 9110: weak comparison strips the `W/` prefix from both sides.
+	const normalize = (v: string): string => v.trim().replace(/^W\//i, "");
+	const want = normalize(etag);
+	if (header.trim() === "*") return true;
+	return header.split(",").some((part) => normalize(part) === want || part.trim() === "*");
 }
