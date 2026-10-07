@@ -48,6 +48,7 @@ function suggest(unknown: string): string | null {
 
 /** Static hint table for common failure modes. */
 const HINTS: Record<string, string> = {
+	// biome-ignore lint/suspicious/noTemplateCurlyInString: literal ${VAR:-fallback} shell syntax in a hint string, not a forgotten template literal
 	"environment variable": "hint: export the variable, or use ${VAR:-fallback} for a default",
 	"duplicate page slug": "hint: give each page a unique `slug:` (or a unique `name:`)",
 	"at least one full column": "hint: give at least one column `size: full`",

@@ -28,6 +28,12 @@ export function Search({ config }: WidgetComponentProps) {
 		return () => window.removeEventListener("keydown", onKey);
 	}, [shortcut]);
 
+	useEffect(() => {
+		if (cfg.autofocus === true) {
+			inputRef.current?.focus();
+		}
+	}, [cfg.autofocus]);
+
 	const search = (raw: string, newTab: boolean) => {
 		const { url, target, rest } = resolveSearch(raw, {
 			engine: cfg["search-engine"],
@@ -79,6 +85,7 @@ export function Search({ config }: WidgetComponentProps) {
 						fill="none"
 						strokeWidth={1.5}
 						xmlns="http://www.w3.org/2000/svg"
+						aria-hidden="true"
 					>
 						<path
 							strokeLinecap="round"
@@ -97,7 +104,6 @@ export function Search({ config }: WidgetComponentProps) {
 					onKeyDown={onKeyDown}
 					placeholder={cfg.placeholder ?? `Search the web… (press ${shortcut})`}
 					autoComplete="off"
-					autoFocus={cfg.autofocus === true}
 				/>
 				<kbd
 					className={styles.kbd}

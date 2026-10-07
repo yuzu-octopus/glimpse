@@ -7,10 +7,14 @@ function parseTrending(html: string, limit: number): TrendingRepo[] {
 	const repos: TrendingRepo[] = [];
 	const articleRe = /<article[^>]*class="[^"]*Box-row[^"]*"[^>]*>([\s\S]*?)<\/article>/g;
 	let m: RegExpExecArray | null;
-	while ((m = articleRe.exec(html)) !== null && repos.length < limit) {
+	m = articleRe.exec(html);
+	while (m !== null && repos.length < limit) {
 		const block = m[1];
 		const hrefM = block.match(/href="\/([^"]+)"/);
-		if (!hrefM) continue;
+		if (!hrefM) {
+			m = articleRe.exec(html);
+			continue;
+		}
 		const fullName = hrefM[1].split('"')[0].trim();
 		const descM = block.match(/<p[^>]*>([\s\S]*?)<\/p>/);
 		const description = descM ? descM[1].replace(/<[^>]+>/g, "").trim() || undefined : undefined;
@@ -28,6 +32,7 @@ function parseTrending(html: string, limit: number): TrendingRepo[] {
 			starsToday,
 			url: `https://github.com/${fullName}`,
 		});
+		m = articleRe.exec(html);
 	}
 	return repos;
 }

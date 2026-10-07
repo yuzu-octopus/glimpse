@@ -66,7 +66,10 @@ async function fetchJsonPayload(
 
 	const url = new URL(req.url);
 	for (const [k, v] of Object.entries(req.parameters ?? {})) {
-		if (Array.isArray(v)) v.forEach((x) => url.searchParams.append(k, x));
+		if (Array.isArray(v))
+			v.forEach((x) => {
+				url.searchParams.append(k, x);
+			});
 		else url.searchParams.set(k, v);
 	}
 

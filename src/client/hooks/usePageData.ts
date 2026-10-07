@@ -395,10 +395,11 @@ async function runPageStream(slug: string, entry: Inflight, force: boolean): Pro
 				break;
 			}
 			buf += dec.decode(value, { stream: true });
-			let nl: number;
-			while ((nl = buf.indexOf("\n")) >= 0) {
+			let nl = buf.indexOf("\n");
+			while (nl >= 0) {
 				handleLine(buf.slice(0, nl));
 				buf = buf.slice(nl + 1);
+				nl = buf.indexOf("\n");
 			}
 		}
 		buf += dec.decode();

@@ -176,7 +176,9 @@ export async function* streamPagePayload(
 	}
 	const flat = (page as { widgets?: unknown[] }).widgets;
 	if (Array.isArray(flat)) {
-		flat.forEach((w, i) => push(`widgets[${i}]`, `w:${i}`, isRecord(w) ? w : { type: "unknown" }));
+		flat.forEach((w, i) => {
+			push(`widgets[${i}]`, `w:${i}`, isRecord(w) ? w : { type: "unknown" });
+		});
 	} else {
 		const cols =
 			(page as { columns?: Array<{ size: "small" | "full"; widgets: unknown[] }> }).columns ?? [];

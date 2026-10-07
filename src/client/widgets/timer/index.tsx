@@ -199,6 +199,12 @@ export function Timer({ config }: WidgetComponentProps) {
 		return () => window.clearInterval(id);
 	}, [state.running, state.startedAt, state.mode]);
 
+	useEffect(() => {
+		if (editing) {
+			draftRef.current?.focus();
+		}
+	}, [editing]);
+
 	const toggle = useCallback(() => {
 		setState((prev) => toggled(prev, defaultSeconds, editing));
 	}, [defaultSeconds, editing]);
@@ -256,7 +262,6 @@ export function Timer({ config }: WidgetComponentProps) {
 							onBlur={commitDraft}
 							onKeyDown={onDraftKey}
 							aria-label="Duration"
-							autoFocus
 						/>
 					</div>
 				) : (

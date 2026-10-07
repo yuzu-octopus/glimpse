@@ -67,9 +67,10 @@ describe("DnsStats client", () => {
 	it("gives every bar an accessible name and a keyboard stop", () => {
 		render(<DnsStatsWidget config={baseConfig} data={sample()} />);
 		const cols = screen.getAllByTestId("dns-column");
-		expect(screen.getByRole("group", { name: /by hour/ })).toBeInTheDocument();
-		expect(cols[0]).toHaveAttribute("tabindex", "0");
-		expect(screen.getAllByRole("img").map((n) => n.getAttribute("aria-label"))).toEqual([
+		expect(screen.getByRole("region", { name: /by hour/ })).toBeInTheDocument();
+		expect(cols[0].tagName).toBe("BUTTON");
+		// The button carries its own accessible name (no inner role=img indirection)
+		expect(cols.map((n) => n.getAttribute("aria-label"))).toEqual([
 			"12am: 100 queries, 20% blocked",
 			"3am: 110 queries, 20% blocked",
 			"6am: 120 queries, 20% blocked",

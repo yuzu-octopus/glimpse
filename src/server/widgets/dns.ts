@@ -203,7 +203,8 @@ async function fetchPiholeV5(
  * delimiters that normally surround one, so trailing prose stays out. */
 const EMBEDDED_URL = /\b[a-z][a-z\d+.-]*:\/\/[^\s"'`<>()[\],;]+/gi;
 /** Control characters, including the newlines a Banner must never render. */
-const CONTROL = /[\s\u0000-\u001f\u007f]+/g;
+// biome-ignore lint/suspicious/noControlCharactersInRegex: stripping control chars IS the job — the range is the point
+const CONTROL = /[\s\x00-\x1f\x7f]+/g;
 /** Cap on a single reason. The docs' hint is one short sentence; anything
  * far past this is a server bug, not a diagnosis. */
 const MAX_REASON = 160;

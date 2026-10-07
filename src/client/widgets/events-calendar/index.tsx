@@ -66,7 +66,7 @@ function EventsCalendar({ config, data, error, isLoading }: WidgetComponentProps
 			<div className={styles.events}>
 				{groups.length === 0 ? <div className={styles.empty}>No upcoming events</div> : null}
 				{groups.map((group) => (
-					<div key={group.key} role="group" aria-label={group.label}>
+					<section key={group.key} aria-label={group.label}>
 						<div className={styles.dayHeader}>{group.label}</div>
 						{group.events.map((ev) => (
 							<div key={`${ev.startISO}-${ev.title}`} className={styles.event}>
@@ -77,7 +77,7 @@ function EventsCalendar({ config, data, error, isLoading }: WidgetComponentProps
 								{ev.location ? <div className={styles.location}>{ev.location}</div> : null}
 							</div>
 						))}
-					</div>
+					</section>
 				))}
 			</div>
 		</WidgetChrome>

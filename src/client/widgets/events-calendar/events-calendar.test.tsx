@@ -39,11 +39,11 @@ describe("events-calendar widget", () => {
 		vi.setSystemTime(NOW);
 		render(<EventsCalendar config={{ type: "events-calendar" }} data={{ events: EVENTS }} />);
 		// Same-day events share one header; later days get Today/Tomorrow/Fri 28.
-		const todayGroup = screen.getByRole("group", { name: "Today" });
+		const todayGroup = screen.getByRole("region", { name: "Today" });
 		expect(todayGroup.textContent).toContain("Standup");
 		expect(todayGroup.textContent).toContain("Retro");
-		expect(screen.getByRole("group", { name: "Tomorrow" }).textContent).toContain("Deploy review");
-		expect(screen.getByRole("group", { name: "Fri 28" }).textContent).toContain("Conference");
+		expect(screen.getByRole("region", { name: "Tomorrow" }).textContent).toContain("Deploy review");
+		expect(screen.getByRole("region", { name: "Fri 28" }).textContent).toContain("Conference");
 		expect(screen.getByText("Room 4")).toBeInTheDocument();
 		expect(screen.getByText("All day")).toBeInTheDocument();
 	});

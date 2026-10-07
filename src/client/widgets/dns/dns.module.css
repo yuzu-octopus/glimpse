@@ -56,6 +56,12 @@
 	flex-direction: column;
 	width: calc(100% / 8);
 	position: relative;
+	background: none;
+	border: none;
+	padding: 0;
+	font: inherit;
+	color: inherit;
+	cursor: pointer;
 }
 
 .column::before {

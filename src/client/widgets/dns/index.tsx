@@ -120,6 +120,7 @@ export function DnsStatsWidget({ config, data, error, isLoading }: WidgetCompone
 								shapeRendering="crispEdges"
 								viewBox="0 0 1 100"
 								preserveAspectRatio="none"
+								aria-hidden="true"
 							>
 								<g stroke="var(--color-graph-gridlines)" strokeWidth="1">
 									<line x1="0" y1="1" x2="1" y2="1" vectorEffect="non-scaling-stroke" />
@@ -137,19 +138,14 @@ export function DnsStatsWidget({ config, data, error, isLoading }: WidgetCompone
 								</g>
 							</svg>
 						</div>
-						<div
-							className={styles.columns}
-							role="group"
-							aria-label="DNS queries and blocked share, by hour"
-						>
+						<section className={styles.columns} aria-label="DNS queries and blocked share, by hour">
 							{d.series.map((pt, idx) => (
-								<div
+								<button
 									key={`dns-${pt.queries}-${pt.blocked}-${pt.percentBlocked}-${pt.percentTotal}`}
+									type="button"
 									className={styles.column}
 									data-testid="dns-column"
 									data-active={pinned === idx || undefined}
-									tabIndex={0}
-									role="img"
 									aria-label={`${d.timeLabels[idx] ?? `Hour ${idx + 1}`}: ${pt.queries.toLocaleString()} queries, ${pt.percentBlocked}% blocked`}
 									onClick={() => setPinned((cur) => (cur === idx ? null : idx))}
 									onBlur={() => setPinned((cur) => (cur === idx ? null : cur))}
@@ -203,9 +199,9 @@ export function DnsStatsWidget({ config, data, error, isLoading }: WidgetCompone
 									<div className={styles.time} data-testid="dns-time">
 										{d.timeLabels[idx] ?? ""}
 									</div>
-								</div>
+								</button>
 							))}
-						</div>
+						</section>
 					</div>
 				) : null}
 

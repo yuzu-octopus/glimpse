@@ -92,7 +92,8 @@ describe("custom-api fetcher", () => {
 		const ctx = makeCtx(async (_url, init) => {
 			expect(init?.method).toBe("POST");
 			expect(init?.body).toBe('{"query":"x"}');
-			expect((init?.headers as Record<string, string>)["content-type"]).toBe("application/json");
+			expect(init?.headers).toBeDefined();
+			expect((init!.headers as Record<string, string>)["content-type"]).toBe("application/json");
 			return new Response(JSON.stringify({ ok: true }), { status: 200 });
 		});
 		const data = (await customApiFetcher()(ctx, {
@@ -118,7 +119,8 @@ describe("custom-api fetcher", () => {
 		const ctx = makeCtx(async (_url, init) => {
 			expect(init?.method).toBe("POST");
 			expect(init?.body).toBe('{"query":"x"}');
-			expect((init?.headers as Record<string, string>)["content-type"]).toBe("application/json");
+			expect(init?.headers).toBeDefined();
+			expect((init!.headers as Record<string, string>)["content-type"]).toBe("application/json");
 			return new Response(JSON.stringify([{ title: "A" }]), { status: 200 });
 		});
 		const data = (await customApiFetcher()(ctx, {
