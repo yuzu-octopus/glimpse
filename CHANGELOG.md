@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-07
+
+### Added
+- 52 behavior-pinning tests (null-poster/url/eta states, empty/long/special
+  inputs); dedupe semantics pinned (skip-identical/emit-different).
+
+### Fixed
+- Render-skip dedupe is O(1) version counter + content compare (was O(N^2)
+  stringify per chunk); widgetKeysFor/ColumnGrid memoized.
+- TtlCache single-map (stale-on-error preserved).
+
+### Removed
+- engagement.ts, HideHeadersContext, fmtNumber micro-files inlined (-12 lines).
+
 ## [0.3.0] - 2026-10-07
 
 ### Fixed
