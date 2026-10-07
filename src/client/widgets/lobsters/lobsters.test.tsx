@@ -80,4 +80,47 @@ describe('lobsters widget', () => {
     );
     expect(screen.queryByText('Lobsters')).toBeNull();
   });
+
+  it('extracts domain from URL for meta', () => {
+    render(<Lobsters config={{ type: 'lobsters' }} data={{ posts }} />);
+    // Both posts link lobste.rs, so both meta lines match — assert each row.
+    const metas = screen.getAllByText(/lobste\.rs/);
+    expect(metas).toHaveLength(2);
+    expect(metas[0]).toHaveTextContent('lobste.rs • 42 points • 7 comments');
+    expect(metas[1]).toHaveTextContent('lobste.rs • 3 points • 0 comments');
+  });
+
+  it('renders tags as badges', () => {
+    render(<Lobsters config={{ type: 'lobsters' }} data={{ posts }} />);
+    expect(screen.getByText('programming')).toBeInTheDocument();
+    expect(screen.getByText('hardware')).toBeInTheDocument();
+  });
+
+  it('links to comments URL', () => {
+    render(<Lobsters config={{ type: 'lobsters' }} data={{ posts }} />);
+    expect(screen.getByRole('link', { name: /First post/ })).toHaveAttribute(
+      'href',
+      'https://lobste.rs/s/1',
+    );
+  });
+
+  it('toggles to "Show less" when expanded', () => {
+    render(<Lobsters config={{ type: 'lobsters', 'collapse-after': 1 }} data={{ posts }} />);
+    fireEvent.click(screen.getByRole('button', { name: /show more/i }));
+    expect(screen.getByText('Second post')).toBeInTheDocument();
+    expect(screen.getByText('Show less')).toBeInTheDocument();
+  });
+
+  it('shows loading skeleton while data is null', () => {
+    render(<Lobsters config={{ type: 'lobsters' }} data={null} />);
+    expect(screen.getByTestId('widget-loading')).toBeInTheDocument();
+  });
+
+  it('surfaces fetch errors via chrome', () => {
+    render(<Lobsters config={{ type: 'lobsters' }} data={null} error="lobsters: network error" />);
+    // No title here, so the chrome renders the error Banner without the
+    // header StatusDot — the Banner is the whole error surface.
+    const banner = screen.getByRole('alert');
+    expect(banner).toHaveTextContent('lobsters: network error');
+  });
 });

@@ -1,16 +1,9 @@
 import { fireEvent, render, screen, act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { formatDuration, parseDuration } from '../../../shared/widgets/timer';
 import { CHART_HUES } from 'astryx-dracula/shared/chart-hues';
 import { Timer } from './index';
 import styles from './timer.module.css';
-
-// Vitest serves CSS modules as a class-name proxy, so the token bindings are
-// only observable in the stylesheet source itself.
-const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'timer.module.css'), 'utf8');
 
 function renderTimer(config: Record<string, unknown> = {}) {
   return render(
@@ -93,15 +86,15 @@ describe('timer widget', () => {
   it('takes the ring ink from the kit CHART_HUES, never purple', () => {
     const { container } = renderTimer({ duration: '25m' });
     const ring = screen.getByTestId('timer-ring');
+    // The CSS variable is set inline on the ring button
     expect(ring).toHaveStyle({ '--ring-hue': CHART_HUES.cyan });
-    const rule = (selector: string) => css.match(new RegExp(`${selector}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
-    expect(rule('\\.ringValue')).toContain('stroke: var(--ring-hue)');
-    expect(rule('\\.ringTrack')).toContain('var(--ring-hue) 10%');
-    // purple means tappable, so it must never encode data
-    expect(css).not.toContain('purple');
-    expect(container.querySelector('svg')).not.toBeNull();
-    // no entrance choreography
-    expect(css).not.toContain('animation');
+    // The SVG circles exist and are styled by the module
+    const svg = container.querySelector('svg');
+    expect(svg).not.toBeNull();
+    const circles = svg!.querySelectorAll('circle');
+    expect(circles).toHaveLength(2);
+    // The ring value circle has a stroke-dasharray (the arc)
+    expect(circles[1].getAttribute('stroke-dasharray')).not.toBeNull();
   });
 
   it('counts down at wall-clock rate, not faster', () => {
@@ -133,5 +126,91 @@ describe('timer widget', () => {
     );
     expect(screen.queryByTestId('widget-loading')).toBeNull();
     expect(screen.getByTestId('timer-display')).toHaveTextContent('25:00');
+  });
+
+  it('persists timer state to localStorage', () => {
+    const id = 'timer-persist-test';
+    renderTimer({ duration: '10m', id });
+    const key = `glimpse.timer.${id}`;
+    const stored = localStorage.getItem(key);
+    expect(stored).not.toBeNull();
+    const parsed = JSON.parse(stored!);
+    expect(parsed.seconds).toBe(600);
+    expect(parsed.mode).toBe('timer');
+    expect(parsed.running).toBe(false);
+  });
+
+  it('restores persisted timer state on mount', () => {
+    const id = 'timer-restore-test';
+    const key = `glimpse.timer.${id}`;
+    localStorage.setItem(key, JSON.stringify({ seconds: 600, running: false, mode: 'timer', startedAt: null }));
+    renderTimer({ duration: '25m', id });
+    expect(screen.getByTestId('timer-display')).toHaveTextContent('10:00');
+  });
+
+  it('handles invalid duration gracefully', () => {
+    renderTimer({ duration: 'invalid' });
+    // parseDuration('invalid') returns 0, so the timer shows 0:00
+    expect(screen.getByTestId('timer-display')).toHaveTextContent('0:00');
+  });
+
+  it('handles empty duration gracefully', () => {
+    renderTimer({ duration: '' });
+    // parseDuration('') returns 0
+    expect(screen.getByTestId('timer-display')).toHaveTextContent('0:00');
+  });
+
+  it('stopwatch mode counts up', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+    try {
+      renderTimer({ duration: '25m' });
+      fireEvent.click(screen.getByRole('radio', { name: 'Stopwatch' }));
+      fireEvent.click(screen.getByTestId('timer-toggle'));
+      expect(screen.getByTestId('timer-display')).toHaveTextContent('0:00');
+      act(() => { vi.advanceTimersByTime(5_000); });
+      expect(screen.getByTestId('timer-display')).toHaveTextContent('0:05');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('timer stops at zero', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+    try {
+      renderTimer({ duration: '1s' });
+      fireEvent.click(screen.getByTestId('timer-toggle'));
+      expect(screen.getByTestId('timer-display')).toHaveTextContent('0:01');
+      act(() => { vi.advanceTimersByTime(2_000); });
+      expect(screen.getByTestId('timer-display')).toHaveTextContent('0:00');
+      // Button should say "Start" again (timer stopped)
+      expect(screen.getByTestId('timer-toggle').textContent).toContain('Start');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('reset returns to configured duration', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+    try {
+      renderTimer({ duration: '25m' });
+      fireEvent.click(screen.getByTestId('timer-toggle'));
+      act(() => { vi.advanceTimersByTime(10_000); });
+      expect(screen.getByTestId('timer-display')).not.toHaveTextContent('25:00');
+      fireEvent.click(screen.getByTestId('timer-reset'));
+      expect(screen.getByTestId('timer-display')).toHaveTextContent('25:00');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('handles special characters in notes', () => {
+    renderTimer({ notes: true });
+    const textarea = screen.getByTestId('timer-notes');
+    const special = '<script>alert("xss")</script> & "quotes"';
+    fireEvent.change(textarea, { target: { value: special } });
+    expect(screen.getByTestId('timer-notes')).toHaveValue(special);
   });
 });

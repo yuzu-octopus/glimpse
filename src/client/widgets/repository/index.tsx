@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { fmtNumber } from '../_helpers/fmtNumber';
 import { ListItem, Link } from '@astryxdesign/core';
 import { CircleDot, GitCommitHorizontal, GitPullRequest, Star } from 'lucide-react';
 import type { RepositoryConfig } from '../../../shared/widgets/keyed';
@@ -103,7 +102,7 @@ function Repository({ config, data, error, isLoading }: WidgetComponentProps) {
           {repo.stars !== null && repo.stars !== undefined ? (
             <span className={styles.stars}>
               <Star size={13} />
-              {fmtNumber(repo.stars)}
+              {repo.stars.toLocaleString()}
             </span>
           ) : null}
           {repo.description ? <div className={styles.desc}>{repo.description}</div> : null}

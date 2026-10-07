@@ -59,4 +59,86 @@ describe('clock widget', () => {
     expect(screen.getByText('Coordinated')).toBeInTheDocument();
     expect(screen.getAllByText(/\d{2}:\d{2}/).length).toBeGreaterThan(0);
   });
+
+  it('renders different times for different timezones', () => {
+    render(
+      <Clock
+        config={{
+          type: 'clock',
+          timezones: [
+            { timezone: 'UTC', label: 'UTC' },
+            { timezone: 'Asia/Tokyo', label: 'Tokyo' },
+          ],
+        }}
+        data={null}
+      />,
+    );
+    // Both zones should show a time
+    const times = screen.getAllByText(/\d{2}:\d{2}/);
+    expect(times.length).toBeGreaterThanOrEqual(3); // local + UTC + Tokyo
+  });
+
+  it('renders 12h format when hour-format is 12h', () => {
+    render(
+      <Clock
+        config={{ type: 'clock', 'hour-format': '12h', timezones: [] }}
+        data={null}
+      />,
+    );
+    // 12h format includes AM/PM
+    expect(screen.getByText(/\d{2}:\d{2} (AM|PM)/i)).toBeInTheDocument();
+  });
+
+  it('renders 24h format by default', () => {
+    render(<Clock config={{ type: 'clock', timezones: [] }} data={null} />);
+    // 24h format: no AM/PM
+    expect(screen.queryByText(/AM|PM/i)).toBeNull();
+  });
+
+  it('renders the date in en-GB format', () => {
+    render(<Clock config={{ type: 'clock', timezones: [] }} data={null} />);
+    // en-GB weekday + day + month ("Wednesday 7 October", no year): the date
+    // div holds the whole string, so match on the element's full textContent.
+    expect(
+      screen.getByText(
+        (_, el) => el?.textContent != null && /^[A-Za-z]+ \d{1,2} [A-Za-z]+$/.test(el.textContent),
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('handles multiple timezones with labels', () => {
+    render(
+      <Clock
+        config={{
+          type: 'clock',
+          timezones: [
+            { timezone: 'America/New_York', label: 'New York' },
+            { timezone: 'Europe/London', label: 'London' },
+            { timezone: 'Asia/Kolkata', label: 'Mumbai' },
+          ],
+        }}
+        data={null}
+      />,
+    );
+    expect(screen.getByText('New York')).toBeInTheDocument();
+    expect(screen.getByText('London')).toBeInTheDocument();
+    expect(screen.getByText('Mumbai')).toBeInTheDocument();
+  });
+
+  it('shows timezone name when no label is provided', () => {
+    render(
+      <Clock
+        config={{ type: 'clock', timezones: [{ timezone: 'Asia/Kolkata' }] }}
+        data={null}
+      />,
+    );
+    expect(screen.getByText('Asia/Kolkata')).toBeInTheDocument();
+  });
+
+  it('renders no separator when no timezones are configured', () => {
+    const { container } = render(
+      <Clock config={{ type: 'clock', timezones: [] }} data={null} />,
+    );
+    expect(container.querySelector('[class*="separator"]')).toBeNull();
+  });
 });

@@ -33,4 +33,43 @@ describe('twitch-top-games widget', () => {
     render(<TwitchTopGames config={{ type: 'twitch-top-games' }} data={null} error="HTTP 401 for api.twitch.tv" />);
     expect(screen.getByText(/HTTP 401/)).toBeInTheDocument();
   });
+
+  it('renders no img when boxArtUrl is null', () => {
+    const { container } = render(<TwitchTopGames config={{ type: 'twitch-top-games' }} data={games} />);
+    // Second game has boxArtUrl: null
+    const rows = container.querySelectorAll('[class*="row"]');
+    expect(rows[1].querySelector('img')).toBeNull();
+  });
+
+  it('links each game to its Twitch directory URL', () => {
+    render(<TwitchTopGames config={{ type: 'twitch-top-games' }} data={games} />);
+    expect(screen.getByRole('link', { name: 'Just Chatting' })).toHaveAttribute(
+      'href',
+      'https://www.twitch.tv/directory/category/just-chatting',
+    );
+    expect(screen.getByRole('link', { name: 'League of Legends' })).toHaveAttribute(
+      'href',
+      'https://www.twitch.tv/directory/category/league-of-legends',
+    );
+  });
+
+  it('renders correct rank numbers', () => {
+    render(<TwitchTopGames config={{ type: 'twitch-top-games' }} data={games} />);
+    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
+  });
+
+  it('does not collapse when games fit within collapse-after', () => {
+    render(<TwitchTopGames config={{ type: 'twitch-top-games', 'collapse-after': 5 }} data={games} />);
+    expect(screen.getByText('Just Chatting')).toBeInTheDocument();
+    expect(screen.getByText('League of Legends')).toBeInTheDocument();
+    expect(screen.queryByText(/Show more/)).toBeNull();
+  });
+
+  it('toggles to "Show less" when expanded', () => {
+    render(<TwitchTopGames config={{ type: 'twitch-top-games', 'collapse-after': 1 }} data={games} />);
+    fireEvent.click(screen.getByText(/Show more \(1\)/));
+    expect(screen.getByText('League of Legends')).toBeInTheDocument();
+    expect(screen.getByText('Show less')).toBeInTheDocument();
+  });
 });

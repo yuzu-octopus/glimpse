@@ -40,4 +40,50 @@ describe('immich widget', () => {
     expect(screen.getByText('immich: missing api-key')).toBeInTheDocument();
     expect(screen.getByTestId('widget-error-dot')).toBeInTheDocument();
   });
+
+  it('renders a placeholder div when poster is null', () => {
+    render(<Immich config={{ type: 'immich' }} data={data} />);
+    const cards = screen.getAllByTestId('media-card');
+    // Second card has poster: null
+    const placeholder = cards[1].querySelector('[class*="posterPlaceholder"]');
+    expect(placeholder).toBeInTheDocument();
+    expect(cards[1].querySelector('img')).toBeNull();
+  });
+
+  it('renders a non-link card when url is null', () => {
+    render(<Immich config={{ type: 'immich' }} data={data} />);
+    const cards = screen.getAllByTestId('media-card');
+    // Second card has url: null — ClickableCard with href=undefined renders as div
+    expect(cards[1].tagName).toBe('DIV');
+    expect(cards[1].querySelector('a')).toBeNull();
+  });
+
+  it('renders meta line with subtitle and date', () => {
+    render(<Immich config={{ type: 'immich' }} data={data} />);
+    // First card has subtitle: null, date: '2024-05-01T10:00:00'
+    // ageOf returns 'today' or 'Xd ago' depending on current date
+    const cards = screen.getAllByTestId('media-card');
+    const meta = cards[0].querySelector('[class*="meta"]');
+    expect(meta).toBeInTheDocument();
+    expect(meta!.textContent).toMatch(/\d+d ago|today|yesterday/);
+  });
+
+  it('renders no meta line when both subtitle and date are null', () => {
+    render(<Immich config={{ type: 'immich' }} data={data} />);
+    const cards = screen.getAllByTestId('media-card');
+    // Second card has subtitle: null, date: null
+    const meta = cards[1].querySelector('[class*="meta"]');
+    expect(meta).toBeNull();
+  });
+
+  it('handles long titles without crashing', () => {
+    const longTitle = 'A'.repeat(500);
+    render(
+      <Immich
+        config={{ type: 'immich' }}
+        data={{ items: [{ title: longTitle, subtitle: null, poster: null, url: null, date: null }] }}
+      />,
+    );
+    expect(screen.getByText(longTitle)).toBeInTheDocument();
+  });
 });

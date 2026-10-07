@@ -3,7 +3,6 @@ import { useState } from 'react';
 import type { DnsStats } from '../../../shared/widgets/payloads';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import { fmtNumber as fmt } from '../_helpers/fmtNumber';
 import { Text } from '@astryxdesign/core';
 import { CHART_HUES } from 'astryx-dracula/shared/chart-hues';
 import styles from './dns.module.css';
@@ -75,7 +74,7 @@ export function DnsStatsWidget({ config, data, error, isLoading }: WidgetCompone
         <div className={styles.totals}>
           <div className={styles.totalsItem}>
             <Text as="div" type="large" hasTabularNumbers data-testid="dns-total">
-              {fmt(d.totalQueries)}
+              {d.totalQueries.toLocaleString()}
             </Text>
             <Text as="div" type="label" className={styles.totalsLabel}>QUERIES</Text>
           </div>
@@ -88,7 +87,7 @@ export function DnsStatsWidget({ config, data, error, isLoading }: WidgetCompone
           {d.responseTime > 0 ? (
             <div className={styles.totalsItem}>
               <Text as="div" type="large" hasTabularNumbers data-testid="dns-latency">
-                {fmt(d.responseTime)}ms
+                {d.responseTime.toLocaleString()}ms
               </Text>
               <Text as="div" type="label" className={styles.totalsLabel}>LATENCY</Text>
             </div>
@@ -133,7 +132,7 @@ export function DnsStatsWidget({ config, data, error, isLoading }: WidgetCompone
                   data-active={pinned === idx || undefined}
                   tabIndex={0}
                   role="img"
-                  aria-label={`${d.timeLabels[idx] ?? `Hour ${idx + 1}`}: ${fmt(pt.queries)} queries, ${pt.percentBlocked}% blocked`}
+                  aria-label={`${d.timeLabels[idx] ?? `Hour ${idx + 1}`}: ${pt.queries.toLocaleString()} queries, ${pt.percentBlocked}% blocked`}
                   onClick={() => setPinned((cur) => (cur === idx ? null : idx))}
                   onBlur={() => setPinned((cur) => (cur === idx ? null : cur))}
                   onKeyDown={(e) => {
@@ -142,7 +141,7 @@ export function DnsStatsWidget({ config, data, error, isLoading }: WidgetCompone
                 >
                   <div className={styles.tip} data-testid="dns-tip" aria-hidden="true">
                     <div>
-                      <Text as="div" type="large" hasTabularNumbers>{fmt(pt.queries)}</Text>
+                      <Text as="div" type="large" hasTabularNumbers>{pt.queries.toLocaleString()}</Text>
                       <Text as="div" type="label">QUERIES</Text>
                     </div>
                     <div>

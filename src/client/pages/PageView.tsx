@@ -5,7 +5,7 @@ import type { PagePayload, WidgetPayload } from '../../shared/api';
 import { resolveSpan } from '../../shared/config';
 import type { Page } from '../../shared/config';
 import type { WidgetType } from '../../shared/config';
-import { HideHeadersContext } from '../components/HideHeadersContext';
+import { HideHeadersContext } from '../components/WidgetChrome';
 import { WidgetChrome } from '../components/WidgetChrome';
 import { WidgetErrorBoundary } from '../components/WidgetErrorBoundary';
 import { usePageData } from '../hooks/usePageData';
@@ -70,10 +70,17 @@ function widgetKey(w: WidgetLike, i: number, counts?: Map<string, number>): stri
   return n === 1 ? base : `${base}#${n}`;
 }
 
-/** Per-render keys for a widget list — appends #2,#3 on duplicate base keys. */
+/** Per-render keys for a widget list — appends #2,#3 on duplicate base keys.
+ *  Memoized on list identity: the streaming invariant gives a stable array
+ *  reference per payload, so the cache hits on every poll. */
+const widgetKeysCache = new WeakMap<WidgetLike[], string[]>();
 function widgetKeysFor(list: WidgetLike[]): string[] {
+  const cached = widgetKeysCache.get(list);
+  if (cached) return cached;
   const counts = new Map<string, number>();
-  return list.map((w, i) => widgetKey(w, i, counts));
+  const keys = list.map((w, i) => widgetKey(w, i, counts));
+  widgetKeysCache.set(list, keys);
+  return keys;
 }
 
 /** Column label for the mobile section toggle. The column's own `title` is
@@ -656,9 +663,15 @@ function ColumnGrid({
   resolved: PagePayload;
   placedById: CollagePlacement | null;
 }) {
-  const inferred = inferredColumnSpans(resolved);
-  const byId = new Map((placedById?.placed.tiles ?? []).map((p) => [p.id, p]));
-  const colCounts = new Map<string, number>();
+  const inferred = useMemo(() => inferredColumnSpans(resolved), [resolved]);
+  const byId = useMemo(
+    () => new Map((placedById?.placed.tiles ?? []).map((p) => [p.id, p])),
+    [placedById],
+  );
+  const colKeys = useMemo(() => {
+    const counts = new Map<string, number>();
+    return resolved.columns.map((col, i) => columnKey(col, i, counts));
+  }, [resolved.columns]);
   return (
     <div
       ref={gridRef}
@@ -678,7 +691,7 @@ function ColumnGrid({
         const span = tile?.w ?? col.span ?? inferred?.[i] ?? 1;
         return (
           <MobileColumn
-            key={columnKey(col, i, colCounts)}
+            key={colKeys[i]}
             label={columnLabel(col, i)}
             small={col.size === 'small'}
             span={span}

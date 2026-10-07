@@ -216,7 +216,8 @@ function reconcileList(list: WidgetPayload[] | undefined): WidgetPayload[] | und
 function reconcileStreamEnd(
   base: PagePayload,
   signal: AbortSignal,
-  onProgress?: (p: PagePayload) => void,
+  onProgress?: (p: PagePayload, version: number) => void,
+  versionRef?: { current: number },
 ): void {
   // An abort means the caller walked away. The partial payload is what today's
   // code already caches in that case, and stamping "no response" on it would
@@ -240,14 +241,17 @@ function reconcileStreamEnd(
     base.widgets = flat;
     changed = true;
   }
-  if (changed) onProgress?.({ ...base });
+  if (changed) {
+    if (versionRef) versionRef.current++;
+    onProgress?.({ ...base }, versionRef?.current ?? 0);
+  }
 }
 
 /** One caller of a shared in-flight fetch: its own signal, its own progress
  * callback. A subscriber's abort detaches it; it never ends the request. */
 type Subscriber = {
   signal: AbortSignal;
-  onProgress?: (p: PagePayload) => void;
+  onProgress?: (p: PagePayload, version: number) => void;
 };
 
 /**
@@ -263,8 +267,9 @@ type Inflight = {
 };
 
 const inflight = new Map<string, Inflight>();
+const versionBySlug = new Map<string, number>();
 
-function attach(entry: Inflight, signal: AbortSignal, onProgress?: (p: PagePayload) => void): void {
+function attach(entry: Inflight, signal: AbortSignal, onProgress?: (p: PagePayload, version: number) => void): () => void {
   const sub: Subscriber = { signal, onProgress };
   entry.subs.add(sub);
   const detach = (): void => {
@@ -275,14 +280,16 @@ function attach(entry: Inflight, signal: AbortSignal, onProgress?: (p: PagePaylo
   };
   if (signal.aborted) detach();
   else signal.addEventListener('abort', detach, { once: true });
+  return detach;
 }
 
 async function runPageStream(slug: string, entry: Inflight, force: boolean): Promise<PagePayload> {
   const { controller, subs } = entry;
   const signal = controller.signal;
+  const versionRef = { current: 0 };
   const emit = (payload: PagePayload): void => {
     for (const sub of subs) {
-      if (!sub.signal.aborted) sub.onProgress?.({ ...payload });
+      if (!sub.signal.aborted) sub.onProgress?.({ ...payload }, versionRef.current);
     }
   };
   const qs = force ? '?stream&force=1' : '?stream';
@@ -300,6 +307,8 @@ async function runPageStream(slug: string, entry: Inflight, force: boolean): Pro
   const isNdjson = ct.includes('ndjson');
 
   const cached = force ? null : getCached(slug);
+  // Clone: applyChunk mutates `base` in place, and `base` is set to `cachedBase`.
+  // Without the clone, the cached payload would be mutated, corrupting the cache.
   const cachedBase = cached ? structuredClone(cached) : null;
   let base: PagePayload | null = null;
   const skeletonOf = (chunk: { path?: string; payload?: unknown }): PagePayload | null => {
@@ -333,6 +342,7 @@ async function runPageStream(slug: string, entry: Inflight, force: boolean): Pro
     }
     if (!chunk.path) return;
     applyChunk(base!, chunk.path!, chunk.payload);
+    versionRef.current++;
     emit({ ...base! });
   };
 
@@ -396,7 +406,8 @@ async function runPageStream(slug: string, entry: Inflight, force: boolean): Pro
   // inside STALE_MS reads widgets that never answered as permanent skeletons
   // with no error badge.
   if (signal.aborted) return base;
-  reconcileStreamEnd(base, signal, emit);
+  reconcileStreamEnd(base, signal, emit, versionRef);
+  versionBySlug.set(slug, versionRef.current);
   setCache(slug, base);
   return base;
 }
@@ -409,7 +420,7 @@ async function runPageStream(slug: string, entry: Inflight, force: boolean): Pro
 function fetchPage(
   slug: string,
   signal: AbortSignal,
-  onProgress?: (p: PagePayload) => void,
+  onProgress?: (p: PagePayload, version: number) => void,
   force = false,
 ): Promise<PagePayload> {
   // An entry whose last subscriber walked away has already been aborted; it is
@@ -452,9 +463,13 @@ export function usePageData(slug: string): PageDataResult {
   const dataRef = useRef<PagePayload | null>(data);
   const abortRef = useRef<AbortController | null>(null);
   const validatingCountRef = useRef(0);
-  // Render-skip: last emitted payload serialized — polls that change nothing
-  // (the common 30s/1s tick) skip setData so memo'd WidgetSlots don't re-render.
-  const lastJsonRef = useRef<string | null>(data ? JSON.stringify(data) : null);
+  // Render-skip: last emitted version — polls that change nothing skip setData
+  // so memo'd WidgetSlots don't re-render.
+  const lastVersionRef = useRef<number | null>(null);
+  // Cross-poll dedupe: the stream version counter resets to 0 on every fetch,
+  // so identical payloads from different polls get different versions. The
+  // content hash is the genuine identity check across streams.
+  const lastPayloadJsonRef = useRef<string | null>(null);
   const preloadedRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -468,35 +483,34 @@ export function usePageData(slug: string): PageDataResult {
       setIsValidatingRaw(true);
       try {
         // Render-skip + visible-page preload. Returns true when emitted.
-        const emit = (progress: PagePayload): boolean => {
+        const emit = (progress: PagePayload, version: number): boolean => {
           if (signal.aborted) return false;
           if (preloadedRef.current !== slug) {
             preloadedRef.current = slug;
             scheduleWidgetPreload(collectWidgetTypes(progress));
           }
-          let json: string | null = null;
-          try {
-            json = JSON.stringify(progress);
-          } catch {
-            json = null;
-          }
-          if (json !== null && json === lastJsonRef.current) return false;
-          lastJsonRef.current = json;
+          // Content is the dedupe identity: the stream version counter resets
+          // to 0 on every fetch, so versions collide across polls (stream 2's
+          // v1 === stream 1's v1) and a version-only check would swallow a
+          // genuinely changed payload.
+          const json = JSON.stringify(progress);
+          if (json === lastPayloadJsonRef.current) return false;
+          lastVersionRef.current = version;
+          lastPayloadJsonRef.current = json;
           dataRef.current = progress;
           setData(progress);
           setError(null);
           return true;
         };
-        const onProgress = (progress: PagePayload) => {
-          emit(progress);
+        const onProgress = (progress: PagePayload, version: number) => {
+          emit(progress, version);
         };
         const next = await fetchPage(slug, signal, onProgress, force);
         if (signal.aborted) return;
-        // A resolved fetch is proof the network is back, whether or not the
-        // payload changed enough to be worth a re-render.
         setStaleNotice(null);
+        const version = versionBySlug.get(slug) ?? 0;
         startTransition(() => {
-          emit(next);
+          emit(next, version);
         });
       } catch (e) {
         if ((e instanceof Error && e.name === 'AbortError') || signal.aborted) return;
@@ -521,7 +535,7 @@ export function usePageData(slug: string): PageDataResult {
     async (force = false) => {
       if (force) {
         dataRef.current = null;
-        lastJsonRef.current = null;
+        lastVersionRef.current = null;
         setData(null);
         setError(null);
       }
@@ -541,17 +555,13 @@ export function usePageData(slug: string): PageDataResult {
     const cached = getCached(slug);
     if (cached) {
       dataRef.current = cached;
-      try {
-        lastJsonRef.current = JSON.stringify(cached);
-      } catch {
-        lastJsonRef.current = null;
-      }
+      lastVersionRef.current = null;
       setData(cached);
       setError(null);
       setIsValidatingRaw(isStale(slug));
     } else {
       dataRef.current = null;
-      lastJsonRef.current = null;
+      lastVersionRef.current = null;
       setData(null);
       setError(null);
       setIsValidatingRaw(true);
@@ -602,6 +612,7 @@ export function usePageData(slug: string): PageDataResult {
 export function __clearCacheForTests() {
   pageCache.clear();
   inflight.clear();
+  versionBySlug.clear();
   for (const t of gcTimers.values()) clearTimeout(t);
   gcTimers.clear();
   staleListeners.clear();

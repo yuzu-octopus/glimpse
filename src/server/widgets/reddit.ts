@@ -1,7 +1,6 @@
 import { redditSchema } from '../../shared/widgets/feeds';
 import { parseCacheDuration } from '../cache';
 import { fetchWithRetry, retryOptionsFrom, type HttpOptions, type RetryOptions } from './http';
-import { compareEngagement } from './engagement';
 import { registerWidget, type WidgetFetchContext } from './registry';
 import type { RedditPost } from '../../shared/widgets/payloads';
 interface RedditChild {
@@ -162,7 +161,7 @@ registerWidget('reddit', async (ctx, config) => {
   );
 
   if (cfg['extra-sort-by'] === 'engagement') {
-    posts.sort(compareEngagement);
+    posts.sort((a, b) => b.score + b.comments - (a.score + a.comments));
   }
   return { posts: posts.slice(0, limit) };
 });

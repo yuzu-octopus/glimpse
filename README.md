@@ -27,7 +27,7 @@ Built with **Bun**, **TypeScript**, **Vite**, **React 19**, the **Astryx** desig
 ## Features
 
 - **42 widget types** — feeds, homelab monitoring, containers, smart-home state, VPN tailnets, AI quota, model availability, media, twitch, timers, calendars, radar, trending — see [Widgets](#widgets)
-- **One theme — [astryx-dracula](https://github.com/yuzu-octopus/astryx-dracula)** — the pure Dracula brand for Astryx, dark-only by design: 270+ brand tokens, JetBrains Mono for body/heading/code, a fixed status vocabulary, and a shared chart layer (5 purple-free categorical hues plus 55 `--color-data-*` ramp tokens). No presets, no light mode, no picker; `custom-css-file:` is the only override
+- **One theme — [astryx-dracula](https://github.com/yuzu-octopus/astryx-dracula)** — the pure Dracula brand for Astryx, dark-only by design: 270+ brand tokens, JetBrains Mono for body/heading/code, a fixed status vocabulary, and a shared chart layer (6 purple-free categorical hues plus 54 `--color-data-*` ramp tokens). No presets, no light mode, no picker; `custom-css-file:` is the only override
 - **12-column bento layout** — `pages` → `columns` (`span` tracks on a 12-col grid; legacy `size: small/full` still works) plus a `tiling: collage` mode driven by one pure `place()` module, responsive 12/6/1 tracks on desktop/tablet/mobile, optional `head-widgets`
 - **Progressive loading** — the server streams widgets as their data settles over a skeleton-first NDJSON stream; widget components are lazy chunks preloaded after first paint. Fast (cached/config-only) widgets paint instantly while slow API widgets show type-shaped skeletons and fill in as responses arrive; the server pre-warms its widget cache at boot and on config changes so the first visitor never waits on upstreams. Skeleton grid mirrors real column spans so layout never shifts.
 - **Server-side fetching** — secrets configured once in the server environment; live SWR updates (1s poll for homelab pages, 30s otherwise) without losing stale content mid-refresh. GitHub-backed widgets (releases, repository) automatically use `GITHUB_TOKEN`/`GH_TOKEN` or a logged-in `gh` CLI token when available, lifting the API rate limit from 60 to 5,000 req/h
@@ -88,7 +88,7 @@ pages:
 - All configs are zod-validated, including glance's structural rules: 1–3 columns per page, columns require `size` or `span` (`span` explicit on all or none), when using `size` a page has 1 or 2 `full` columns, a `group` cannot contain another `group` or `split-column`, and page slugs must be unique.
 - Glance's `to-do` and `stocks` type names load as aliases for `todo` and `markets` — at any nesting depth, including inside `group` / `split-column` — and fold to the canonical name at validation time.
 
-See [`config.example.yml`](config.example.yml) for a working four-page starting point (Home / Dev / Social / Lab).
+See [`config.example.yml`](config.example.yml) for a working five-page starting point (Home / Dev / Social / Lab / Media).
 
 ### Environment variables
 

@@ -1,7 +1,6 @@
 import { hackerNewsSchema } from '../../shared/widgets/feeds';
 import { registerWidget } from './registry';
 import { fetchJson, retryOptionsFrom } from './http';
-import { compareEngagement } from './engagement';
 import type { HnPost } from '../../shared/widgets/payloads';
 
 interface HnItem {
@@ -79,7 +78,7 @@ registerWidget('hacker-news', async (ctx, config) => {
     }
   }
   if (cfg['extra-sort-by'] === 'engagement') {
-    posts.sort(compareEngagement);
+    posts.sort((a, b) => b.score + b.comments - (a.score + a.comments));
   }
   return { posts: posts.slice(0, cfg.limit) };
 });

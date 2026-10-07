@@ -34,4 +34,41 @@ describe('jellyfin widget', () => {
     expect(screen.getByText('jellyfin: missing api-key')).toBeInTheDocument();
     expect(screen.getByTestId('widget-error-dot')).toBeInTheDocument();
   });
+
+  it('renders a placeholder div when poster is null', () => {
+    render(<Jellyfin config={{ type: 'jellyfin' }} data={data} />);
+    const cards = screen.getAllByTestId('media-card');
+    const placeholder = cards[1].querySelector('[class*="posterPlaceholder"]');
+    expect(placeholder).toBeInTheDocument();
+    expect(cards[1].querySelector('img')).toBeNull();
+  });
+
+  it('renders a non-link card when url is null', () => {
+    render(<Jellyfin config={{ type: 'jellyfin' }} data={data} />);
+    const cards = screen.getAllByTestId('media-card');
+    expect(cards[1].tagName).toBe('DIV');
+    expect(cards[1].querySelector('a')).toBeNull();
+  });
+
+  it('renders meta line with subtitle and date', () => {
+    render(<Jellyfin config={{ type: 'jellyfin' }} data={data} />);
+    const cards = screen.getAllByTestId('media-card');
+    const meta = cards[0].querySelector('[class*="meta"]');
+    expect(meta).toBeInTheDocument();
+    // subtitle 'Movie' + date '2021' → ageOf('2021') returns 'today' or 'Xd ago'
+    expect(meta!.textContent).toMatch(/Movie/);
+    expect(meta!.textContent).toMatch(/\d+d ago|today|yesterday/);
+  });
+
+  it('renders no meta line when both subtitle and date are null', () => {
+    // NOTE: the shared fixture's second item has a subtitle, so it renders a
+    // meta line — use an item with both fields null to pin the suppression.
+    const bare: MediaData = {
+      items: [{ title: 'Pilot', subtitle: null, poster: null, url: null, date: null }],
+    };
+    render(<Jellyfin config={{ type: 'jellyfin' }} data={bare} />);
+    const cards = screen.getAllByTestId('media-card');
+    expect(cards).toHaveLength(1);
+    expect(cards[0].querySelector('[class*="meta"]')).toBeNull();
+  });
 });

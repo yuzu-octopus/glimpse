@@ -6,7 +6,6 @@ import { Sparkline } from 'astryx-dracula/shared/sparkline';
 import { MetricDelta } from 'astryx-dracula/shared/metric-delta';
 import { WidgetChrome } from '../../components/WidgetChrome';
 import { registerWidgetComponent, type WidgetComponentProps } from '../registry';
-import { fmtNumber } from '../_helpers/fmtNumber';
 import type { Market, MarketSourceIssue } from '../../../shared/widgets/payloads';
 import styles from './markets.module.css';
 
@@ -39,7 +38,7 @@ export function TrendChart({ symbol, values }: { symbol: string; values: number[
 function Change({ change, changePct }: { change: number | null; changePct: number | null }) {
   if (change === null) return null;
   const text =
-    fmtNumber(change, { maximumFractionDigits: 2 }) +
+    change.toLocaleString(undefined, { maximumFractionDigits: 2 }) +
     (changePct !== null ? ` (${changePct.toFixed(2)}%)` : '');
   // glance colors strictly by sign; zero has no sign, so it stays neutral.
   return (
@@ -104,7 +103,7 @@ function Row({ market, symbolLink, chartLink }: { market: Market } & RowLinks) {
       <div className={styles.values}>
         <Change change={market.change} changePct={market.changePct} />
         <Text color="secondary" hasTabularNumbers className={styles.price}>
-          {market.price !== null ? fmtNumber(market.price, { maximumFractionDigits: 2 }) : '—'}
+          {market.price !== null ? market.price.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—'}
         </Text>
       </div>
     </div>

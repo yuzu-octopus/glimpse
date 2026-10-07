@@ -37,11 +37,11 @@ Auto-reload failure keeps the last good config active. Fix: delete the whole `th
 8. Motion answers action: hover dims, press dims more, focus rings accent. No entrance choreography, no card hover lifts.
 
 ## Tokens
-`astryx-dracula/tokens.css` (62 unlayered `:root` vars — the pre-`<Theme>` paint fallback) + `astryx-dracula/theme.css` (270 unique vars inside `@layer reset` / `@layer astryx-theme`, `@scope`d to `[data-astryx-theme]`) are the source of truth. Never write a hex; consume `var(--color-*)`, `var(--space-*)`, `var(--radius-*)`, `var(--font-size-*)`, or the 20 `--dracula-*` primitives in `tokens.css`.
+`astryx-dracula/tokens.css` (287 unlayered `:root` vars — the pre-`<Theme>` paint fallback) + `astryx-dracula/theme.css` (276 unique vars inside `@layer reset` / `@layer astryx-theme`, `@scope`d to `[data-astryx-theme]`) are the source of truth. Never write a hex; consume `var(--color-*)`, `var(--space-*)`, `var(--radius-*)`, `var(--font-size-*)`, or the 20 `--dracula-*` primitives in `tokens.css`.
 
 **Charts have two vocabularies, on purpose.**
-- *Categorical series* → `CHART_HUES` from `astryx-dracula/shared/chart-hues` (`cyan`, `orange`, `green`, `pink`, `muted`). Five slots, purple-free by construction, because purple means tappable and must never encode data. Hand-rolling a per-template hue list is a defect.
-- *Sequential ramps* → the 55 `--color-data-*` tokens: 10 categorical slots (`--color-data-categorical-{blue,orange,purple,green,pink,cyan,red,teal,brown,indigo}`) plus 9 sequential families (`blue`, `gray`, `orange`, `pink`, `purple`, `red`, `shamrock`, `teal`, `yellow`) at levels 1–5. Use a ramp when the value is an *amount* (a contribution heatmap), never for identity.
+- *Categorical series* → `CHART_HUES` from `astryx-dracula/shared/chart-hues` (`cyan`, `orange`, `green`, `pink`, `muted`, `red`). Six slots, purple-free by construction, because purple means tappable and must never encode data. Hand-rolling a per-template hue list is a defect.
+- *Sequential ramps* → the 54 `--color-data-*` tokens: 8 categorical slots (`--color-data-categorical-{blue,cyan,green,indigo,orange,pink,red,teal}`) plus `--color-data-neutral` and 9 sequential families (`blue`, `gray`, `orange`, `pink`, `purple`, `red`, `shamrock`, `teal`, `yellow`) at levels 1–5. Use a ramp when the value is an *amount* (a contribution heatmap), never for identity.
 
 ## Chart and icon modules: import, never copy
 
