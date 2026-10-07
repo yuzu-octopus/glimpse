@@ -13,6 +13,7 @@ import { ChevronRight } from 'lucide-react';
 import styles from './widget-chrome.module.css';
 
 /** Page-level hide-headers flag. PageView provides it; WidgetChrome consumes it. */
+// eslint-disable-next-line react-doctor/only-export-components -- context lives with its sole consumer by design (ponytail cut: HideHeadersContext.tsx inlined here)
 export const HideHeadersContext = createContext(false);
 
 interface WidgetChromeProps {
