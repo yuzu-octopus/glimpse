@@ -65,6 +65,29 @@
 	width: 100%;
 }
 
+@keyframes pulseGlow {
+	0%,
+	100% {
+		box-shadow: 0 0 16px rgba(139, 233, 253, 0.18);
+		border-color: rgba(139, 233, 253, 0.75);
+	}
+	50% {
+		box-shadow: 0 0 28px rgba(139, 233, 253, 0.45);
+		border-color: var(--color-primary);
+	}
+}
+
+@keyframes gaugeEnter {
+	from {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
 /* Idle state GO button */
 .goButton {
 	width: 120px;
@@ -82,17 +105,20 @@
 	align-items: center;
 	justify-content: center;
 	box-shadow: 0 0 20px rgba(139, 233, 253, 0.15);
+	animation: pulseGlow 2.4s ease-in-out infinite;
 	transition:
 		box-shadow var(--duration-fast) var(--ease-standard),
-		border-color var(--duration-fast) var(--ease-standard);
+		border-color var(--duration-fast) var(--ease-standard),
+		transform 100ms ease-out;
 }
 
 .goButton:is(:hover, :focus-visible) {
-	box-shadow: 0 0 30px rgba(139, 233, 253, 0.35);
+	box-shadow: 0 0 32px rgba(139, 233, 253, 0.5);
 	border-color: var(--color-text-highlight);
 }
 
 .goButton:active {
+	transform: translateY(2px);
 	opacity: 0.85;
 }
 
@@ -105,7 +131,9 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	animation: gaugeEnter 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+/* Gauge SVG */
 
 .gaugeSvg {
 	overflow: visible;
@@ -192,6 +220,42 @@
 	opacity: 0.85;
 }
 
+@keyframes beaconPulse {
+	0%,
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+	50% {
+		opacity: 0.35;
+		transform: scale(0.85);
+	}
+}
+
+.beacon {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background-color: var(--color-primary);
+	animation: beaconPulse 1.2s ease-in-out infinite;
+	flex-shrink: 0;
+}
+
+.beaconDownload {
+	background-color: var(--color-positive);
+	box-shadow: 0 0 8px var(--color-positive);
+}
+
+.beaconUpload {
+	background-color: var(--color-primary);
+	box-shadow: 0 0 8px var(--color-primary);
+}
+
+.beaconPing {
+	background-color: var(--color-tag-orange);
+	box-shadow: 0 0 8px var(--color-tag-orange);
+}
+
 .actionRow {
 	display: flex;
 	align-items: center;
@@ -223,4 +287,12 @@
 .statusText {
 	font-size: var(--font-size-sm);
 	color: var(--color-text-base-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.goButton,
+	.gaugeWrapper,
+	.beacon {
+		animation: none;
+	}
 }

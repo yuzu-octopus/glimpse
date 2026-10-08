@@ -386,11 +386,21 @@ function Speedtest({ config, data, error, isLoading }: WidgetComponentProps) {
 						<>
 							<Speedometer speed={currentSpeed} phase={phase} />
 							<div className={styles.actionRow}>
-								{!running ? (
+								{running ? (
+									<div
+										className={`${styles.beacon} ${
+											phase === "download"
+												? styles.beaconDownload
+												: phase === "upload"
+													? styles.beaconUpload
+													: styles.beaconPing
+										}`}
+									/>
+								) : (
 									<button type="button" className={styles.retestButton} onClick={startSpeedtest}>
 										<RefreshCw size={11} /> Test Again
 									</button>
-								) : null}
+								)}
 								<span className={styles.statusText}>{statusMessage}</span>
 							</div>
 						</>
