@@ -58,6 +58,7 @@ const EXPECTED: Record<WidgetType, SkeletonShape> = {
 	"events-calendar": "list", // day groups of two-line events
 	"twitch-channels": "list", // avatar + name/title/meta
 	"twitch-top-games": "list", // rank + box art + name
+	"model-releases": "list", // lab badge + model link + description
 
 	// ── media card grids: a filled area
 	videos: "chart",
@@ -68,6 +69,7 @@ const EXPECTED: Record<WidgetType, SkeletonShape> = {
 	weather: "stat", // the big temperature leads; six day-lines follow
 	network: "stat", // three label/value cells over a bar sparkline
 	"ai-quota": "stat", // a bar and a caption per window
+	speedtest: "stat", // speedometer gauge + top KPI readouts
 
 	// ── single-line row lists: icon/dot-free, one line per item
 	markets: "rows", // symbol, name, sparkline, change, price

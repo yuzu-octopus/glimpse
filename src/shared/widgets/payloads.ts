@@ -505,3 +505,39 @@ export interface TailscaleData {
 	/** Online nodes first, then offline, each group by name. */
 	devices: TailscaleDevice[];
 }
+
+export interface ModelReleaseItem {
+	id: string;
+	model: string;
+	author: string;
+	description: string;
+	url: string;
+	publishedAt: string;
+	topicLabel: string;
+	tags: string[];
+}
+
+export interface ModelReleasesData {
+	items: ModelReleaseItem[];
+}
+
+export interface SpeedtestResult {
+	download: number; // in Mbps
+	upload: number; // in Mbps
+	ping: number; // in ms
+	server?: {
+		name?: string;
+		country?: string;
+		sponsor?: string;
+		host?: string;
+	};
+	client?: {
+		ip?: string;
+		isp?: string;
+	};
+	timestamp?: string;
+}
+
+export interface SpeedtestData {
+	lastResult: SpeedtestResult | null;
+}

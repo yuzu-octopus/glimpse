@@ -232,6 +232,10 @@ pages:
               - openai/gpt-5
               - google/gemini-2.5-pro
             limit: 6
+          - type: model-releases
+            title: Model drops
+            style: vertical-list
+            limit: 6
           - type: split-column
             # N children laid out one per grid track, `max-columns` per row
             # (>= 2, default 2). The third child here would wrap onto a second
@@ -355,6 +359,8 @@ pages:
             title: Network
             ping-target: 1.1.1.1
             public-ip: true
+          - type: speedtest
+            title: Speedtest
           - type: change-detection
             title: Watched pages
             urls:

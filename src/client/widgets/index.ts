@@ -47,6 +47,8 @@ export const widgetLoaders: Record<string, Loader> = {
 	"home-assistant": () => import("./home-assistant"),
 	"model-endpoints": () => import("./model-endpoints"),
 	tailscale: () => import("./tailscale"),
+	"model-releases": () => import("./model-releases"),
+	speedtest: () => import("./speedtest"),
 };
 
 const widgetPromises = new Map<string, Promise<unknown>>();

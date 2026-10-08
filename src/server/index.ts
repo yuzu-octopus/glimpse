@@ -7,6 +7,7 @@ import { etagMatches } from "./etag";
 import { warmCache } from "./warmup";
 import type { WidgetFetchContext } from "./widgets/registry";
 import "./widgets"; // side-effect: registers all widget fetchers
+import { runSpeedtest } from "./speedtest";
 
 const CONFIG_PATH = process.argv[2] ?? process.env.GLIMPSE_CONFIG ?? "./config.yml";
 const PORT = Number(process.env.GLIMPSE_PORT ?? 3000);
@@ -172,6 +173,32 @@ const server = Bun.serve({
 				customCss = readThemeCss(cssFile);
 			}
 			return json({ customCss }, 200, { "cache-control": "public, max-age=60" });
+		}
+
+		if (pathname === "/api/speedtest/run") {
+			const enc = new TextEncoder();
+			const abortController = new AbortController();
+			const stream = new ReadableStream({
+				async start(controller) {
+					try {
+						await runSpeedtest((evt) => {
+							controller.enqueue(enc.encode(`${JSON.stringify(evt)}\n`));
+						}, abortController.signal);
+						controller.close();
+					} catch (e) {
+						controller.error(e);
+					}
+				},
+				cancel() {
+					abortController.abort();
+				},
+			});
+			return new Response(stream, {
+				headers: {
+					"content-type": "application/x-ndjson; charset=utf-8",
+					"cache-control": "no-store",
+				},
+			});
 		}
 
 		const pageMatch = /^\/api\/page\/([^/]+)$/.exec(pathname);

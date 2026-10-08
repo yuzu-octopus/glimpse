@@ -106,12 +106,18 @@ import {
 	MODEL_ENDPOINTS_SKELETON,
 	modelEndpointsSchema,
 } from "./model-endpoints";
+import {
+	MODEL_RELEASES_PREF,
+	MODEL_RELEASES_SKELETON,
+	modelReleasesSchema,
+} from "./model-releases";
 import { NETWORK_PREF, NETWORK_SKELETON, networkSchema } from "./network";
 import { NOTEPAD_PREF, NOTEPAD_SKELETON, notepadSchema } from "./notepad";
 import { RADAR_PREF, RADAR_SKELETON, radarSchema } from "./radar";
 import { SEARCH_PREF, SEARCH_SKELETON, searchSchema } from "./search";
 import { SERVER_STATS_PREF, SERVER_STATS_SKELETON, serverStatsSchema } from "./server-stats";
 import type { Pref, SkeletonShape } from "./shared";
+import { SPEEDTEST_PREF, SPEEDTEST_SKELETON, speedtestSchema } from "./speedtest";
 import { SYSTEM_STATS_PREF, SYSTEM_STATS_SKELETON, systemStatsSchema } from "./system-stats";
 import { TAILSCALE_PREF, TAILSCALE_SKELETON, tailscaleSchema } from "./tailscale";
 import { TIMER_PREF, TIMER_SKELETON, timerSchema } from "./timer";
@@ -168,6 +174,8 @@ const schemaEntries = [
 	homeAssistantSchema,
 	modelEndpointsSchema,
 	tailscaleSchema,
+	modelReleasesSchema,
+	speedtestSchema,
 ] as const;
 
 /** Co-located widget metadata: each row pairs the schema with its bento pref
@@ -293,6 +301,12 @@ export const widgetMeta = {
 		skeleton: MODEL_ENDPOINTS_SKELETON,
 	},
 	tailscale: { schema: tailscaleSchema, pref: TAILSCALE_PREF, skeleton: TAILSCALE_SKELETON },
+	"model-releases": {
+		schema: modelReleasesSchema,
+		pref: MODEL_RELEASES_PREF,
+		skeleton: MODEL_RELEASES_SKELETON,
+	},
+	speedtest: { schema: speedtestSchema, pref: SPEEDTEST_PREF, skeleton: SPEEDTEST_SKELETON },
 } as const satisfies Record<
 	string,
 	{ schema: z.ZodType; pref: Pref; skeleton: SkeletonShape; configOnly?: true }

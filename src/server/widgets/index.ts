@@ -31,3 +31,5 @@ import "./twitch";
 import "./home-assistant";
 import "./model-endpoints";
 import "./tailscale";
+import "./model-releases";
+import "./speedtest";

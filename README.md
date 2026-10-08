@@ -26,7 +26,7 @@ Built with **Bun**, **TypeScript**, **Vite**, **React 19**, the **Astryx** desig
 
 ## Features
 
-- **42 widget types** — feeds, homelab monitoring, containers, smart-home state, VPN tailnets, AI quota, model availability, media, twitch, timers, calendars, radar, trending — see [Widgets](#widgets)
+- **44 widget types** — feeds, homelab monitoring, containers, smart-home state, VPN tailnets, AI quota, model availability & releases, internet speedtest, media, twitch, timers, calendars, radar, trending — see [Widgets](#widgets)
 - **One theme — [astryx-dracula](https://github.com/yuzu-octopus/astryx-dracula)** — the pure Dracula brand for Astryx, dark-only by design: 270+ brand tokens, JetBrains Mono for body/heading/code, a fixed status vocabulary, and a shared chart layer (6 purple-free categorical hues plus 54 `--color-data-*` ramp tokens). No presets, no light mode, no picker; `custom-css-file:` is the only override
 - **12-column bento layout** — `pages` → `columns` (`span` tracks on a 12-col grid; legacy `size: small/full` still works) plus a `tiling: collage` mode driven by one pure `place()` module, responsive 12/6/1 tracks on desktop/tablet/mobile, optional `head-widgets`
 - **Progressive loading** — the server streams widgets as their data settles over a skeleton-first NDJSON stream; widget components are lazy chunks preloaded after first paint. Fast (cached/config-only) widgets paint instantly while slow API widgets show type-shaped skeletons and fill in as responses arrive; the server pre-warms its widget cache at boot and on config changes so the first visitor never waits on upstreams. Skeleton grid mirrors real column spans so layout never shifts.
@@ -142,6 +142,8 @@ Widgets also read their own credentials from the environment — `TWITCH_CLIENT_
 | `jellyfin` | Recently added movies / episodes | `url` (required), `api-key` or `JELLYFIN_API_KEY`, `user-id` auto-resolved, `limit` (10) |
 | `qbittorrent` | Torrent status with progress bars | `url` (required), `username` / `password` or `QBITTORRENT_USERNAME` / `QBITTORRENT_PASSWORD`, `limit` (10) |
 | `transmission` | Torrent status with progress bars | `url` (required), `username` / `password` or `TRANSMISSION_USERNAME` / `TRANSMISSION_PASSWORD`, `limit` (10) |
+| `model-releases` | Live AI model releases and announcements | `live.aitracker.bot` API; model names, author/lab badges, announcement links, descriptions, relative times; `vertical-list` or `compact` style |
+| `speedtest` | Interactive internet speed test | `speedtest-cli`; manual GO trigger, SVG circular speedometer gauge with live needle, Download / Upload / Ping metrics, ISP & server metadata |
 | `timer` | Circular countdown + stopwatch + notes | Config-only; `duration: 25m` / `mm:ss`, editable ring, `notes: true` for the scratch area; persists per `id` |
 | `notepad` | Minimal sticky textbox | Config-only; `placeholder`, persists per `id` to `localStorage` |
 
