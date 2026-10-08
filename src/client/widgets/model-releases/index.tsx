@@ -1,4 +1,4 @@
-import { Badge, type BadgeVariant, Link, Text } from "@astryxdesign/core";
+import { Link, Text } from "@astryxdesign/core";
 import type { ModelReleasesConfig } from "../../../shared/widgets/model-releases";
 import type { ModelReleaseItem, ModelReleasesData } from "../../../shared/widgets/payloads";
 import { WidgetChrome } from "../../components/WidgetChrome";
@@ -6,7 +6,8 @@ import { useAge } from "../_hooks/useAge";
 import { registerWidgetComponent, type WidgetComponentProps } from "../registry";
 import styles from "./model-releases.module.css";
 
-function labBadgeVariant(author: string): BadgeVariant {
+/* Lab badge variant mapping kept for future opt-in
+function labBadgeVariant(author: string): string {
 	const a = author.toLowerCase();
 	if (a.includes("openai")) return "cyan";
 	if (a.includes("anthropic")) return "orange";
@@ -17,15 +18,17 @@ function labBadgeVariant(author: string): BadgeVariant {
 	if (a.includes("hugging")) return "yellow";
 	return "green";
 }
+*/
 
 function ReleaseRow({ item, compact }: { item: ModelReleaseItem; compact: boolean }) {
 	const age = useAge(item.publishedAt);
-	const variant = labBadgeVariant(item.author);
+	// const variant = labBadgeVariant(item.author);
 
 	return (
 		<li className={styles.row}>
 			<div className={styles.header}>
-				<Badge variant={variant} label={item.author} className={styles.authorBadge} />
+				{/* Lab badge disabled for now per user preference — kept in code for future opt-in */}
+				{/* <Badge variant={variant} label={item.author} className={styles.authorBadge} /> */}
 				<div className={styles.modelLink}>
 					<Link href={item.url} target="_blank" weight="semibold" hasUnderline={false} maxLines={1}>
 						{item.model}

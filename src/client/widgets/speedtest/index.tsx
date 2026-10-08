@@ -103,10 +103,25 @@ function Speedometer({ speed, phase }: SpeedometerProps) {
 					style={{ transition: "stroke-dashoffset 0.25s ease-out" }}
 				/>
 
-				{/* Scale Ticks and Labels (inside radius R - 16 = 62) */}
+				{/* Scale Ticks and Labels: anchored away from ring so 0 and 1000 have identical clearance */}
 				{TICKS.map((t) => {
 					const tickAngle = 150 + t.frac * 240;
-					const tickPos = polarToCartesian(CX, CY, R - 16, tickAngle);
+					const rad = (tickAngle * Math.PI) / 180;
+					const cos = Math.cos(rad);
+					const sin = Math.sin(rad);
+					const tickPos = { x: CX + 62 * cos, y: CY + 62 * sin };
+
+					let anchor: "start" | "middle" | "end" = "middle";
+					let baseline: "central" | "hanging" = "central";
+					if (cos < -0.3) {
+						anchor = "start";
+					} else if (cos > 0.3) {
+						anchor = "end";
+					} else {
+						anchor = "middle";
+						baseline = "hanging";
+					}
+
 					return (
 						<text
 							key={t.speed}
@@ -115,8 +130,8 @@ function Speedometer({ speed, phase }: SpeedometerProps) {
 							fill="var(--color-text-base-muted)"
 							fontSize="8.5"
 							fontWeight="600"
-							textAnchor="middle"
-							dominantBaseline="central"
+							textAnchor={anchor}
+							dominantBaseline={baseline}
 						>
 							{t.label}
 						</text>
@@ -142,15 +157,17 @@ function Speedometer({ speed, phase }: SpeedometerProps) {
 				<circle cx={CX} cy={CY} r="3" fill="var(--color-background, #282a36)" />
 			</svg>
 
-			{/* Digital speed readout */}
+			{/* Digital speed readout: resets to '—' when done or idle */}
 			<div className={styles.digitalReadout}>
-				<span className={styles.digitalSpeed}>{speed.toFixed(2)}</span>
+				<span className={styles.digitalSpeed}>
+					{speed > 0 && phase !== "done" ? speed.toFixed(2) : "—"}
+				</span>
 				<span className={styles.digitalUnit}>
-					{isUpload ? (
+					{phase === "upload" ? (
 						<ArrowUp size={11} className={styles.uploadColor} />
-					) : (
+					) : phase === "download" ? (
 						<ArrowDown size={11} className={styles.downloadColor} />
-					)}
+					) : null}
 					Mbps
 				</span>
 			</div>
@@ -190,16 +207,21 @@ function applyStreamEvent(
 		setPhase: (p: "ping" | "download" | "upload" | "idle" | "done") => void;
 		setCurrentSpeed: (s: number) => void;
 		setStatusMessage: (m: string) => void;
-		setResult: (r: SpeedtestResult) => void;
+		setResult: (updater: (prev: SpeedtestResult | null) => SpeedtestResult | null) => void;
 	},
 ) {
 	const type = evt.type;
 	if (type === "client") {
-		active.client = { isp: String(evt.isp), ip: String(evt.ip) };
+		const client = { isp: String(evt.isp), ip: String(evt.ip) };
+		active.client = client;
+		actions.setResult((prev) => (prev ? { ...prev, client } : { ...active, client }));
 	} else if (type === "server") {
-		active.server = { name: String(evt.name), country: String(evt.location) };
-		active.ping = Number(evt.ping);
+		const server = { name: String(evt.name), country: String(evt.location) };
+		const ping = Number(evt.ping);
+		active.server = server;
+		active.ping = ping;
 		actions.setStatusMessage(`Ping: ${evt.ping} ms`);
+		actions.setResult((prev) => (prev ? { ...prev, ping, server } : { ...active, ping, server }));
 	} else if (type === "phase") {
 		actions.setPhase(evt.phase as "ping" | "download" | "upload");
 		actions.setStatusMessage(`Testing ${evt.phase}...`);
@@ -211,14 +233,16 @@ function applyStreamEvent(
 		active.download = Number(evt.speed);
 		actions.setCurrentSpeed(active.download);
 		actions.setStatusMessage(`Download: ${evt.speed} Mbps`);
+		actions.setResult((prev) => (prev ? { ...prev, download: active.download } : active));
 	} else if (type === "upload") {
 		active.upload = Number(evt.speed);
 		actions.setCurrentSpeed(active.upload);
 		actions.setStatusMessage(`Upload: ${evt.speed} Mbps`);
+		actions.setResult((prev) => (prev ? { ...prev, upload: active.upload } : active));
 	} else if (type === "done") {
 		const res = evt.result as SpeedtestResult;
-		actions.setResult(res);
-		actions.setCurrentSpeed(res.download || res.upload);
+		actions.setResult(() => res);
+		actions.setCurrentSpeed(0);
 		actions.setPhase("done");
 		actions.setStatusMessage("Complete");
 	} else if (type === "error") {
@@ -328,15 +352,24 @@ function Speedtest({ config, data, error, isLoading }: WidgetComponentProps) {
 		setCurrentSpeed(0);
 		setStatusMessage("Connecting to server...");
 
+		// Immediately reset top stats to '-' for the new test run
+		setResult((prev) => ({
+			download: 0,
+			upload: 0,
+			ping: 0,
+			client: (prev?.client ?? payload?.client) || undefined,
+			server: undefined,
+			timestamp: new Date().toISOString(),
+		}));
+
 		const active: SpeedtestResult = {
 			download: 0,
 			upload: 0,
 			ping: 0,
-			client: result?.client ?? { isp: "Local", ip: "" },
-			server: result?.server ?? { name: "Selecting...", sponsor: "" },
+			client: result?.client ?? payload?.client ?? { isp: "Local", ip: "" },
+			server: undefined,
 			timestamp: new Date().toISOString(),
 		};
-
 		try {
 			await streamSpeedtestRun((evt) =>
 				applyStreamEvent(evt, active, {

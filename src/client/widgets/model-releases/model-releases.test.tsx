@@ -26,7 +26,7 @@ const SAMPLE_ITEMS = [
 ];
 
 describe("ModelReleases component", () => {
-	it("renders models, author badges, and descriptions in vertical-list mode", () => {
+	it("renders models and descriptions in vertical-list mode", () => {
 		render(
 			<ModelReleases
 				config={{ type: "model-releases", style: "vertical-list" }}
@@ -38,14 +38,12 @@ describe("ModelReleases component", () => {
 			"href",
 			"https://meta.ai/llama-4",
 		);
-		expect(screen.getByText("Meta")).toBeInTheDocument();
 		expect(screen.getByText("Open multimodal foundation model.")).toBeInTheDocument();
 
 		expect(screen.getByRole("link", { name: "o3-mini" })).toHaveAttribute(
 			"href",
 			"https://openai.com/o3",
 		);
-		expect(screen.getByText("OpenAI")).toBeInTheDocument();
 		expect(screen.getByText("Cost-efficient reasoning model.")).toBeInTheDocument();
 	});
 
