@@ -8,8 +8,8 @@
 
 .row {
 	position: relative;
-	isolation: isolate;
 	padding-block: calc(var(--widget-content-vertical) / 2 - 0.5px);
+	padding-inline: var(--spacing-3);
 }
 
 /* hover backdrop larger than text — same pattern as Feed rows. The row's own
@@ -20,20 +20,9 @@
    in either list. Gated on the row actually carrying one of those targets: a
    container with neither a url nor children is static, and a wash that
    reveals nothing is decoration. */
-.row::before {
-	content: "";
-	position: absolute;
-	inset: -4px -10px;
-	border-radius: var(--border-radius);
+.row:has(a[href], button):is(:hover, :focus-within) {
 	background-color: var(--color-overlay-hover);
-	opacity: 0;
-	transition: opacity 0.2s;
-	z-index: -1;
-	pointer-events: none;
-}
-
-.row:has(a[href], button):is(:hover, :focus-within)::before {
-	opacity: 1;
+	border-radius: var(--border-radius);
 }
 
 /* The first row carries no separator, so it takes the same beat the
@@ -44,8 +33,18 @@
 }
 
 .row + .row {
-	margin-top: calc(var(--widget-content-vertical) / 3);
-	border-top: 1px solid var(--color-separator);
+	margin-top: 8px;
+}
+
+.row + .row::before {
+	content: "";
+	position: absolute;
+	top: -4.5px;
+	left: 0;
+	right: 0;
+	height: 1px;
+	background-color: var(--color-separator);
+	pointer-events: none;
 }
 
 /* glance .flat-icon: the bundled mark and every si:/mdi: shorthand are black

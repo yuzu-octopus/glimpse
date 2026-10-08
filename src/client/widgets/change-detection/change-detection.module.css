@@ -8,6 +8,7 @@
 .row {
 	display: grid;
 	gap: 2px;
+	padding: 4px var(--spacing-3);
 }
 .top {
 	display: flex;

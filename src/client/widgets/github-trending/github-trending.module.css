@@ -8,6 +8,7 @@
 .row {
 	display: grid;
 	gap: 2px;
+	padding: 4px var(--spacing-3);
 }
 /* `.name` and `.desc` are gone: the repo name is a kit `Link` and the
    description is `Text maxLines={2}`. Two notes on the Link. Its ink is

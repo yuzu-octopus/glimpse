@@ -8,12 +8,23 @@
    revealed no state either, so the row is static per the doctrine. */
 
 .row {
+	position: relative;
 	padding-block: calc(var(--widget-content-vertical) / 2 - 0.5px);
 }
 
 .row + .row {
-	margin-top: calc(var(--widget-content-vertical) / 3);
-	border-top: 1px solid var(--color-separator);
+	margin-top: 8px;
+}
+
+.row + .row::before {
+	content: "";
+	position: absolute;
+	top: -4.5px;
+	left: 0;
+	right: 0;
+	height: 1px;
+	background-color: var(--color-separator);
+	pointer-events: none;
 }
 
 .body {

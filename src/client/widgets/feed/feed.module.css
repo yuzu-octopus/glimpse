@@ -21,6 +21,7 @@
 }
 
 .item {
+	position: relative;
 	display: flex;
 	gap: calc(var(--widget-content-horizontal) - 5px);
 	align-items: flex-start;
@@ -61,8 +62,18 @@
 }
 
 .item + .item {
-	margin-top: calc(var(--widget-content-vertical) / 3);
-	border-top: 1px solid var(--color-separator);
+	margin-top: 8px;
+}
+
+.item + .item::before {
+	content: "";
+	position: absolute;
+	top: -4.5px;
+	left: 0;
+	right: 0;
+	height: 1px;
+	background-color: var(--color-separator);
+	pointer-events: none;
 }
 
 /* The first row carries no separator, so it takes the same beat the

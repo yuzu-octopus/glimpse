@@ -1,11 +1,22 @@
 .row {
+	position: relative;
 	min-width: 0;
+	padding: 4px var(--spacing-3);
 }
 
 .row + .row {
 	margin-top: 8px;
-	border-top: 1px solid var(--color-separator);
-	padding-top: 8px;
+}
+
+.row + .row::before {
+	content: "";
+	position: absolute;
+	top: -4.5px;
+	left: 0;
+	right: 0;
+	height: 1px;
+	background-color: var(--color-separator);
+	pointer-events: none;
 }
 
 .meta {

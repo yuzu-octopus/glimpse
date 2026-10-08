@@ -76,6 +76,15 @@ a {
 	overflow-wrap: break-word;
 }
 
+/* Links: suppress the kit's Link pressed overlay background on :active / press.
+ * Widget rows already paint their own row-level hover wash, so darkening only the
+ * text bounding box on hold creates an awkward nested dark box. */
+a:active,
+a[data-astryx-press] {
+	background-color: transparent !important;
+	background-image: none !important;
+}
+
 ::selection {
 	background-color: var(--color-widget-content-border);
 	color: var(--color-text-highlight);

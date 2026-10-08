@@ -25,11 +25,24 @@
 .rowRight {
 	flex-shrink: 0;
 }
+.row {
+	position: relative;
+	padding: 4px var(--spacing-3);
+}
 
 .row + .row {
-	margin-top: 5px;
-	border-top: 1px solid var(--color-separator);
-	padding-top: 5px;
+	margin-top: 8px;
+}
+
+.row + .row::before {
+	content: "";
+	position: absolute;
+	top: -4.5px;
+	left: 0;
+	right: 0;
+	height: 1px;
+	background-color: var(--color-separator);
+	pointer-events: none;
 }
 
 .icon {

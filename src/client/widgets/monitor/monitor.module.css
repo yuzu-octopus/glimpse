@@ -14,7 +14,9 @@
 }
 
 .row {
-	padding-block: 2px;
+	position: relative;
+	padding-block: 4px;
+	padding-inline: var(--spacing-3);
 }
 
 /* A row whose child is a link is tappable, so it wears the same translucent
@@ -27,8 +29,17 @@
 
 .row + .row {
 	margin-top: 8px;
-	border-top: 1px solid var(--color-separator);
-	padding-top: 8px;
+}
+
+.row + .row::before {
+	content: "";
+	position: absolute;
+	top: -4.5px;
+	left: 0;
+	right: 0;
+	height: 1px;
+	background-color: var(--color-separator);
+	pointer-events: none;
 }
 
 .compact .row {
@@ -37,8 +48,10 @@
 
 .compact .row + .row {
 	margin-top: 8px;
-	border-top: none;
-	padding-top: 0;
+}
+
+.compact .row + .row::before {
+	display: none;
 }
 
 .compact .title,

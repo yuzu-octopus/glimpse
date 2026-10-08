@@ -9,6 +9,7 @@
 	display: flex;
 	gap: 10px;
 	align-items: flex-start;
+	padding: 4px var(--spacing-3);
 }
 .thumb {
 	width: 96px;
