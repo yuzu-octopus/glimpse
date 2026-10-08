@@ -351,10 +351,10 @@ async function runPageStream(slug: string, entry: Inflight, force: boolean): Pro
 			base = cachedBase;
 			emit({ ...base });
 		}
-		if (!chunk.path) return;
-		applyChunk(base!, chunk.path!, chunk.payload);
+		if (!chunk.path || !base) return;
+		applyChunk(base, chunk.path, chunk.payload);
 		versionRef.current++;
-		emit({ ...base! });
+		emit({ ...base });
 	};
 
 	if (!isNdjson) {

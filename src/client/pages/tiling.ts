@@ -235,7 +235,12 @@ export function place(
 		}
 		if (!done) byId.set(t.id, { id: t.id, col: 0, row: occ.length, w: t.w, h: t.h });
 	}
-	return { cols, rowUnit, tiles: tiles.map((t) => byId.get(t.id)!) };
+	const fallbackTile: PlacedTile = { id: "", col: 0, row: 0, w: 1, h: 1 };
+	return {
+		cols,
+		rowUnit,
+		tiles: tiles.map((t) => byId.get(t.id) ?? { ...fallbackTile, id: t.id }),
+	};
 }
 
 /**

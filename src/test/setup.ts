@@ -16,7 +16,7 @@ function makeStorage(): Storage {
 			return [...store.keys()][index] ?? null;
 		},
 		getItem(key: string): string | null {
-			return store.has(key) ? store.get(key)! : null;
+			return store.get(key) ?? null;
 		},
 		setItem(key: string, value: string): void {
 			store.set(key, String(value));

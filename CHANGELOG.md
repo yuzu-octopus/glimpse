@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Upgraded `astryx-dracula` upstream theme to 0.5.1.
+- Updated dependencies (`react` 19.3.0, `@astryxdesign/core` 0.6.6, `zod` 4.6.5, `lucide-react` 1.53.0, `systeminformation` 5.33.15, `react-router-dom` 7.18.4) and dev tools.
+- Cleaned up non-null assertions across client hooks, tests, and scripts; Biome exits 0 with 0 errors.
+
 ## [0.4.1] - 2026-10-07
 
 ### Fixed

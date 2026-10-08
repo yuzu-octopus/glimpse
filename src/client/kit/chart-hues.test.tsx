@@ -78,8 +78,8 @@ describe("chart ink is the kit CHART_HUES", () => {
 		);
 		const fill = screen
 			.getByRole("img", { name: "A price trend" })
-			.querySelector("rect")!
-			.getAttribute("fill")!;
+			.querySelector("rect")
+			?.getAttribute("fill");
 		expect(fill).toBe(CHART_HUES.green);
 	});
 

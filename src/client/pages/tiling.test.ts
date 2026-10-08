@@ -213,7 +213,7 @@ describe("place", () => {
 			],
 			1440,
 		);
-		const h = (id: string) => placed.tiles.find((t) => t.id === id)!.h;
+		const h = (id: string) => placed.tiles.find((t) => t.id === id)?.h;
 		expect(h("tall")).toBe(ROW_SPAN_MAX);
 		expect(h("flat")).toBe(1);
 		expect(h("exact")).toBe(4);

@@ -22,9 +22,9 @@ describe("bookmarks widget", () => {
 		// astryx's ListItem is the row: a list item carrying the group's real
 		// link, rather than a Link anchor that had its children flattened back
 		// out with `display: contents`.
-		const row = screen.getByRole("link", { name: "GitHub" }).closest("li")!;
+		const row = screen.getByRole("link", { name: "GitHub" }).closest("li");
 		expect(row).not.toBeNull();
-		expect(row.parentElement?.tagName).toBe("UL");
+		expect(row?.parentElement?.tagName).toBe("UL");
 	});
 
 	it("renders icons and descriptions when present", () => {
@@ -50,8 +50,8 @@ describe("bookmarks widget", () => {
 		);
 		// the icon is the item's start slot and the description its own, so the
 		// whole row is the link's target
-		const row = screen.getByRole("link", { name: /API reference/ }).closest("li")!;
-		expect(row.querySelector(`.${styles.icon}`)).not.toBeNull();
+		const row = screen.getByRole("link", { name: /API reference/ }).closest("li");
+		expect(row?.querySelector(`.${styles.icon}`)).not.toBeNull();
 		expect(screen.getByText("API reference")).toBeInTheDocument();
 	});
 
@@ -148,8 +148,9 @@ describe("bookmarks widget", () => {
 			/>,
 		);
 		expect(container.querySelector(`.${styles.iconContainer}`)).not.toBeNull();
-		fireEvent.error(container.querySelector(`.${styles.icon}`)!);
-		// the tile goes, not just the img: an empty bordered box reads as a
+		const icon = container.querySelector(`.${styles.icon}`);
+		expect(icon).not.toBeNull();
+		if (icon) fireEvent.error(icon);
 		// missing image just as well as the glyph did
 		expect(container.querySelector(`.${styles.iconContainer}`)).toBeNull();
 		expect(screen.getByRole("link", { name: "Grafana" })).toBeInTheDocument();
@@ -163,9 +164,10 @@ describe("bookmarks widget", () => {
 			/>,
 		);
 		// the accent rides on the group, so the link arrows inherit it too
-		const group = container.querySelector(`.${styles.group}`)!;
-		expect(group.className).toContain(styles.titleAccentCyan);
-		expect((group as HTMLElement).style.color).toBe("");
+		const group = container.querySelector(`.${styles.group}`);
+		expect(group).not.toBeNull();
+		expect(group?.className).toContain(styles.titleAccentCyan);
+		expect((group as HTMLElement | null)?.style.color).toBe("");
 		expect(screen.getByText("Dev")).toBeInTheDocument();
 	});
 
@@ -209,8 +211,7 @@ describe("bookmarks widget", () => {
 			/>,
 		);
 		const shown = (name: string) =>
-			screen.getByRole("link", { name }).closest("li")!.textContent?.includes("↗");
-		expect(shown("A")).toBe(true);
+			screen.getByRole("link", { name }).closest("li")?.textContent?.includes("↗");
 		expect(shown("B")).toBe(false);
 		// a link overrides its group, in both directions
 		expect(shown("C")).toBe(true);

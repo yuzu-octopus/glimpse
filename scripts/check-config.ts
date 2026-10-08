@@ -218,8 +218,9 @@ function unsupportedOptions(lines: string[]): string[] {
 		if (!m) return;
 		const [, key, rest] = m;
 
-		while (stack.length > 1 && stack[stack.length - 1]!.indent > indent) stack.pop();
-		let frame = stack[stack.length - 1]!;
+		while (stack.length > 1 && (stack[stack.length - 1]?.indent ?? -1) > indent) stack.pop();
+		let frame = stack[stack.length - 1];
+		if (!frame) return;
 		let base = frame.path;
 		if (isItem) {
 			const index = frame.seen++;
@@ -235,7 +236,7 @@ function unsupportedOptions(lines: string[]): string[] {
 				seen: 0,
 				type: frame.type,
 			});
-			frame = stack[stack.length - 1]!;
+			frame = stack[stack.length - 1] ?? frame;
 		}
 		if (frame.widget) {
 			if (key !== "type") {
@@ -292,7 +293,8 @@ function unsupportedOptions(lines: string[]): string[] {
 			const objects = resolved.options
 				.map(unwrap)
 				.filter((o): o is z.ZodObject => o instanceof z.ZodObject);
-			if (objects.length === 1) child = objects[0]!;
+			const [firstObject] = objects;
+			if (objects.length === 1 && firstObject) child = firstObject;
 		}
 		if (!isUnion && !child) return;
 		// Two YAML spellings: children indented under the key, or a list whose
@@ -331,8 +333,8 @@ const warnings = [
 	...unsupported.map((u) => `warning: ${u}`),
 ];
 
-if (result.ok) {
-	console.log(`${configPath}: OK (${result.config!.pages.length} page(s))`);
+if (result.ok && result.config) {
+	console.log(`${configPath}: OK (${result.config.pages.length} page(s))`);
 	for (const w of warnings) console.log(w);
 	process.exit(0);
 }
