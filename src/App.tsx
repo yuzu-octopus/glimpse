@@ -23,14 +23,18 @@ function RoutePage({ page }: { page?: PageConfig }) {
 function StaleNotice({ offline }: { offline: boolean }) {
 	const notice = useStaleNotice();
 	if (!notice) return null;
+	// A system state changed, so the notice arrives rather than repaints in.
+	// app.module.css owns the keyframe; reduced-motion drops it there.
 	return (
-		<Banner
-			status="warning"
-			container="section"
-			data-testid="stale-notice"
-			title={offline ? "Offline — showing the last known data" : "Showing the last known data"}
-			description={notice.reason}
-		/>
+		<div className={styles.noticeArrival}>
+			<Banner
+				status="warning"
+				container="section"
+				data-testid="stale-notice"
+				title={offline ? "Offline — showing the last known data" : "Showing the last known data"}
+				description={notice.reason}
+			/>
+		</div>
 	);
 }
 

@@ -21,10 +21,9 @@ describe("Speedtest component", () => {
 
 	it("renders speedometer and metrics when prior results exist", () => {
 		render(<Speedtest config={{ type: "speedtest" }} data={{ lastResult: SAMPLE_RESULT }} />);
-
-		expect(screen.getByText("754.2 Mbps")).toBeInTheDocument();
-		expect(screen.getByText("624.3 Mbps")).toBeInTheDocument();
-		expect(screen.getByText("6.7 ms")).toBeInTheDocument();
+		expect(screen.getByText("754 Mbps")).toBeInTheDocument();
+		expect(screen.getByText("624 Mbps")).toBeInTheDocument();
+		expect(screen.getByText("7 ms")).toBeInTheDocument();
 
 		expect(screen.getByText("StarHub")).toBeInTheDocument();
 		expect(screen.getByText("39.109.255.32")).toBeInTheDocument();

@@ -33,6 +33,24 @@
 	text-transform: uppercase;
 	letter-spacing: 0.5px;
 }
+@keyframes kpiPop {
+	0% {
+		transform: translateY(3px);
+		opacity: 0.6;
+	}
+	60% {
+		transform: translateY(-1px);
+		opacity: 1;
+	}
+	100% {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+.kpiPop {
+	animation: kpiPop 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
 
 .kpiValue {
 	font-size: var(--font-size-h4);
@@ -41,7 +59,6 @@
 	font-variant-numeric: tabular-nums;
 	color: var(--color-text-highlight);
 }
-
 .downloadColor {
 	color: var(--color-positive);
 }
@@ -292,7 +309,8 @@
 @media (prefers-reduced-motion: reduce) {
 	.goButton,
 	.gaugeWrapper,
-	.beacon {
+	.beacon,
+	.kpiPop {
 		animation: none;
 	}
 }

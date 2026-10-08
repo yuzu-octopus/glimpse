@@ -37,6 +37,29 @@
 	}
 }
 
+/* The stale/offline notice arrives: a short rise-and-fade so a changed system
+   state reads as an arrival, not a repaint. Reduced-motion drops it. */
+@keyframes noticeArrival {
+	from {
+		opacity: 0;
+		transform: translateY(-4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.noticeArrival {
+	animation: noticeArrival 240ms var(--ease-standard) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.noticeArrival {
+		animation: none;
+	}
+}
+
 /* glance mobile-navigation-offset: keeps page content clear of the fixed
    bottom bar on mobile only. */
 .mobileNavigationOffset {

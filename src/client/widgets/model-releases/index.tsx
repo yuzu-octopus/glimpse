@@ -3,6 +3,7 @@ import type { ModelReleasesConfig } from "../../../shared/widgets/model-releases
 import type { ModelReleaseItem, ModelReleasesData } from "../../../shared/widgets/payloads";
 import { WidgetChrome } from "../../components/WidgetChrome";
 import { useAge } from "../_hooks/useAge";
+import { useRelativeTime } from "../_hooks/useRelativeTime";
 import { registerWidgetComponent, type WidgetComponentProps } from "../registry";
 import styles from "./model-releases.module.css";
 
@@ -46,11 +47,12 @@ function ReleaseRow({ item, compact }: { item: ModelReleaseItem; compact: boolea
 }
 
 function ModelReleases({ config, data, error, isLoading }: WidgetComponentProps) {
+	// Global ticker drives relative times live without per-row timers
+	useRelativeTime(0);
 	const cfg = config as unknown as ModelReleasesConfig;
 	const payload = data as ModelReleasesData | null;
 	const items = payload?.items ?? [];
 	const compact = cfg.style === "compact";
-
 	return (
 		<WidgetChrome
 			title={cfg.title ?? "Model Releases"}

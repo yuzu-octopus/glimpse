@@ -60,6 +60,7 @@
    had no affordance at all — the one tier the doctrine says thumb-only bars
    must read on. */
 .navLinks {
+	position: relative;
 	display: flex;
 	align-items: center;
 	gap: 25px;
@@ -67,6 +68,26 @@
 	min-width: 0;
 	height: 100%;
 	overflow-x: auto;
+}
+
+.activePill {
+	position: absolute;
+	height: 28px;
+	top: 50%;
+	margin-top: -14px;
+	border-radius: var(--radius-element, 6px);
+	background-color: var(--color-overlay-hover);
+	pointer-events: none;
+	transition:
+		transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+		width 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+		opacity 0.2s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.activePill {
+		transition: none;
+	}
 }
 
 /* Brand: purple means tappable, so an unvisited page link wears the accent on
@@ -105,7 +126,32 @@
 	min-height: 44px;
 }
 
+/* The expand animates via grid-template-rows 0fr -> 1fr (the one height
+   transition that works without a hard-coded height). `inert` + aria-hidden
+   handle the collapsed a11y state; `visibility` is what keeps the links out
+   of the tab order visually consistent with the transition. */
 .mobileNavLinks {
+	display: grid;
+	grid-template-rows: 0fr;
+	opacity: 0;
+	visibility: hidden;
+	transition:
+		grid-template-rows 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+		opacity 0.2s ease-out,
+		visibility 0s linear 0.28s;
+}
+
+.mobileNavLinks[data-expanded] {
+	grid-template-rows: 1fr;
+	opacity: 1;
+	visibility: visible;
+	transition:
+		grid-template-rows 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+		opacity 0.2s ease-out,
+		visibility 0s;
+}
+
+.mobileNavLinksInner {
 	display: flex;
 	align-items: center;
 	overflow-x: auto;
@@ -114,6 +160,14 @@
 	padding: 20px var(--content-bounds-padding);
 	border-top: 1px solid var(--color-widget-content-border);
 	border-bottom: 1px solid var(--color-widget-content-border);
+	min-height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.mobileNavLinks,
+	.mobileNavLinks[data-expanded] {
+		transition: none;
+	}
 }
 
 @media (max-width: 768px) {

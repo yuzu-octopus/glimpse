@@ -59,7 +59,9 @@ button.ringButton:active {
 	stroke: var(--ring-hue);
 	stroke-width: 6;
 	stroke-linecap: round;
-	transition: stroke-dashoffset 0.25s linear;
+	/* Analog, not metronomic: a linear sweep ticks like a machine. The slight
+	   ease-out makes each 250ms step settle the way a physical dial does. */
+	transition: stroke-dashoffset 0.25s var(--ease-standard);
 }
 
 .ringDone {

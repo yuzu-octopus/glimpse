@@ -12,13 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `model-releases` widget: live AI model drop feed from `live.aitracker.bot` with lab badges, announcement links, descriptions, and relative timestamps (`vertical-list` and `compact` styles).
-- `speedtest` widget: interactive manual speed test powered by local `speedtest-cli` with an authentic 240° circular SVG speedometer gauge, live animated needle, digital speed readout, download/upload/ping metrics, and ISP/server details.
+- `speedtest` widget: interactive manual speed test measuring real throughput against Cloudflare's edge (no CLI needed), with an authentic 240° circular SVG speedometer gauge, live animated needle, digital speed readout, download/upload/ping metrics, and ISP/server details. Falls back to a local `speedtest-cli` when the edge is unreachable.
 - Streaming speedtest endpoint (`POST /api/speedtest/run`) emitting live progress chunks over NDJSON.
+- Pull-to-refresh on touch devices: dragging down at the top of a page reloads it (bypassing the server cache), with a rubber-banded indicator held until the fetch settles.
 
 ### Changed
 - Upgraded `astryx-dracula` upstream theme to 0.5.1.
 - Updated dependencies (`react` 19.3.0, `@astryxdesign/core` 0.6.6, `zod` 4.6.5, `lucide-react` 1.53.0, `systeminformation` 5.33.15, `react-router-dom` 7.18.4) and dev tools.
 - Cleaned up non-null assertions across client hooks, tests, and scripts; Biome exits 0 with 0 errors.
+- Fluid interaction polish: the group-tab underline and the desktop nav's active pill now slide between items (measured from the live element, so uneven labels stay aligned); the widget body cross-fades from skeleton to content; the mobile nav unfolds instead of popping; the stale/offline notice rises in; the timer ring eases instead of ticking linearly.
 
 ### Fixed
 - Suppressed nested dark background box on links during mouse-down/active hold (`a:active`, `a[data-astryx-press]`).

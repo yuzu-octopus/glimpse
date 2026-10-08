@@ -219,24 +219,56 @@ export const WidgetChrome = memo(function WidgetChrome({
             stands down rather than competing with the Banner. */}
 				{notice && !loud ? <div className={styles.notice}>{notice}</div> : null}
 				<div className={styles.body} data-testid="widget-body">
-					{isLoading ? (
-						<ChromeSkeleton shape={shape} />
-					) : loud ? (
-						<Banner status="error" title={error} />
-					) : (
-						<>
-							{visible}
-							{has ? (
-								<ShowMoreButton
-									expanded={expanded}
-									hiddenCount={list.length - n}
-									onToggle={toggle}
-								/>
-							) : null}
-						</>
-					)}
+					<WidgetBody
+						isLoading={isLoading}
+						loud={loud}
+						error={error}
+						shape={shape}
+						visible={visible}
+						has={has}
+						expanded={expanded}
+						hiddenCount={list.length - n}
+						onToggle={toggle}
+					/>
 				</div>
 			</Card>
 		</div>
 	);
 });
+
+/** The body's three states — loading, failed, content — as one small unit, so
+ *  WidgetChrome's own render stays a two-branch layout rather than a chain.
+ *  The content wrapper is keyed on `expanded` so Show more/less replays the
+ *  reveal animation instead of swapping rows with a hard cut. */
+function WidgetBody({
+	isLoading,
+	loud,
+	error,
+	shape,
+	visible,
+	has,
+	expanded,
+	hiddenCount,
+	onToggle,
+}: {
+	isLoading?: boolean;
+	loud: boolean;
+	error?: string;
+	shape: SkeletonShape;
+	visible: ReactNode[];
+	has: boolean;
+	expanded: boolean;
+	hiddenCount: number;
+	onToggle: () => void;
+}) {
+	if (isLoading) return <ChromeSkeleton shape={shape} />;
+	if (loud) return <Banner status="error" title={error} />;
+	return (
+		<div className={styles.bodyContent} key={has ? String(expanded) : "static"}>
+			{visible}
+			{has ? (
+				<ShowMoreButton expanded={expanded} hiddenCount={hiddenCount} onToggle={onToggle} />
+			) : null}
+		</div>
+	);
+}

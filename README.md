@@ -143,7 +143,7 @@ Widgets also read their own credentials from the environment — `TWITCH_CLIENT_
 | `qbittorrent` | Torrent status with progress bars | `url` (required), `username` / `password` or `QBITTORRENT_USERNAME` / `QBITTORRENT_PASSWORD`, `limit` (10) |
 | `transmission` | Torrent status with progress bars | `url` (required), `username` / `password` or `TRANSMISSION_USERNAME` / `TRANSMISSION_PASSWORD`, `limit` (10) |
 | `model-releases` | Live AI model releases and announcements | `live.aitracker.bot` API; model names, author/lab badges, announcement links, descriptions, relative times; `vertical-list` or `compact` style |
-| `speedtest` | Interactive internet speed test | `speedtest-cli`; manual GO trigger, SVG circular speedometer gauge with live needle, Download / Upload / Ping metrics, ISP & server metadata |
+| `speedtest` | Interactive internet speed test | Cloudflare edge (keyless; falls back to local `speedtest-cli`); manual GO trigger, SVG circular speedometer gauge with live needle, Download / Upload / Ping metrics, ISP & server metadata |
 | `timer` | Circular countdown + stopwatch + notes | Config-only; `duration: 25m` / `mm:ss`, editable ring, `notes: true` for the scratch area; persists per `id` |
 | `notepad` | Minimal sticky textbox | Config-only; `placeholder`, persists per `id` to `localStorage` |
 

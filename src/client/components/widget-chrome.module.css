@@ -81,6 +81,29 @@
 	min-width: 0;
 }
 
+/* Skeleton -> content, and Show more/less: the body's children cross-fade
+   instead of hard-cutting. `key` on the wrapper replays this per state flip,
+   so a collapse is a fade rather than a snap. `animation` is legal in this
+   sheet (only sticky/shadow are barred by tests); reduced-motion drops it. */
+@keyframes bodyReveal {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+.bodyContent {
+	animation: bodyReveal 200ms var(--ease-standard) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.bodyContent {
+		animation: none;
+	}
+}
+
 /* The notice is chrome around the body, not a body row: one gap down, and it
  * never participates in the grid or rail the body may be running. */
 .notice {

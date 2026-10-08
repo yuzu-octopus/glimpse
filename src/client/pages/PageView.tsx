@@ -6,8 +6,10 @@ import {
 	type ReactNode,
 	type RefObject,
 	Suspense,
+	useCallback,
 	useContext,
 	useEffect,
+	useLayoutEffect,
 	useMemo,
 	useRef,
 	useState,
@@ -17,6 +19,7 @@ import type { Page, WidgetType } from "../../shared/config";
 import { PAGE_WIDTHS, resolveSpan } from "../../shared/config";
 import { CONFIG_ONLY } from "../../shared/widgets";
 import { SKELETON_SHAPE } from "../../shared/widgets/preferredSizes";
+import { PullToRefresh } from "../components/PullToRefresh";
 import { HideHeadersContext, WidgetChrome } from "../components/WidgetChrome";
 import { WidgetErrorBoundary } from "../components/WidgetErrorBoundary";
 import { usePageData } from "../hooks/usePageData";
@@ -431,12 +434,9 @@ function ContainerWidget({ widget }: { widget: WidgetPayload }) {
 	})();
 	return (
 		<Card padding={0}>
-			<TabList
-				value={String(activeIndex)}
-				className={styles.groupTabs}
-				aria-label="Group tabs"
-				onChange={(v) => {
-					const next = Number(v);
+			<GroupTabs
+				activeIndex={activeIndex}
+				onSelect={(next) => {
 					// glance: clicking the already-active tab opens the group title-url
 					if (next === activeIndex && groupTitleUrl) {
 						window.open(groupTitleUrl, "_blank", "noopener,noreferrer");
@@ -456,11 +456,73 @@ function ContainerWidget({ widget }: { widget: WidgetPayload }) {
 						/>
 					));
 				})()}
-			</TabList>
+			</GroupTabs>
 			<div className={styles.tabContent}>
 				{children[activeIndex] ? <WidgetSlot widget={children[activeIndex]} /> : null}
 			</div>
 		</Card>
+	);
+}
+
+/** The group tab strip plus its sliding underline. The underline is measured
+ *  from the live active tab (not derived from index × width) so it stays
+ *  correct when labels differ in length; `scroll` keeps it glued while the
+ *  strip scrolls. Falls back to no underline if the tab cannot be measured,
+ *  which leaves the kit's own selected state as the sole indicator. */
+function GroupTabs({
+	activeIndex,
+	onSelect,
+	children,
+}: {
+	activeIndex: number;
+	onSelect: (next: number) => void;
+	children: ReactNode;
+}) {
+	const wrapRef = useRef<HTMLDivElement>(null);
+	const [pill, setPill] = useState({ left: 0, width: 0 });
+
+	useLayoutEffect(() => {
+		const wrap = wrapRef.current;
+		if (!wrap) return;
+		const strip = wrap.querySelector<HTMLElement>(`.${styles.groupTabs}`);
+		const measure = () => {
+			const active = strip?.querySelector<HTMLElement>(`[data-tab-value="${activeIndex}"]`);
+			if (!active || !strip) return;
+			const a = active.getBoundingClientRect();
+			const s = strip.getBoundingClientRect();
+			setPill((prev) =>
+				prev.left === a.left - s.left && prev.width === a.width
+					? prev
+					: { left: a.left - s.left, width: a.width },
+			);
+		};
+		measure();
+		if (!strip) return;
+		strip.addEventListener("scroll", measure, { passive: true });
+		window.addEventListener("resize", measure);
+		return () => {
+			strip.removeEventListener("scroll", measure);
+			window.removeEventListener("resize", measure);
+		};
+	}, [activeIndex]);
+
+	return (
+		<div ref={wrapRef} className={styles.groupTabsWrap}>
+			<TabList
+				value={String(activeIndex)}
+				className={styles.groupTabs}
+				aria-label="Group tabs"
+				onChange={(v) => onSelect(Number(v))}
+			>
+				{children}
+			</TabList>
+			{pill.width > 0 ? (
+				<div
+					className={styles.groupTabsIndicator}
+					style={{ transform: `translateX(${pill.left}px)`, width: `${pill.width}px` }}
+				/>
+			) : null}
+		</div>
 	);
 }
 
@@ -783,7 +845,7 @@ export function PageView({
 	/** Page config from /api/config: drives the skeleton-first loading layout. */
 	page?: Page & { slug: string };
 }) {
-	const { data, error } = usePageData(slug);
+	const { data, error, reload } = usePageData(slug);
 	const gridRef = useRef<HTMLDivElement>(null);
 	const width = usePlacedWidth(gridRef);
 	// Collage geometry from place() — the same call the skeleton makes, so
@@ -795,6 +857,10 @@ export function PageView({
 		() => collagePlacement(data, isCollage, width),
 		[data, isCollage, width],
 	);
+	// `reload(true)` bypasses the server cache so a pull actually re-fetches
+	// upstream, matching what an explicit reload does. Declared above the early
+	// returns so hook order is identical in every state.
+	const refresh = useCallback(() => reload(true), [reload]);
 	if (!data && !error) return <LoadingPage page={page} />;
 	if (error && !data) return <PageError error={error} />;
 
@@ -804,29 +870,31 @@ export function PageView({
 	const tilingProps = getTilingProps(resolved.tiling, resolved.minColumnWidth);
 	return (
 		<HideHeadersContext.Provider value={hideHeaders}>
-			<div
-				className={`${styles.page} ${resolved["center-vertically"] ? styles.centered : ""}`}
-				style={{ maxWidth: PAGE_WIDTHS[resolved.width] }}
-			>
-				{resolved["show-mobile-header"] ? (
-					<div className={styles.mobileHeader}>{resolved.name}</div>
-				) : null}
-				{resolved.headWidgets.length > 0 ? <HeadWidgets widgets={resolved.headWidgets} /> : null}
-				{(resolved as unknown as { widgets?: WidgetPayload[] }).widgets ? (
-					<BentoGrid
-						widgets={(resolved as unknown as { widgets: WidgetPayload[] }).widgets}
-						gridCols={(resolved as unknown as { gridColumns?: number }).gridColumns ?? 12}
-						rowHeight={(resolved as unknown as { gridRowHeight?: number }).gridRowHeight ?? 96}
-					/>
-				) : (
-					<ColumnGrid
-						gridRef={gridRef}
-						tilingProps={tilingProps}
-						resolved={resolved}
-						placedById={placedById}
-					/>
-				)}
-			</div>
+			<PullToRefresh onRefresh={refresh}>
+				<div
+					className={`${styles.page} ${resolved["center-vertically"] ? styles.centered : ""}`}
+					style={{ maxWidth: PAGE_WIDTHS[resolved.width] }}
+				>
+					{resolved["show-mobile-header"] ? (
+						<div className={styles.mobileHeader}>{resolved.name}</div>
+					) : null}
+					{resolved.headWidgets.length > 0 ? <HeadWidgets widgets={resolved.headWidgets} /> : null}
+					{(resolved as unknown as { widgets?: WidgetPayload[] }).widgets ? (
+						<BentoGrid
+							widgets={(resolved as unknown as { widgets: WidgetPayload[] }).widgets}
+							gridCols={(resolved as unknown as { gridColumns?: number }).gridColumns ?? 12}
+							rowHeight={(resolved as unknown as { gridRowHeight?: number }).gridRowHeight ?? 96}
+						/>
+					) : (
+						<ColumnGrid
+							gridRef={gridRef}
+							tilingProps={tilingProps}
+							resolved={resolved}
+							placedById={placedById}
+						/>
+					)}
+				</div>
+			</PullToRefresh>
 		</HideHeadersContext.Provider>
 	);
 }

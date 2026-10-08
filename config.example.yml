@@ -3,7 +3,8 @@
 # Columns are balanced so every column on a page ends near the same height —
 # a short column next to a tall one reads as a broken page, not a sparse one.
 # New widgets: server-stats / dns-stats / docker-containers (all homelab, on
-# Lab) and the media stack immich / jellyfin / qbittorrent / transmission (Media).
+# Lab), the media stack immich / jellyfin / qbittorrent / transmission (Media),
+# plus model-releases (AI model drops, Dev) and speedtest (Lab).
 #
 # Theme: astryx-dracula, dark only — there is no `theme:` block, and a config
 # that still has one fails to load with a message saying so. To append your
@@ -234,6 +235,9 @@ pages:
             limit: 6
           - type: model-releases
             title: Model drops
+            # Live AI model launches from live.aitracker.bot (keyless). `style:
+            # compact` drops the description for a dense one-line list;
+            # `labs: [anthropic, openai]` narrows to named labs.
             style: vertical-list
             limit: 6
           - type: split-column
@@ -361,6 +365,8 @@ pages:
             public-ip: true
           - type: speedtest
             title: Speedtest
+            # Manual GO trigger; measures real throughput against Cloudflare's
+            # edge (no CLI needed), streaming live speed to the dial.
           - type: change-detection
             title: Watched pages
             urls:

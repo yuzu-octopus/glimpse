@@ -32,6 +32,12 @@ function speedToFraction(speed: number): number {
 	return 1;
 }
 
+function formatSpeed(val: number | null | undefined): string {
+	if (!val || val <= 0) return "—";
+	if (val >= 100) return String(Math.round(val));
+	return val.toFixed(1).replace(/\.0$/, "");
+}
+
 const CX = 120;
 const CY = 100;
 const R = 78;
@@ -100,7 +106,13 @@ function Speedometer({ speed, phase }: SpeedometerProps) {
 					strokeLinecap="round"
 					strokeDasharray={ARC_LEN}
 					strokeDashoffset={strokeOffset}
-					style={{ transition: "stroke-dashoffset 0.25s ease-out" }}
+					style={{
+						transition: "stroke-dashoffset 0.25s cubic-bezier(0.12, 0.95, 0.2, 1)",
+						filter:
+							speed > 0
+								? `drop-shadow(0 0 6px ${isUpload ? "rgba(189, 147, 249, 0.4)" : "rgba(80, 250, 123, 0.45)"})`
+								: "none",
+					}}
 				/>
 
 				{/* Scale Ticks and Labels: anchored away from ring so 0 and 1000 have identical clearance */}
@@ -160,7 +172,7 @@ function Speedometer({ speed, phase }: SpeedometerProps) {
 			{/* Digital speed readout: resets to '—' when done or idle */}
 			<div className={styles.digitalReadout}>
 				<span className={styles.digitalSpeed}>
-					{speed > 0 && phase !== "done" ? speed.toFixed(2) : "—"}
+					{speed > 0 && phase !== "done" ? formatSpeed(speed) : "—"}
 				</span>
 				<span className={styles.digitalUnit}>
 					{phase === "upload" ? (
@@ -226,9 +238,8 @@ function applyStreamEvent(
 		actions.setPhase(evt.phase as "ping" | "download" | "upload");
 		actions.setStatusMessage(`Testing ${evt.phase}...`);
 	} else if (type === "progress") {
-		const dots = Number(evt.dots ?? 1);
-		const est = evt.phase === "download" ? Math.min(1000, dots * 8) : Math.min(800, dots * 6);
-		actions.setCurrentSpeed(est);
+		const liveSpeed = Number(evt.speed ?? 0);
+		if (liveSpeed > 0) actions.setCurrentSpeed(liveSpeed);
 	} else if (type === "download") {
 		active.download = Number(evt.speed);
 		actions.setCurrentSpeed(active.download);
@@ -261,20 +272,26 @@ function MetricKpi({
 	icon: ReactNode;
 	colorClass: string;
 }) {
+	const hasValue = value !== "—";
 	return (
 		<div className={styles.kpi}>
 			<span className={styles.kpiLabel}>
 				{icon} {label}
 			</span>
-			<span className={`${styles.kpiValue} ${colorClass}`}>{value}</span>
+			<span
+				key={value}
+				className={`${styles.kpiValue} ${colorClass} ${hasValue ? styles.kpiPop : ""}`}
+			>
+				{value}
+			</span>
 		</div>
 	);
 }
 
 function SpeedtestTopBar({ result }: { result: SpeedtestResult | null }) {
-	const dlText = result?.download ? `${result.download.toFixed(1)} Mbps` : "—";
-	const ulText = result?.upload ? `${result.upload.toFixed(1)} Mbps` : "—";
-	const pingText = result?.ping ? `${result.ping.toFixed(1)} ms` : "—";
+	const dlText = result?.download ? `${formatSpeed(result.download)} Mbps` : "—";
+	const ulText = result?.upload ? `${formatSpeed(result.upload)} Mbps` : "—";
+	const pingText = result?.ping ? `${Math.round(result.ping)} ms` : "—";
 
 	return (
 		<div className={styles.topBar}>

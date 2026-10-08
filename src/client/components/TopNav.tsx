@@ -1,6 +1,6 @@
 import { Button, TopNavItem } from "@astryxdesign/core";
 import { Menu } from "lucide-react";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { PAGE_WIDTHS } from "../../shared/config";
 import { useConfig } from "../hooks/useConfig";
@@ -28,6 +28,36 @@ function useNavPages() {
  * real outbound link, not an action, so it must never become a Button. */
 export function TopNav({ width }: { width?: "default" | "slim" | "wide" }) {
 	const { pages, homeSlug, isSelected } = useNavPages();
+	const { pathname } = useLocation();
+	const navLinksRef = useRef<HTMLDivElement>(null);
+	const [pill, setPill] = useState<{ left: number; width: number; opacity: number }>({
+		left: 0,
+		width: 0,
+		opacity: 0,
+	});
+
+	useLayoutEffect(() => {
+		const navLinks = navLinksRef.current;
+		if (!navLinks) return;
+		const measure = () => {
+			const activeEl = navLinks.querySelector<HTMLElement>('[aria-current="page"]');
+			if (!activeEl) return;
+			const left = activeEl.offsetLeft;
+			const width = activeEl.offsetWidth;
+			setPill((prev) =>
+				prev.left === left && prev.width === width && prev.opacity === 1
+					? prev
+					: { left, width, opacity: 1 },
+			);
+		};
+		measure();
+		// Tab widths change with the viewport (label wrapping, the nav's own
+		// font metrics), so a resize must re-measure or the pill drifts until
+		// the next navigation.
+		window.addEventListener("resize", measure);
+		return () => window.removeEventListener("resize", measure);
+	}, [pathname, pages]);
+
 	return (
 		<nav
 			aria-label="Pages"
@@ -44,7 +74,17 @@ export function TopNav({ width }: { width?: "default" | "slim" | "wide" }) {
 				<img src="/icon.svg" alt="" width={22} height={22} className={styles.logoIcon} />
 				<span className={styles.logoText}>Glimpse</span>
 			</a>
-			<div className={styles.navLinks}>
+			<div ref={navLinksRef} className={styles.navLinks}>
+				{pill.opacity > 0 ? (
+					<div
+						className={styles.activePill}
+						style={{
+							transform: `translateX(${pill.left}px)`,
+							width: `${pill.width}px`,
+							opacity: pill.opacity,
+						}}
+					/>
+				) : null}
 				{pages.map((p) => (
 					<TopNavItem
 						key={p.slug}
@@ -80,8 +120,18 @@ export function MobileNavigation() {
 				/>
 				<SettingsPanel />
 			</div>
-			{expanded ? (
-				<div className={styles.mobileNavLinks}>
+			{/* Persistent element (never unmounted) so the expand animates via
+			    grid-template-rows + opacity — `animation` is barred in this
+			    sheet, transitions are not. `aria-hidden` + `inert` take it out
+			    of the a11y tree and tab order while collapsed, which `hidden`
+			    cannot do without `display: none` killing the transition. */}
+			<div
+				className={styles.mobileNavLinks}
+				data-expanded={expanded || undefined}
+				aria-hidden={!expanded}
+				inert={!expanded}
+			>
+				<div className={styles.mobileNavLinksInner}>
 					{pages.map((p) => (
 						<TopNavItem
 							key={p.slug}
@@ -91,7 +141,7 @@ export function MobileNavigation() {
 						/>
 					))}
 				</div>
-			) : null}
+			</div>
 		</div>
 	);
 }

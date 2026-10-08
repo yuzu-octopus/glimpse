@@ -235,6 +235,31 @@
 	gap: var(--widget-gap);
 }
 
+/* Wrapper owns the indicator's positioning context; the strip keeps its own
+   scroll. The underline lives OUTSIDE the scroller so it is never clipped by
+   `overflow-x`, and its measured x already reflects the strip's scroll. */
+.groupTabsWrap {
+	position: relative;
+}
+
+.groupTabsIndicator {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	height: 2px;
+	background-color: var(--color-primary);
+	pointer-events: none;
+	transition:
+		transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+		width 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.groupTabsIndicator {
+		transition: none;
+	}
+}
+
 /* Group tabs (widget-group.css port): flat inline text, uppercase, no pills.
    Overrides Astryx TabList/Tab stylex (hover pill + white bottom indicator)
    to match the flat philosophy — borders and a dim, never a shadow. */
@@ -299,8 +324,10 @@
 	outline-offset: 2px !important;
 }
 
+/* The sliding indicator owns the underline now, so the current tab keeps only
+   its colour emphasis — a static border here would double up and lag behind
+   the animation. */
 .groupTabs .groupTabCurrent {
-	border-bottom-color: var(--color-primary) !important;
 	color: var(--color-text-highlight) !important;
 }
 
