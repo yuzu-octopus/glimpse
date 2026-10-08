@@ -12,6 +12,7 @@ export type SpeedtestStreamEvent =
 	| { type: "error"; error: string };
 
 let lastResult: SpeedtestResult | null = null;
+let cachedClient: { isp: string; ip: string } | null = null;
 
 export function getLastSpeedtestResult(): SpeedtestResult | null {
 	return lastResult;
@@ -19,6 +20,20 @@ export function getLastSpeedtestResult(): SpeedtestResult | null {
 
 export function setLastSpeedtestResult(res: SpeedtestResult): void {
 	lastResult = res;
+	if (res.client?.isp && res.client?.ip) {
+		cachedClient = { isp: res.client.isp, ip: res.client.ip };
+	}
+}
+
+export function getCachedClient(): { isp: string; ip: string } | null {
+	if (lastResult?.client?.isp) {
+		return { isp: lastResult.client.isp, ip: lastResult.client.ip ?? "" };
+	}
+	return cachedClient;
+}
+
+export function setCachedClient(client: { isp: string; ip: string } | null): void {
+	cachedClient = client;
 }
 
 export async function runSpeedtest(

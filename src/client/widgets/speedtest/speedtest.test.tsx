@@ -32,4 +32,17 @@ describe("Speedtest component", () => {
 
 		expect(screen.getByRole("button", { name: "Test Again" })).toBeInTheDocument();
 	});
+
+	it("renders network and dashed-out server in blank state", () => {
+		render(
+			<Speedtest
+				config={{ type: "speedtest" }}
+				data={{ lastResult: null, client: { isp: "StarHub", ip: "39.109.255.32" } }}
+			/>,
+		);
+
+		expect(screen.getByText("StarHub")).toBeInTheDocument();
+		expect(screen.getByText("39.109.255.32")).toBeInTheDocument();
+		expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(1);
+	});
 });

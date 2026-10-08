@@ -33,9 +33,10 @@ function speedToFraction(speed: number): number {
 }
 
 const CX = 120;
-const CY = 105;
-const R = 85;
-const ARC_LEN = 2 * Math.PI * R * (240 / 360); // ~356px
+const CY = 100;
+const R = 78;
+const ARC_LEN = 2 * Math.PI * R * (240 / 360); // ~326.7px
+const NEEDLE_LEN = 42;
 
 function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
 	const rad = (angleDeg * Math.PI) / 180;
@@ -61,15 +62,13 @@ interface SpeedometerProps {
 function Speedometer({ speed, phase }: SpeedometerProps) {
 	const gradId = useId();
 	const frac = speedToFraction(speed);
-	const angle = 150 + frac * 240;
-	const needleTip = polarToCartesian(CX, CY, R - 15, angle);
+	const rotation = -120 + frac * 240;
 	const strokeOffset = ARC_LEN * (1 - frac);
-
 	const isUpload = phase === "upload";
 
 	return (
 		<div className={styles.gaugeWrapper}>
-			<svg viewBox="0 0 240 180" className={styles.gaugeSvg}>
+			<svg viewBox="0 0 240 170" className={styles.gaugeSvg}>
 				<title>Internet connection speed gauge</title>
 				<defs>
 					<linearGradient id={gradId} x1="0%" y1="100%" x2="100%" y2="0%">
@@ -87,8 +86,8 @@ function Speedometer({ speed, phase }: SpeedometerProps) {
 				<path
 					d={ARC_PATH}
 					fill="none"
-					stroke="rgba(255, 255, 255, 0.1)"
-					strokeWidth="14"
+					stroke="rgba(255, 255, 255, 0.08)"
+					strokeWidth="12"
 					strokeLinecap="round"
 				/>
 
@@ -97,24 +96,24 @@ function Speedometer({ speed, phase }: SpeedometerProps) {
 					d={ARC_PATH}
 					fill="none"
 					stroke={`url(#${gradId})`}
-					strokeWidth="14"
+					strokeWidth="12"
 					strokeLinecap="round"
 					strokeDasharray={ARC_LEN}
 					strokeDashoffset={strokeOffset}
-					style={{ transition: "stroke-dashoffset 0.15s ease-out" }}
+					style={{ transition: "stroke-dashoffset 0.25s ease-out" }}
 				/>
 
-				{/* Scale Ticks and Labels */}
+				{/* Scale Ticks and Labels (inside radius R - 16 = 62) */}
 				{TICKS.map((t) => {
 					const tickAngle = 150 + t.frac * 240;
-					const tickPos = polarToCartesian(CX, CY, R - 24, tickAngle);
+					const tickPos = polarToCartesian(CX, CY, R - 16, tickAngle);
 					return (
 						<text
 							key={t.speed}
 							x={tickPos.x}
 							y={tickPos.y}
 							fill="var(--color-text-base-muted)"
-							fontSize="9"
+							fontSize="8.5"
 							fontWeight="600"
 							textAnchor="middle"
 							dominantBaseline="central"
@@ -124,17 +123,19 @@ function Speedometer({ speed, phase }: SpeedometerProps) {
 					);
 				})}
 
-				{/* Needle */}
-				<line
-					x1={CX}
-					y1={CY}
-					x2={needleTip.x}
-					y2={needleTip.y}
-					stroke="var(--color-text-highlight, #f8f8f2)"
-					strokeWidth="3"
-					strokeLinecap="round"
-					style={{ transition: "x2 0.15s ease-out, y2 0.15s ease-out" }}
-				/>
+				{/* Smoothly rotating needle (stops 20px before the numbers) */}
+				<g
+					style={{
+						transform: `rotate(${rotation}deg)`,
+						transformOrigin: `${CX}px ${CY}px`,
+						transition: "transform 0.28s cubic-bezier(0.12, 0.95, 0.2, 1)",
+					}}
+				>
+					<polygon
+						points={`${CX - 3.5},${CY} ${CX},${CY - NEEDLE_LEN} ${CX + 3.5},${CY}`}
+						fill="var(--color-text-highlight, #f8f8f2)"
+					/>
+				</g>
 
 				{/* Center Needle Hub */}
 				<circle cx={CX} cy={CY} r="6" fill="var(--color-text-highlight, #f8f8f2)" />
@@ -146,9 +147,9 @@ function Speedometer({ speed, phase }: SpeedometerProps) {
 				<span className={styles.digitalSpeed}>{speed.toFixed(2)}</span>
 				<span className={styles.digitalUnit}>
 					{isUpload ? (
-						<ArrowUp size={12} className={styles.uploadColor} />
+						<ArrowUp size={11} className={styles.uploadColor} />
 					) : (
-						<ArrowDown size={12} className={styles.downloadColor} />
+						<ArrowDown size={11} className={styles.downloadColor} />
 					)}
 					Mbps
 				</span>
@@ -275,24 +276,32 @@ function SpeedtestTopBar({ result }: { result: SpeedtestResult | null }) {
 	);
 }
 
-function SpeedtestBottomBar({ result }: { result: SpeedtestResult | null }) {
-	if (!result?.client?.isp && !result?.server?.name) return null;
+function SpeedtestBottomBar({
+	client,
+	server,
+}: {
+	client?: { isp?: string; ip?: string } | null;
+	server?: { sponsor?: string; name?: string; country?: string } | null;
+}) {
+	const ispName = client?.isp || "Local Network";
+	const ipAddr = client?.ip || "";
+	const serverName = server?.sponsor || server?.name || "—";
+	const serverLoc = server?.country || "—";
+
 	return (
 		<div className={styles.bottomBar}>
-			<div className={styles.metaItem}>
-				<Wifi size={14} />
-				<div>
-					<div className={styles.metaPrimary}>{result.client?.isp || "Unknown ISP"}</div>
-					<div className={styles.metaSecondary}>{result.client?.ip || ""}</div>
+			<div className={styles.metaCol}>
+				<Wifi size={14} className={styles.metaIcon} />
+				<div className={styles.metaText}>
+					<div className={styles.metaPrimary}>{ispName}</div>
+					{ipAddr ? <div className={styles.metaSecondary}>{ipAddr}</div> : null}
 				</div>
 			</div>
-			<div className={styles.metaItem}>
-				<Server size={14} />
-				<div style={{ textAlign: "right" }}>
-					<div className={styles.metaPrimary}>
-						{result.server?.sponsor || result.server?.name || "Server"}
-					</div>
-					<div className={styles.metaSecondary}>{result.server?.country || ""}</div>
+			<div className={styles.metaCol}>
+				<Server size={14} className={styles.metaIcon} />
+				<div className={styles.metaText}>
+					<div className={styles.metaPrimary}>{serverName}</div>
+					<div className={styles.metaSecondary}>{serverLoc}</div>
 				</div>
 			</div>
 		</div>
@@ -376,17 +385,19 @@ function Speedtest({ config, data, error, isLoading }: WidgetComponentProps) {
 					) : (
 						<>
 							<Speedometer speed={currentSpeed} phase={phase} />
-							{!running && (
-								<button type="button" className={styles.retestButton} onClick={startSpeedtest}>
-									<RefreshCw size={12} /> Test Again
-								</button>
-							)}
+							<div className={styles.actionRow}>
+								{!running ? (
+									<button type="button" className={styles.retestButton} onClick={startSpeedtest}>
+										<RefreshCw size={11} /> Test Again
+									</button>
+								) : null}
+								<span className={styles.statusText}>{statusMessage}</span>
+							</div>
 						</>
 					)}
-					<div className={styles.statusText}>{statusMessage}</div>
 				</div>
 
-				<SpeedtestBottomBar result={result} />
+				<SpeedtestBottomBar client={result?.client ?? payload?.client} server={result?.server} />
 			</div>
 		</WidgetChrome>
 	);

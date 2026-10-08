@@ -540,4 +540,8 @@ export interface SpeedtestResult {
 
 export interface SpeedtestData {
 	lastResult: SpeedtestResult | null;
+	client?: {
+		isp?: string;
+		ip?: string;
+	} | null;
 }
