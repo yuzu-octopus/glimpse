@@ -42,6 +42,17 @@ describe("WidgetChrome", () => {
 		expect(screen.queryByRole("button", { name: /show more/i })).toBeNull();
 	});
 
+	it("keeps the body's direct children as the items, with no wrapper", () => {
+		// Load-bearing: widgets that style the body as their layout container
+		// (the videos rail reads `[data-testid="widget-body"]` as a flex row)
+		// break silently if anything is wrapped between the body and the items —
+		// the flex/grid then applies to one div and the cards stack.
+		render(<WidgetChrome title="Rail" items={rows} />);
+		const body = screen.getByTestId("widget-body");
+		expect(screen.getByText("row 0").parentElement).toBe(body);
+		expect(screen.getByText("row 4").parentElement).toBe(body);
+	});
+
 	it("does not render a collapse button when within the limit", () => {
 		render(<WidgetChrome title="Feed" collapseAfter={5} items={rows} />);
 		expect(screen.queryByRole("button", { name: /show more/i })).toBeNull();

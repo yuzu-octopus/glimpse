@@ -81,10 +81,11 @@
 	min-width: 0;
 }
 
-/* Skeleton -> content, and Show more/less: the body's children cross-fade
-   instead of hard-cutting. `key` on the wrapper replays this per state flip,
-   so a collapse is a fade rather than a snap. `animation` is legal in this
-   sheet (only sticky/shadow are barred by tests); reduced-motion drops it. */
+/* Skeleton -> content, and Show more/less: the body cross-fades instead of
+   hard-cutting. The replay `key` lives on the body element itself, because a
+   wrapper between the body and its children would break the widgets that
+   style the body as their layout container (the videos rail/grid). Animation
+   is legal in this sheet (only sticky/shadow are barred by tests). */
 @keyframes bodyReveal {
 	from {
 		opacity: 0;
@@ -94,12 +95,12 @@
 	}
 }
 
-.bodyContent {
+.bodyReveal {
 	animation: bodyReveal 200ms var(--ease-standard) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.bodyContent {
+	.bodyReveal {
 		animation: none;
 	}
 }

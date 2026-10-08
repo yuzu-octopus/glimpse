@@ -218,7 +218,15 @@ export const WidgetChrome = memo(function WidgetChrome({
             cell. A widget-level error owns the whole body, so the notice
             stands down rather than competing with the Banner. */}
 				{notice && !loud ? <div className={styles.notice}>{notice}</div> : null}
-				<div className={styles.body} data-testid="widget-body">
+				{/* The body IS the layout container for widgets that style it (the
+				    videos rail/grid reads `[data-testid="widget-body"]`), so nothing
+				    may be wrapped between it and its children. The reveal animation
+				    and its replay key ride on this element instead. */}
+				<div
+					className={`${styles.body} ${styles.bodyReveal}`}
+					data-testid="widget-body"
+					key={bodyKey(isLoading, loud, has, expanded)}
+				>
 					<WidgetBody
 						isLoading={isLoading}
 						loud={loud}
@@ -236,10 +244,27 @@ export const WidgetChrome = memo(function WidgetChrome({
 	);
 });
 
+/** Replay key for the body's reveal: a state change (loading -> content, a
+ *  failure surfacing, Show more/less) remounts the body so the animation runs
+ *  again. A static body keeps one key so it never re-animates on a data
+ *  refresh — the stream replaces widget payloads constantly, and re-fading the
+ *  whole card on every chunk would read as a flicker. */
+function bodyKey(
+	isLoading: boolean | undefined,
+	loud: boolean,
+	has: boolean,
+	expanded: boolean,
+): string {
+	if (isLoading) return "loading";
+	if (loud) return "error";
+	return has ? `list-${expanded}` : "static";
+}
+
 /** The body's three states — loading, failed, content — as one small unit, so
  *  WidgetChrome's own render stays a two-branch layout rather than a chain.
- *  The content wrapper is keyed on `expanded` so Show more/less replays the
- *  reveal animation instead of swapping rows with a hard cut. */
+ *  Returns the body's *children* only: the body element is the layout
+ *  container widgets style (the videos rail/grid reads it), so this must never
+ *  add a wrapper around them. */
 function WidgetBody({
 	isLoading,
 	loud,
@@ -264,11 +289,11 @@ function WidgetBody({
 	if (isLoading) return <ChromeSkeleton shape={shape} />;
 	if (loud) return <Banner status="error" title={error} />;
 	return (
-		<div className={styles.bodyContent} key={has ? String(expanded) : "static"}>
+		<>
 			{visible}
 			{has ? (
 				<ShowMoreButton expanded={expanded} hiddenCount={hiddenCount} onToggle={onToggle} />
 			) : null}
-		</div>
+		</>
 	);
 }
