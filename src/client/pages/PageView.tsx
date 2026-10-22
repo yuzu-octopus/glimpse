@@ -1,4 +1,5 @@
 import { Banner, Card, Tab, TabList, Text } from "@astryxdesign/core";
+import { bannerRole } from "../kit/banner";
 import { ChevronDown } from "lucide-react";
 import {
 	type CSSProperties,
@@ -832,7 +833,7 @@ function LoadingPage({ page }: { page?: Page & { slug: string } }) {
 function PageError({ error }: { error: string | undefined }) {
 	return (
 		<div className={styles.page}>
-			<Banner status="error" title={error ?? "Failed to load page"} />
+			<Banner status="error" role={bannerRole("error")} title={error ?? "Failed to load page"} />
 		</div>
 	);
 }

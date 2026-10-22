@@ -74,7 +74,13 @@ describe("ai-quota widget", () => {
 			/>,
 		);
 		const fill = screen.getByRole("img", { name: "primary" }).firstElementChild as HTMLElement;
-		expect(fill).toHaveStyle({ background: color });
+		// Read the inline style, not the computed one. The DataBar sets the
+		// colour on the element, and the token itself is the contract — the
+		// computed value resolves it to a colour, which would test the
+		// stylesheet instead of the widget. jsdom also cannot resolve a
+		// `var()` in a computed value at all, so the shorthand there reads
+		// back empty and would pass for any colour.
+		expect(fill.style.background).toBe(color);
 	});
 
 	// Bar length is what makes a meter scannable, so the two segments have to

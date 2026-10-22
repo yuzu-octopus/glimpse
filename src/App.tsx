@@ -6,6 +6,7 @@ import { MobileNavigation, TopNav } from "./client/components/TopNav";
 import { useConfig } from "./client/hooks/useConfig";
 import { useStaleNotice } from "./client/hooks/usePageData";
 import { PageView } from "./client/pages/PageView";
+import { bannerRole } from "./client/kit/banner";
 import type { ResolvedConfig } from "./shared/config";
 
 type PageConfig = ResolvedConfig["pages"][number];
@@ -29,6 +30,7 @@ function StaleNotice({ offline }: { offline: boolean }) {
 		<div className={styles.noticeArrival}>
 			<Banner
 				status="warning"
+				role={bannerRole("warning")}
 				container="section"
 				data-testid="stale-notice"
 				title={offline ? "Offline — showing the last known data" : "Showing the last known data"}
@@ -70,7 +72,11 @@ export default function App() {
 	if (state.status === "error") {
 		return (
 			<div className={styles.loadingContainer}>
-				<Banner status="error" title={state.error ?? "Configuration failed to load"} />
+				<Banner
+					status="error"
+					role={bannerRole("error")}
+					title={state.error ?? "Configuration failed to load"}
+				/>
 			</div>
 		);
 	}

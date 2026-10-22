@@ -4,5 +4,5 @@
 // Configuration; the loader uses a strict schema, so unknown keys hard-error.
 // Verify: `bunx astryx doctor` (config check) · `bunx astryx template --list`.
 export default {
-  integrations: ['astryx-dracula'],
+	integrations: ["astryx-dracula"],
 };

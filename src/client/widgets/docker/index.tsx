@@ -140,7 +140,9 @@ function DockerContainers({ config, data, error, isLoading }: WidgetComponentPro
 			showErrors={cfg["show-errors"]}
 			isLoading={loading}
 			collapseAfter={8}
-			items={containers.map((c) => <ContainerRow key={c.name} c={c} />)}
+			items={containers.map((c) => (
+				<ContainerRow key={c.name} c={c} />
+			))}
 		/>
 	);
 }

@@ -32,8 +32,7 @@ async function localServer(name?: string): Promise<ServerInfo> {
 		(async () => {
 			try {
 				const fn = (si as unknown as Record<string, unknown>).cpuTemperature as
-					| (() => Promise<{ main?: number | null }>)
-					| undefined;
+					(() => Promise<{ main?: number | null }>) | undefined;
 				return fn ? await fn().catch(() => null) : null;
 			} catch {
 				return null;

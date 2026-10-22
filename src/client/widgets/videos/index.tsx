@@ -122,7 +122,9 @@ function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
 				showErrors={cfg["show-errors"]}
 				collapseAfter={collapseAfter}
 				notice={notice}
-				items={videos.map((v) => <VideoRow key={v.url} video={v} />)}
+				items={videos.map((v) => (
+					<VideoRow key={v.url} video={v} />
+				))}
 			/>
 		);
 	}
@@ -140,7 +142,9 @@ function Videos({ config, data, error, isLoading }: WidgetComponentProps) {
 				[cfg["css-class"], grid ? styles.gridWrap : styles.cards].filter(Boolean).join(" ") ||
 				undefined
 			}
-			items={videos.map((v) => <Card key={v.url} video={v} />)}
+			items={videos.map((v) => (
+				<Card key={v.url} video={v} />
+			))}
 			notice={notice}
 		/>
 	);

@@ -92,7 +92,9 @@ function Tailscale({ config, data, error, isLoading }: WidgetComponentProps) {
 			showErrors={cfg["show-errors"]}
 			isLoading={loading}
 			collapseAfter={10}
-			items={payload.devices.map((d) => <DeviceRow key={d.id} device={d} />)}
+			items={payload.devices.map((d) => (
+				<DeviceRow key={d.id} device={d} />
+			))}
 		/>
 	);
 }

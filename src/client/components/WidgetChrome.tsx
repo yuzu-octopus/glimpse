@@ -10,6 +10,7 @@ import {
 } from "@astryxdesign/core";
 import { ChevronRight } from "lucide-react";
 import { createContext, memo, type ReactNode, useContext, useMemo, useRef, useState } from "react";
+import { bannerRole } from "../kit/banner";
 import styles from "./widget-chrome.module.css";
 
 /** Page-level hide-headers flag. PageView provides it; WidgetChrome consumes it. */
@@ -287,7 +288,7 @@ function WidgetBody({
 	onToggle: () => void;
 }) {
 	if (isLoading) return <ChromeSkeleton shape={shape} />;
-	if (loud) return <Banner status="error" title={error} />;
+	if (loud) return <Banner status="error" role={bannerRole("error")} title={error} />;
 	return (
 		<>
 			{visible}

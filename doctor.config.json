@@ -1,15 +1,15 @@
 {
-  "$schema": "https://react.doctor/schema/config.json",
-  "ignore": {
-    "files": ["glance/**"]
-  },
-  "rules": {
-    "react-doctor/iframe-missing-sandbox": "off",
-    "react-doctor/no-multi-comp": "off",
-    "react-doctor/no-fetch-in-effect": "off",
-    "react-doctor/dangerous-html-sink": "off",
-    "react-doctor/no-set-state-after-await-in-effect": "off",
-    "deslop/unused-export": "off",
-    "socket/low-supply-chain-score": "off"
-  }
+	"$schema": "https://react.doctor/schema/config.json",
+	"ignore": {
+		"files": ["glance/**"]
+	},
+	"rules": {
+		"react-doctor/iframe-missing-sandbox": "off",
+		"react-doctor/no-multi-comp": "off",
+		"react-doctor/no-fetch-in-effect": "off",
+		"react-doctor/dangerous-html-sink": "off",
+		"react-doctor/no-set-state-after-await-in-effect": "off",
+		"deslop/unused-export": "off",
+		"socket/low-supply-chain-score": "off"
+	}
 }

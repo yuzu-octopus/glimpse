@@ -1,0 +1,14 @@
+[fmt]
+# The repo's format style, owned by bun's formatter since 1.4. The old owner was
+# Biome; Biome still runs, but as the LINTER only (its formatter is off in
+# biome.json), so the two tools do not fight over the same bytes.
+#
+#   printWidth 100  — matches the width Biome was configured with
+#   useTabs        — the repo is tab-indented
+#   semi           — semicolons stay (Biome's default, and the style the
+#                    existing source already uses)
+#   singleQuote    — false keeps double quotes, as Biome did
+printWidth = 100
+useTabs = true
+semi = true
+singleQuote = false
