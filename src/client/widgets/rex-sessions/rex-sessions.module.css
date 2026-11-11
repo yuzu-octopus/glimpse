@@ -1,0 +1,29 @@
+/* Rex session rows — dot + headline/focused + breadcrumb/pwd/age.
+   The kit owns the dot, the type scale and every colour; what is left here
+   is the row rhythm, the separator and the flexible text column. Rows are
+   static (no link, no button), like the tailscale rows they mirror. */
+
+.row {
+	position: relative;
+	padding-block: calc(var(--widget-content-vertical) / 2 - 0.5px);
+}
+
+.row + .row {
+	margin-top: 8px;
+}
+
+.row + .row::before {
+	content: "";
+	position: absolute;
+	top: -4.5px;
+	left: 0;
+	right: 0;
+	height: 1px;
+	background-color: var(--color-separator);
+	pointer-events: none;
+}
+
+.body {
+	flex: 1;
+	min-width: 0;
+}

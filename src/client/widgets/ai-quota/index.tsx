@@ -9,6 +9,9 @@ import styles from "./ai-quota.module.css";
 
 function fmtReset(ms: number): string {
 	const s = Math.max(0, Math.floor((ms - Date.now()) / 1000));
+	// Minute-granularity countdown: the shared 60s tick cannot keep seconds
+	// fresh, so anything under a minute reads as "<1m", never a stale "0m".
+	if (s < 60) return "<1m";
 	const h = Math.floor(s / 3600);
 	const m = Math.floor((s % 3600) / 60);
 	return h ? `${h}h ${m}m` : `${m}m`;
@@ -54,7 +57,12 @@ export function AiQuota({ config, data, error, isLoading }: WidgetComponentProps
             the kit's yellow Badge carries the wash at 5px — no pill. */}
 				{d.plan ? <Badge variant="yellow" label={d.plan} className={styles.plan} /> : null}
 				{d.windows.map((w) => {
-					const pct = Math.min(100, w.usedPercent);
+					// Labels repeat across providers (two "credits" rows), so the key
+					// carries the reset + percentage — a bare label key collides and drops a row.
+					const key = `${w.label}-${w.resetsAt}-${w.usedPercent}`;
+					// Upstream can overshoot 100 or dip below 0; keep the mark on the
+					// track so the remainder segment never inverts the bar.
+					const pct = Math.min(100, Math.max(0, w.usedPercent));
 					// Consumption is data, so the mark runs cyan and escalates on the
 					// fixed status vocabulary (yellow attention, red negative). Each
 					// step is a --color-data-* role token, which is what the bar's
@@ -67,14 +75,14 @@ export function AiQuota({ config, data, error, isLoading }: WidgetComponentProps
 								? "var(--color-data-yellow-2)"
 								: "var(--color-data-categorical-cyan)";
 					return (
-						<Stack key={w.label} gap={1.5} className={styles.row}>
+						<Stack key={key} gap={1.5} className={styles.row}>
 							<Text type="supporting" hasTabularNumbers>
-								{w.label} — {Math.round(w.usedPercent)}% · resets in {fmtReset(w.resetsAt)}
+								{w.label} — {Math.round(pct)}% · resets in {fmtReset(w.resetsAt)}
 							</Text>
 							{/* A quota window is a magnitude against a domain, not progress
-                  toward a completion: the fill and the unconsumed remainder
-                  are two segments of one 100% total, so the bar's length
-                  still reads as the percentage. It never completes. */}
+						toward a completion: the fill and the unconsumed remainder
+						are two segments of one 100% total, so the bar's length
+						still reads as the percentage. It never completes. */}
 							<DataBar
 								label={w.label}
 								height={8}

@@ -49,6 +49,7 @@ export const widgetLoaders: Record<string, Loader> = {
 	tailscale: () => import("./tailscale"),
 	"model-releases": () => import("./model-releases"),
 	speedtest: () => import("./speedtest"),
+	"rex-sessions": () => import("./rex-sessions"),
 };
 
 const widgetPromises = new Map<string, Promise<unknown>>();

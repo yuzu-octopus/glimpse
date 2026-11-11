@@ -7,8 +7,11 @@ registerWidget(
 	"ai-quota",
 	async (ctx: WidgetFetchContext, cfg: Record<string, unknown>): Promise<AiQuotaData> => {
 		const c = aiQuotaSchema.parse(cfg);
-		const accountId = (cfg as Record<string, unknown>).accountId as string | undefined;
-		const { token } = await resolveAuth(ctx.env, { tokenFile: c.tokenFile, accountId }, c.provider);
+		const { token, accountId } = await resolveAuth(
+			ctx.env,
+			{ tokenFile: c.tokenFile, accountId: c.accountId },
+			c.provider,
+		);
 		const snap = await fetchUsage(
 			c.provider as never,
 			{

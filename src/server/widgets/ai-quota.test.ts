@@ -39,6 +39,24 @@ describe("ai-quota widget", () => {
 		expect(data.windows[0].usedPercent).toBe(10);
 	});
 
+	it("forwards accountId to the Codex multi-account header", async () => {
+		const payload = {
+			plan_type: "pro",
+			rate_limit: {
+				primary_window: { used_percent: 10, reset_at: 1735401600, limit_window_seconds: 18000 },
+			},
+		};
+		const inits: RequestInit[] = [];
+		const f = vi.fn(async (_url: string, init?: RequestInit) => {
+			inits.push(init ?? {});
+			return new Response(JSON.stringify(payload), { status: 200 });
+		});
+		const fn = aiQuotaFetcher();
+		await fn(ctxWith(f), { type: "ai-quota", provider: "codex", accountId: "acc-1" });
+		const headers = inits[0].headers as Record<string, string>;
+		expect(headers["ChatGPT-Account-ID"]).toBe("acc-1");
+	});
+
 	it("authenticates with the provider env var, not a config token", async () => {
 		const payload = {
 			plan_type: "pro",

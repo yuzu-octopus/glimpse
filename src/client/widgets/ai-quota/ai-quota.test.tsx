@@ -131,6 +131,55 @@ describe("ai-quota widget", () => {
 		expect(screen.getByRole("img", { name: "primary" })).toBeInTheDocument();
 	});
 
+	it("clamps an overshooting window to a full bar, never an inverted one", () => {
+		render(
+			<AiQuota
+				config={{ type: "ai-quota" } as never}
+				data={{
+					provider: "codex",
+					windows: [
+						{
+							label: "primary",
+							usedPercent: 140,
+							windowMinutes: 300,
+							resetsAt: Date.now() + 3600000,
+						},
+					],
+				}}
+			/>,
+		);
+		// The label reads 100% (not 140%), and the zero remainder segment drops
+		// out instead of rendering a negative-width slice.
+		expect(screen.getByText(/100%/)).toBeInTheDocument();
+		const bar = screen.getByRole("img", { name: "primary" });
+		expect(bar.children).toHaveLength(1);
+		expect((bar.children[0] as HTMLElement).style.flexBasis).toBe("100%");
+	});
+	it("reads under a minute as <1m, never a stale 0m", () => {
+		render(
+			<AiQuota
+				config={{ type: "ai-quota" } as never}
+				data={{
+					provider: "codex",
+					windows: [
+						{ label: "primary", usedPercent: 15, windowMinutes: 300, resetsAt: Date.now() + 20000 },
+					],
+				}}
+			/>,
+		);
+		expect(screen.getByText(/resets in <1m/)).toBeInTheDocument();
+	});
+
+	it("shows the credit balance when the provider reports one", () => {
+		render(
+			<AiQuota
+				config={{ type: "ai-quota" } as never}
+				data={{ provider: "openrouter", windows: WINDOWS, balance: 12.5 }}
+			/>,
+		);
+		expect(screen.getByText(/Balance: 12\.5/)).toBeInTheDocument();
+	});
+
 	it("falls back to the provider name, and honours title-url when given", () => {
 		const fallback = render(
 			<AiQuota

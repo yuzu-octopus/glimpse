@@ -35,6 +35,8 @@ export const aiQuotaSchema = z
 		quotaUrl: z.url().optional(),
 		projectId: z.string().optional(),
 		baseUrl: z.url().optional(),
+		// Codex multi-account header (ChatGPT-Account-ID); also resolved from CHATGPT_ACCOUNT_ID env.
+		accountId: z.string().optional(),
 	})
 	.superRefine((c, ctx) => {
 		if (!(KNOWN_PROVIDERS as readonly string[]).includes(c.provider)) {

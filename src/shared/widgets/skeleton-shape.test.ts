@@ -86,6 +86,7 @@ const EXPECTED: Record<WidgetType, SkeletonShape> = {
 	tailscale: "list", // status dot, name, os/version or "seen Nh ago"
 	qbittorrent: "list", // name, progress bar, stats line
 	transmission: "list", // same body as qbittorrent
+	"rex-sessions": "list", // status dot, headline, breadcrumb/age
 
 	// ── grids, graphs and full-bleed blocks
 	"dns-stats": "chart", // three value blocks over a bar graph

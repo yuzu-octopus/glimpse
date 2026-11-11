@@ -545,3 +545,30 @@ export interface SpeedtestData {
 		ip?: string;
 	} | null;
 }
+
+/** Terminal block liveness, straight from rex's program_status OSC 7501 records. */
+export type RexBlockState = "done" | "working" | "blocked" | "failed" | "unknown";
+
+/** One terminal pane: session → window → block flattened with its breadcrumb. */
+export interface RexSessionBlock {
+	blockId: string;
+	sessionId: string;
+	sessionLabel: string;
+	windowLabel: string;
+	blockLabel: string;
+	/** Screen text is never fetched — this is the short `title` method result. */
+	title: string | null;
+	/** Foreground process name (`bun`, `nu`, …), never the full argv. */
+	process: string | null;
+	state: RexBlockState;
+	/** Latest program_status record timestamp, ISO; null when rex never reported one. */
+	updatedAt: string | null;
+	/** `~/…`-trimmed working directory, for the supporting line only. */
+	pwd: string | null;
+	/** This window's focused block — the pane the user is looking at. */
+	focused: boolean;
+}
+
+export interface RexSessionsData {
+	blocks: RexSessionBlock[];
+}

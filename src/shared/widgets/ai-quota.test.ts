@@ -10,9 +10,9 @@ describe("ai-quota schema", () => {
 		expect("token" in withToken).toBe(false);
 		expect(JSON.stringify(withToken)).not.toContain("leaked");
 	});
-	it("keeps tokenFile — a credential path, not a secret", () => {
-		const cfg = aiQuotaSchema.parse({ type: "ai-quota", tokenFile: "/home/u/.codex/auth.json" });
-		expect(cfg.tokenFile).toBe("/home/u/.codex/auth.json");
+	it("accepts accountId for the Codex multi-account header", () => {
+		const cfg = aiQuotaSchema.parse({ type: "ai-quota", provider: "codex", accountId: "acc-1" });
+		expect(cfg.accountId).toBe("acc-1");
 	});
 	it("rejects unknown provider", () => {
 		expect(() => aiQuotaSchema.parse({ type: "ai-quota", provider: "bad" as never })).toThrow();

@@ -33,3 +33,4 @@ import "./model-endpoints";
 import "./tailscale";
 import "./model-releases";
 import "./speedtest";
+import "./rex-sessions";

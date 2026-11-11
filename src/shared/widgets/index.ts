@@ -114,6 +114,7 @@ import {
 import { NETWORK_PREF, NETWORK_SKELETON, networkSchema } from "./network";
 import { NOTEPAD_PREF, NOTEPAD_SKELETON, notepadSchema } from "./notepad";
 import { RADAR_PREF, RADAR_SKELETON, radarSchema } from "./radar";
+import { REX_SESSIONS_PREF, REX_SESSIONS_SKELETON, rexSessionsSchema } from "./rex-sessions";
 import { SEARCH_PREF, SEARCH_SKELETON, searchSchema } from "./search";
 import { SERVER_STATS_PREF, SERVER_STATS_SKELETON, serverStatsSchema } from "./server-stats";
 import type { Pref, SkeletonShape } from "./shared";
@@ -175,6 +176,7 @@ const schemaEntries = [
 	modelEndpointsSchema,
 	tailscaleSchema,
 	modelReleasesSchema,
+	rexSessionsSchema,
 	speedtestSchema,
 ] as const;
 
@@ -305,6 +307,11 @@ export const widgetMeta = {
 		schema: modelReleasesSchema,
 		pref: MODEL_RELEASES_PREF,
 		skeleton: MODEL_RELEASES_SKELETON,
+	},
+	"rex-sessions": {
+		schema: rexSessionsSchema,
+		pref: REX_SESSIONS_PREF,
+		skeleton: REX_SESSIONS_SKELETON,
 	},
 	speedtest: { schema: speedtestSchema, pref: SPEEDTEST_PREF, skeleton: SPEEDTEST_SKELETON },
 } as const satisfies Record<
