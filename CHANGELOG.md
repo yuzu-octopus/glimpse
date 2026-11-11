@@ -10,11 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- `model-releases` widget: live AI model drop feed from `live.aitracker.bot` with lab badges, announcement links, descriptions, and relative timestamps (`vertical-list` and `compact` styles).
-- `speedtest` widget: interactive manual speed test measuring real throughput against Cloudflare's edge (no CLI needed), with an authentic 240° circular SVG speedometer gauge, live animated needle, digital speed readout, download/upload/ping metrics, and ISP/server details. Falls back to a local `speedtest-cli` when the edge is unreachable.
-- Streaming speedtest endpoint (`POST /api/speedtest/run`) emitting live progress chunks over NDJSON.
-- Pull-to-refresh on touch devices: dragging down at the top of a page reloads it (bypassing the server cache), with a rubber-banded indicator held until the fetch settles.
+	### Added
+	- `rex-sessions` widget: live Rex terminal sessions at a glance — shells the local `rex` CLI (`session.view` + per-block `title` / `program-status` / `pwd` / `process`); title + status + age only, never screen text. Blocked-first, `focused` badge, stale-on-error; set `cache: 5s` for a live view (static TTL otherwise).
+	- `ai-quota` multi-account routing: `accountId` schema field (also `CHATGPT_ACCOUNT_ID`), forwarded to the usage fetch — Codex multi-account headers now fire. Plus countdown/percent/key hygiene (`<1m`, 0–100 clamp, stable keys).
+	- `check-config` rejects mixed `span`+`size` columns at load instead of misrendering them as 1-wide tracks.
+	- Per-IP throttles on the two expensive endpoints: `?force` cache-bust (10/60s) and `/api/speedtest/run` (3/300s), 429 + `retry-after`; reads untouched.
+	- Custom-CSS read contained to the config directory (`isAbsolute` reject + `realpathSync`, fail closed, symlink-safe); malformed page slugs return the JSON 404 instead of a 500.
+	- Per-page widget fan-out cap (6, same number as warmup) + 5s negative cache on hard failures (`?force` still bypasses); stream chunk dedupe measured and rejected (~0.02–0.06ms/iter — not the cost).
+	- `model-releases` widget: live AI model drop feed from `live.aitracker.bot` with lab badges, announcement links, descriptions, and relative timestamps (`vertical-list` and `compact` styles).
 
 	### Changed
 	- Toolchain moved onto bun: `bun check` replaces `tsc --noEmit` (same checker, ~100x faster here), `bun fmt` replaces Biome's formatter, and Biome stays as the linter only (repo `biome.json`, pinned 2.6). `biome lint` reports 0 errors, 0 warnings, 0 infos.
