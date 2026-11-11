@@ -1,5 +1,5 @@
-import { existsSync, readFileSync, statSync } from "node:fs";
-import { dirname, join, normalize, resolve, sep } from "node:path";
+import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { dirname, isAbsolute, join, normalize, resolve, sep } from "node:path";
 import { buildPagePayload, skeletonPagePayload, streamPagePayload } from "./api";
 import { Singleflight, TtlCache } from "./cache";
 import { getConfig, initConfig } from "./config";
@@ -63,7 +63,37 @@ function readThemeCss(cssFile: string): string | null {
 	if (themeCssCache?.file === cssFile && now - themeCssCheckedAt < THEME_CSS_CHECK_MS) {
 		return themeCssCache.content;
 	}
-	const path = resolve(dirname(CONFIG_PATH), cssFile);
+	if (isAbsolute(cssFile)) {
+		console.log("[glimpse] cannot read custom css file: outside the config directory");
+		themeCssCheckedAt = now;
+		return null;
+	}
+	const rawDir = dirname(CONFIG_PATH);
+	// realpath both sides: /tmp on macOS is itself a symlink, so an
+	// unresolved dirname would reject every legitimate sibling file.
+	const dir = (() => {
+		try {
+			return realpathSync(rawDir);
+		} catch {
+			return resolve(rawDir);
+		}
+	})();
+	let path: string;
+	try {
+		path = realpathSync(resolve(dir, cssFile));
+	} catch (e) {
+		console.log(`[glimpse] cannot read custom css file: ${(e as Error).message}`);
+		themeCssCache = null;
+		themeCssCheckedAt = now;
+		return null;
+	}
+	if (path !== dir && !path.startsWith(dir + sep)) {
+		// Fail closed: ../shared/theme.css next to the config dir is also
+		// rejected — there is no custom-css-allow-outside opt-in (yet).
+		console.log("[glimpse] cannot read custom css file: outside the config directory");
+		themeCssCheckedAt = now;
+		return null;
+	}
 	try {
 		const { mtimeMs } = statSync(path);
 		if (themeCssCache?.file === cssFile && themeCssCache.mtimeMs === mtimeMs) {
@@ -80,6 +110,31 @@ function readThemeCss(cssFile: string): string | null {
 		themeCssCheckedAt = now;
 		return null;
 	}
+}
+
+/** Per-IP hit timestamps for the expensive routes (?force cache-bust,
+ * /api/speedtest/run). Fixed window: N hits per WINDOW_MS, then 429.
+ * Keyed by server.requestIP — behind Caddy this is Caddy itself, so this
+ * is a footgun guard, not perimeter auth (Caddy owns that). */
+const FORCE_LIMIT = 10;
+const FORCE_WINDOW_MS = 60_000;
+const SPEEDTEST_LIMIT = 3;
+const SPEEDTEST_WINDOW_MS = 300_000;
+const rateHits = new Map<string, number[]>();
+
+function checkRateLimit(key: string, limit: number, windowMs: number): number {
+	const now = Date.now();
+	const hits = (rateHits.get(key) ?? []).filter((t) => now - t < windowMs);
+	if (hits.length >= limit) {
+		rateHits.set(key, hits);
+		const oldest = hits[0] ?? now;
+		return Math.max(1, Math.ceil((windowMs - (now - oldest)) / 1000));
+	}
+	hits.push(now);
+	if (rateHits.size > 1000 && !rateHits.has(key))
+		rateHits.delete(rateHits.keys().next().value as string);
+	rateHits.set(key, hits);
+	return 0;
 }
 
 const distDirCache = join(process.cwd(), "dist");
@@ -176,6 +231,11 @@ const server = Bun.serve({
 		}
 
 		if (pathname === "/api/speedtest/run") {
+			const ip = server.requestIP(req)?.address ?? "unknown";
+			const retryAfter = checkRateLimit(`speedtest:${ip}`, SPEEDTEST_LIMIT, SPEEDTEST_WINDOW_MS);
+			if (retryAfter > 0) {
+				return json({ error: "rate limited" }, 429, { "retry-after": String(retryAfter) });
+			}
 			const enc = new TextEncoder();
 			const abortController = new AbortController();
 			const stream = new ReadableStream({
@@ -205,12 +265,23 @@ const server = Bun.serve({
 		if (pageMatch) {
 			const r = getConfig();
 			if (!r.ok) return json({ ok: false, errors: r.errors }, 400);
-			const slug = decodeURIComponent(pageMatch[1]);
+			let slug: string;
+			try {
+				slug = decodeURIComponent(pageMatch[1]);
+			} catch {
+				// malformed percent-encoding (e.g. %zz) — same contract as unknown page
+				return json({ error: `page "${pageMatch[1]}" not found` }, 404);
+			}
 			const page = r.config?.pages.find((p) => p.slug === slug);
 			if (!page) return json({ error: `page "${slug}" not found` }, 404);
 			// Explicit reload (client reload(true)) should bypass server cache
 			// so the next widget fetches actually hit the upstream APIs.
 			if (url.searchParams.has("force")) {
+				const ip = server.requestIP(req)?.address ?? "unknown";
+				const retryAfter = checkRateLimit(`force:${ip}`, FORCE_LIMIT, FORCE_WINDOW_MS);
+				if (retryAfter > 0) {
+					return json({ error: "rate limited" }, 429, { "retry-after": String(retryAfter) });
+				}
 				ctx.cache.deleteByPrefix(`${slug}:`);
 			}
 			if (url.searchParams.has("stream")) {

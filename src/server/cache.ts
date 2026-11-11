@@ -1,4 +1,4 @@
-import { LIVE_TTL_MS, LIVE_TYPES, STATIC_TTL_MS } from "../shared/live";
+import { LIVE_TTL_MS, LIVE_TYPES, STATIC_TTL_MS, TTL_OVERRIDE_MS } from "../shared/live";
 
 /**
  * In-memory TTL cache + singleflight dedupe, mirroring glance's per-widget
@@ -59,9 +59,8 @@ export class TtlCache {
 
 export function getDefaultTtl(type: string): number {
 	if (type === "server-stats" || type === "system-stats") return 1_000;
-	// RainViewer publishes new frames every ~10min — no point polling faster.
-	if (type === "weather-radar") return 600_000;
-	if (type === "model-releases") return 60_000;
+	const override = TTL_OVERRIDE_MS[type];
+	if (override !== undefined) return override;
 	return LIVE_TYPES[type] ? LIVE_TTL_MS : STATIC_TTL_MS;
 }
 

@@ -148,6 +148,41 @@ pages:
 		expect(r.errors?.some((e) => e.includes("more than two full columns"))).toBe(true);
 	});
 
+	it("rejects a page mixing span and size columns", () => {
+		const bad = `
+pages:
+  - name: Home
+    columns:
+      - span: 6
+        widgets: [{ type: clock }]
+      - size: full
+        widgets: [{ type: clock }]
+`;
+		const r = loadConfig(write("glance.yml", bad));
+		expect(r.ok).toBe(false);
+		expect(r.errors?.some((e) => e.includes("mix of explicit span and size not allowed"))).toBe(
+			true,
+		);
+	});
+
+	it("loads a page where every column declares a span", () => {
+		const r = loadConfig(
+			write(
+				"glance.yml",
+				`
+pages:
+  - name: Home
+    columns:
+      - span: 6
+        widgets: [{ type: clock }]
+      - span: 6
+        widgets: [{ type: clock }]
+`,
+			),
+		);
+		expect(r.ok).toBe(true);
+	});
+
 	it("rejects a group widget nested inside a group", () => {
 		const bad = `
 pages:

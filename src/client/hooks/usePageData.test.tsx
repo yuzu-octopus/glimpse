@@ -1,11 +1,12 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { useEffect } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PagePayload } from "../../shared/api";
 import type { WidgetType } from "../../shared/config";
 import { PageView } from "../pages/PageView";
 import { registerWidgetComponent } from "../widgets/registry";
-import { __clearCacheForTests } from "./usePageData";
+import { __clearCacheForTests, usePageData } from "./usePageData";
 
 function makePayload(overrides: Partial<PagePayload> = {}): PagePayload {
 	return {
@@ -229,5 +230,96 @@ describe("usePageData render-skip dedupe", () => {
 
 		// Changed payload must emit
 		expect(clockRenders).toBeGreaterThan(rendersAfterFirst);
+	});
+});
+
+const seenProbe: PagePayload[] = [];
+function SnapshotProbe() {
+	const { data } = usePageData("home");
+	useEffect(() => {
+		if (data) seenProbe.push(data);
+	}, [data]);
+	return null;
+}
+
+describe("usePageData stream reconciliation", () => {
+	function gatedNdjson() {
+		const enc = new TextEncoder();
+		let controller: ReadableStreamDefaultController<Uint8Array> | null = null;
+		const stream = new ReadableStream<Uint8Array>({
+			start(c) {
+				controller = c;
+			},
+		});
+		return {
+			response: () =>
+				new Response(stream, { status: 200, headers: { "content-type": "application/x-ndjson" } }),
+			push(line: unknown) {
+				controller?.enqueue(enc.encode(`${JSON.stringify(line)}\n`));
+			},
+			close() {
+				controller?.close();
+			},
+		};
+	}
+	it("does not mutate a previously emitted column snapshot when a later chunk lands", async () => {
+		const skeletonWidget = (title: string) => ({
+			type: "clock" as WidgetType,
+			config: { type: "clock", title },
+			data: null,
+		});
+		const skeleton = makePayload({
+			columns: [{ size: "full", widgets: [skeletonWidget("Clock"), skeletonWidget("Clock 2")] }],
+		});
+		const chunkA = {
+			type: "clock",
+			config: { type: "clock", title: "Clock" },
+			data: { time: "12:00" },
+		};
+		const chunkB = {
+			type: "clock",
+			config: { type: "clock", title: "Clock 2" },
+			data: { time: "12:01" },
+		};
+		const gate = gatedNdjson();
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => gate.response()),
+		);
+		const seen: PagePayload[] = seenProbe;
+		seen.length = 0;
+		render(<SnapshotProbe />);
+		await act(async () => {
+			gate.push({ path: "$skeleton", payload: skeleton });
+		});
+		await waitFor(() => expect(seen.length).toBeGreaterThanOrEqual(1));
+		await act(async () => {
+			gate.push({ path: "columns[0].widgets[0]", payload: chunkA });
+		});
+		await waitFor(() => expect(seen.length).toBeGreaterThanOrEqual(2));
+		const first = seen[1];
+		const firstColumns = first.columns;
+		const firstWidgets = first.columns[0].widgets;
+		const firstHead = firstWidgets[0];
+		expect(firstHead).toEqual(chunkA);
+		await act(async () => {
+			gate.push({ path: "columns[0].widgets[1]", payload: chunkB });
+		});
+		await waitFor(() => expect(seen.length).toBeGreaterThanOrEqual(3));
+		const second = seen[2];
+		await act(async () => {
+			gate.close();
+		});
+		// The first emission is a snapshot: the later chunk must not rewrite it.
+		expect(first.columns).toBe(firstColumns);
+		expect(first.columns[0].widgets).toBe(firstWidgets);
+		expect(first.columns[0].widgets[0]).toBe(firstHead);
+		expect(first.columns[0].widgets[0]).toEqual(chunkA);
+		expect(first.columns[0].widgets[1]).toEqual(skeletonWidget("Clock 2"));
+		// The new emission carries both chunks on fresh array refs.
+		expect(second.columns).not.toBe(firstColumns);
+		expect(second.columns[0].widgets).not.toBe(firstWidgets);
+		expect(second.columns[0].widgets[0]).toEqual(chunkA);
+		expect(second.columns[0].widgets[1]).toEqual(chunkB);
 	});
 });

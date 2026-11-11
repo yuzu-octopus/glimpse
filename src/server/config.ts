@@ -155,6 +155,13 @@ function validateColumns(pages: unknown, errors: string[]): void {
 	pages.forEach((page, pi) => {
 		if (!isRecord(page) || !Array.isArray(page.columns)) return;
 		const cols = page.columns as unknown[];
+		const hasSpan = (c: unknown): boolean => isRecord(c) && typeof c.span === "number";
+		if (cols.some(hasSpan) && !cols.every(hasSpan)) {
+			errors.push(
+				`pages[${pi}]: mix of explicit span and size not allowed — give every column a span, or none`,
+			);
+			return;
+		}
 		const usesExplicitSpan = cols.every((c) => isRecord(c) && typeof c.span === "number");
 		if (usesExplicitSpan) return;
 		const fullCount = cols.filter((c) => isRecord(c) && c.size === "full").length;

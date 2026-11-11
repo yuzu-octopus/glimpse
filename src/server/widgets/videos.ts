@@ -1007,10 +1007,19 @@ registerWidget("videos", async (ctx, config) => {
 						);
 						if (corrected) return corrected;
 					}
-					// Cap at `limit`: feeds arrive newest-first, so the global top-`limit`
-					// can never need more than `limit` rows from one source. Bounds a
+					// Cap at `limit`: the global top-`limit` can never need more than
+					// `limit` rows from one source, so date-sort first and bound a
 					// pathological source without changing what the merge can output.
-					const videos = mapItems(parsed.items, parsed.title ?? source).slice(0, cfg.limit);
+					// The sort is load-bearing: an oldest-first playlist feed arrives
+					// oldest-first, so capping feed order would keep its oldest rows and
+					// drop the newest before the merge ever sees them.
+					const videos = mapItems(parsed.items, parsed.title ?? source)
+						.sort((a, b) => {
+							const ta = a.published ? Date.parse(a.published) : 0;
+							const tb = b.published ? Date.parse(b.published) : 0;
+							return tb - ta;
+						})
+						.slice(0, cfg.limit);
 					setCached(videos);
 					return videos.length === 0 ? { videos, issue: { source, reason } } : { videos };
 				} catch (err) {

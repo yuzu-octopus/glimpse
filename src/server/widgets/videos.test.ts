@@ -210,13 +210,13 @@ describe("videos fetcher", () => {
 			contents: [
 				{
 					lockupViewModel: {
-						contentId: "vid000000001",
+						contentId: "vid00000001",
 						metadata: { lockupMetadataViewModel: { title: { content: "Video A" } } },
 					},
 				},
 				{
 					lockupViewModel: {
-						contentId: "vid000000002",
+						contentId: "vid00000002",
 						metadata: { lockupMetadataViewModel: { title: { content: "Video B" } } },
 					},
 				},
@@ -225,7 +225,7 @@ describe("videos fetcher", () => {
 		const browseTwo = JSON.stringify({
 			contents: {
 				lockupViewModel: {
-					contentId: "vid000000003",
+					contentId: "vid00000003",
 					metadata: { lockupMetadataViewModel: { title: { content: "Video C" } } },
 				},
 			},
@@ -254,10 +254,13 @@ describe("videos fetcher", () => {
 		})) as VideosData;
 
 		// Both playlists resolved, newest entries attributed to the channel.
+		// The page fixture names no channel, so attribution falls back to the
+		// configured source. Newest-first within each playlist: the two-video
+		// listing resolves Video B before Video A.
 		expect(data.videos).toHaveLength(3);
-		expect(data.videos[0].title).toBe("Video A");
-		expect(data.videos[0].channel).toBe("Empty");
-		expect(data.videos[1].title).toBe("Video B");
+		expect(data.videos[0].title).toBe("Video B");
+		expect(data.videos[0].channel).toBe("UC1234567890123456789012");
+		expect(data.videos[1].title).toBe("Video A");
 		expect(data.videos[2].title).toBe("Video C");
 		expect(data.issues).toEqual([]);
 	});
@@ -281,8 +284,8 @@ describe("videos fetcher", () => {
 		const data = (await videosFetcher()(ctx, {
 			type: "videos",
 			channels: ["UC1234567890123456789012"],
+			retries: 0,
 		})) as VideosData;
-
 		expect(data.videos).toEqual([]);
 		expect(data.issues).toHaveLength(1);
 		expect(data.issues[0].source).toBe("UC1234567890123456789012");
@@ -301,13 +304,13 @@ describe("videos fetcher", () => {
 		await videosFetcher()(ctx, {
 			type: "videos",
 			channels: ["UC1234567890123456789012"],
-			retries: 2,
+			retries: 1,
 		});
 
 		const feed = hits.filter((u) => u.includes("feeds/videos.xml"));
 		const page = hits.filter((u) => u.includes("/channel/UC1234567890123456789012/videos"));
-		// retries: 2 → 1 initial attempt + 2 retries on the feed, once on the page
-		expect(feed).toHaveLength(3);
+		// retries: 1 → 1 initial attempt + 1 retry on the feed, once on the page
+		expect(feed).toHaveLength(2);
 		expect(page).toHaveLength(1);
 	});
 

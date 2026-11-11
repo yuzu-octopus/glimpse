@@ -141,6 +141,80 @@ describe("buildPagePayload", () => {
 		expect(fetcher).toHaveBeenCalledOnce();
 	});
 
+	it("caps concurrent upstream fetches at 6 while every widget still gets a frame", async () => {
+		// Deferred fetchers on one shared gate: entry depth is the only
+		// thing that proves the gate admitted 6 before any resolved. A bare
+		// `await sleep` per fetcher would also pass with no gate at all —
+		// depth tracking plus the cap-to-1 / cap-to-Infinity sensitivity
+		// checks pin that this measures the semaphore, not the event loop.
+		let depth = 0;
+		let maxDepth = 0;
+		const gate = Promise.withResolvers<unknown>();
+		const fetcher = vi.fn(async () => {
+			depth += 1;
+			maxDepth = Math.max(maxDepth, depth);
+			try {
+				await gate.promise;
+				return { items: [] };
+			} finally {
+				depth -= 1;
+			}
+		});
+		registerWidget("rss", fetcher);
+		const widgets = Array.from({ length: 20 }, () => ({ ...rssWidget }));
+		const p = buildPagePayload(page([{ size: "full", widgets }]), makeCtx());
+		// Let every fetcher that the gate admits run its sync prefix.
+		await Promise.resolve();
+		await Promise.resolve();
+		await Promise.resolve();
+		expect(fetcher).toHaveBeenCalledTimes(6);
+		expect(maxDepth).toBe(6);
+		gate.resolve(undefined);
+		const payload = await p;
+		expect(payload.columns[0].widgets).toHaveLength(20);
+		for (const w of payload.columns[0].widgets) {
+			expect(w.data).toEqual({ items: [] });
+			expect(w.error).toBeUndefined();
+		}
+		expect(maxDepth).toBeLessThanOrEqual(6);
+	});
+
+	it("serves a hard failure from the negative cache, then retries after the TTL; force bypasses", async () => {
+		vi.useFakeTimers();
+		try {
+			const fetcher = vi.fn(async () => {
+				throw new Error("HTTP 503 for https://example.com/feed.xml");
+			});
+			registerWidget("rss", fetcher);
+			const ctx = makeCtx();
+			const testPage = page([{ size: "full", widgets: [rssWidget] }]);
+
+			const first = await buildPagePayload(testPage, ctx);
+			expect(first.columns[0].widgets[0].error).toBe("HTTP 503 for https://example.com/feed.xml");
+			expect(fetcher).toHaveBeenCalledOnce();
+
+			// Second poll inside the 5s window: same per-widget error, no refetch.
+			const second = await buildPagePayload(testPage, ctx);
+			expect(second.columns[0].widgets[0].error).toBe("HTTP 503 for https://example.com/feed.xml");
+			expect(fetcher).toHaveBeenCalledOnce();
+
+			// `?force` clears the slug prefix — negative entries included — so
+			// an explicit reload always reaches upstream again.
+			ctx.cache.deleteByPrefix("home:");
+			const forced = await buildPagePayload(testPage, ctx);
+			expect(forced.columns[0].widgets[0].error).toBe("HTTP 503 for https://example.com/feed.xml");
+			expect(fetcher).toHaveBeenCalledTimes(2);
+
+			// Past the negative TTL the next poll retries on its own.
+			await vi.advanceTimersByTimeAsync(5_001);
+			const third = await buildPagePayload(testPage, ctx);
+			expect(third.columns[0].widgets[0].error).toBe("HTTP 503 for https://example.com/feed.xml");
+			expect(fetcher).toHaveBeenCalledTimes(3);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	it("recurses into group children and fetches their data", async () => {
 		registerWidget(
 			"rss",

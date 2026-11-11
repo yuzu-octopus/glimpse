@@ -4,25 +4,71 @@ import { isRecord } from "../shared/is-record";
 import { serverWidgets, type WidgetFetchContext } from "./widgets/registry";
 import { fetchWidgetData } from "./widgets/runtime";
 
+/** Max concurrent upstream fetches while building one page. Warmup caps
+ * pages at 6; this caps widgets for the same reason: an unbounded fan-out
+ * turns one poll of a feed-heavy page into N simultaneous upstreams. */
+const MAX_PAGE_FETCH_CONCURRENCY = 6;
+
+interface FetchGate {
+	tryAcquire: () => (() => void) | null;
+	acquire: () => Promise<() => void>;
+}
+
+/** Per-page semaphore: create one per build/stream and close over it, so two
+ * pages building concurrently never starve each other. Guards only the leaf
+ * upstream fetch — containers recurse without holding a slot, or cap=1 would
+ * deadlock a group waiting for its own children. `tryAcquire` keeps the
+ * uncontended path synchronous so leaf fetchers still start before the first
+ * await; only overflow waits in FIFO order. */
+function createFetchGate(limit: number = MAX_PAGE_FETCH_CONCURRENCY): FetchGate {
+	let active = 0;
+	const waiters: Array<() => void> = [];
+	const release = (): void => {
+		const next = waiters.shift();
+		if (next) next();
+		else active -= 1;
+	};
+	return {
+		tryAcquire: (): (() => void) | null => {
+			if (active < limit) {
+				active += 1;
+				return release;
+			}
+			return null;
+		},
+		acquire: (): Promise<() => void> => {
+			if (active < limit) {
+				active += 1;
+				return Promise.resolve(release);
+			}
+			const { promise, resolve } = Promise.withResolvers<() => void>();
+			waiters.push(() => resolve(release));
+			return promise;
+		},
+	};
+}
+
 function containerChildren(config: Record<string, unknown>): Record<string, unknown>[] | null {
 	if (Array.isArray(config.widgets)) return config.widgets;
 	return null;
 }
-
 async function fetchWidget(
 	ctx: WidgetFetchContext,
 	pageSlug: string,
 	path: string,
 	widget: Record<string, unknown>,
+	gate: FetchGate,
 ): Promise<WidgetPayload> {
 	const type = typeof widget.type === "string" ? widget.type : "unknown";
 	const payload: WidgetPayload = { type, config: widget, data: null };
 
-	// Container widgets: recurse into children, no own fetch.
+	// Container widgets: recurse into children, no own fetch — and without
+	// holding a gate slot, so a cap of 1 can't deadlock a group waiting for
+	// its own children to acquire.
 	const children = containerChildren(widget);
 	if (children) {
 		payload.widgets = await Promise.all(
-			children.map((child, i) => fetchWidget(ctx, pageSlug, `${path}/${i}`, child)),
+			children.map((child, i) => fetchWidget(ctx, pageSlug, `${path}/${i}`, child, gate)),
 		);
 		return payload;
 	}
@@ -30,12 +76,18 @@ async function fetchWidget(
 	const fetcher = serverWidgets.get(type as never);
 	if (!fetcher) return payload; // config-only widget
 
+	// Sync fast path first: when the gate is uncontended the fetcher must
+	// start before the first await, or a page of deferred fetchers would
+	// record max depth 1 while an uncapped build records N.
+	const release = gate.tryAcquire() ?? (await gate.acquire());
 	const cacheKey = `${pageSlug}:${path}`;
 	try {
 		const data = await fetchWidgetData(ctx, type, widget, cacheKey, fetcher);
 		payload.data = data as WidgetPayload["data"];
 	} catch (e) {
 		payload.error = e instanceof Error ? e.message : String(e);
+	} finally {
+		release();
 	}
 	return payload;
 }
@@ -45,13 +97,20 @@ export async function buildPagePayload(
 	page: Page & { slug: string },
 	ctx: WidgetFetchContext,
 ): Promise<PagePayload> {
+	const gate = createFetchGate();
 	const buildColumn = (
 		col: { size: "small" | "full"; span?: number; title?: string; widgets: unknown[] },
 		colIdx: number,
 	) =>
 		Promise.all(
 			col.widgets.map((w, i) =>
-				fetchWidget(ctx, page.slug, `c:${colIdx}:${i}`, isRecord(w) ? w : { type: "unknown" }),
+				fetchWidget(
+					ctx,
+					page.slug,
+					`c:${colIdx}:${i}`,
+					isRecord(w) ? w : { type: "unknown" },
+					gate,
+				),
 			),
 		).then((widgets) => ({
 			size: col.size,
@@ -63,7 +122,7 @@ export async function buildPagePayload(
 	const headPromise = Array.isArray(page["head-widgets"])
 		? Promise.all(
 				page["head-widgets"].map((w, i) =>
-					fetchWidget(ctx, page.slug, `h:${i}`, isRecord(w) ? w : { type: "unknown" }),
+					fetchWidget(ctx, page.slug, `h:${i}`, isRecord(w) ? w : { type: "unknown" }, gate),
 				),
 			)
 		: Promise.resolve([]);
@@ -72,7 +131,7 @@ export async function buildPagePayload(
 	const flatWidgetsPromise: Promise<WidgetPayload[]> = isFlat
 		? Promise.all(
 				((page as { widgets?: unknown[] }).widgets ?? []).map((w, i) =>
-					fetchWidget(ctx, page.slug, `w:${i}`, isRecord(w) ? w : { type: "unknown" }),
+					fetchWidget(ctx, page.slug, `w:${i}`, isRecord(w) ? w : { type: "unknown" }, gate),
 				),
 			)
 		: Promise.resolve([]);
@@ -150,10 +209,11 @@ export async function* streamPagePayload(
 	ctx: WidgetFetchContext,
 ): AsyncGenerator<StreamChunk> {
 	const hideHeaders = page["hide-headers"] === true;
+	const gate = createFetchGate();
 	const pending: Promise<StreamChunk>[] = [];
 
 	const push = (path: string, cachePath: string, widget: Record<string, unknown>) => {
-		const task = fetchWidget(ctx, page.slug, cachePath, widget).then((payload) => {
+		const task = fetchWidget(ctx, page.slug, cachePath, widget, gate).then((payload) => {
 			if (hideHeaders) {
 				const forceHide = (widgets: WidgetPayload[]): void => {
 					for (const w of widgets) {

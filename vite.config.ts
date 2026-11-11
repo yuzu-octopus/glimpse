@@ -44,6 +44,8 @@ export default defineConfig({
 				//   client poll  (usePageData STALE_MS)      30s  — live widgets revalidate; unchanged polls skip render
 				//   server live  (shared/live LIVE_TTL_MS)    60s  — clock/weather/markets/monitor/server-stats/system-stats
 				//   server static (shared/live STATIC_TTL_MS)  1h  — everything else
+				//   server override (shared/live TTL_OVERRIDE_MS)  600s  — weather-radar only (RainViewer publishes new frames every ~10min); unpolled, focus/route revalidation only
+				//   server override (shared/live TTL_OVERRIDE_MS)   60s  — model-releases only; unpolled, focus/route revalidation only
 				//   SW api-pages (below)                    300s  — outer offline/stale bound only
 				// NetworkFirst + 3s timeout = stale-while-revalidate: the SW never
 				// masks a fresh network response, and the client never double-fetches

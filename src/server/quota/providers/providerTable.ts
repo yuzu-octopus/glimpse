@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import type { RateWindow, UsageSnapshot } from "../../../shared/widgets/quota-types";
 import { fetchJson } from "../../widgets/http";
 import type { WidgetFetchContext } from "../../widgets/registry";
@@ -38,8 +39,11 @@ export interface TableRow {
 async function readTokenFile(path?: string): Promise<string> {
 	if (!path) return "";
 	try {
-		const f = Bun.file(path);
-		return (await f.exists()) ? (await f.text()).trim() : "";
+		if (typeof Bun !== "undefined") {
+			const f = Bun.file(path);
+			return (await f.exists()) ? (await f.text()).trim() : "";
+		}
+		return (await readFile(path, "utf8").catch(() => "")).trim();
 	} catch {
 		return "";
 	}

@@ -7,7 +7,7 @@ import {
 	useTransition,
 } from "react";
 import type { PagePayload, WidgetPayload } from "../../shared/api";
-import { LIVE_POLL_MS, LIVE_TYPES } from "../../shared/live";
+import { LIVE_POLL_MS, LIVE_TYPES, TTL_OVERRIDE_MS } from "../../shared/live";
 import { CONFIG_ONLY } from "../../shared/widgets";
 import { scheduleWidgetPreload } from "../widgets";
 
@@ -46,6 +46,10 @@ function getLiveKey(payload: PagePayload): "none" | "live" | "homelab" {
 			}
 			if (type === "server-stats" || type === "system-stats") hasHomelab = true;
 			else if (LIVE_TYPES[type]) hasLive = true;
+			else if (TTL_OVERRIDE_MS[type] !== undefined) {
+				// Unpolled TTL override (weather-radar, model-releases): server cache
+				// + focus/route revalidation only — deliberately no interval.
+			}
 		}
 	};
 	if (payload.headWidgets) check(payload.headWidgets);
@@ -132,13 +136,25 @@ function applyChunk(base: PagePayload, path: string, payload: unknown): void {
 	const w = payload as WidgetPayload;
 	let m = /^columns\[(\d+)\]\.widgets\[(\d+)\]$/.exec(path);
 	if (m) {
-		const col = base.columns[Number(m[1])];
-		if (col?.widgets[Number(m[2])]) col.widgets[Number(m[2])] = w;
+		const ci = Number(m[1]);
+		const wi = Number(m[2]);
+		const col = base.columns[ci];
+		if (col?.widgets[wi]) {
+			const widgets = col.widgets.slice();
+			widgets[wi] = w;
+			const columns = base.columns.slice();
+			columns[ci] = { ...col, widgets };
+			base.columns = columns;
+		}
 		return;
 	}
 	m = /^headWidgets\[(\d+)\]$/.exec(path);
 	if (m) {
-		if (base.headWidgets[Number(m[1])]) base.headWidgets[Number(m[1])] = w;
+		const idx = Number(m[1]);
+		if (base.headWidgets[idx]) {
+			base.headWidgets = base.headWidgets.slice();
+			base.headWidgets[idx] = w;
+		}
 		return;
 	}
 	m = /^widgets\[(\d+)\]$/.exec(path);
