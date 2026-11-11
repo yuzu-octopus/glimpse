@@ -92,8 +92,10 @@ describe("timer widget", () => {
 	it("takes the ring ink from the kit CHART_HUES, never purple", () => {
 		const { container } = renderTimer({ duration: "25m" });
 		const ring = screen.getByTestId("timer-ring");
-		// The CSS variable is set inline on the ring button
-		expect(ring).toHaveStyle({ "--ring-hue": CHART_HUES.cyan });
+		// The CSS variable is set inline on the ring button; the token string
+		// lives on the declaration, while jsdom's computed style resolves the
+		// kit fallback to its concrete color.
+		expect(ring.style.getPropertyValue("--ring-hue")).toBe(CHART_HUES.cyan);
 		// The SVG circles exist and are styled by the module
 		const svg = container.querySelector("svg");
 		if (!svg) throw new Error("expected ring svg");

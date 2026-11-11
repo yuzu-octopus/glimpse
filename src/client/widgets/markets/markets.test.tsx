@@ -169,8 +169,10 @@ describe("markets widget", () => {
 		rerender(<TrendChart symbol="X" values={[2, 2, 2]} />);
 		const flat = container.querySelector("rect");
 		if (!flat) throw new Error("expected spark rect");
-		expect(flat.closest("span")).toHaveClass(styles.sparkFlat);
-		expect(flat.closest("span")).toHaveStyle({ "--spark-hue": CHART_HUES.muted });
+		const flatWrap = flat.closest("span") as HTMLElement | null;
+		if (!flatWrap) throw new Error("expected spark wrapper");
+		expect(flatWrap).toHaveClass(styles.sparkFlat);
+		expect(flatWrap.style.getPropertyValue("--spark-hue")).toBe(CHART_HUES.muted);
 	});
 	it("draws the flat-series override from the hue variable, never a literal", () => {
 		const rule = css.match(/\.sparkFlat rect\s*\{([^}]*)\}/)?.[1] ?? "";

@@ -607,8 +607,9 @@ describe("PageView", () => {
 		const grid = document.querySelector('[class*="columns"]') as HTMLElement;
 		expect(grid.className).toContain("collageTiling");
 		// tracks + row unit come from place(), not the measure pass: 12 desktop
-		// tracks at jsdom width, 96px rows; min-column-width is auto-mode only
-		expect(grid.style.gridTemplateColumns).toBe("repeat(12, minmax(0, 1fr))");
+		// tracks at jsdom width, 96px rows; min-column-width is auto-mode only.
+		// jsdom 31 normalizes minmax(0,…) to minmax(0px,…) — the count is the contract.
+		expect(grid.style.gridTemplateColumns).toBe("repeat(12, minmax(0px, 1fr))");
 		expect(grid.style.getPropertyValue("--tile-row")).toBe("96px");
 		expect(grid.style.getPropertyValue("--min-column-width")).toBe("");
 		// span hints still emit their column footprint in collage mode
@@ -684,7 +685,7 @@ describe("PageView", () => {
 		const grid = skeleton.querySelector('[class*="columns"]') as HTMLElement;
 		expect(grid.className).toContain("collageTiling");
 		// skeleton geometry is place() output: 12 desktop tracks, 96px rows
-		expect(grid.style.gridTemplateColumns).toBe("repeat(12, minmax(0, 1fr))");
+		expect(grid.style.gridTemplateColumns).toBe("repeat(12, minmax(0px, 1fr))");
 		expect(grid.style.getPropertyValue("--tile-row")).toBe("96px");
 		const spans = Array.from(grid.querySelectorAll("[data-row-span]")).map((t) =>
 			t.getAttribute("data-row-span"),

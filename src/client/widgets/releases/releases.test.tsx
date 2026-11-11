@@ -205,14 +205,18 @@ describe("releases widget", () => {
 		const body = screen.getByText(/external_statistics_mean_type_message/);
 		expect(body).toHaveAttribute("data-type", "body");
 		// Clamped to whole lines with a real ellipsis — never a half-cut last line.
-		expect(body.getAttribute("style")).toContain("-webkit-line-clamp: 10");
+		// jsdom 30 serialized this as `-webkit-line-clamp: 10`, jsdom 31 as
+		// `line-clamp: 10` — assert the count, not the engine's spelling.
+		expect(body.getAttribute("style")).toMatch(/(-webkit-)?line-clamp:\s*10/);
 		// The untruncated note stays in the DOM for the tooltip and the source link.
 		expect(body.textContent).toBe(notes);
 		// Nested inset: transparent variant + the kit inset surface, never a
 		// default filled card sitting inside the outer widget card.
 		const inset = container.querySelector('[data-variant="transparent"]');
 		expect(inset).toBeInTheDocument();
-		expect(inset).toHaveStyle({ backgroundColor: "var(--color-background)" });
+		// The token string lives on the inline style; jsdom's computed style
+		// resolves var(--color-background), so read the declaration instead.
+		expect((inset as HTMLElement).style.backgroundColor).toBe("var(--color-background)");
 		expect(inset?.querySelector('[data-type="body"]')).toBe(body);
 	});
 });

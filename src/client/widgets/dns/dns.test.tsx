@@ -198,9 +198,15 @@ describe("DnsStats client", () => {
 		const { container } = render(<DnsStatsWidget config={baseConfig} data={sample()} />);
 		const bar = container.querySelector('[data-testid="dns-bar"]');
 		if (!bar) throw new Error("expected dns-bar element");
-		// hues come from the kit's CHART_HUES, never from a hand-picked token
-		expect(bar.querySelector(`.${styles.queries}`)).toHaveStyle({ "--bar-hue": CHART_HUES.cyan });
-		expect(bar.querySelector(`.${styles.blocked}`)).toHaveStyle({ "--bar-hue": CHART_HUES.orange });
+		// hues come from the kit's CHART_HUES, never from a hand-picked token.
+		// Read the inline style: the token string lives there, while jsdom's
+		// computed style resolves CHART_HUES' var(--token, #fallback) to the
+		// concrete fallback.
+		const queries = bar.querySelector<HTMLElement>(`.${styles.queries}`);
+		const blocked = bar.querySelector<HTMLElement>(`.${styles.blocked}`);
+		if (!queries || !blocked) throw new Error("expected bar segments");
+		expect(queries.style.getPropertyValue("--bar-hue")).toBe(CHART_HUES.cyan);
+		expect(blocked.style.getPropertyValue("--bar-hue")).toBe(CHART_HUES.orange);
 		const rule = (selector: string) =>
 			css.match(new RegExp(`${selector}\\s*\\{([^}]*)\\}`))?.[1] ?? "";
 		expect(rule("\\.bar > \\*")).toContain("var(--bar-hue) 10%");

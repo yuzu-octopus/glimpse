@@ -46,10 +46,10 @@ describe("calendar widget", () => {
 		freeze(AUG_2026);
 		render(<Calendar data={null} config={{ type: "calendar", title: "Calendar" }} />);
 		expect(screen.getByText("Calendar")).toBeInTheDocument();
-		expect(dowLabels().slice(0, 3)).toEqual(["Mo", "Tu", "We"]);
+		expect(dowLabels().slice(0, 3)).toEqual(["Mon", "Tue", "Wed"]);
 		// Saturday the 1st lands in the 6th column (index 5)
 		expect(dayOneColumn()).toBe(5);
-		expect(dowLabels()).toEqual(["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]);
+		expect(dowLabels()).toEqual(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
 		// Spillover counts up like a real calendar at both ends: July 27-31 before
 		// Saturday the 1st, September 1-6 after the 31st.
 		const labels = dayCells().map((el) => el.textContent);
@@ -60,7 +60,7 @@ describe("calendar widget", () => {
 	it("starts the week on sunday when configured", () => {
 		freeze(AUG_2026);
 		render(<Calendar data={null} config={{ type: "calendar", "first-day-of-week": "sunday" }} />);
-		expect(dowLabels()).toEqual(["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]);
+		expect(dowLabels()).toEqual(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);
 		// Saturday the 1st is the last column (index 6)
 		expect(dayOneColumn()).toBe(6);
 	});
@@ -70,7 +70,7 @@ describe("calendar widget", () => {
 		render(
 			<Calendar data={null} config={{ type: "calendar", "first-day-of-week": "wednesday" }} />,
 		);
-		expect(dowLabels()).toEqual(["We", "Th", "Fr", "Sa", "Su", "Mo", "Tu"]);
+		expect(dowLabels()).toEqual(["Wed", "Thu", "Fri", "Sat", "Sun", "Mon", "Tue"]);
 		// Saturday the 1st is the 4th column (index 3)
 		expect(dayOneColumn()).toBe(3);
 	});
@@ -80,7 +80,7 @@ describe("calendar widget", () => {
 		// because a config can reach it before validation in tests.
 		freeze(AUG_2026);
 		render(<Calendar data={null} config={{ type: "calendar", "first-day-of-week": "Sunday" }} />);
-		expect(dowLabels()).toEqual(["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]);
+		expect(dowLabels()).toEqual(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);
 		expect(dayOneColumn()).toBe(6);
 	});
 
@@ -109,7 +109,9 @@ describe("calendar month scrub", () => {
 		render(<Calendar data={null} config={{ type: "calendar" }} />);
 		expect(monthLabel()).toBe("August 2026");
 		expect(prev()).toBeEnabled();
-		expect(next()).toBeDisabled();
+		// The kit renders disabled as aria-disabled (focus-preserving) and
+		// swallows the click — never a native disabled that drops focus.
+		expect(next()).toHaveAttribute("aria-disabled", "true");
 	});
 
 	it("steps back a month and re-enables the forward step", async () => {
@@ -137,7 +139,7 @@ describe("calendar month scrub", () => {
 		expect(monthLabel()).toBe("May 2026");
 		for (let i = 0; i < 10; i++) await user.click(next());
 		expect(monthLabel()).toBe("August 2026");
-		expect(next()).toBeDisabled();
+		expect(next()).toHaveAttribute("aria-disabled", "true");
 	});
 	it("stops at the current month when today is the first of the month", async () => {
 		freeze(new Date(2026, 7, 1));
