@@ -16,11 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Streaming speedtest endpoint (`POST /api/speedtest/run`) emitting live progress chunks over NDJSON.
 - Pull-to-refresh on touch devices: dragging down at the top of a page reloads it (bypassing the server cache), with a rubber-banded indicator held until the fetch settles.
 
-### Changed
-- Upgraded `astryx-dracula` upstream theme to 0.5.1.
-- Updated dependencies (`react` 19.3.0, `@astryxdesign/core` 0.6.6, `zod` 4.6.5, `lucide-react` 1.53.0, `systeminformation` 5.33.15, `react-router-dom` 7.18.4) and dev tools.
-- Cleaned up non-null assertions across client hooks, tests, and scripts; Biome exits 0 with 0 errors.
-- Fluid interaction polish: the group-tab underline and the desktop nav's active pill now slide between items (measured from the live element, so uneven labels stay aligned); the widget body cross-fades from skeleton to content; the mobile nav unfolds instead of popping; the stale/offline notice rises in; the timer ring eases instead of ticking linearly.
+	### Changed
+	- Toolchain moved onto bun: `bun check` replaces `tsc --noEmit` (same checker, ~100x faster here), `bun fmt` replaces Biome's formatter, and Biome stays as the linter only (repo `biome.json`, pinned 2.6.2). `biome lint` reports 0 errors, 0 warnings, 0 infos.
+	- Updated every dependency to latest, majors included: `@astryxdesign/core` 0.7.2, `astryx-dracula` 0.6.2, vitest 5, vite-plugin-pwa 2, zod 4.6.7, react 19.3.1, jsdom 30.1.3.
+	- Core 0.7 made the Banner's live-region caller-owned: the app passes `role="alert"` on error Banners via `src/client/kit/banner.ts`, preserving the exact core-0.6 announcement contract.
+	- Upgraded `astryx-dracula` upstream theme to 0.6.2.
+	- Cleaned up every remaining lint diagnostic across client, server, and CSS (non-null assertions narrowed, `!important` removed via layer order, descending specificity reordered, factory/test shapes fixed); Biome exits 0 with 0 errors, 0 warnings, 0 infos.
+	- Fluid interaction polish: the group-tab underline and the desktop nav's active pill now slide between items (measured from the live element, so uneven labels stay aligned); the widget body cross-fades from skeleton to content; the mobile nav unfolds instead of popping; the stale/offline notice rises in; the timer ring eases instead of ticking linearly.
 
 ### Fixed
 - Suppressed nested dark background box on links during mouse-down/active hold (`a:active`, `a[data-astryx-press]`).

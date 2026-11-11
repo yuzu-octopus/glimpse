@@ -151,7 +151,7 @@ Unauthenticated GitHub and Reddit requests are rate-limited, so raise `cache` fo
 
 ## Theming
 
-- **Single theme**: [astryx-dracula](https://github.com/yuzu-octopus/astryx-dracula) (`^0.5.1`, MIT) is a runtime dependency, imported as `astryx-dracula/tokens.css` + `astryx-dracula/theme.css` and applied by `<Theme theme={astryxDraculaTheme} mode="dark">`. It is **dark-only** — Dracula dark is the brand, not a mode.
+	- **Single theme**: [astryx-dracula](https://github.com/yuzu-octopus/astryx-dracula) (`^0.6.2`, MIT) is a runtime dependency, imported as `astryx-dracula/tokens.css` + `astryx-dracula/theme.css` and applied by `<Theme theme={astryxDraculaTheme} mode="dark">`. It is **dark-only** — Dracula dark is the brand, not a mode.
 - **Nothing to switch**: no presets, no light mode, no picker. The Settings dialog has two sections, About and Docs, and no appearance controls. Display mode is hardcoded; nothing about the theme is persisted to `localStorage`.
 - **Custom CSS**: a top-level `custom-css-file: ./custom.css` (path relative to `config.yml`'s directory) is served with the theme and injected last so it wins. This is the only supported appearance override.
 - **No config theme block**: a `theme:` key is a validation error (`config.theme: block removed …`). Delete it; hoist a custom stylesheet to `custom-css-file:`. Run `bun run check-config` to confirm.
@@ -205,13 +205,13 @@ Unauthenticated GitHub and Reddit requests are rate-limited, so raise `cache` fo
 
 ## Development
 
-```bash
-bun run test        # vitest (jsdom); schema + fetcher + component tests per widget, no network
-bun run test:watch
-bunx tsc --noEmit   # strict typecheck gate
-biome check src scripts   # lint+format gate (global fallback config; zero errors)
-bunx react-doctor@latest   # React quality scan (full scan is the gate)
-```
+	```bash
+	bun run test        # vitest (jsdom); schema + fetcher + component tests per widget, no network
+	bun run test:watch
+	bun check           # strict typecheck gate
+	bun run lint        # biome lint gate (repo biome.json; zero diagnostics)
+	bunx react-doctor@latest   # React quality scan (full scan is the gate)
+	```
 
 Each widget ships three files — a shared zod schema, a server fetcher (data widgets), and a client component — joined by typed registries. Layout: `src/client/` (SPA), `src/server/` (Bun API), `src/shared/` (contracts used by both). See [AGENTS.md](AGENTS.md) for the full command list, architecture notes, and the widget checklist.
 
