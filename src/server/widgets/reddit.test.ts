@@ -60,7 +60,11 @@ function makeCtx(
 	};
 }
 
-const redditFetcher = () => serverWidgets.get("reddit")!;
+const redditFetcher = () => {
+	const fn = serverWidgets.get("reddit");
+	if (!fn) throw new Error("expected reddit fetcher");
+	return fn;
+};
 
 describe("reddit fetcher", () => {
 	it("maps posts and filters invalid thumbnails", async () => {

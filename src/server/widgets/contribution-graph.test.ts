@@ -30,7 +30,11 @@ function makeCtx(
 	};
 }
 
-const fetcher = () => serverWidgets.get("contribution-graph")!;
+const fetcher = () => {
+	const fn = serverWidgets.get("contribution-graph");
+	if (!fn) throw new Error("expected contribution-graph fetcher");
+	return fn;
+};
 
 describe("contribution-graph parser", () => {
 	it("parses days regardless of attribute order", () => {

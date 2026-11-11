@@ -113,7 +113,7 @@ function serveDist(pathname: string): Response {
 		// malformed percent-encoding (e.g. %zz) → SPA fallback, same as unknown path
 		filePath = join(dist, "index.html");
 	}
-	if (!filePath.startsWith(dist + sep) && filePath !== dist + sep + "index.html") {
+	if (!filePath.startsWith(dist + sep) && filePath !== `${dist + sep}index.html`) {
 		return json({ error: "forbidden" }, 403);
 	}
 	if (!cachedExistsSync(filePath) || !filePath.startsWith(dist + sep)) {

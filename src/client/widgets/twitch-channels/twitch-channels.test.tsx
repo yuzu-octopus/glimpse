@@ -51,16 +51,18 @@ describe("twitch-channels widget", () => {
 		const avatars = screen.getAllByTestId("twitch-avatar");
 		expect(avatars).toHaveLength(2);
 		// Decorative: the channel name is the row's own link right beside it.
-		expect(avatars[0]!).toHaveAttribute("role", "presentation");
+		expect(avatars[0]?.getAttribute("role")).toBe("presentation");
 		const srcs = avatars.map((a) => a.querySelector("img")?.getAttribute("src"));
 		expect(srcs).toEqual(["https://img/xqc.png", "https://img/shroud.png"]);
 	});
 
 	it("renders a channel with no avatar rather than a broken one", () => {
+		const [, ghost] = streams;
+		if (!ghost) throw new Error("expected ghost fixture");
 		render(
 			<TwitchChannels
 				config={{ type: "twitch-channels" }}
-				data={[{ ...streams[1]!, login: "ghost", displayName: "Ghost", profileImageUrl: null }]}
+				data={[{ ...ghost, login: "ghost", displayName: "Ghost", profileImageUrl: null }]}
 			/>,
 		);
 		expect(screen.queryByTestId("twitch-avatar")).toBeNull();

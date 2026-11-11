@@ -126,7 +126,7 @@ export function Weather({ config, data, error, isLoading }: WidgetComponentProps
 	}
 	const today = todayKey(w.timezone ?? null);
 	const day = (date: string) =>
-		date === today ? "Today" : DAY_NAMES_UTC.format(new Date(date + "T00:00:00Z"));
+		date === today ? "Today" : DAY_NAMES_UTC.format(new Date(`${date}T00:00:00Z`));
 
 	const unit = (cfg.units ?? "metric") === "metric" ? "C" : "F";
 	const condition = w.current.code != null ? WEATHER_CODES[w.current.code] : undefined;

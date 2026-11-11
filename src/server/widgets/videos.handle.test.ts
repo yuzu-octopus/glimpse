@@ -17,7 +17,11 @@ function makeCtx(
 	};
 }
 
-const videosFetcher = () => serverWidgets.get("videos")!;
+const videosFetcher = () => {
+	const fn = serverWidgets.get("videos");
+	if (!fn) throw new Error("expected videos fetcher");
+	return fn;
+};
 
 const FEED = `<?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">

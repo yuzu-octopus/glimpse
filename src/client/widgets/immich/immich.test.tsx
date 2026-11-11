@@ -75,9 +75,9 @@ describe("immich widget", () => {
 		// First card has subtitle: null, date: '2024-05-01T10:00:00'
 		// ageOf returns 'today' or 'Xd ago' depending on current date
 		const cards = screen.getAllByTestId("media-card");
-		const meta = cards[0].querySelector('[class*="meta"]');
+		const meta = cards[0]?.querySelector('[class*="meta"]');
 		expect(meta).toBeInTheDocument();
-		expect(meta!.textContent).toMatch(/\d+d ago|today|yesterday/);
+		expect(meta?.textContent).toMatch(/\d+d ago|today|yesterday/);
 	});
 
 	it("renders no meta line when both subtitle and date are null", () => {

@@ -64,8 +64,8 @@ describe("videos widget", () => {
 		const img = container.querySelector<HTMLImageElement>(
 			'img[src="https://i.ytimg.com/vi/1/hqdefault.jpg"]',
 		);
-		expect(img).not.toBeNull();
-		fireEvent.error(img!);
+		if (!img) throw new Error("expected thumbnail image");
+		fireEvent.error(img);
 
 		expect(container.querySelector('img[src="https://i.ytimg.com/vi/1/hqdefault.jpg"]')).toBeNull();
 		expect(container.querySelector(`.${styles.cardThumbPlaceholder}`)).toBeInTheDocument();
@@ -84,11 +84,11 @@ describe("videos widget", () => {
 		// and the grid container carries the class that triggers compact mode.
 		const { container } = render(<Videos config={{ type: "videos" }} data={{ videos }} />);
 		const grid = container.querySelector('[class*="gridWrap"]');
-		expect(grid).toBeInTheDocument();
+		if (!grid) throw new Error("expected grid container");
 		// Cards nest inside body wrappers — query the module token within the
 		// grid. `_card_<hash>` matches exactly; substring "card" also hits
 		// cardThumb/cardTitle/cardMeta sub-elements.
-		const cards = Array.from(grid!.querySelectorAll('[class*="_card_"]')).filter((el) =>
+		const cards = Array.from(grid.querySelectorAll('[class*="_card_"]')).filter((el) =>
 			/(?:^|\s)_card_[a-z0-9]+(?:\s|$)/.test((el as HTMLElement).className),
 		);
 		expect(cards.length).toBe(2);
@@ -99,7 +99,8 @@ describe("videos widget", () => {
 	// keeps only the column stack.
 	it("mounts each card as a ClickableCard, not a link wrapping the tile", () => {
 		const { container } = render(<Videos config={{ type: "videos" }} data={{ videos }} />);
-		const card = container.querySelector<HTMLElement>(`.${styles.card}`)!;
+		const card = container.querySelector<HTMLElement>(`.${styles.card}`);
+		if (!card) throw new Error("expected card element");
 		expect(card.tagName).toBe("DIV");
 		// one real link, the card's own, named for the video it opens
 		expect(card.querySelectorAll("a")).toHaveLength(1);
@@ -108,8 +109,8 @@ describe("videos widget", () => {
 
 	it("leaves the card frame to the kit: no inline background, border or radius", () => {
 		const { container } = render(<Videos config={{ type: "videos" }} data={{ videos }} />);
-		const card = container.querySelector<HTMLElement>(`.${styles.card}`)!;
-		// The card element itself carries no inline frame styles — the kit's
+		const card = container.querySelector<HTMLElement>(`.${styles.card}`);
+		if (!card) throw new Error("expected card element");
 		// ClickableCard owns the visual frame.
 		expect(card.style.background).toBe("");
 		expect(card.style.border).toBe("");
@@ -198,12 +199,14 @@ describe("videos widget", () => {
 		const { container } = render(<Videos config={{ type: "videos" }} data={{ videos }} />);
 		// Second video has thumbnail: null — should show placeholder, not broken img
 		const grid = container.querySelector('[class*="gridWrap"]');
-		const cards = Array.from(grid!.querySelectorAll('[class*="_card_"]')).filter((el) =>
+		if (!grid) throw new Error("expected grid container");
+		const cards = Array.from(grid.querySelectorAll('[class*="_card_"]')).filter((el) =>
 			/(?:^|\s)_card_[a-z0-9]+(?:\s|$)/.test((el as HTMLElement).className),
 		);
-		const placeholder = cards[1].querySelector('[class*="cardThumbPlaceholder"]');
-		expect(placeholder).toBeInTheDocument();
-		expect(cards[1].querySelector("img")).toBeNull();
+		const second = cards[1];
+		if (!second) throw new Error("expected second card");
+		expect(second.querySelector('[class*="cardThumbPlaceholder"]')).toBeInTheDocument();
+		expect(second.querySelector("img")).toBeNull();
 	});
 
 	it("handles special characters in title and channel", () => {

@@ -13,6 +13,8 @@ const REPOS: TrendingData = [
 		url: "https://github.com/acme/widget",
 	},
 ];
+const [REPO] = REPOS;
+if (!REPO) throw new Error("expected repo fixture");
 
 describe("github-trending widget", () => {
 	it("renders the repo, its language and its star count", () => {
@@ -31,7 +33,7 @@ describe("github-trending widget", () => {
 		const { container } = render(
 			<Trending
 				config={{ type: "github-trending" }}
-				data={[{ ...REPOS[0]!, stars: null as unknown as number }]}
+				data={[{ ...REPO, stars: null as unknown as number }]}
 			/>,
 		);
 		expect(screen.getByText("acme/widget")).toBeInTheDocument();
@@ -40,10 +42,7 @@ describe("github-trending widget", () => {
 
 	it("drops the star count when the scrape produced NaN", () => {
 		const { container } = render(
-			<Trending
-				config={{ type: "github-trending" }}
-				data={[{ ...REPOS[0]!, stars: Number.NaN }]}
-			/>,
+			<Trending config={{ type: "github-trending" }} data={[{ ...REPO, stars: Number.NaN }]} />,
 		);
 		expect(screen.getByText("acme/widget")).toBeInTheDocument();
 		expect(container.textContent).not.toContain("★");

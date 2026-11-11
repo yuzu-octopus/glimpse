@@ -19,7 +19,7 @@ function readFanRpm(): number | null {
 						readFileSync(join("/sys/class/hwmon", entry, fan), "utf8").trim(),
 						10,
 					);
-					if (!isNaN(val) && val > 0) return val;
+					if (!Number.isNaN(val) && val > 0) return val;
 				}
 			} catch {
 				/* skip unreadable hwmon entry */
@@ -42,7 +42,7 @@ function readGpuLoad(): number | null {
 							readFileSync(join("/sys/class/drm", card, "engine", engine, "busy"), "utf8").trim(),
 							10,
 						);
-						if (!isNaN(val) && (maxLoad === null || val > maxLoad)) maxLoad = val;
+						if (!Number.isNaN(val) && (maxLoad === null || val > maxLoad)) maxLoad = val;
 					} catch {
 						/* skip unreadable engine */
 					}

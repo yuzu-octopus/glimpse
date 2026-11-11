@@ -239,11 +239,11 @@ function stripHtml(html: string): string {
 		.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]*);/g, (match, entity: string) => {
 			if (entity.startsWith("#x") || entity.startsWith("#X")) {
 				const code = parseInt(entity.slice(2), 16);
-				return isNaN(code) ? match : String.fromCodePoint(code);
+				return Number.isNaN(code) ? match : String.fromCodePoint(code);
 			}
 			if (entity.startsWith("#")) {
 				const code = parseInt(entity.slice(1), 10);
-				return isNaN(code) ? match : String.fromCodePoint(code);
+				return Number.isNaN(code) ? match : String.fromCodePoint(code);
 			}
 			return NAMED_ENTITIES[entity] ?? match;
 		})
@@ -328,7 +328,7 @@ registerWidget("rss", async (ctx, config) => {
 			const slice = parsed.items.slice(0, perFeedLimit);
 			return slice.map((item) => ({
 				title: itemTitle(item),
-				url: linkPrefix ? linkPrefix + itemLink(item) : itemLink(item),
+				url: linkPrefix ? `${linkPrefix}${itemLink(item)}` : itemLink(item),
 				published: itemPublished(item),
 				source: feed.title ?? parsed.title ?? "",
 				thumbnail: extractThumbnail(item),

@@ -42,10 +42,10 @@ export function domToObj(el: Element): unknown {
 	}
 	// preserve text if mixed content (richer behavior)
 	const textNodes = Array.from(el.childNodes).filter(
-		(n) => n.nodeType === 3 && n.textContent?.trim(),
+		(n) => n.nodeType === 3 && (n.textContent ?? "").trim() !== "",
 	);
 	if (textNodes.length && children.length) {
-		const t = textNodes.map((n) => n.textContent!.trim()).join(" ");
+		const t = textNodes.map((n) => (n.textContent ?? "").trim()).join(" ");
 		if (t) obj["#text"] = t;
 	}
 	return obj;

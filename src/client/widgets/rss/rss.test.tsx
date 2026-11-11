@@ -159,7 +159,8 @@ describe("rss widget", () => {
 				data={{ items }}
 			/>,
 		);
-		const card = container.querySelector<HTMLElement>(`.${styles.card}`)!;
+		const card = container.querySelector<HTMLElement>(`.${styles.card}`);
+		if (!card) throw new Error("expected card element");
 		expect(card.tagName).toBe("DIV");
 		// one real link, the card's own, named for the post it opens
 		expect(card.querySelectorAll("a")).toHaveLength(1);
@@ -173,7 +174,8 @@ describe("rss widget", () => {
 				data={{ items }}
 			/>,
 		);
-		const card = container.querySelector<HTMLElement>(`.${styles.card2}`)!;
+		const card = container.querySelector<HTMLElement>(`.${styles.card2}`);
+		if (!card) throw new Error("expected overlay card element");
 		expect(card.tagName).toBe("DIV");
 		expect(card.contains(screen.getByRole("link", { name: "First post" }))).toBe(true);
 	});

@@ -31,7 +31,11 @@ function makeCtx(fetchImpl: (url: string) => Promise<Response>): WidgetFetchCont
 	};
 }
 
-const videosFetcher = () => serverWidgets.get("videos")!;
+const videosFetcher = () => {
+	const fn = serverWidgets.get("videos");
+	if (!fn) throw new Error("expected videos fetcher");
+	return fn;
+};
 
 describe("videos fetcher", () => {
 	it("maps entries with thumbnail and sorts newest first", async () => {

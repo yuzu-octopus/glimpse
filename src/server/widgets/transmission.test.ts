@@ -43,7 +43,11 @@ function makeCtx(
 	};
 }
 
-const fetcher = () => serverWidgets.get("transmission")!;
+const fetcher = () => {
+	const fn = serverWidgets.get("transmission");
+	if (!fn) throw new Error("expected transmission fetcher");
+	return fn;
+};
 
 describe("transmission fetcher", () => {
 	it("retries the 409 with the session id then maps torrents", async () => {

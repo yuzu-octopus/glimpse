@@ -38,27 +38,26 @@
 		--container-padding-block-end: 8px;
 		display: grid;
 		grid-template-columns: 112px minmax(0, 1fr);
-		grid-template-areas:
-			"thumb title"
-			"thumb meta";
 		align-items: center;
 		column-gap: 10px;
 	}
-
 	.gridWrap .cardThumb,
 	.gridWrap .cardThumbPlaceholder {
-		grid-area: thumb;
+		grid-column: 1;
+		grid-row: 1 / span 2;
 		border-radius: var(--border-radius);
 	}
 
 	.gridWrap .cardTitle {
-		grid-area: title;
+		grid-column: 2;
+		grid-row: 1;
 		align-self: end;
 		padding: 0;
 	}
 
 	.gridWrap .cardMeta {
-		grid-area: meta;
+		grid-column: 2;
+		grid-row: 2;
 		align-self: start;
 		margin: 2px 0 0;
 	}

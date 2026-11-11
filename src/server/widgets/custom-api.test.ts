@@ -29,7 +29,11 @@ function makeCtx(
 	};
 }
 
-const customApiFetcher = () => serverWidgets.get("custom-api")!;
+const customApiFetcher = () => {
+	const fn = serverWidgets.get("custom-api");
+	if (!fn) throw new Error("expected custom-api fetcher");
+	return fn;
+};
 
 describe("custom-api fetcher", () => {
 	it("maps JSONPath fields from a root array and appends parameters", async () => {
@@ -92,8 +96,10 @@ describe("custom-api fetcher", () => {
 		const ctx = makeCtx(async (_url, init) => {
 			expect(init?.method).toBe("POST");
 			expect(init?.body).toBe('{"query":"x"}');
-			expect(init?.headers).toBeDefined();
-			expect((init!.headers as Record<string, string>)["content-type"]).toBe("application/json");
+			const headers = init?.headers as Record<string, string> | undefined;
+			expect(headers).toBeDefined();
+			if (!headers) throw new Error("expected request headers");
+			expect(headers["content-type"]).toBe("application/json");
 			return new Response(JSON.stringify({ ok: true }), { status: 200 });
 		});
 		const data = (await customApiFetcher()(ctx, {
@@ -119,8 +125,10 @@ describe("custom-api fetcher", () => {
 		const ctx = makeCtx(async (_url, init) => {
 			expect(init?.method).toBe("POST");
 			expect(init?.body).toBe('{"query":"x"}');
-			expect(init?.headers).toBeDefined();
-			expect((init!.headers as Record<string, string>)["content-type"]).toBe("application/json");
+			const headers = init?.headers as Record<string, string> | undefined;
+			expect(headers).toBeDefined();
+			if (!headers) throw new Error("expected request headers");
+			expect(headers["content-type"]).toBe("application/json");
 			return new Response(JSON.stringify([{ title: "A" }]), { status: 200 });
 		});
 		const data = (await customApiFetcher()(ctx, {

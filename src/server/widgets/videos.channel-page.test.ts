@@ -180,7 +180,11 @@ function makeCtx(channelPage: string = CHANNEL_PAGE): WidgetFetchContext {
 	};
 }
 
-const videosFetcher = () => serverWidgets.get("videos")!;
+const videosFetcher = () => {
+	const fn = serverWidgets.get("videos");
+	if (!fn) throw new Error("expected videos fetcher");
+	return fn;
+};
 
 describe("videos: channel-page fallback", () => {
 	it("resolves real titles when the channel RSS feed is empty", async () => {

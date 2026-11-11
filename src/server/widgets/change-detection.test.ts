@@ -26,7 +26,11 @@ function makeCtx(
 	};
 }
 
-const fetcher = () => serverWidgets.get("change-detection")!;
+const fetcher = () => {
+	const fn = serverWidgets.get("change-detection");
+	if (!fn) throw new Error("expected change-detection fetcher");
+	return fn;
+};
 const URL = "https://example.com/prices";
 
 describe("change-detection fetcher", () => {
@@ -44,7 +48,8 @@ describe("change-detection fetcher", () => {
 		// Share the stored hash across polls via the first context's cache.
 		const prev = ctx.cache.get<{ hash: string; changedAt: string | null }>(
 			`change-detection:${URL}:`,
-		)!;
+		);
+		if (!prev) throw new Error("expected stored hash");
 		ctx2.cache.set(`change-detection:${URL}:`, prev, 1000);
 		const changed = (await fetcher()(ctx2, cfg)) as Array<{
 			url: string;
@@ -68,7 +73,8 @@ describe("change-detection fetcher", () => {
 		const cfg = { type: "change-detection", urls: [URL] };
 		await fetcher()(ctx, cfg);
 		const key = `change-detection:${URL}:`;
-		const seeded = ctx.cache.get<{ hash: string; changedAt: string | null }>(key)!;
+		const seeded = ctx.cache.get<{ hash: string; changedAt: string | null }>(key);
+		if (!seeded) throw new Error("expected stored hash");
 
 		// Seed a prior detection so "prior changedAt" is something to preserve.
 		const priorAt = "2026-01-02T03:04:05.000Z";

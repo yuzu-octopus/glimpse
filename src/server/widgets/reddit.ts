@@ -95,7 +95,7 @@ registerWidget("reddit", async (ctx, config) => {
 
 	const proxy: ProxyConfig | undefined =
 		typeof cfg.proxy === "string" ? { url: cfg.proxy } : cfg.proxy;
-	if (proxy && proxy.url.startsWith("http://") && !proxy["allow-insecure"]) {
+	if (proxy?.url.startsWith("http://") && !proxy["allow-insecure"]) {
 		throw new Error(`reddit: insecure proxy "${proxy.url}" requires allow-insecure: true`);
 	}
 

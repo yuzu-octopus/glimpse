@@ -37,7 +37,8 @@ describe("T4 TDD failing", () => {
 			});
 		};
 		const ctx = makeHnCtx(fetchImpl as unknown as (url: string) => Promise<Response>);
-		const fetcher = serverWidgets.get("hacker-news")!;
+		const fetcher = serverWidgets.get("hacker-news");
+		if (!fetcher) throw new Error("expected hacker-news fetcher");
 		await fetcher(ctx, { type: "hacker-news", limit: 20 });
 		// After fix, maxConcurrent should be <=6
 		expect(maxConcurrent).toBeLessThanOrEqual(6);
@@ -62,7 +63,8 @@ describe("T4 TDD failing", () => {
 			cache: new TtlCache(),
 			singleflight: new Singleflight(),
 		};
-		const fetcher = serverWidgets.get("reddit")!;
+		const fetcher = serverWidgets.get("reddit");
+		if (!fetcher) throw new Error("expected reddit fetcher");
 		const cfg = { type: "reddit", subreddit: "selfhosted" } as unknown as Record<string, unknown>;
 		await Promise.all([fetcher(ctx, cfg), fetcher(ctx, cfg), fetcher(ctx, cfg)]);
 		expect(tokenCalls).toBe(1);
@@ -82,20 +84,21 @@ describe("T4 TDD failing", () => {
 			cache: new TtlCache(),
 			singleflight: new Singleflight(),
 		};
-		const fetcher = serverWidgets.get("videos")!;
+		const fetcher = serverWidgets.get("videos");
+		if (!fetcher) throw new Error("expected videos fetcher");
 		const cfg = { type: "videos", channels: ["UC1234567890123456789012"] } as unknown as Record<
 			string,
 			unknown
 		>;
 		const first = (await fetcher(ctx, cfg)) as { videos: Video[] };
-		expect(first.videos[0].title).toBe("V1");
+		expect(first.videos[0]?.title).toBe("V1");
 		// advance past STATIC_TTL_MS (3_600_000) + a bit
 		shouldFail = true;
 		vi.advanceTimersByTime(3_600_000 + 1000);
 		const pending = fetcher(ctx, cfg) as Promise<{ videos: Video[] }>;
 		await vi.advanceTimersByTimeAsync(4000);
 		const second = await pending;
-		expect(second.videos[0].title).toBe("V1");
+		expect(second.videos[0]?.title).toBe("V1");
 		vi.useRealTimers();
 	});
 

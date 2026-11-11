@@ -307,7 +307,7 @@ function DelayedSkeleton({ delay = 250, children }: { delay?: number; children: 
 		const id = window.setTimeout(() => setShow(true), delay);
 		return () => window.clearTimeout(id);
 	}, [delay]);
-	return show ? <>{children}</> : null;
+	return show ? children : null;
 }
 
 /** Stable per-footprint style refs so memoized columns don't see a fresh
@@ -864,9 +864,10 @@ export function PageView({
 	const refresh = useCallback(() => reload(true), [reload]);
 	if (!data && !error) return <LoadingPage page={page} />;
 	if (error && !data) return <PageError error={error} />;
+	if (!data) return <PageError error={error ?? "Failed to load page"} />;
 
 	// Stale-while-revalidate: data is still rendered while isValidating; no skeleton flicker
-	const resolved = data!;
+	const resolved = data;
 	const hideHeaders = resolved["hide-headers"] === true || resolved.hideHeaders === true;
 	const tilingProps = getTilingProps(resolved.tiling, resolved.minColumnWidth);
 	return (

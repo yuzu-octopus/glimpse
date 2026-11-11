@@ -96,8 +96,8 @@ describe("timer widget", () => {
 		expect(ring).toHaveStyle({ "--ring-hue": CHART_HUES.cyan });
 		// The SVG circles exist and are styled by the module
 		const svg = container.querySelector("svg");
-		expect(svg).not.toBeNull();
-		const circles = svg!.querySelectorAll("circle");
+		if (!svg) throw new Error("expected ring svg");
+		const circles = svg.querySelectorAll("circle");
 		expect(circles).toHaveLength(2);
 		// The ring value circle has a stroke-dasharray (the arc)
 		expect(circles[1].getAttribute("stroke-dasharray")).not.toBeNull();
@@ -141,8 +141,8 @@ describe("timer widget", () => {
 		renderTimer({ duration: "10m", id });
 		const key = `glimpse.timer.${id}`;
 		const stored = localStorage.getItem(key);
-		expect(stored).not.toBeNull();
-		const parsed = JSON.parse(stored!);
+		if (!stored) throw new Error("expected persisted timer state");
+		const parsed = JSON.parse(stored);
 		expect(parsed.seconds).toBe(600);
 		expect(parsed.mode).toBe("timer");
 		expect(parsed.running).toBe(false);

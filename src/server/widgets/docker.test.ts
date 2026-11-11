@@ -146,10 +146,10 @@ describe("docker-containers fetcher", () => {
 		const data = await fetchDockerContainers(mockFetch as unknown as typeof fetch, {
 			type: "docker-containers",
 		});
-		const pihole = data.find((c) => c.name === "pihole")!;
+		const pihole = data.find((c) => c.name === "pihole");
 		// The bundled SVG is a black currentColor path — invisible unfilled on a
 		// dark-only theme, so the default asks to be inverted.
-		expect(pihole.icon).toEqual({ url: "/dockerhub.svg", autoInvert: true });
+		expect(pihole?.icon).toEqual({ url: "/dockerhub.svg", autoInvert: true });
 	});
 
 	it("resolves a glance.icon label through the shared customIconField port", async () => {
@@ -182,10 +182,10 @@ describe("docker-containers fetcher", () => {
 		// widget does not own — pinning the exact string would break on any
 		// icon-library path change. What the widget owns is that a label beat the
 		// DEFAULT_ICON fallback and asked to be inverted.
-		expect(a!.icon!.url).not.toBe("/dockerhub.svg");
-		expect(a!.icon!.autoInvert).toBe(true);
+		expect(a?.icon?.url).not.toBe("/dockerhub.svg");
+		expect(a?.icon?.autoInvert).toBe(true);
 		// A real logo keeps its own colours, so it must not be inverted.
-		expect(b!.icon).toEqual({ url: "https://cdn.example/logo.png", autoInvert: false });
+		expect(b?.icon).toEqual({ url: "https://cdn.example/logo.png", autoInvert: false });
 	});
 
 	it("lets the containers config override beat the label on the container", async () => {
@@ -197,7 +197,7 @@ describe("docker-containers fetcher", () => {
 			type: "docker-containers",
 			containers: { jellyfin: { icon: "https://cdn.example/immich.svg" } },
 		});
-		expect(override.find((c) => c.name === "jellyfin")!.icon).toEqual({
+		expect(override.find((c) => c.name === "jellyfin")?.icon).toEqual({
 			url: "https://cdn.example/immich.svg",
 			autoInvert: false,
 		});
@@ -250,15 +250,17 @@ describe("docker-containers fetcher", () => {
 	it("throws on non-200", async () => {
 		mockFetch.mockResolvedValueOnce(new Response("denied", { status: 403 }));
 		const ctx = makeCtx();
-		await expect(
-			serverWidgets.get("docker-containers")!(ctx, { type: "docker-containers" }),
-		).rejects.toThrow(/non-200/);
+		const fetcher = serverWidgets.get("docker-containers");
+		if (!fetcher) throw new Error("expected docker-containers fetcher");
+		await expect(fetcher(ctx, { type: "docker-containers" })).rejects.toThrow(/non-200/);
 	});
 
 	it("caches via ctx.cache + singleflight", async () => {
 		const ctx = makeCtx();
-		await serverWidgets.get("docker-containers")!(ctx, { type: "docker-containers" });
-		await serverWidgets.get("docker-containers")!(ctx, { type: "docker-containers" });
+		const fetcher = serverWidgets.get("docker-containers");
+		if (!fetcher) throw new Error("expected docker-containers fetcher");
+		await fetcher(ctx, { type: "docker-containers" });
+		await fetcher(ctx, { type: "docker-containers" });
 		expect(mockFetch).toHaveBeenCalledTimes(1);
 	});
 

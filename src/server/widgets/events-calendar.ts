@@ -77,7 +77,8 @@ function expand(
 	now: number,
 	windowEnd: number,
 ): Array<{ start: Date; end: Date | null }> {
-	const start = ev.start!.date;
+	const start = ev.start?.date;
+	if (!start) return [];
 	const durationMs = ev.end ? Math.max(ev.end.getTime() - start.getTime(), 0) : DAY_MS;
 	let stepDays = 1;
 	let count = 1;
@@ -112,13 +113,15 @@ function expand(
 function collectEvents(text: string, now: number, windowEnd: number): CalendarEvent[] {
 	const out: CalendarEvent[] = [];
 	for (const ev of parseRawEvents(unfold(text))) {
+		const start = ev.start;
+		if (!start) continue;
 		for (const occ of expand(ev, now, windowEnd)) {
 			out.push({
 				title: ev.summary ?? "(untitled event)",
 				startISO: occ.start.toISOString(),
 				...(occ.end ? { endISO: occ.end.toISOString() } : {}),
 				...(ev.location ? { location: ev.location } : {}),
-				allDay: ev.start!.allDay,
+				allDay: start.allDay,
 			});
 		}
 	}

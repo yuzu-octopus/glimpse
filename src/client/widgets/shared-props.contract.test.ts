@@ -73,7 +73,7 @@ for (const { path, text } of sources) {
 		let depth = 0;
 		let end = -1;
 		for (let j = i + "<WidgetChrome".length; j < text.length; j++) {
-			const c = text[j]!;
+			const c = text[j] ?? "";
 			if (c === "{" || c === "(" || c === "[") depth++;
 			else if (c === "}" || c === ")" || c === "]") depth--;
 			else if (c === ">" && depth === 0) {

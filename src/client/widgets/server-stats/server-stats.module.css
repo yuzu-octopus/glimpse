@@ -10,6 +10,10 @@
 	border-top: 1px solid var(--color-separator);
 }
 
+.serverName {
+	flex: 1;
+	min-width: 0;
+}
 .serverDown .serverName {
 	color: var(--color-text-base-muted);
 }
@@ -22,11 +26,6 @@
 .serverIconDown {
 	color: var(--color-negative);
 	flex-shrink: 0;
-}
-
-.serverName {
-	flex: 1;
-	min-width: 0;
 }
 
 .uptime {

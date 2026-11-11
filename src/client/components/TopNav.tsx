@@ -35,7 +35,7 @@ export function TopNav({ width }: { width?: "default" | "slim" | "wide" }) {
 		width: 0,
 		opacity: 0,
 	});
-
+	// biome-ignore lint/correctness/useExhaustiveDependencies: the effect measures the aria-current tab, which derives from pathname (selection) and pages (tab list) — both drive the pill position, neither is removable
 	useLayoutEffect(() => {
 		const navLinks = navLinksRef.current;
 		if (!navLinks) return;

@@ -148,7 +148,11 @@ function makeCtx(
 	};
 }
 
-const videosFetcher = () => serverWidgets.get("videos")!;
+const videosFetcher = () => {
+	const fn = serverWidgets.get("videos");
+	if (!fn) throw new Error("expected videos fetcher");
+	return fn;
+};
 
 /** The ids the widget showed, newest first — the only thing that matters here. */
 const shown = (data: Payload) => data.videos.map((v) => v.url.split("v=")[1]);
@@ -270,7 +274,7 @@ describe("playlist order: the feed window is a positional window, not the newest
 			if (url.includes("/feeds/videos.xml"))
 				return new Response(OLDEST_FIRST_FEED, { status: 200 });
 			const body = init?.body as string | undefined;
-			if (body && body.includes("continuation")) {
+			if (body?.includes("continuation")) {
 				return new Response(
 					JSON.stringify(browseBody([lockup("zzzzzzzzzzz", "The actual newest", "1 day ago")])),
 					{ status: 200 },
@@ -360,7 +364,7 @@ describe("playlist order: the feed window is a positional window, not the newest
 	it("keeps the playlist: prefix out of the listing request", async () => {
 		const seen: string[] = [];
 		const ctx = makeCtx(async (url, init) => {
-			seen.push(`${init?.method ?? "GET"} ${url}${init?.body ? " " + init.body : ""}`);
+			seen.push(`${init?.method ?? "GET"} ${url}${init?.body ? ` ${init.body}` : ""}`);
 			if (url.includes("/feeds/videos.xml"))
 				return new Response(OLDEST_FIRST_FEED, { status: 200 });
 			const listing = [

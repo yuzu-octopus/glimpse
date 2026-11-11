@@ -18,6 +18,11 @@ function ctxWith(
 	};
 }
 
+function aiQuotaFetcher() {
+	const fn = serverWidgets.get("ai-quota");
+	if (!fn) throw new Error("expected ai-quota fetcher");
+	return fn;
+}
 describe("ai-quota widget", () => {
 	it("returns snapshot via fetchUsage", async () => {
 		const payload = {
@@ -27,7 +32,7 @@ describe("ai-quota widget", () => {
 			},
 		};
 		const f = vi.fn(async () => new Response(JSON.stringify(payload), { status: 200 }));
-		const fn = serverWidgets.get("ai-quota" as never)!;
+		const fn = aiQuotaFetcher();
 		const res = await fn(ctxWith(f), { type: "ai-quota", provider: "codex" });
 		const data = res as AiQuotaData;
 		expect(data.provider).toBe("codex");
@@ -46,7 +51,7 @@ describe("ai-quota widget", () => {
 			inits.push(init ?? {});
 			return new Response(JSON.stringify(payload), { status: 200 });
 		});
-		const fn = serverWidgets.get("ai-quota" as never)!;
+		const fn = aiQuotaFetcher();
 		await fn(ctxWith(f, { CODEX_TOKEN: "env-tok" }), {
 			type: "ai-quota",
 			provider: "codex",
@@ -63,7 +68,7 @@ describe("ai-quota widget", () => {
 		// HOME points nowhere so the provider's default credential file cannot
 		// stand in for the env var this test is about.
 		const f = vi.fn(async () => new Response("{}", { status: 200 }));
-		const fn = serverWidgets.get("ai-quota" as never)!;
+		const fn = aiQuotaFetcher();
 		await expect(
 			fn(ctxWith(f, { HOME: "/nonexistent" }), { type: "ai-quota", provider: "codex" }),
 		).rejects.toThrow(/CODEX_API_KEY|no token/);

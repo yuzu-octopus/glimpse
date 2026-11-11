@@ -49,10 +49,10 @@ describe("ensureWidgetLoaded", () => {
 
 	it("drops the iframe/html alias alongside the entry that failed", async () => {
 		const loader = vi.fn<() => Promise<unknown>>().mockRejectedValue(new Error("chunk 404"));
-		const realHtml = widgetLoaders["html"];
-		const realIframe = widgetLoaders["iframe"];
-		widgetLoaders["html"] = loader;
-		widgetLoaders["iframe"] = loader;
+		const realHtml = widgetLoaders.html;
+		const realIframe = widgetLoaders.iframe;
+		widgetLoaders.html = loader;
+		widgetLoaders.iframe = loader;
 		try {
 			// iframe and html share one import, so loading html warms the iframe
 			// alias against the same promise.
@@ -64,8 +64,8 @@ describe("ensureWidgetLoaded", () => {
 			await ensureWidgetLoaded("iframe");
 			expect(loader).toHaveBeenCalledTimes(3);
 		} finally {
-			widgetLoaders["html"] = realHtml;
-			widgetLoaders["iframe"] = realIframe;
+			widgetLoaders.html = realHtml;
+			widgetLoaders.iframe = realIframe;
 		}
 	});
 

@@ -26,7 +26,11 @@ function makeCtx(
 	};
 }
 
-const fetcher = () => serverWidgets.get("immich")!;
+const fetcher = () => {
+	const fn = serverWidgets.get("immich");
+	if (!fn) throw new Error("expected immich fetcher");
+	return fn;
+};
 
 describe("immich fetcher", () => {
 	it("maps search results to media items with poster + photo links", async () => {

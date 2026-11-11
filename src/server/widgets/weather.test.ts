@@ -19,7 +19,11 @@ function makeCtx(routes: Record<string, unknown>): WidgetFetchContext {
 	};
 }
 
-const weatherFetcher = () => serverWidgets.get("weather")!;
+const weatherFetcher = () => {
+	const fn = serverWidgets.get("weather");
+	if (!fn) throw new Error("expected weather fetcher");
+	return fn;
+};
 
 describe("weather fetcher", () => {
 	it("geocodes then fetches the forecast", async () => {

@@ -15,7 +15,7 @@ export async function webFetchJson<T>(
 		Cookie: cookie,
 		"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
 		Accept: "application/json",
-		Referer: new URL(url).origin + "/",
+		Referer: `${new URL(url).origin}/`,
 	};
 	if (csrf) headers["X-CSRFTOKEN"] = csrf;
 	return fetchJson<T>(ctx, url, { headers });

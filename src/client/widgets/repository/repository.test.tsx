@@ -134,7 +134,8 @@ describe("repository widget", () => {
 		const { container } = render(
 			<Repository config={{ type: "repository", repository: "user/glimpse" }} data={repo} />,
 		);
-		const list = container.querySelector(`.${styles.subRows}`)!;
+		const list = container.querySelector(`.${styles.subRows}`);
+		if (!list) throw new Error("expected sub-list element");
 		expect(list.tagName).toBe("UL");
 		const rows = list.querySelectorAll(`.${styles.subRow}`);
 		expect(rows).toHaveLength(2);

@@ -48,7 +48,11 @@ const PULLS_URL = "https://api.github.com/repos/acme/widget/pulls?state=open&per
 const ISSUES_URL = "https://api.github.com/repos/acme/widget/issues?state=open&per_page=5";
 const REPO_URL = "https://api.github.com/repos/acme/widget";
 
-const repositoryFetcher = () => serverWidgets.get("repository")!;
+const repositoryFetcher = () => {
+	const fn = serverWidgets.get("repository");
+	if (!fn) throw new Error("expected repository fetcher");
+	return fn;
+};
 
 describe("repository fetcher", () => {
 	it("maps repo, pulls and issues excluding pull_request entries", async () => {

@@ -197,7 +197,7 @@ export function Timer({ config }: WidgetComponentProps) {
 		if (!state.running || state.startedAt === null) return;
 		const id = window.setInterval(() => setState(advance), 250);
 		return () => window.clearInterval(id);
-	}, [state.running, state.startedAt, state.mode]);
+	}, [state.running, state.startedAt]);
 
 	useEffect(() => {
 		if (editing) {

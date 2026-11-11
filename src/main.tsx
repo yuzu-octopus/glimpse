@@ -23,7 +23,9 @@ import App from "./App";
 // chunks; everything else loads on demand via ensureWidgetLoaded.
 import { GlimpseThemeProvider } from "./client/theme/GlimpseThemeProvider";
 
-createRoot(document.getElementById("root")!).render(
+const rootEl = document.getElementById("root");
+if (!rootEl) throw new Error("missing #root mount point");
+createRoot(rootEl).render(
 	<StrictMode>
 		<BrowserRouter>
 			<GlimpseThemeProvider>

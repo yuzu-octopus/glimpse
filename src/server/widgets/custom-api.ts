@@ -52,7 +52,7 @@ async function fetchJsonPayload(
 	if (!Object.keys(headers).some((k) => k.toLowerCase() === "user-agent"))
 		headers["User-Agent"] = "glimpse/0.1 (https://github.com/glanceapp/glance)";
 	if (!Object.keys(headers).some((k) => k.toLowerCase() === "accept"))
-		headers["Accept"] = "application/json";
+		headers.Accept = "application/json";
 	const method = req.method ?? "GET";
 	// Glance sends JSON bodies when body-type is json; a map body implies json
 	// even when body-type is absent (glance default with a map body).

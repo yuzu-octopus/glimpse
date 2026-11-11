@@ -68,7 +68,11 @@ function makeCtx(
 	};
 }
 
-const fetcher = () => serverWidgets.get("tailscale")!;
+const fetcher = () => {
+	const fn = serverWidgets.get("tailscale");
+	if (!fn) throw new Error("expected tailscale fetcher");
+	return fn;
+};
 
 /** Records every request and serves `body`, so a request that escapes the
  *  expected path cannot quietly pass. */
@@ -120,35 +124,35 @@ describe("tailscale fetcher", () => {
 	it('derives online from connectedToControl, never an "online" field', async () => {
 		const ctx = makeCtx(recorder());
 		const data = (await fetcher()(ctx, { type: "tailscale" })) as TailscaleData;
-		const nas = data.devices.find((d) => d.name === "nas.home.arpa")!;
-		const laptop = data.devices.find((d) => d.name === "laptop.home.arpa")!;
-		expect(nas.online).toBe(true);
-		expect(laptop.online).toBe(false);
-		expect(nas.lastSeen).toBeNull();
-		expect(laptop.lastSeen).toBe("2026-09-27T12:00:00Z");
+		const nas = data.devices.find((d) => d.name === "nas.home.arpa");
+		const laptop = data.devices.find((d) => d.name === "laptop.home.arpa");
+		expect(nas?.online).toBe(true);
+		expect(laptop?.online).toBe(false);
+		expect(nas?.lastSeen).toBeNull();
+		expect(laptop?.lastSeen).toBe("2026-09-27T12:00:00Z");
 	});
 
 	it("keeps the 100.x address and drops the fd7a: IPv6", async () => {
 		const ctx = makeCtx(recorder());
 		const data = (await fetcher()(ctx, { type: "tailscale" })) as TailscaleData;
-		expect(data.devices.find((d) => d.name === "nas.home.arpa")!.address).toBe("100.101.102.103");
+		expect(data.devices.find((d) => d.name === "nas.home.arpa")?.address).toBe("100.101.102.103");
 		// A node with no 100.x entry must not fall back to the ULA address.
-		expect(data.devices.find((d) => d.name === "guest")!.address).toBeNull();
+		expect(data.devices.find((d) => d.name === "guest")?.address).toBeNull();
 	});
 
 	it("prefers nodeId over the legacy numeric id", async () => {
 		const ctx = makeCtx(recorder());
 		const data = (await fetcher()(ctx, { type: "tailscale" })) as TailscaleData;
-		expect(data.devices.find((d) => d.name === "nas.home.arpa")!.id).toBe("nAAAA");
+		expect(data.devices.find((d) => d.name === "nas.home.arpa")?.id).toBe("nAAAA");
 		// `guest` has no nodeId at all, so the legacy id is the fallback key.
-		expect(data.devices.find((d) => d.name === "guest")!.id).toBe("99999");
+		expect(data.devices.find((d) => d.name === "guest")?.id).toBe("99999");
 	});
 
 	it("marks the exit node from enabledRoutes", async () => {
 		const ctx = makeCtx(recorder());
 		const data = (await fetcher()(ctx, { type: "tailscale" })) as TailscaleData;
-		expect(data.devices.find((d) => d.name === "nas.home.arpa")!.exitNode).toBe(true);
-		expect(data.devices.find((d) => d.name === "laptop.home.arpa")!.exitNode).toBe(false);
+		expect(data.devices.find((d) => d.name === "nas.home.arpa")?.exitNode).toBe(true);
+		expect(data.devices.find((d) => d.name === "laptop.home.arpa")?.exitNode).toBe(false);
 	});
 
 	it("does not mark a node whose default route is advertised but not enabled", async () => {
@@ -205,8 +209,8 @@ describe("tailscale fetcher", () => {
 	it("ignores device fields the widget does not render, and keeps a node with no address", async () => {
 		const ctx = makeCtx(recorder());
 		const data = (await fetcher()(ctx, { type: "tailscale" })) as TailscaleData;
-		const guest = data.devices.find((d) => d.name === "guest")!;
-		// The API sends user/tags/authorized; none of them reach the payload.
+		const guest = data.devices.find((d) => d.name === "guest");
+		if (!guest) throw new Error("expected guest device");
 		expect(guest).toEqual({
 			id: "99999",
 			name: "guest",

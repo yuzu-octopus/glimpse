@@ -61,11 +61,11 @@ describe("jellyfin widget", () => {
 	it("renders meta line with subtitle and date", () => {
 		render(<Jellyfin config={{ type: "jellyfin" }} data={data} />);
 		const cards = screen.getAllByTestId("media-card");
-		const meta = cards[0].querySelector('[class*="meta"]');
+		const meta = cards[0]?.querySelector('[class*="meta"]');
 		expect(meta).toBeInTheDocument();
 		// subtitle 'Movie' + date '2021' → ageOf('2021') returns 'today' or 'Xd ago'
-		expect(meta!.textContent).toMatch(/Movie/);
-		expect(meta!.textContent).toMatch(/\d+d ago|today|yesterday/);
+		expect(meta?.textContent).toMatch(/Movie/);
+		expect(meta?.textContent).toMatch(/\d+d ago|today|yesterday/);
 	});
 
 	it("renders no meta line when both subtitle and date are null", () => {

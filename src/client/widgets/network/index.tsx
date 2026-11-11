@@ -32,6 +32,7 @@ function Network({ config, data, error, isLoading }: WidgetComponentProps) {
 	// swap one network card for another in the same slot, and that card's
 	// history is not this one's.
 	const series = String(cfg["ping-target"] ?? NETWORK_DEFAULTS.pingTarget);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: the series identity lives in ping-target — a ref would hide the reset trigger, the empty array would pin the first target forever
 	useEffect(() => {
 		setHistory([]);
 		const id = setInterval(() => {
@@ -86,20 +87,24 @@ function Network({ config, data, error, isLoading }: WidgetComponentProps) {
           would turn a single quantitative series into a rainbow. */}
 			{history.length > 1 ? (
 				<Stack direction="horizontal" gap={0.5} vAlign="end" height={24} className={styles.spark}>
-					{history.map((v, i) =>
-						// A tick with no reading takes its slot as a hole. A short bar
-						// there would read as a very fast response, which is the one
-						// thing a failed probe is not.
-						v == null ? (
-							<span key={i} className={styles.gap} />
+					{history.map((v, i) => {
+						// The key is the tick SLOT, not the reading: two identical
+						// latencies must not swap nodes, and a hole carries no
+						// value to key on. biome-ignore lint/suspicious/noArrayIndexKey: positional series, stable slot identity
+						const key = i;
+						// A tick with no reading takes its slot as a hole. A short
+						// bar there would read as a very fast response, which is
+						// the one thing a failed probe is not.
+						return v == null ? (
+							<span key={key} className={styles.gap} />
 						) : (
 							<span
-								key={i}
+								key={key}
 								style={{ height: `${Math.round((v / max) * 20) + 2}px` }}
 								className={styles.bar}
 							/>
-						),
-					)}
+						);
+					})}
 				</Stack>
 			) : null}
 		</WidgetChrome>

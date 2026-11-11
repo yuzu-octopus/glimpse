@@ -25,7 +25,11 @@ function makeCtx(
 	};
 }
 
-const releasesFetcher = () => serverWidgets.get("releases")!;
+const releasesFetcher = () => {
+	const fn = serverWidgets.get("releases");
+	if (!fn) throw new Error("expected releases fetcher");
+	return fn;
+};
 
 describe("releases fetcher", () => {
 	it("maps GitHub releases and merges sources", async () => {

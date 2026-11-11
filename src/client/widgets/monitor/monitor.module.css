@@ -54,12 +54,6 @@
 	display: none;
 }
 
-.compact .title,
-.compact .url,
-.compact .ms {
-	font-size: 12px;
-}
-
 /* The dot is 8px and the row baseline is the 14px text baseline: nudge the
    dot so it sits on the text's optical centre rather than the line box top. */
 .row > :first-child {
@@ -134,4 +128,10 @@
    may be squeezed when a long URL needs the room. */
 .status {
 	flex-shrink: 0;
+}
+
+.compact .title,
+.compact .url,
+.compact .ms {
+	font-size: 12px;
 }

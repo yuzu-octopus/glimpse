@@ -25,7 +25,9 @@ function renderSearch(config = CONFIG) {
 
 function submitQuery(value: string) {
 	fireEvent.change(screen.getByLabelText("Search"), { target: { value } });
-	fireEvent.submit(screen.getByLabelText("Search").closest("form")!);
+	const form = screen.getByLabelText("Search").closest("form");
+	if (!form) throw new Error("expected search form");
+	fireEvent.submit(form);
 }
 
 afterEach(() => {
@@ -61,8 +63,7 @@ describe("search widget", () => {
 	it("opens the engine URL with the query substituted", () => {
 		const open = vi.spyOn(window, "open").mockImplementation(() => null);
 		renderSearch();
-		fireEvent.change(screen.getByLabelText("Search"), { target: { value: "hello world" } });
-		fireEvent.submit(screen.getByLabelText("Search").closest("form")!);
+		submitQuery("hello world");
 		expect(open).toHaveBeenCalledWith(
 			"https://duckduckgo.com/?q=hello%20world",
 			"_blank",
@@ -73,8 +74,7 @@ describe("search widget", () => {
 	it("routes bang queries to the matching bang url", () => {
 		const open = vi.spyOn(window, "open").mockImplementation(() => null);
 		renderSearch();
-		fireEvent.change(screen.getByLabelText("Search"), { target: { value: "!gh astryx" } });
-		fireEvent.submit(screen.getByLabelText("Search").closest("form")!);
+		submitQuery("!gh astryx");
 		expect(open).toHaveBeenCalledWith(
 			"https://github.com/search?q=astryx",
 			"_blank",

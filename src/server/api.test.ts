@@ -251,7 +251,8 @@ describe("buildPagePayload", () => {
 		} as unknown as Parameters<typeof buildPagePayload>[0];
 		const payload = await buildPagePayload(flatPage, makeCtx());
 		expect(payload.widgets).toHaveLength(1);
-		expect(payload.widgets![0].data).toEqual({ time: "12:00" });
+		const [only] = payload.widgets ?? [];
+		expect(only?.data).toEqual({ time: "12:00" });
 		expect(payload.columns).toEqual([]);
 		expect(payload.gridColumns).toBe(12);
 		expect(payload.gridRowHeight).toBe(96);
@@ -308,11 +309,13 @@ describe("streamPagePayload", () => {
 		// the whole point of flushing the head first.
 		const first = await stream.next();
 		expect(first.done).toBe(false);
-		expect(first.value!.path).toBe("headWidgets[0]");
+		if (first.done) throw new Error("expected head frame");
+		expect(first.value.path).toBe("headWidgets[0]");
 		slow.resolve({ videos: [{ title: "slow" }] });
 		const second = await stream.next();
 		expect(second.done).toBe(false);
-		expect(second.value!.path).toBe("columns[0].widgets[0]");
+		if (second.done) throw new Error("expected column frame");
+		expect(second.value.path).toBe("columns[0].widgets[0]");
 		expect((await stream.next()).done).toBe(true);
 	});
 
@@ -373,7 +376,8 @@ describe("streamPagePayload", () => {
 		const find = (path: string): StreamChunk => {
 			const hit = chunks.find((c) => c.path === path);
 			expect(hit, `no frame for ${path}`).toBeDefined();
-			return hit!;
+			if (!hit) throw new Error(`no frame for ${path}`);
+			return hit;
 		};
 
 		// each frame carries its own widget's message

@@ -45,7 +45,11 @@ function okRouter(url: string): Response {
 	return new Response(JSON.stringify(INFO_FIXTURE), { status: 200 });
 }
 
-const fetcher = () => serverWidgets.get("qbittorrent")!;
+const fetcher = () => {
+	const fn = serverWidgets.get("qbittorrent");
+	if (!fn) throw new Error("expected qbittorrent fetcher");
+	return fn;
+};
 
 describe("qbittorrent fetcher", () => {
 	it("logs in then maps torrent info with clamped progress", async () => {

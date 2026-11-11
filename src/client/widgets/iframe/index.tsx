@@ -31,6 +31,7 @@ function Html({ config }: WidgetComponentProps) {
 			hideHeader={cfg["hide-header"]}
 			cssClass={cfg["css-class"]}
 		>
+			{/* biome-ignore lint/security/noDangerouslySetInnerHtml: the html widget's contract is rendering the author's own markup — same trust as custom-css-file, and sanitizing would silently mangle it */}
 			<div className={styles.html} dangerouslySetInnerHTML={{ __html: cfg.source }} />
 		</WidgetChrome>
 	);

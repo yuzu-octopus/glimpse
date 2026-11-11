@@ -166,7 +166,7 @@ registerWidget("monitor", async (ctx, config) => {
 		["kuma-url", cfg["kuma-url"]],
 		["healthchecks-url", hcActive ? hcBase : undefined],
 	] as const) {
-		if (url !== undefined && url.startsWith("http://") && !cfg["allow-insecure"]) {
+		if (url?.startsWith("http://") && !cfg["allow-insecure"]) {
 			throw new Error(
 				`monitor: "${label}" uses insecure http:// URL; set allow-insecure: true to allow`,
 			);
@@ -174,10 +174,14 @@ registerWidget("monitor", async (ctx, config) => {
 	}
 
 	// Direct checks + uptime sources fan out together; source failures degrade to no rows.
+	// The schema requires kuma-url and kuma-slug together, so inside the
+	// kumaActive branch both are present — no assertion needed.
+	const kumaUrl = cfg["kuma-url"];
+	const kumaSlug = cfg["kuma-slug"];
 	const [settled, kuma, hc] = await Promise.all([
 		Promise.allSettled((cfg.sites ?? []).map((site) => checkDirectSite(ctx, site))),
-		kumaActive
-			? fetchKumaSites(ctx, cfg["kuma-url"]!, cfg["kuma-slug"]!).catch(() => [] as MonitorSite[])
+		kumaActive && kumaUrl !== undefined && kumaSlug !== undefined
+			? fetchKumaSites(ctx, kumaUrl, kumaSlug).catch(() => [] as MonitorSite[])
 			: Promise.resolve([] as MonitorSite[]),
 		hcActive
 			? fetchHealthchecksSites(

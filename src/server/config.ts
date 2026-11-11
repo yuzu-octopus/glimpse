@@ -113,7 +113,7 @@ function loadYamlTree(
 		for (const [k, v] of Object.entries(doc)) {
 			if (k !== "$include") merged[k] = v;
 		}
-
+		// biome-ignore lint/complexity/useLiteralKeys: "$include" starts with $ — not a valid identifier, so dot access cannot parse
 		const includes = doc["$include"];
 		if (includes !== undefined) {
 			const list = Array.isArray(includes) ? includes : [includes];

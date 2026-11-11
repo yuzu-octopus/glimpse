@@ -31,7 +31,8 @@ const STATE_VARIANT: Record<
 
 function ContainerRow({ c }: { c: DockerContainer }) {
 	const [open, setOpen] = useState(false);
-	const hasChildren = (c.children?.length ?? 0) > 0;
+	const kids = c.children ?? [];
+	const hasChildren = kids.length > 0;
 	const variant = STATE_VARIANT[c.stateIcon];
 	return (
 		<Stack direction="horizontal" gap={3} vAlign="start" className={styles.row}>
@@ -88,7 +89,7 @@ function ContainerRow({ c }: { c: DockerContainer }) {
 				{hasChildren ? (
 					<>
 						<Button
-							label={`${c.children!.length} container${c.children!.length === 1 ? "" : "s"}`}
+							label={`${kids.length} container${kids.length === 1 ? "" : "s"}`}
 							variant="ghost"
 							size="sm"
 							onClick={() => setOpen(!open)}
@@ -100,7 +101,7 @@ function ContainerRow({ c }: { c: DockerContainer }) {
 						/>
 						{open ? (
 							<ul className={styles.children}>
-								{c.children!.map((child) => (
+								{kids.map((child) => (
 									<li key={child.name} className={styles.child}>
 										{/* Status goes to StatusDot: the kit owns the 8px mark and
                         the accessible name, so the row needs no hand-rolled dot. */}

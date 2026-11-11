@@ -51,7 +51,7 @@ export interface RetryOptions {
  * values fall back to the default, so a config written before the field
  * existed keeps today's behaviour. */
 export function retryOptionsFrom(config: Record<string, unknown> | undefined): RetryOptions {
-	const raw = config?.["retries"];
+	const raw = config?.retries;
 	return {
 		retries: typeof raw === "number" && Number.isInteger(raw) && raw >= 0 ? raw : DEFAULT_RETRIES,
 	};
@@ -68,7 +68,7 @@ function parseRetryAfter(value: string | null): number | null {
 	const dateMs = Date.parse(trimmed);
 	if (!Number.isNaN(dateMs)) {
 		const diff = dateMs - Date.now();
-		return diff > 0 ? diff : 0;
+		return Math.max(diff, 0);
 	}
 	return null;
 }

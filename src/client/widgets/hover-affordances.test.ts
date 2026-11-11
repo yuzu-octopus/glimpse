@@ -83,9 +83,10 @@ describe("hover affordances are not hover-only", () => {
 		const src = read(rel);
 		const gated = pointerOnly(src);
 		expect(gated, `${rel} needs @media (hover: hover)`).toBeDefined();
+		if (!gated) throw new Error(`${rel} needs @media (hover: hover)`);
 		expect(gated).toContain("filter: grayscale(0.2) contrast(0.9)");
 		// nothing outside the gate may dim, or a touch device keeps it dimmed
-		const ungated = src.replace(gated!, "");
+		const ungated = src.replace(gated, "");
 		expect(ungated).not.toContain("grayscale");
 		expect(ungated).not.toContain("opacity: 0.8");
 	});

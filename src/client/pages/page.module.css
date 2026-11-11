@@ -3,9 +3,10 @@
 .page {
 	margin: 0 auto;
 	padding-block: var(--space-gap);
-	/* uniform bottom gap like glance .page — explicit !important to survive grid stretch / flex collapse
-     and ensure SHOW LESS lobsters never touches viewport bottom */
-	padding-bottom: var(--widget-gap) !important;
+	/* uniform bottom gap like glance .page — the longhand wins by source
+     order over padding-block above, and unlayered app CSS imported last
+     wins over the layered kit, so no !important is needed */
+	padding-bottom: var(--widget-gap);
 	padding-inline: var(--space-viewport);
 	width: 100%;
 	box-sizing: border-box;
@@ -90,6 +91,26 @@
 	align-content: start;
 }
 
+.column {
+	grid-column: span var(--col-span, 12);
+	min-width: 0;
+	/* Tile query container: widget interiors adapt to their allocated tile
+   * width (stack vs row, font scale). Page layout — tracks, spans — stays
+   * in place() plus media queries; never query the page container here. */
+	container-type: inline-size;
+	container-name: tile;
+}
+
+.fullColumn {
+	width: 100%;
+	min-width: 0;
+}
+
+.smallColumn {
+	width: 100%;
+	max-width: none;
+}
+
 /* auto/collage mode treats every column as a tile — kill the explicit-mode
    widths. Small tiles get a preferred-size cap (360px ≈ glance small + gap)
    so clock/weather/calendar stay compact and the composer respects the
@@ -130,26 +151,6 @@
 .autoTiling [data-span="11"],
 .autoTiling [data-span="12"] {
 	grid-column: 1 / -1;
-}
-
-.column {
-	grid-column: span var(--col-span, 12);
-	min-width: 0;
-	/* Tile query container: widget interiors adapt to their allocated tile
-   * width (stack vs row, font scale). Page layout — tracks, spans — stays
-   * in place() plus media queries; never query the page container here. */
-	container-type: inline-size;
-	container-name: tile;
-}
-
-.fullColumn {
-	width: 100%;
-	min-width: 0;
-}
-
-.smallColumn {
-	width: 100%;
-	max-width: none;
 }
 
 .columnWidgets {
@@ -262,7 +263,9 @@
 
 /* Group tabs (widget-group.css port): flat inline text, uppercase, no pills.
    Overrides Astryx TabList/Tab stylex (hover pill + white bottom indicator)
-   to match the flat philosophy — borders and a dim, never a shadow. */
+   to match the flat philosophy — borders and a dim, never a shadow. App CSS
+   is unlayered and imported last, so it outranks the layered kit rules with
+   no !important needed. */
 .groupTabs {
 	display: flex;
 	gap: 18px;
@@ -271,29 +274,36 @@
 	padding: var(--widget-content-vertical-padding) var(--widget-content-horizontal-padding);
 	border-bottom: 1px solid var(--color-widget-content-border);
 	font-size: var(--font-size-h4);
-	background: transparent !important;
-	box-shadow: none !important;
-	border-radius: 0 !important;
+	background: transparent;
+	box-shadow: none;
+	border-radius: 0;
 }
 
 .groupTabs button,
 .groupTabs [data-tab-value] {
-	background: transparent !important;
-	border: none !important;
-	border-bottom: 2px solid transparent !important;
-	border-radius: 0 !important;
-	box-shadow: none !important;
-	font: inherit !important;
-	font-size: var(--font-size-h4) !important;
+	background: transparent;
+	border: none;
+	border-bottom: 2px solid transparent;
+	border-radius: 0;
+	box-shadow: none;
+	font: inherit;
+	font-size: var(--font-size-h4);
 	text-transform: uppercase;
-	color: var(--color-text-base-muted) !important;
+	color: var(--color-text-base-muted);
 	line-height: calc(1.6em - 2px);
 	cursor: pointer;
 	flex-shrink: 0;
-	padding: 0 !important;
+	padding: 0;
 	transition:
 		color var(--duration-fast) var(--ease-standard),
 		border-color var(--duration-fast) var(--ease-standard);
+}
+
+/* The sliding indicator owns the underline now, so the current tab keeps only
+   its colour emphasis — a static border here would double up and lag behind
+   the animation. */
+.groupTabs .groupTabCurrent {
+	color: var(--color-text-highlight);
 }
 
 /* Tabs are tappable: hover and press resolve to foreground. The accent
@@ -302,8 +312,8 @@
    pair of keyboard users the hover was written for. */
 .groupTabs button:is(:hover, :focus-visible),
 .groupTabs [data-tab-value]:is(:hover, :focus-visible) {
-	color: var(--color-text-highlight) !important;
-	border-bottom-color: var(--color-text-subdue) !important;
+	color: var(--color-text-highlight);
+	border-bottom-color: var(--color-text-subdue);
 }
 
 /* Press dims 20%. Hover has already resolved the label to highlight, so the
@@ -313,30 +323,21 @@
    opacity to outrank. */
 .groupTabs button:active,
 .groupTabs [data-tab-value]:active {
-	color: var(--color-text-highlight) !important;
-	border-bottom-color: var(--color-primary) !important;
+	color: var(--color-text-highlight);
+	border-bottom-color: var(--color-primary);
 	opacity: 0.8;
 }
 
 .groupTabs button:focus-visible,
 .groupTabs [data-tab-value]:focus-visible {
-	outline: 2px solid var(--color-primary) !important;
-	outline-offset: 2px !important;
-}
-
-/* The sliding indicator owns the underline now, so the current tab keeps only
-   its colour emphasis — a static border here would double up and lag behind
-   the animation. */
-.groupTabs .groupTabCurrent {
-	color: var(--color-text-highlight) !important;
+	outline: 2px solid var(--color-primary);
+	outline-offset: 2px;
 }
 
 /* Kill Astryx hover pill (first span) and selected white indicator (last span) */
-.groupTabs [data-tab-value] > span:first-child,
-.groupTabs [data-tab-value] > span:last-child,
-.groupTabs button > span:first-child,
-.groupTabs button > span:last-child {
-	display: none !important;
+.groupTabs :is([data-tab-value], button) > span:first-child,
+.groupTabs :is([data-tab-value], button) > span:last-child {
+	display: none;
 }
 
 .tabContent {
@@ -344,6 +345,31 @@
 	min-width: 0;
 }
 
+/* Pure bento — flat widgets, compositor places via x/y/w/h. No manual columns.
+   grid-cols comes from config `grid-columns` (12 default), row from `grid-row-height`.
+   Each item is placed with grid-column/grid-row via inline --bento-* vars. */
+/* Pure bento — flat widgets, compositor places via x/y/w/h. No manual columns. */
+.bentoGrid {
+	display: grid;
+	grid-template-columns: repeat(var(--bento-cols, 12), minmax(0, 1fr));
+	grid-auto-rows: minmax(var(--bento-row, 96px), auto);
+	grid-auto-flow: dense;
+	gap: var(--widget-gap);
+	align-content: start;
+}
+.bentoItem {
+	min-width: 0;
+	grid-column: var(--bento-x, auto) / span var(--bento-w, 1);
+	grid-row: var(--bento-y, auto) / span var(--bento-h, 1);
+	container-type: inline-size;
+	container-name: tile;
+}
+
+.bentoItem[data-resizable="true"] {
+	/* resizable keeps compositor Y but lets content dictate height via minmax rows */
+	grid-row-start: var(--bento-y, auto);
+	grid-row-end: auto;
+}
 /* Tablet (at or below 900px) — the grid follows the span vocabulary, never
    the other way round.
    Columns mode has no placer: `--col-span` is authored in 12-col units
@@ -387,8 +413,9 @@
 	.collageTiling {
 		grid-template-columns: 1fr;
 	}
-	.collageTiling [data-row-span],
-	.collageTiling > * {
+	.collageTiling > *,
+	.collageTiling [data-row-span] {
+		/* biome-ignore lint/complexity/noImportantStyles: beats the inline gridRow span place() writes on each tile — an inline style outranks every stylesheet rule */
 		grid-row: span 1 !important;
 	}
 	.smallColumn {
@@ -404,40 +431,16 @@
 	.splitColumn {
 		grid-template-columns: minmax(0, 1fr);
 	}
-	/* pure bento: one track per row on mobile; !important beats the base
-     rule and the inline --bento-* placement vars so a compositor-placed
-     tile can't open implicit tracks or overflow the single column */
+	/* pure bento: one track per row on mobile. The base bento rules live
+     above the media queries, so this later same-specificity grid rule wins;
+     .bentoGrid .bentoItem outranks the base item and ties-then-beats the
+     resizable longhands, so a compositor-placed tile can't open implicit
+     tracks or overflow the single column */
 	.bentoGrid {
-		grid-template-columns: 1fr !important;
+		grid-template-columns: 1fr;
 	}
-	.bentoItem {
-		grid-column: 1 / -1 !important;
-		grid-row: auto !important;
+	.bentoGrid .bentoItem {
+		grid-column: 1 / -1;
+		grid-row: auto;
 	}
-}
-
-/* Pure bento — flat widgets, compositor places via x/y/w/h. No manual columns.
-   grid-cols comes from config `grid-columns` (12 default), row from `grid-row-height`.
-   Each item is placed with grid-column/grid-row via inline --bento-* vars. */
-/* Pure bento — flat widgets, compositor places via x/y/w/h. No manual columns. */
-.bentoGrid {
-	display: grid;
-	grid-template-columns: repeat(var(--bento-cols, 12), minmax(0, 1fr));
-	grid-auto-rows: minmax(var(--bento-row, 96px), auto);
-	grid-auto-flow: dense;
-	gap: var(--widget-gap);
-	align-content: start;
-}
-.bentoItem {
-	min-width: 0;
-	grid-column: var(--bento-x, auto) / span var(--bento-w, 1);
-	grid-row: var(--bento-y, auto) / span var(--bento-h, 1);
-	container-type: inline-size;
-	container-name: tile;
-}
-
-.bentoItem[data-resizable="true"] {
-	/* resizable keeps compositor Y but lets content dictate height via minmax rows */
-	grid-row-start: var(--bento-y, auto);
-	grid-row-end: auto;
 }

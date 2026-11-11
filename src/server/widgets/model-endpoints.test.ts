@@ -79,7 +79,11 @@ function makeCtx(
 	};
 }
 
-const fetcher = () => serverWidgets.get("model-endpoints")!;
+const fetcher = () => {
+	const fn = serverWidgets.get("model-endpoints");
+	if (!fn) throw new Error("expected model-endpoints fetcher");
+	return fn;
+};
 const run = (ctx: WidgetFetchContext, config: Record<string, unknown>) =>
 	fetcher()(ctx, config) as Promise<ModelEndpointsData>;
 
@@ -117,7 +121,8 @@ describe("model-endpoints fetcher", () => {
 	it("rolls endpoints up per model, worst health winning", async () => {
 		const { ctx } = makeCtx();
 		const out = await run(ctx, { type: "model-endpoints", models: [OPENAI, CLAUDE] });
-		const gpt = out.models.find((m) => m.model === OPENAI)!;
+		const gpt = out.models.find((m) => m.model === OPENAI);
+		if (!gpt) throw new Error("expected gpt model row");
 		expect(gpt).toMatchObject({
 			providers: 3,
 			up: 1,
@@ -126,7 +131,8 @@ describe("model-endpoints fetcher", () => {
 			health: "down",
 			unavailable: false,
 		});
-		const claude = out.models.find((m) => m.model === CLAUDE)!;
+		const claude = out.models.find((m) => m.model === CLAUDE);
+		if (!claude) throw new Error("expected claude model row");
 		expect(claude).toMatchObject({ providers: 1, up: 1, health: "up", unavailable: false });
 		expect(out).toMatchObject({ checked: 2, requested: 2, failed: [] });
 	});

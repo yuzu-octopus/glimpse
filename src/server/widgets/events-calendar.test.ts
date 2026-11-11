@@ -55,7 +55,11 @@ function makeCtx(fetchImpl: (url: string) => Promise<Response>): WidgetFetchCont
 	};
 }
 
-const fetcher = () => serverWidgets.get("events-calendar")!;
+const fetcher = () => {
+	const fn = serverWidgets.get("events-calendar");
+	if (!fn) throw new Error("expected events-calendar fetcher");
+	return fn;
+};
 
 afterEach(() => {
 	vi.useRealTimers();

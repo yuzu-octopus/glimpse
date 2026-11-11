@@ -31,7 +31,11 @@ function makeCtx(
 	};
 }
 
-const fetcher = () => serverWidgets.get("jellyfin")!;
+const fetcher = () => {
+	const fn = serverWidgets.get("jellyfin");
+	if (!fn) throw new Error("expected jellyfin fetcher");
+	return fn;
+};
 
 function router(url: string): Response {
 	if (url.endsWith("/Users")) return new Response(JSON.stringify(USERS_FIXTURE), { status: 200 });

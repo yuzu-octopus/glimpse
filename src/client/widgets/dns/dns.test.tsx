@@ -180,7 +180,8 @@ describe("DnsStats client", () => {
 
 	it("bar segments carry the queries and blocked marks", () => {
 		const { container } = render(<DnsStatsWidget config={baseConfig} data={sample()} />);
-		const bar = container.querySelector('[data-testid="dns-bar"]')!;
+		const bar = container.querySelector('[data-testid="dns-bar"]');
+		if (!bar) throw new Error("expected dns-bar element");
 		expect(bar.querySelector(`.${styles.queries}`)).not.toBeNull();
 		expect(bar.querySelector(`.${styles.blocked}`)).not.toBeNull();
 	});
@@ -195,7 +196,8 @@ describe("DnsStats client", () => {
 
 	it("paints the bars with the kit CHART_HUES over a 10% wash with semantic borders", () => {
 		const { container } = render(<DnsStatsWidget config={baseConfig} data={sample()} />);
-		const bar = container.querySelector('[data-testid="dns-bar"]')!;
+		const bar = container.querySelector('[data-testid="dns-bar"]');
+		if (!bar) throw new Error("expected dns-bar element");
 		// hues come from the kit's CHART_HUES, never from a hand-picked token
 		expect(bar.querySelector(`.${styles.queries}`)).toHaveStyle({ "--bar-hue": CHART_HUES.cyan });
 		expect(bar.querySelector(`.${styles.blocked}`)).toHaveStyle({ "--bar-hue": CHART_HUES.orange });

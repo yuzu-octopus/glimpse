@@ -16,8 +16,8 @@ import styles from "./markets.module.css";
  */
 export function TrendChart({ symbol, values }: { symbol: string; values: number[] }) {
 	if (values.length < 2) return null;
-	const last = values[values.length - 1]!;
-	const first = values[0]!;
+	const first = values[0] ?? 0;
+	const last = values[values.length - 1] ?? 0;
 	const flat = last === first;
 	return (
 		<span

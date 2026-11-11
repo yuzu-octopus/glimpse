@@ -151,7 +151,7 @@ describe("useRelativeTime", () => {
 		const gate = new Promise<void>((resolve) => {
 			release = resolve;
 		});
-		const Suspender = () => {
+		const suspender = () => {
 			if (suspend) use(gate);
 			return null;
 		};
@@ -159,7 +159,7 @@ describe("useRelativeTime", () => {
 			<StrictMode>
 				<Suspense fallback={null}>
 					{children}
-					<Suspender />
+					{suspender()}
 				</Suspense>
 			</StrictMode>
 		);

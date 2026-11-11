@@ -1,3 +1,5 @@
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: literal ${VAR} fixtures for env interpolation
+
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -66,9 +68,10 @@ pages:
 			),
 		);
 		expect(r.ok).toBe(true);
-		expect(r.config?.pages[0].widgets).toHaveLength(2);
-		expect(r.config?.pages[0]["grid-columns"]).toBe(12);
-		expect(r.config?.pages[0]["grid-row-height"]).toBe(96);
+		const page = r.config?.pages[0];
+		expect(page?.widgets).toHaveLength(2);
+		expect(page?.["grid-columns"]).toBe(12);
+		expect(page?.["grid-row-height"]).toBe(96);
 	});
 
 	it("uses an explicit slug verbatim", () => {
@@ -174,9 +177,11 @@ pages:
 			),
 		);
 		expect(r.ok).toBe(true);
-		expect(firstFeedUrl(r.config!.pages[0].columns![1].widgets[0])).toBe(
-			"https://example.com/sekrit/feed.xml",
-		);
+		const config = r.config;
+		if (!config) throw new Error("expected config");
+		const columns = config.pages[0].columns;
+		if (!columns) throw new Error("expected columns");
+		expect(firstFeedUrl(columns[1].widgets[0])).toBe("https://example.com/sekrit/feed.xml");
 	});
 
 	it("errors when an env var is missing", () => {
@@ -204,7 +209,11 @@ pages:
 			),
 		);
 		expect(r.ok).toBe(true);
-		expect(firstFeedUrl(r.config!.pages[0].columns![1].widgets[0])).toBe(
+		const config = r.config;
+		if (!config) throw new Error("expected config");
+		const columns = config.pages[0].columns;
+		if (!columns) throw new Error("expected columns");
+		expect(firstFeedUrl(columns[1].widgets[0])).toBe(
 			"https://example.com/${secret:github_token}/feed.xml",
 		);
 	});
@@ -235,8 +244,9 @@ pages:
 		);
 		const r = loadConfig(main);
 		expect(r.ok).toBe(true);
-		expect(r.config?.pages.map((p) => p.name)).toEqual(["Home", "Extra"]);
-		expect(r.config?.["custom-css-file"]).toBe("extra.css");
+		const config = r.config;
+		expect(config?.pages.map((p) => p.name)).toEqual(["Home", "Extra"]);
+		expect(config?.["custom-css-file"]).toBe("extra.css");
 	});
 
 	it("fails a config that still carries a theme block, naming the fix", () => {
@@ -409,7 +419,7 @@ describe("initConfig auto-reload", () => {
 		expect(getConfig().ok).toBe(true); // last-good config kept…
 
 		// a.yml is an include: the failed load's file list no longer mentions it
-		await editAlone(() => writeFileSync(includes[0]!, page("A2")), false);
+		await editAlone(() => writeFileSync(includes[0], page("A2")), false);
 
 		await editAlone(() => writeFileSync(main, mainYaml), true);
 		expect(getConfig().config?.pages.map((p) => p.name)).toEqual(["Home", "A2", "B", "C"]);

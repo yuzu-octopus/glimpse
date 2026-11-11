@@ -18,7 +18,11 @@ function makeCtx(routes: Record<string, unknown>): WidgetFetchContext {
 	};
 }
 
-const lobstersFetcher = () => serverWidgets.get("lobsters")!;
+const lobstersFetcher = () => {
+	const fn = serverWidgets.get("lobsters");
+	if (!fn) throw new Error("expected lobsters fetcher");
+	return fn;
+};
 
 const STORIES = [
 	{

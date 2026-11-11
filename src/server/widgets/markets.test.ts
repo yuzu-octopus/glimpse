@@ -34,7 +34,11 @@ function makeCtx(routes: Record<string, unknown>): WidgetFetchContext {
 const URL = (symbol: string) =>
 	`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=1mo&interval=1d`;
 
-const marketsFetcher = () => serverWidgets.get("markets")!;
+const marketsFetcher = () => {
+	const fn = serverWidgets.get("markets");
+	if (!fn) throw new Error("expected markets fetcher");
+	return fn;
+};
 
 describe("markets fetcher", () => {
 	it("maps price, change, pct and last 21 chart points", async () => {
@@ -88,7 +92,7 @@ describe("markets fetcher", () => {
 			"sort-by": "absolute-change",
 		})) as { markets: Market[] };
 		expect(data.markets.map((m) => m.symbol)).toEqual(["B", "A", "C"]);
-		expect(data.markets.find((m) => m.symbol === "A")!.chart).toEqual([1, 3]); // nulls dropped
+		expect(data.markets.find((m) => m.symbol === "A")?.chart).toEqual([1, 3]); // nulls dropped
 	});
 
 	it("sorts by change descending by default", async () => {

@@ -81,8 +81,8 @@ a {
  * text bounding box on hold creates an awkward nested dark box. */
 a:active,
 a[data-astryx-press] {
-	background-color: transparent !important;
-	background-image: none !important;
+	background-color: transparent;
+	background-image: none;
 }
 
 ::selection {

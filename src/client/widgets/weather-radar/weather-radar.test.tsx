@@ -42,8 +42,8 @@ describe("weather-radar widget", () => {
 			expect(img.src).toContain("/v2/radar/1700000600/256/7/");
 			expect(img.src).toContain("/4/1_1.png");
 		}
-		const xs = [...overlays].map((i) => Number(i.src.match(/\/7\/(\d+)\//)![1]));
-		const ys = [...overlays].map((i) => Number(i.src.match(/\/7\/\d+\/(\d+)\//)![1]));
+		const xs = [...overlays].map((i) => Number(i.src.match(/\/7\/(\d+)\//)?.[1]));
+		const ys = [...overlays].map((i) => Number(i.src.match(/\/7\/\d+\/(\d+)\//)?.[1]));
 		// Window anchored on the NEAREST corner (63,42) so the location can be
 		// centred; floor-anchoring would put it at 62 and expose a blank edge.
 		expect(xs.slice().sort()).toEqual([63, 63, 64, 64]);
@@ -70,7 +70,7 @@ describe("weather-radar widget", () => {
 			expect(img.src).not.toContain("/10/");
 		}
 		const xs = [...container.querySelectorAll<HTMLImageElement>("img.overlay")].map((i) =>
-			Number(i.src.match(/\/7\/(\d+)\//)![1]),
+			Number(i.src.match(/\/7\/(\d+)\//)?.[1]),
 		);
 		expect(xs.slice().sort()).toEqual([63, 63, 64, 64]);
 	});
@@ -95,9 +95,9 @@ describe("weather-radar widget", () => {
 			/>,
 		);
 		const tilesEl = container.querySelector<HTMLElement>(`.${styles.tiles}`);
-		expect(tilesEl).not.toBeNull();
-		const ox = parseFloat(tilesEl!.style.getPropertyValue("--ox"));
-		const oy = parseFloat(tilesEl!.style.getPropertyValue("--oy"));
+		if (!tilesEl) throw new Error("expected tiles element");
+		const ox = parseFloat(tilesEl.style.getPropertyValue("--ox"));
+		const oy = parseFloat(tilesEl.style.getPropertyValue("--oy"));
 
 		// Singapore at z7 is tile coordinate (100.914, 63.520). The 2x2 window is
 		// anchored on the NEAREST corner (100, 63) — not floor — so the layer
@@ -130,7 +130,8 @@ describe("weather-radar widget", () => {
 				data={{ ...DATA, location: "Edge", lat: 0, lon: 1.434375, zoom: 7 }}
 			/>,
 		);
-		const tilesEl = container.querySelector<HTMLElement>(`.${styles.tiles}`)!;
+		const tilesEl = container.querySelector<HTMLElement>(`.${styles.tiles}`);
+		if (!tilesEl) throw new Error("expected tiles element");
 		const ox = parseFloat(tilesEl.style.getPropertyValue("--ox"));
 		const oy = parseFloat(tilesEl.style.getPropertyValue("--oy"));
 		expect(ox).toBeCloseTo(0.01, 3);
@@ -141,7 +142,7 @@ describe("weather-radar widget", () => {
 		expect(-ox + 2).toBeGreaterThanOrEqual(1);
 		// The window is anchored on the nearest corner (64), not the floor (63).
 		const xs = [...container.querySelectorAll<HTMLImageElement>("img.overlay")]
-			.map((i) => Number(i.src.match(/\/7\/(\d+)\//)![1]))
+			.map((i) => Number(i.src.match(/\/7\/(\d+)\//)?.[1]))
 			.sort();
 		expect(xs).toEqual([64, 64, 65, 65]);
 	});

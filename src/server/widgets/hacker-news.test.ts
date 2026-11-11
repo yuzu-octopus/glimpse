@@ -18,7 +18,11 @@ function makeCtx(routes: Record<string, unknown>): WidgetFetchContext {
 	};
 }
 
-const hnFetcher = () => serverWidgets.get("hacker-news")!;
+const hnFetcher = () => {
+	const fn = serverWidgets.get("hacker-news");
+	if (!fn) throw new Error("expected hacker-news fetcher");
+	return fn;
+};
 
 describe("hacker-news fetcher", () => {
 	it("fetches ids then items and maps fields", async () => {

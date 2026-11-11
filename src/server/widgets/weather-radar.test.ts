@@ -33,7 +33,11 @@ const GEO = {
 	results: [{ latitude: 51.5, longitude: -0.12, name: "London", country: "United Kingdom" }],
 };
 
-const radarFetcher = () => serverWidgets.get("weather-radar")!;
+const radarFetcher = () => {
+	const fn = serverWidgets.get("weather-radar");
+	if (!fn) throw new Error("expected weather-radar fetcher");
+	return fn;
+};
 
 describe("weather-radar fetcher", () => {
 	it("geocodes then builds a tile template from the last rainviewer frame", async () => {

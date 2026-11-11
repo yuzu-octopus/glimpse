@@ -81,11 +81,11 @@ describe("docker-containers widget", () => {
 		const icons = screen.getAllByTestId("docker-icon") as HTMLImageElement[];
 		// The bundled mark is a black currentColor path: unfilled, it is nothing
 		// on a dark-only theme, so the fetcher's flag has to reach the class.
-		expect(icons[0]!.getAttribute("src")).toBe("/dockerhub.svg");
-		expect(icons[0]!.className).toContain(styles.iconAutoInvert);
+		expect(icons[0]?.getAttribute("src")).toBe("/dockerhub.svg");
+		expect(icons[0]?.className).toContain(styles.iconAutoInvert);
 		// A raster logo from a `glance.icon` label keeps its own colours.
-		expect(icons[1]!.getAttribute("src")).toBe("https://cdn.example/nginx.png");
-		expect(icons[1]!.className).not.toContain(styles.iconAutoInvert);
+		expect(icons[1]?.getAttribute("src")).toBe("https://cdn.example/nginx.png");
+		expect(icons[1]?.className).not.toContain(styles.iconAutoInvert);
 	});
 
 	it("shows loading skeleton while data is null", () => {

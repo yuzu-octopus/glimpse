@@ -164,12 +164,12 @@ function ServerMetrics({ server }: { server: ServerInfo }) {
 				available={server.memory.isAvailable}
 			/>
 			<DiskRow server={server} />
-			{server.temp?.isAvailable ? (
+			{server.temp?.isAvailable && server.temp.main != null ? (
 				<Row
 					icon={Thermometer}
 					label="TEMP"
-					percent={Math.min(100, Math.round(server.temp.main!))}
-					value={`${Math.round(server.temp.main!)}°C`}
+					percent={Math.min(100, Math.round(server.temp.main))}
+					value={`${Math.round(server.temp.main)}°C`}
 					available={true}
 				/>
 			) : null}

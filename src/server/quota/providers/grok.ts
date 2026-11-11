@@ -55,7 +55,7 @@ export async function fetchGrokUsage(
 				proc.kill();
 			} catch {}
 		}, 10_000);
-		proc.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "x.ai/billing" }) + "\n");
+		proc.stdin.write(`${JSON.stringify({ jsonrpc: "2.0", id: 1, method: "x.ai/billing" })}\n`);
 		proc.stdin.end();
 		const out = await new Response(proc.stdout).text();
 		clearTimeout(timer);

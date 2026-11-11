@@ -269,9 +269,10 @@ async function fetchPerplexityUsage(
 }
 
 async function fetchAmpUsage(auth: ProviderAuth, _ctx: WidgetFetchContext): Promise<UsageSnapshot> {
-	if (auth.tokenFile) {
+	const tokenFile = auth.tokenFile;
+	if (tokenFile) {
 		try {
-			const f = Bun.file(auth.tokenFile!);
+			const f = Bun.file(tokenFile);
 			const text = (await f.exists()) ? await f.text() : "";
 			if (text) {
 				const used = Number(

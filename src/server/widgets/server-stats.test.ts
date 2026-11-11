@@ -38,7 +38,11 @@ function makeCtx(fetchImpl: typeof fetch = fetch): WidgetFetchContext {
 	};
 }
 
-const fetcher = () => serverWidgets.get("server-stats")!;
+const fetcher = () => {
+	const fn = serverWidgets.get("server-stats");
+	if (!fn) throw new Error("expected server-stats fetcher");
+	return fn;
+};
 
 describe("server-stats fetcher", () => {
 	beforeEach(() => {

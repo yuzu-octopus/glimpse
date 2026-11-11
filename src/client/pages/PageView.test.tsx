@@ -33,8 +33,15 @@ function payload(overrides: Partial<PagePayload> = {}): PagePayload {
 
 beforeEach(async () => {
 	try {
-		const mod = await import("../hooks/usePageData");
-		(mod as any).__clearCacheForTests?.();
+		const mod: unknown = await import("../hooks/usePageData");
+		if (
+			typeof mod === "object" &&
+			mod !== null &&
+			"__clearCacheForTests" in mod &&
+			typeof mod.__clearCacheForTests === "function"
+		) {
+			mod.__clearCacheForTests();
+		}
 	} catch {}
 	registerWidgetComponent("clock" as WidgetType, ({ config, error }) => (
 		<div data-testid="clock-widget">
@@ -211,12 +218,12 @@ describe("PageView", () => {
 		// one until its data lands — the flag is not a blanket "null data".
 		const seen: { type: string; isLoading: unknown }[] = [];
 		const probe = (type: string) => {
-			const C = (props: { isLoading?: boolean }) => {
+			const c = (props: { isLoading?: boolean }) => {
 				seen.push({ type, isLoading: props.isLoading });
 				return <div data-testid={`probe-${type}`} />;
 			};
-			registerWidgetComponent(type as WidgetType, C);
-			return C;
+			registerWidgetComponent(type as WidgetType, c);
+			return c;
 		};
 		probe("clock");
 		probe("weather");
@@ -938,11 +945,14 @@ describe("PageView", () => {
 		const css = readFileSync("src/client/pages/page.module.css", "utf8");
 		expect(css).toMatch(/\.bentoGrid\s*\{[^}]*repeat\(var\(--bento-cols,\s*12\)/);
 		expect(css).toMatch(/\.bentoGrid\s*\{[^}]*grid-auto-flow:\s*dense/);
-		// mobile collapse lives in the ≤768px media query (!important beats the
-		// earlier-in-file base rule and the inline --bento-* placement vars)
-		expect(css).toMatch(/\.bentoGrid\s*\{[^}]*grid-template-columns:\s*1fr\s*!important/);
-		expect(css).toMatch(/\.bentoItem\s*\{[^}]*grid-column:\s*1\s*\/\s*-1\s*!important/);
-		expect(css).toMatch(/\.bentoItem\s*\{[^}]*grid-row:\s*auto\s*!important/);
+		// mobile collapse lives in the ≤600px media query, which sits after the
+		// base rules in the sheet — later same-specificity wins, so no
+		// !important is needed to beat the base or the inline --bento-* vars
+		expect(css).toMatch(
+			/@media[^{]*max-width:\s*600px[\s\S]*?\.bentoGrid\s*\{[^}]*grid-template-columns:\s*1fr/,
+		);
+		expect(css).toMatch(/\.bentoGrid \.bentoItem\s*\{[^}]*grid-column:\s*1\s*\/\s*-1/);
+		expect(css).toMatch(/\.bentoGrid \.bentoItem\s*\{[^}]*grid-row:\s*auto/);
 	});
 
 	it("columns css: 12-col grid, --col-span sizing, mobile collapse to full width", () => {

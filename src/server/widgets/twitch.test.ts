@@ -55,8 +55,16 @@ function makeCtx(): WidgetFetchContext & { calls: string[] } {
 	};
 }
 
-const channels = () => serverWidgets.get("twitch-channels")!;
-const games = () => serverWidgets.get("twitch-top-games")!;
+const channels = () => {
+	const fn = serverWidgets.get("twitch-channels");
+	if (!fn) throw new Error("expected twitch-channels fetcher");
+	return fn;
+};
+const games = () => {
+	const fn = serverWidgets.get("twitch-top-games");
+	if (!fn) throw new Error("expected twitch-top-games fetcher");
+	return fn;
+};
 
 describe("twitch-channels fetcher", () => {
 	it("registers a fetcher", () => {

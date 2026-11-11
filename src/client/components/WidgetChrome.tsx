@@ -107,6 +107,7 @@ function ChromeSkeleton({ shape }: { shape: SkeletonShape }) {
 		<div className={`${styles.skeleton} ${SHAPE_CLASS[shape]}`} data-testid="widget-loading">
 			{shape === "list" ? (
 				Array.from({ length: 5 }, (_, i) => (
+					// biome-ignore lint/suspicious/noArrayIndexKey: five static placeholder rows, never reordered or filtered
 					<Stack key={i} direction="horizontal" vAlign="center" gap={2}>
 						<Skeleton width={24} height={24} radius="rounded" />
 						<Stack direction="vertical" gap={1.5} className={styles.listLines}>

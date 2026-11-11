@@ -37,6 +37,19 @@
 			}
 		}
 	},
+	"overrides": [
+		{
+			"includes": ["public/**/*.svg"],
+			"linter": {
+				"enabled": true,
+				"rules": {
+					"a11y": {
+						"noSvgWithoutTitle": "off"
+					}
+				}
+			}
+		}
+	],
 	"assist": {
 		"enabled": true,
 		"actions": {

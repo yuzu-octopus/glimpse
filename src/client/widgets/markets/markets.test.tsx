@@ -167,7 +167,8 @@ describe("markets widget", () => {
 		expect(container.querySelector("rect")).toHaveAttribute("fill", CHART_HUES.red);
 		// no sign to show: the kit's muted hue, not a status hue
 		rerender(<TrendChart symbol="X" values={[2, 2, 2]} />);
-		const flat = container.querySelector("rect")!;
+		const flat = container.querySelector("rect");
+		if (!flat) throw new Error("expected spark rect");
 		expect(flat.closest("span")).toHaveClass(styles.sparkFlat);
 		expect(flat.closest("span")).toHaveStyle({ "--spark-hue": CHART_HUES.muted });
 	});

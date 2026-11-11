@@ -48,7 +48,8 @@ export function defineMediaWidget<T extends MediaItem | TorrentItem>(
 		render: (rows: T[]) => ReactNode;
 	},
 ) {
-	function MediaWidget({ config, data, error, isLoading }: WidgetComponentProps) {
+	// biome-ignore lint/correctness/noComponentHookFactories: the factory's whole point is one component body closed over the widget's type+def — four widgets register through it, so the closure is the identity, not a leak
+	const MediaWidget = ({ config, data, error, isLoading }: WidgetComponentProps) => {
 		const cfg = config as unknown as MediaShellConfig;
 		const rows = def.pick(data);
 		const chrome = {
@@ -72,7 +73,7 @@ export function defineMediaWidget<T extends MediaItem | TorrentItem>(
 				{def.render(rows)}
 			</WidgetChrome>
 		);
-	}
+	};
 	registerWidgetComponent(type, MediaWidget);
 	return MediaWidget;
 }

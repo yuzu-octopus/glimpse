@@ -51,10 +51,12 @@ describe("qbittorrent widget", () => {
 	});
 
 	it("omits a rate the client never reported", () => {
+		const [first] = data.torrents;
+		if (!first) throw new Error("expected torrent fixture");
 		const { container } = render(
 			<Qbittorrent
 				config={{ type: "qbittorrent" }}
-				data={{ torrents: [{ ...data.torrents[0]!, downloadSpeed: null, uploadSpeed: null }] }}
+				data={{ torrents: [{ ...first, downloadSpeed: null, uploadSpeed: null }] }}
 			/>,
 		);
 		expect(container.querySelector("svg.lucide-arrow-down")).toBeNull();

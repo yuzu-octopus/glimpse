@@ -226,7 +226,7 @@ function Rss({ config, data, error, isLoading }: WidgetComponentProps) {
 				cssClass={cfg["css-class"]}
 				cardHeight={cfg["card-height"]}
 				thumbnailHeight={cfg["thumbnail-height"]}
-				overlay={cfg["overlay"] === true}
+				overlay={cfg.overlay === true}
 				error={error}
 				showErrors={cfg["show-errors"]}
 				isLoading={loading}

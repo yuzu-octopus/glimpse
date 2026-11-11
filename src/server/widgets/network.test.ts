@@ -22,7 +22,9 @@ async function probe(status: number): Promise<NetworkData> {
 			? new Response(JSON.stringify({ ip: "203.0.113.7" }), { status: 200 })
 			: new Response("", { status }),
 	);
-	return (await serverWidgets.get("network")!(ctx, { type: "network" })) as NetworkData;
+	const fetcher = serverWidgets.get("network");
+	if (!fetcher) throw new Error("expected network fetcher");
+	return (await fetcher(ctx, { type: "network" })) as NetworkData;
 }
 
 describe("network fetcher", () => {
@@ -46,7 +48,9 @@ describe("network fetcher", () => {
 				return new Response(JSON.stringify({ ip: "203.0.113.7" }), { status: 200 });
 			throw new TypeError("fetch failed");
 		});
-		const data = (await serverWidgets.get("network")!(ctx, { type: "network" })) as NetworkData;
+		const fetcher = serverWidgets.get("network");
+		if (!fetcher) throw new Error("expected network fetcher");
+		const data = (await fetcher(ctx, { type: "network" })) as NetworkData;
 		expect(data.ttfbMs).toBeNull();
 	});
 });

@@ -63,7 +63,11 @@ const TOKEN_ENV = { HA_TOKEN: "env-tok" };
 const jsonCtx = (env: Record<string, string | undefined> = TOKEN_ENV): FakeCtx =>
 	makeCtx(async () => new Response(JSON.stringify(STATES), { status: 200 }), env);
 
-const fetcher = () => serverWidgets.get("home-assistant")!;
+const fetcher = () => {
+	const fn = serverWidgets.get("home-assistant");
+	if (!fn) throw new Error("expected home-assistant fetcher");
+	return fn;
+};
 
 const fetchWith = (entities: unknown[]) =>
 	fetcher()(jsonCtx().ctx, {

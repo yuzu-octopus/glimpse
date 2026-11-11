@@ -80,13 +80,13 @@ async function localServer(name?: string): Promise<ServerInfo> {
 		cpu: {
 			name: cpuName,
 			load: (() => {
-				const raw = (load as any)?.currentLoad ?? (load as any)?.avgLoad ?? 0;
+				const raw = load?.currentLoad ?? load?.avgLoad ?? 0;
 				const v = Number(raw);
 				// currentLoad is 0-100, avgLoad is 0-~10 load avg — normalize only currentLoad
-				if ((load as any)?.currentLoad != null) return v > 1 ? v / 100 : v;
+				if (load?.currentLoad != null) return v > 1 ? v / 100 : v;
 				return v;
 			})(),
-			loadIsAvailable: ((load as any)?.currentLoad ?? (load as any)?.avgLoad) != null,
+			loadIsAvailable: (load?.currentLoad ?? load?.avgLoad) != null,
 		},
 		memory: {
 			total: memData?.total ?? 0,

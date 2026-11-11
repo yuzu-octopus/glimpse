@@ -3,7 +3,9 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { WidgetChrome } from "./WidgetChrome";
 
-const rows = Array.from({ length: 5 }, (_, i) => <div key={i}>row {i}</div>);
+const rows = ["row 0", "row 1", "row 2", "row 3", "row 4"].map((label) => (
+	<div key={label}>{label}</div>
+));
 
 afterEach(() => {
 	vi.restoreAllMocks();

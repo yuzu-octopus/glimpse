@@ -34,7 +34,11 @@ function makeCtx(
 	};
 }
 
-const fetcher = () => serverWidgets.get("dns-stats")!;
+const fetcher = () => {
+	const fn = serverWidgets.get("dns-stats");
+	if (!fn) throw new Error("expected dns-stats fetcher");
+	return fn;
+};
 
 async function messageOf(promise: Promise<unknown>): Promise<string> {
 	try {

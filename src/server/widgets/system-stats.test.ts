@@ -59,7 +59,11 @@ function makeCtx(): WidgetFetchContext {
 	};
 }
 
-const fetcher = () => serverWidgets.get("system-stats")!;
+const fetcher = () => {
+	const fn = serverWidgets.get("system-stats");
+	if (!fn) throw new Error("expected system-stats fetcher");
+	return fn;
+};
 
 describe("system-stats fetcher", () => {
 	beforeEach(() => {

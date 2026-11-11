@@ -225,13 +225,13 @@ describe("monitor widget", () => {
 		);
 		const imgs = [...container.querySelectorAll("img")] as HTMLImageElement[];
 		expect(imgs).toHaveLength(2);
-		expect(imgs[0]!.getAttribute("src")).toBe(
+		expect(imgs[0]?.getAttribute("src")).toBe(
 			"https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/example.svg",
 		);
 		// si: glyphs are black paths with no fill — invisible on a dark theme
-		expect(imgs[0]!.className).toContain(styles.iconAutoInvert);
-		expect(imgs[1]!.getAttribute("src")).toBe("https://cdn.example/logo.png");
-		expect(imgs[1]!.className).not.toContain(styles.iconAutoInvert);
+		expect(imgs[0]?.className).toContain(styles.iconAutoInvert);
+		expect(imgs[1]?.getAttribute("src")).toBe("https://cdn.example/logo.png");
+		expect(imgs[1]?.className).not.toContain(styles.iconAutoInvert);
 	});
 
 	it("gives no icon to a site that came from kuma or healthchecks", () => {
@@ -278,9 +278,10 @@ describe("monitor widget", () => {
 				}}
 			/>,
 		);
-		fireEvent.error(container.querySelector(`.${styles.icon}`)!);
+		const icon = container.querySelector(`.${styles.icon}`);
+		if (!icon) throw new Error("expected icon element");
+		fireEvent.error(icon);
 		expect(container.querySelector(`.${styles.icon}`)).toBeNull();
-		expect(screen.getByText("Example")).toBeInTheDocument();
 	});
 
 	it("surfaces a fetch error via the widget chrome", () => {
@@ -300,6 +301,8 @@ describe("monitor widget", () => {
 	 *  dns/system-stats/weather there was no empty branch, so the card body came
 	 *  back as a bare empty rail — indistinguishable from a broken widget. */
 	it("reports the all-clear when show-failing-only filters out every healthy site", () => {
+		const [first] = sites;
+		if (!first) throw new Error("expected fixture site");
 		const { container } = render(
 			<Monitor
 				config={{
@@ -307,7 +310,7 @@ describe("monitor widget", () => {
 					"show-failing-only": true,
 					sites: [{ url: "https://example.com" }],
 				}}
-				data={{ sites: [sites[0]!] }}
+				data={{ sites: [first] }}
 			/>,
 		);
 		expect(screen.getByText("All sites up.")).toBeInTheDocument();

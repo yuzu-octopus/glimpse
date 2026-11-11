@@ -69,7 +69,7 @@ describe("ConfigSchema", () => {
 		const r = ConfigSchema.safeParse({ pages: [{ name: "Home", widgets: [{ type: "clock" }] }] });
 		expect(r.success).toBe(true);
 		if (r.success) {
-			expect(r.data.pages[0].widgets![0].type).toBe("clock");
+			expect(r.data.pages[0].widgets?.[0]?.type).toBe("clock");
 			expect(r.data.pages[0].columns).toBeUndefined();
 		}
 	});
@@ -80,10 +80,10 @@ describe("ConfigSchema", () => {
 		});
 		expect(r.success).toBe(true);
 		if (r.success) {
-			const w = r.data.pages[0].widgets![0];
-			expect(w.priority).toBe(9);
-			expect(w.zone).toBe("sidebar");
-			expect(w.span).toBe(2);
+			const w = r.data.pages[0].widgets?.[0];
+			expect(w?.priority).toBe(9);
+			expect(w?.zone).toBe("sidebar");
+			expect(w?.span).toBe(2);
 		}
 	});
 
@@ -95,8 +95,9 @@ describe("ConfigSchema", () => {
 		});
 		expect(r.success).toBe(true);
 		if (r.success) {
-			expect(r.data.pages[0]["grid-columns"]).toBe(12);
-			expect(r.data.pages[0]["grid-row-height"]).toBe(96);
+			const page = r.data.pages[0];
+			expect(page["grid-columns"]).toBe(12);
+			expect(page["grid-row-height"]).toBe(96);
 		}
 	});
 
@@ -186,7 +187,8 @@ describe("ConfigSchema", () => {
 		const r = ConfigSchema.safeParse({ ...validYaml, "custom-css-file": "custom.css" });
 		expect(r.success).toBe(true);
 		if (!r.success) return;
-		expect(r.data["custom-css-file"]).toBe("custom.css");
+		const config = r.data;
+		expect(config["custom-css-file"]).toBe("custom.css");
 	});
 
 	it("parses tiling, min-column-width, and column span", () => {
@@ -206,10 +208,12 @@ describe("ConfigSchema", () => {
 		expect(r.success).toBe(true);
 		if (r.success) {
 			const page = r.data.pages[0];
+			const columns = page.columns;
+			if (!columns) throw new Error("expected columns");
 			expect(page.tiling).toBe("auto");
 			expect(page["min-column-width"]).toBe(340);
-			expect(page.columns![0].span).toBe(2);
-			expect(page.columns![1].span).toBeUndefined();
+			expect(columns[0].span).toBe(2);
+			expect(columns[1].span).toBeUndefined();
 		}
 	});
 
@@ -240,9 +244,11 @@ describe("ConfigSchema", () => {
 		const r = ConfigSchema.safeParse(validYaml);
 		expect(r.success).toBe(true);
 		if (r.success) {
+			const columns = r.data.pages[0].columns;
+			if (!columns) throw new Error("expected columns");
 			expect(r.data.pages[0].tiling).toBeUndefined();
 			expect(r.data.pages[0]["min-column-width"]).toBeUndefined();
-			expect(r.data.pages[0].columns![0].span).toBeUndefined();
+			expect(columns[0].span).toBeUndefined();
 		}
 	});
 
@@ -474,8 +480,8 @@ describe("ConfigSchema", () => {
 		});
 		expect(r.success).toBe(true);
 		if (!r.success) return;
-		const w = r.data.pages[0].widgets![0];
-		if (w.type !== "twitch-channels") throw new Error("expected a twitch-channels widget");
+		const w = r.data.pages[0].widgets?.[0];
+		if (w?.type !== "twitch-channels") throw new Error("expected a twitch-channels widget");
 		expect(w.channels).toEqual(["xqc", "shroud"]);
 		expect(w["sort-by"]).toBe("live");
 	});
@@ -531,7 +537,9 @@ describe("ConfigSchema", () => {
 		});
 		expect(r.success).toBe(true);
 		if (r.success) {
-			expect(resolveSpan(r.data.pages[0].columns!)).toEqual([9, 3]);
+			const columns = r.data.pages[0].columns;
+			if (!columns) throw new Error("expected columns");
+			expect(resolveSpan(columns)).toEqual([9, 3]);
 		}
 		// reverse order
 		expect(
@@ -602,7 +610,9 @@ describe("ConfigSchema", () => {
 		});
 		expect(r.success).toBe(true);
 		if (r.success) {
-			expect(resolveSpan(r.data.pages[0].columns!)).toEqual([4, 8]);
+			const columns = r.data.pages[0].columns;
+			if (!columns) throw new Error("expected columns");
+			expect(resolveSpan(columns)).toEqual([4, 8]);
 		}
 		// direct explicit without ConfigSchema
 		expect(
@@ -655,8 +665,10 @@ describe("ConfigSchema", () => {
 		});
 		expect(r.success).toBe(true);
 		if (r.success) {
-			expect(r.data.pages[0].columns![0].span).toBeUndefined();
-			expect(resolveSpan(r.data.pages[0].columns!)).toEqual([3, 9]);
+			const columns = r.data.pages[0].columns;
+			if (!columns) throw new Error("expected columns");
+			expect(columns[0].span).toBeUndefined();
+			expect(resolveSpan(columns)).toEqual([3, 9]);
 		}
 	});
 
@@ -668,36 +680,29 @@ describe("ConfigSchema", () => {
 		expect(raw).toContain("@wemmbumc");
 		expect(raw).toContain("@ParrotX2");
 		// Bun.YAML is available when running under Bun; fallback to raw checks under Node vitest
-		if (typeof Bun !== "undefined" && Bun.YAML) {
-			const parsed: unknown = Bun.YAML.parse(raw);
+		const bunYaml = typeof Bun !== "undefined" ? Bun.YAML : undefined;
+		if (bunYaml) {
+			const parsed: unknown = bunYaml.parse(raw);
 			expect(parsed).toBeTruthy();
 			const r = ConfigSchema.safeParse(parsed);
 			expect(r.success).toBe(true);
 			if (r.success) {
 				const social = r.data.pages.find((p) => p.slug === "social");
 				expect(social).toBeDefined();
-				expect(social!.columns).toHaveLength(2);
-				expect(social!.columns![0].span).toBe(4);
-				expect(social!.columns![1].span).toBe(8);
-				expect(social!.columns![0].size).toBe("full");
-				expect(social!.columns![1].size).toBe("full");
-				const leftVideos = social!.columns![0].widgets.find(
-					(w) => w.type === "videos",
-				) as unknown as {
-					channels: string[];
-					limit: number;
-					style: string;
-				};
+				const columns = social?.columns;
+				if (!columns) throw new Error("expected columns");
+				expect(columns).toHaveLength(2);
+				expect(columns[0].span).toBe(4);
+				expect(columns[1].span).toBe(8);
+				expect(columns[0].size).toBe("full");
+				expect(columns[1].size).toBe("full");
+				const leftVideos = columns[0].widgets.find((w) => w.type === "videos");
+				if (leftVideos?.type !== "videos") throw new Error("expected videos widgets");
 				expect(leftVideos.channels).toEqual(["@Fireship", "@ByCloud", "@BetterStack"]);
 				expect(leftVideos.limit).toBe(6);
 				expect(leftVideos.style).toBe("vertical-list");
-				const rightVideos = social!.columns![1].widgets.find(
-					(w) => w.type === "videos",
-				) as unknown as {
-					channels: string[];
-					limit: number;
-					style: string;
-				};
+				const rightVideos = columns[1].widgets.find((w) => w.type === "videos");
+				if (rightVideos?.type !== "videos") throw new Error("expected videos widgets");
 				expect(rightVideos.channels).toEqual([
 					"@wemmbumc",
 					"@ParrotX2",
@@ -709,10 +714,9 @@ describe("ConfigSchema", () => {
 				]);
 				expect(rightVideos.limit).toBe(9);
 				expect(rightVideos.style).toBe("grid-cards");
-				const reddit = social!.columns![0].widgets.find(
-					(w) => w.type === "reddit",
-				) as unknown as Record<string, unknown>;
-				expect(reddit["limit"]).toBe(8);
+				const reddit = columns[0].widgets.find((w) => w.type === "reddit");
+				if (reddit?.type !== "reddit") throw new Error("expected a reddit widget");
+				expect(reddit.limit).toBe(8);
 				expect(reddit["collapse-after"]).toBe(5);
 			}
 		} else {
@@ -730,9 +734,9 @@ describe("ConfigSchema", () => {
 		});
 		expect(r.success).toBe(true);
 		if (!r.success) return;
-		const w = r.data.pages[0].widgets![0];
+		const w = r.data.pages[0].widgets?.[0];
+		if (w?.type !== "todo") throw new Error("expected a todo widget");
 		expect(w.type).toBe("todo");
-		if (w.type !== "todo") throw new Error("expected a todo widget");
 		expect(w.id).toBe("work");
 	});
 
@@ -741,7 +745,7 @@ describe("ConfigSchema", () => {
 			pages: [{ name: "H", widgets: [{ type: "stocks", markets: [{ symbol: "SPY" }] }] }],
 		});
 		expect(r.success).toBe(true);
-		if (r.success) expect(r.data.pages[0].widgets![0].type).toBe("markets");
+		if (r.success) expect(r.data.pages[0].widgets?.[0]?.type).toBe("markets");
 	});
 
 	it("normalizes aliases nested inside a group and a split-column", () => {
@@ -761,7 +765,9 @@ describe("ConfigSchema", () => {
 		});
 		expect(r.success).toBe(true);
 		if (!r.success) return;
-		const [group, split] = r.data.pages[0].widgets!;
+		const widgets = r.data.pages[0].widgets;
+		if (!widgets) throw new Error("expected widgets");
+		const [group, split] = widgets;
 		if (group.type !== "group" || split.type !== "split-column") {
 			throw new Error("expected a group and a split-column");
 		}
@@ -781,8 +787,9 @@ describe("ConfigSchema", () => {
 		});
 		expect(r.success).toBe(true);
 		if (!r.success) return;
-		expect(r.data.pages[0]["head-widgets"]![0].type).toBe("markets");
-		expect(r.data.pages[0].columns![0].widgets[0].type).toBe("todo");
+		const page = r.data.pages[0];
+		expect(page["head-widgets"]?.[0]?.type).toBe("markets");
+		expect(page.columns?.[0]?.widgets[0]?.type).toBe("todo");
 	});
 
 	it("still rejects a genuinely unknown type", () => {
@@ -804,9 +811,9 @@ describe("ConfigSchema", () => {
 			pages: [{ name: "H", widgets: [{ type: "todo", id: "x" }] }],
 		});
 		if (!r.success) return;
-		const w = r.data.pages[0].widgets![0];
+		const w = r.data.pages[0].widgets?.[0];
+		if (w?.type !== "todo") throw new Error("expected a todo widget");
 		expect(w.type).toBe("todo");
-		if (w.type !== "todo") throw new Error("expected a todo widget");
 		expect(w.id).toBe("x");
 	});
 

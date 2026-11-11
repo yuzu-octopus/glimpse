@@ -11,13 +11,14 @@ function loadYaml(yaml: string) {
 	const file = join(dir, "config.yml");
 	writeFileSync(file, yaml);
 	const result = loadConfig(file);
-	if (!result.ok) throw new Error((result.errors ?? []).join("\n"));
-	return result.config!;
+	if (!result.ok || !result.config) throw new Error((result.errors ?? []).join("\n"));
+	return result.config;
 }
 
 /** The widget records of a page, in document order, depth-first. */
 function widgetsOf(config: ResolvedConfig, pageSlug: string) {
-	const page = config.pages.find((p) => p.slug === pageSlug)!;
+	const page = config.pages.find((p) => p.slug === pageSlug);
+	if (!page) throw new Error(`missing page ${pageSlug}`);
 	const out: Record<string, unknown>[] = [];
 	const walk = (list: unknown) => {
 		if (!Array.isArray(list)) return;
@@ -74,8 +75,9 @@ describe("derived widget ids", () => {
 	// timer in every existing install, and it never collided with anything.
 	it("leaves the first instance on a page on the key it has always owned", () => {
 		const [first] = widgetsOf(loadYaml(NOTEPADS), "home");
-		expect(first!.id).toBeUndefined();
-		expect(localStateKey("notepad", first!.id as string | undefined)).toBe(
+		if (!first) throw new Error("expected first widget");
+		expect(first.id).toBeUndefined();
+		expect(localStateKey("notepad", first.id as string | undefined)).toBe(
 			"glimpse.notepad.default",
 		);
 	});

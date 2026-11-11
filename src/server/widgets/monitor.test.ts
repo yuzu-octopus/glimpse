@@ -21,7 +21,11 @@ function makeCtx(fetchImpl: (url: string, init?: RequestInit) => Promise<Respons
 	};
 }
 
-const monitorFetcher = () => serverWidgets.get("monitor")!;
+const monitorFetcher = () => {
+	const fn = serverWidgets.get("monitor");
+	if (!fn) throw new Error("expected monitor fetcher");
+	return fn;
+};
 
 describe("monitor fetcher", () => {
 	it("reports ok with status and latency", async () => {

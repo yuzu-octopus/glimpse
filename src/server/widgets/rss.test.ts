@@ -32,7 +32,11 @@ function makeCtx(fetchImpl: (url: string) => Promise<Response>): WidgetFetchCont
 	};
 }
 
-const rssFetcher = () => serverWidgets.get("rss")!;
+const rssFetcher = () => {
+	const fn = serverWidgets.get("rss");
+	if (!fn) throw new Error("expected rss fetcher");
+	return fn;
+};
 
 describe("rss fetcher", () => {
 	it("parses RSS items with source, date and thumbnail", async () => {
