@@ -336,6 +336,7 @@ describe("playlist order: the feed window is a positional window, not the newest
 			type: "videos",
 			playlists: [OLDEST_FIRST],
 			limit: 2,
+			retries: 0,
 		})) as Payload;
 
 		expect(shown(second)).toEqual(NEWEST_END.slice(0, 2));

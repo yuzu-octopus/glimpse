@@ -70,6 +70,7 @@ describe("rss fetcher", () => {
 		const data = (await rssFetcher()(ctx, {
 			type: "rss",
 			feeds: [{ url: "https://example.com/ok" }, { url: "https://example.com/broken" }],
+			retries: 0,
 		})) as { items: RssItem[] };
 		// The one healthy feed contributes exactly its items, newest first.
 		// `toBeGreaterThan(0)` would pass even if a single failing feed poisoned
@@ -83,7 +84,7 @@ describe("rss fetcher", () => {
 		// config error or a schema rejection.
 		const ctx = makeCtx(async () => new Response("nope", { status: 500 }));
 		await expect(
-			rssFetcher()(ctx, { type: "rss", feeds: [{ url: "https://example.com/x" }] }),
+			rssFetcher()(ctx, { type: "rss", feeds: [{ url: "https://example.com/x" }], retries: 0 }),
 		).rejects.toThrow("all RSS feeds failed to load");
 	});
 
@@ -151,7 +152,7 @@ describe("rss fetcher", () => {
 			type: "rss",
 			feeds: [{ url: "https://example.com/feed" }],
 		})) as { items: RssItem[] };
-		expect(data.items[0].description).toBe("Hello world It's quoted");
+		expect(data.items[0].description).toBe("Hello world It’s quoted");
 	});
 
 	it("returns null for descriptions that are empty after stripping", async () => {

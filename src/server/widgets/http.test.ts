@@ -83,24 +83,33 @@ describe("fetchWithRetry", () => {
 	});
 
 	it("respects Retry-After http-date", async () => {
-		const future = new Date(Date.now() + 2000).toUTCString();
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValueOnce(new Response("x", { status: 503, headers: { "Retry-After": future } }))
-			.mockResolvedValueOnce(new Response("ok", { status: 200 }));
+		vi.useFakeTimers();
+		try {
+			const future = new Date(Date.now() + 2000).toUTCString();
+			const fetchMock = vi
+				.fn()
+				.mockResolvedValueOnce(
+					new Response("x", { status: 503, headers: { "Retry-After": future } }),
+				)
+				.mockResolvedValueOnce(new Response("ok", { status: 200 }));
 
-		const ctx = makeCtx(fetchMock);
-		const start = Date.now();
-		const res = await fetchWithRetry(
-			ctx,
-			"https://example.com/c",
-			{},
-			{ retries: 3, baseDelay: 1, factor: 2 },
-		);
-		const elapsed = Date.now() - start;
-		expect(res.status).toBe(200);
-		expect(fetchMock).toHaveBeenCalledTimes(2);
-		expect(elapsed).toBeGreaterThanOrEqual(30);
+			const ctx = makeCtx(fetchMock);
+			const pending = fetchWithRetry(
+				ctx,
+				"https://example.com/c",
+				{},
+				{ retries: 3, baseDelay: 1, factor: 2 },
+			);
+			// Halfway through the 2000ms Retry-After the retry must not have fired.
+			await vi.advanceTimersByTimeAsync(1000);
+			expect(fetchMock).toHaveBeenCalledTimes(1);
+			await vi.advanceTimersByTimeAsync(1500);
+			const res = await pending;
+			expect(res.status).toBe(200);
+			expect(fetchMock).toHaveBeenCalledTimes(2);
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it("non-retry status throws immediately without retry", async () => {

@@ -70,7 +70,7 @@ describe("change-detection fetcher", () => {
 		// survived. A fetcher that dropped the cache entry in its catch would
 		// report `unchanged` forever and never detect a real change again.
 		const { ctx } = makeCtx({ [URL]: "<html><body>v1</body></html>" });
-		const cfg = { type: "change-detection", urls: [URL] };
+		const cfg = { type: "change-detection", urls: [URL], retries: 0 };
 		await fetcher()(ctx, cfg);
 		const key = `change-detection:${URL}:`;
 		const seeded = ctx.cache.get<{ hash: string; changedAt: string | null }>(key);

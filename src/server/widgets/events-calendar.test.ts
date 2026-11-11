@@ -123,9 +123,9 @@ describe("events-calendar fetcher", () => {
 		expect(data.events).toHaveLength(2);
 	});
 
-	// No fake timers here: fetchWithRetry's real backoff delays would never
-	// advance. The assertion is failure-tolerance only, so wall-clock now is fine —
-	// hence the fixture is rebuilt from the real clock, not the fixed NOW.
+	// retries: 0 — the assertion is failure-tolerance only, so skipping the
+	// real-backoff ladder keeps wall-clock fast. Fixture stays on the real
+	// clock, not the fixed NOW.
 	it("merges multiple feeds and tolerates a broken one", async () => {
 		const ctx = makeCtx(async (url) =>
 			url.includes("broken")
@@ -135,6 +135,7 @@ describe("events-calendar fetcher", () => {
 		const data = (await fetcher()(ctx, {
 			type: "events-calendar",
 			urls: ["https://example.com/ok.ics", "https://example.com/broken.ics"],
+			retries: 0,
 		})) as { events: unknown[] };
 		expect(data.events.length).toBeGreaterThan(0);
 	});
@@ -142,7 +143,7 @@ describe("events-calendar fetcher", () => {
 	it("throws when every feed fails", async () => {
 		const ctx = makeCtx(async () => new Response("nope", { status: 500 }));
 		await expect(
-			fetcher()(ctx, { type: "events-calendar", urls: ["https://example.com/x.ics"] }),
+			fetcher()(ctx, { type: "events-calendar", urls: ["https://example.com/x.ics"], retries: 0 }),
 		).rejects.toThrow();
 	});
 

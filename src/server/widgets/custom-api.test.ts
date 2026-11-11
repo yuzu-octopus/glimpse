@@ -117,7 +117,11 @@ describe("custom-api fetcher", () => {
 	it("throws on non-2xx responses", async () => {
 		const ctx = makeCtx(async () => new Response("nope", { status: 500 }));
 		await expect(
-			customApiFetcher()(ctx, { type: "custom-api", url: "https://api.example.com/boom" }),
+			customApiFetcher()(ctx, {
+				type: "custom-api",
+				url: "https://api.example.com/boom",
+				retries: 0,
+			}),
 		).rejects.toThrow("HTTP 500");
 	});
 

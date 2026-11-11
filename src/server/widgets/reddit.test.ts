@@ -191,9 +191,9 @@ describe("reddit fetcher", () => {
 			cache: new TtlCache(),
 			singleflight: new Singleflight(),
 		};
-		await expect(redditFetcher()(ctx, { type: "reddit", subreddit: "selfhosted" })).rejects.toThrow(
-			/REDDIT_CLIENT_ID.*proxy\/request-url-template/,
-		);
+		await expect(
+			redditFetcher()(ctx, { type: "reddit", subreddit: "selfhosted", retries: 0 }),
+		).rejects.toThrow(/REDDIT_CLIENT_ID.*proxy\/request-url-template/);
 		const firstOpts = (
 			fetchMock.mock.calls[0] as unknown as [string, { headers: Record<string, string> }]
 		)[1];
