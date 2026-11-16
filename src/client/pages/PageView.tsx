@@ -115,23 +115,16 @@ function columnKey(
 	return col.widgets[0] ? widgetKey(col.widgets[0], 0, counts) : `column-${i}`;
 }
 
-/** Container width for `place()`: window width until the grid mounts, then
- * the measured content box. Live tiles and skeletons use the same hook on
- * equivalent containers, so both sides place identically at every commit. */
-function usePlacedWidth(ref: RefObject<HTMLElement | null>): number {
+/** Viewport width — the same input the CSS @media breakpoints use. */
+function useViewportWidth(): number {
 	const [width, setWidth] = useState(() =>
 		typeof window !== "undefined" ? window.innerWidth : 1280,
 	);
 	useEffect(() => {
-		const el = ref.current;
-		if (!el || typeof ResizeObserver === "undefined") return;
-		const ro = new ResizeObserver(() => {
-			const w = el.clientWidth || el.getBoundingClientRect().width;
-			if (w > 0) setWidth(w);
-		});
-		ro.observe(el);
-		return () => ro.disconnect();
-	}, [ref]);
+		const onResize = () => setWidth(window.innerWidth);
+		window.addEventListener("resize", onResize);
+		return () => window.removeEventListener("resize", onResize);
+	}, []);
 	return width;
 }
 
@@ -153,7 +146,7 @@ export function PageSkeleton({ page }: { page: Page & { slug: string } }) {
 	const hideHeaders = page["hide-headers"] === true;
 	const tilingProps = getTilingProps(page.tiling, page["min-column-width"]);
 	const gridRef = useRef<HTMLDivElement>(null);
-	const width = usePlacedWidth(gridRef);
+	const width = useViewportWidth();
 	const flatWidgets = (page as { widgets?: unknown[] }).widgets as FlatWidgetLike[] | undefined;
 	const isCollage = page.tiling === "collage" && !flatWidgets;
 	// The same place() call the live tree makes: identical config-only inputs
@@ -499,9 +492,12 @@ function GroupTabs({
 		};
 		measure();
 		if (!strip) return;
+		const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+		observer?.observe(strip);
 		strip.addEventListener("scroll", measure, { passive: true });
 		window.addEventListener("resize", measure);
 		return () => {
+			observer?.disconnect();
 			strip.removeEventListener("scroll", measure);
 			window.removeEventListener("resize", measure);
 		};
@@ -543,6 +539,14 @@ const MobileColumn = memo(function MobileColumn({
 	children: ReactNode;
 }) {
 	const [open, setOpen] = useState(true);
+	useEffect(() => {
+		const mq = window.matchMedia("(max-width: 600px)");
+		const onChange = () => {
+			if (!mq.matches) setOpen(true);
+		};
+		mq.addEventListener("change", onChange);
+		return () => mq.removeEventListener("change", onChange);
+	}, []);
 	const toggleRef = useRef<HTMLButtonElement>(null);
 	const contentRef = useRef<HTMLDivElement>(null);
 	const handleToggle = () => {
@@ -626,7 +630,7 @@ function BentoGrid({
 }) {
 	const widgetIds = useMemo(() => widgetKeysFor(widgets as unknown as WidgetLike[]), [widgets]);
 	const gridRef = useRef<HTMLDivElement>(null);
-	const width = usePlacedWidth(gridRef);
+	const width = useViewportWidth();
 	// place() inputs double as the priority source: the same call the flat
 	// skeleton makes, so live tiles and shimmer agree at every width.
 	const inputs = useMemo(
@@ -848,7 +852,7 @@ export function PageView({
 }) {
 	const { data, error, reload } = usePageData(slug);
 	const gridRef = useRef<HTMLDivElement>(null);
-	const width = usePlacedWidth(gridRef);
+	const width = useViewportWidth();
 	// Collage geometry from place() — the same call the skeleton makes, so
 	// tiles == skeletons at every width. Above the early returns: hooks stay
 	// unconditional across loading / error / ready states.

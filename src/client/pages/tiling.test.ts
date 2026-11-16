@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
 	columnEstRows,
@@ -53,6 +54,18 @@ describe("trackCountForWidth", () => {
 		expect(trackCountForWidth(601)).toBe(6);
 		expect(trackCountForWidth(900)).toBe(6);
 		expect(trackCountForWidth(901)).toBe(12);
+	});
+	it("gives 6 tracks across the 632px inset band", () => {
+		// 632 = 600 + 2 × 16px page inset: the band where the content box read
+		// 600px while the CSS still ran desktop rules. It must map to 6 tracks.
+		const cases: Array<[number, number]> = [
+			[600, 1],
+			[601, 6],
+			[632, 6],
+			[900, 6],
+			[901, 12],
+		];
+		for (const [width, cols] of cases) expect(trackCountForWidth(width)).toBe(cols);
 	});
 	it("falls back to desktop for unmeasurable widths", () => {
 		expect(trackCountForWidth(0)).toBe(DESKTOP_COLS);
@@ -259,4 +272,11 @@ describe("getTilingProps", () => {
 		const props = getTilingProps("auto");
 		expect((props.style as Record<string, string>)?.["--min-column-width"]).toBe("300px");
 	});
+});
+
+it("uses one viewport-based width for live and skeleton placement", () => {
+	const src = readFileSync("src/client/pages/PageView.tsx", "utf8");
+	expect(src).toContain("function useViewportWidth()");
+	expect(src).not.toContain("usePlacedWidth");
+	expect(src.match(/const width = useViewportWidth\(\);/g)).toHaveLength(3);
 });

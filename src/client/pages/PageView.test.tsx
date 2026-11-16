@@ -8,6 +8,7 @@ import type { Page, WidgetType } from "../../shared/config";
 import { GlimpseThemeProvider } from "../theme/GlimpseThemeProvider";
 import { clientWidgets, registerWidgetComponent } from "../widgets/registry";
 import { PageSkeleton, PageView } from "./PageView";
+import { MOBILE_MAX_WIDTH } from "./tiling";
 
 function payload(overrides: Partial<PagePayload> = {}): PagePayload {
 	return {
@@ -86,6 +87,57 @@ function renderPage(p: PagePayload) {
 			<PageView slug={p.slug} />
 		</MemoryRouter>,
 	);
+}
+
+function mobileMedia() {
+	const change: Array<() => void> = [];
+	const mql = {
+		matches: true,
+		media: "(max-width: 600px)",
+		onchange: null,
+		addListener: vi.fn(),
+		removeListener: vi.fn(),
+		addEventListener: vi.fn((type: string, cb: () => void) => {
+			if (type === "change") change.push(cb);
+		}),
+		removeEventListener: vi.fn((type: string, cb: () => void) => {
+			if (type === "change") {
+				const i = change.indexOf(cb);
+				if (i >= 0) change.splice(i, 1);
+			}
+		}),
+		dispatchEvent: vi.fn(),
+	};
+	vi.stubGlobal(
+		"matchMedia",
+		vi.fn().mockImplementation((query: string) =>
+			query === "(max-width: 600px)"
+				? mql
+				: {
+						matches: false,
+						media: query,
+						onchange: null,
+						addListener: vi.fn(),
+						removeListener: vi.fn(),
+						addEventListener: vi.fn(),
+						removeEventListener: vi.fn(),
+						dispatchEvent: vi.fn(),
+					},
+		),
+	);
+	return {
+		leaveMobile() {
+			mql.matches = false;
+			for (const cb of [...change]) cb();
+		},
+		enterMobile() {
+			mql.matches = true;
+			for (const cb of [...change]) cb();
+		},
+		count() {
+			return change.length;
+		},
+	};
 }
 
 // Shared by the App-level tests: one config, two pages, so the module-level
@@ -380,6 +432,53 @@ describe("PageView", () => {
 		expect(screen.getByTestId("clock-widget")).toHaveTextContent("Tab B");
 	});
 
+	it("group tabs keep a 44px tap target at 600px and below", () => {
+		const css = readFileSync("src/client/pages/page.module.css", "utf8");
+		const mobileStart = css.indexOf("@media (max-width: 600px)");
+		expect(mobileStart).toBeGreaterThan(-1);
+		const mobile = css.slice(mobileStart, css.indexOf("\n}", mobileStart));
+		expect(mobile).toMatch(
+			/\.groupTabs\s+button,\s*\.groupTabs\s+\[data-tab-value\]\s*\{[^}]*min-height:\s*44px/,
+		);
+		// the floor is mobile-only and it sits after the base rule
+		expect(css.slice(0, mobileStart)).not.toMatch(/\.groupTabs\s+button[\s\S]*?min-height:\s*44px/);
+		expect(mobileStart).toBeGreaterThan(css.indexOf(".groupTabs button,"));
+	});
+
+	it("re-measures the group-tab underline when the strip resizes", async () => {
+		const observed: Element[] = [];
+		class StubResizeObserver {
+			observe(target: Element) {
+				observed.push(target);
+			}
+			unobserve() {}
+			disconnect() {}
+		}
+		vi.stubGlobal("ResizeObserver", StubResizeObserver);
+		renderPage(
+			payload({
+				columns: [
+					{
+						size: "full",
+						widgets: [
+							{
+								type: "group",
+								config: { type: "group" },
+								data: null,
+								widgets: [
+									{ type: "clock", config: { type: "clock", title: "Wide tab label" }, data: null },
+									{ type: "clock", config: { type: "clock", title: "B" }, data: null },
+								],
+							},
+						],
+					},
+				],
+			}),
+		);
+		await screen.findByRole("button", { name: "Wide tab label" });
+		expect(observed).toContain(document.querySelector('[aria-label="Group tabs"]'));
+	});
+
 	/** Before the per-widget boundary, a payload that threw while rendering
 	 *  unmounted every widget on the page — one malformed field and the whole
 	 *  dashboard went blank, with no card to say which widget did it. */
@@ -560,6 +659,91 @@ describe("PageView", () => {
 		// nothing under vitest's hashed CSS-module proxy, so the count was 2 out
 		// of an empty NodeList and the test could not fail.
 		expect(screen.getAllByTestId("column-toggle")).toHaveLength(2);
+	});
+
+	it("reopens a collapsed column when the viewport leaves mobile", async () => {
+		const media = mobileMedia();
+		renderPage(
+			payload({
+				columns: [
+					{
+						size: "full",
+						widgets: [{ type: "clock", config: { type: "clock", title: "Clock" }, data: null }],
+					},
+				],
+			}),
+		);
+		await screen.findAllByTestId("clock-widget");
+		const toggle = screen.getByTestId("column-toggle");
+		expect(toggle).toHaveAttribute("aria-expanded", "true");
+		fireEvent.click(toggle);
+		expect(toggle).toHaveAttribute("aria-expanded", "false");
+		expect(screen.queryByTestId("clock-widget")).toBeNull();
+		await act(async () => {
+			media.leaveMobile();
+		});
+		expect(screen.getByTestId("column-toggle")).toHaveAttribute("aria-expanded", "true");
+		expect(screen.getByTestId("clock-widget")).toBeTruthy();
+	});
+
+	it("leaves an already-open column open when the viewport leaves mobile", async () => {
+		const media = mobileMedia();
+		renderPage(
+			payload({
+				columns: [
+					{
+						size: "full",
+						widgets: [{ type: "clock", config: { type: "clock", title: "Clock" }, data: null }],
+					},
+				],
+			}),
+		);
+		await screen.findAllByTestId("clock-widget");
+		await act(async () => {
+			media.leaveMobile();
+		});
+		expect(screen.getByTestId("column-toggle")).toHaveAttribute("aria-expanded", "true");
+		expect(screen.getByTestId("clock-widget")).toBeTruthy();
+	});
+
+	it("does not auto-close a column when re-entering mobile", async () => {
+		const media = mobileMedia();
+		renderPage(
+			payload({
+				columns: [
+					{
+						size: "full",
+						widgets: [{ type: "clock", config: { type: "clock", title: "Clock" }, data: null }],
+					},
+				],
+			}),
+		);
+		await screen.findAllByTestId("clock-widget");
+		fireEvent.click(screen.getByTestId("column-toggle"));
+		await act(async () => {
+			media.leaveMobile();
+			media.enterMobile();
+		});
+		expect(screen.getByTestId("column-toggle")).toHaveAttribute("aria-expanded", "true");
+		expect(screen.getByTestId("clock-widget")).toBeTruthy();
+	});
+
+	it("removes its matchMedia listener on unmount", async () => {
+		const media = mobileMedia();
+		const { unmount } = renderPage(
+			payload({
+				columns: [
+					{
+						size: "full",
+						widgets: [{ type: "clock", config: { type: "clock", title: "Clock" }, data: null }],
+					},
+				],
+			}),
+		);
+		await screen.findByTestId("clock-widget");
+		expect(media.count()).toBeGreaterThan(0);
+		unmount();
+		expect(media.count()).toBe(0);
 	});
 
 	// The mobile toggle used to read the first widget's title, so a page whose
@@ -792,6 +976,21 @@ describe("PageView", () => {
 		expect(css).toMatch(/\.splitColumn\s*\{[^}]*gap:\s*var\(--(widget-gap|space-gap)\)/);
 	});
 
+	it("mobile header bleeds exactly the page inset and the page clips horizontal overflow", () => {
+		const pageCss = readFileSync("src/client/pages/page.module.css", "utf8");
+		const globalCss = readFileSync("src/index.css", "utf8");
+		const start = pageCss.indexOf(".mobileHeader");
+		const header = pageCss.slice(start, pageCss.indexOf("}", start));
+
+		// The page insets by --space-viewport; the strip must cancel that same token.
+		expect(pageCss).toMatch(/\.page\s*\{[^}]*padding-inline:\s*var\(--space-viewport\)/);
+		expect(header).toMatch(
+			/margin:\s*calc\(-1 \* var\(--widget-gap\)\) calc\(-1 \* var\(--space-viewport\)\) var\(--widget-gap\)/,
+		);
+		expect(header).not.toMatch(/--content-bounds-padding/);
+		expect(globalCss).toMatch(/body\s*\{[^}]*overflow-x:\s*clip/);
+	});
+
 	it("page layout has no entrance choreography and no shadow-based depth", () => {
 		for (const file of [
 			"src/client/pages/page.module.css",
@@ -982,6 +1181,22 @@ describe("PageView", () => {
 		expect(media).toMatch(/\.columns \.column\s*\{[^}]*grid-column:\s*1 \/ -1/);
 	});
 
+	it("reduced motion snaps tabs, the indicator and the column toggle", () => {
+		const css = readFileSync("src/client/pages/page.module.css", "utf8");
+		const reduceIndex = css.indexOf("@media (prefers-reduced-motion: reduce)");
+		const reduce = css.slice(reduceIndex);
+		expect(reduce).toMatch(/\.groupTabsIndicator\s*\{[^}]*transition:\s*none/);
+		expect(reduce).toMatch(
+			/\.groupTabs\s+button,\s*\.groupTabs\s+\[data-tab-value\]\s*\{[^}]*transition:\s*none/,
+		);
+		expect(reduce).toMatch(/\.mobileToggle\s*\{[^}]*transition:\s*none/);
+		// The opt-out must follow the base rule or it loses the cascade.
+		const baseGroupTabsButton = css.search(
+			/\.groupTabs\s+button,\s*\.groupTabs\s+\[data-tab-value\]\s*\{\s*background:\s*transparent/,
+		);
+		expect(reduceIndex).toBeGreaterThan(baseGroupTabsButton);
+	});
+
 	it("Social 4/8 columns map to spans (--col-span)", async () => {
 		renderPage(
 			payload({
@@ -1054,5 +1269,71 @@ describe("PageView", () => {
 		const cols = screen.getAllByTestId("column");
 		expect(cols[0].style.getPropertyValue("--col-span")).toBe("9");
 		expect(cols[1].style.getPropertyValue("--col-span")).toBe("3");
+	});
+
+	it("uses the viewport, not the measured content box, for the tiling breakpoint", async () => {
+		const originalClientWidth = Object.getOwnPropertyDescriptor(
+			HTMLElement.prototype,
+			"clientWidth",
+		);
+		Object.defineProperty(window, "innerWidth", {
+			configurable: true,
+			writable: true,
+			value: 632,
+		});
+		Object.defineProperty(HTMLElement.prototype, "clientWidth", {
+			configurable: true,
+			get: () => 600,
+		});
+		try {
+			renderPage(
+				payload({
+					widgets: [
+						{ type: "clock", config: { type: "clock" }, data: null },
+						{ type: "clock", config: { type: "clock" }, data: null },
+					],
+				}),
+			);
+			await screen.findAllByTestId("clock-widget");
+			expect(screen.getByTestId("bento-grid").style.getPropertyValue("--bento-cols")).toBe("6");
+			act(() => {
+				window.innerWidth = 600;
+				window.dispatchEvent(new Event("resize"));
+			});
+			expect(screen.getByTestId("bento-grid").style.getPropertyValue("--bento-cols")).toBe("1");
+		} finally {
+			if (originalClientWidth)
+				Object.defineProperty(HTMLElement.prototype, "clientWidth", originalClientWidth);
+			else Reflect.deleteProperty(HTMLElement.prototype, "clientWidth");
+			Object.defineProperty(window, "innerWidth", {
+				configurable: true,
+				writable: true,
+				value: 1024,
+			});
+		}
+	});
+
+	it("drives mobile toggles from the same 600px viewport breakpoint as the placer", () => {
+		const css = readFileSync("src/client/pages/page.module.css", "utf8");
+		expect(MOBILE_MAX_WIDTH).toBe(600);
+		// Brace-match the @media block rather than regexing to the first closing brace:
+		// nested blocks inside it are what make a naive regex stop early.
+		const at = css.indexOf("@media (max-width: 600px) {");
+		expect(at).toBeGreaterThanOrEqual(0);
+		let depth = 0;
+		let end = at;
+		for (let i = at; i < css.length; i++) {
+			if (css[i] === "{") depth++;
+			else if (css[i] === "}") {
+				depth--;
+				if (depth === 0) {
+					end = i;
+					break;
+				}
+			}
+		}
+		const block = css.slice(at, end);
+		expect(block).toContain(".mobileToggle");
+		expect(block).toMatch(/\.mobileToggle\s*\{[^}]*display:\s*inline-flex/);
 	});
 });

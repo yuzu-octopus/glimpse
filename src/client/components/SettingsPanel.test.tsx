@@ -84,6 +84,27 @@ describe("SettingsPanel section sidebar", () => {
 		expect(document.getElementById("settings-panel-about")).not.toBeNull();
 	});
 
+	it("wraps the nav rail instead of clipping its three labels at 320px", () => {
+		stubConfigApi();
+		render(<SettingsPanel />);
+		fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+
+		const nav = screen.getByTestId("settings-nav");
+		for (const label of ["About", "Docs", "Changelog"]) {
+			expect(within(nav).getByText(label).closest("button")).not.toBeNull();
+		}
+
+		const dialog = readFileSync("src/client/components/SettingsPanel.tsx", "utf8");
+		expect(dialog).toMatch(/width="min\(960px,\s*calc\(100vw - 32px\)\)"/);
+
+		const narrowStart = stylesheet.indexOf("@media (max-width: 720px)");
+		expect(narrowStart).toBeGreaterThan(-1);
+		const narrow = stylesheet.slice(narrowStart);
+		expect(narrow).toMatch(/\.nav\s*\{[^}]*flex-direction:\s*row[^}]*flex-wrap:\s*wrap/);
+		expect(narrow).toMatch(/\.nav\s*>\s*\*\s*\{[^}]*flex:\s*0\s+0\s+auto/);
+		expect(narrow).not.toMatch(/\.nav\s*\{[^}]*overflow:\s*hidden/);
+	});
+
 	it("keeps every section reachable by keyboard — no href-less anchors", () => {
 		stubConfigApi();
 		render(<SettingsPanel />);

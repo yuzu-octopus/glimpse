@@ -44,7 +44,7 @@
 	font-size: var(--font-size-h3);
 	font-weight: 600;
 	color: var(--color-text-highlight);
-	margin: calc(-1 * var(--widget-gap)) calc(-1 * var(--content-bounds-padding)) var(--widget-gap);
+	margin: calc(-1 * var(--widget-gap)) calc(-1 * var(--space-viewport)) var(--widget-gap);
 }
 
 .headWidgets {
@@ -255,12 +255,6 @@
 		width 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@media (prefers-reduced-motion: reduce) {
-	.groupTabsIndicator {
-		transition: none;
-	}
-}
-
 /* Group tabs (widget-group.css port): flat inline text, uppercase, no pills.
    Overrides Astryx TabList/Tab stylex (hover pill + white bottom indicator)
    to match the flat philosophy — borders and a dim, never a shadow. App CSS
@@ -425,6 +419,10 @@
 	.mobileToggle {
 		display: inline-flex;
 	}
+	.groupTabs button,
+	.groupTabs [data-tab-value] {
+		min-height: 44px;
+	}
 	.mobileHeader {
 		display: flex;
 	}
@@ -442,5 +440,18 @@
 	.bentoGrid .bentoItem {
 		grid-column: 1 / -1;
 		grid-row: auto;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.groupTabsIndicator {
+		transition: none;
+	}
+	.groupTabs button,
+	.groupTabs [data-tab-value] {
+		transition: none;
+	}
+	.mobileToggle {
+		transition: none;
 	}
 }

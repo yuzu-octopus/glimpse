@@ -203,6 +203,17 @@ describe("WidgetChrome brand principles", () => {
 			expect(value[1].trim().startsWith("none")).toBe(true);
 		}
 	});
+
+	it("reduced motion snaps the chevron and keeps the body-reveal opt-out", () => {
+		const css = readFileSync("src/client/components/widget-chrome.module.css", "utf8");
+		const reduceIndex = css.indexOf("@media (prefers-reduced-motion: reduce)");
+		const reduce = css.slice(reduceIndex);
+		expect(reduce).toMatch(/\.chevron\s*\{[^}]*transition:\s*none/);
+		expect(reduce).toMatch(/\.bodyReveal\s*\{[^}]*animation:\s*none/);
+		// The opt-out must follow the base transition or it loses the cascade.
+		const baseChevron = css.search(/\.chevron\s*\{[^}]*transition:\s*transform/);
+		expect(reduceIndex).toBeGreaterThan(baseChevron);
+	});
 });
 
 describe("WidgetChrome quiet errors (show-errors)", () => {

@@ -99,12 +99,6 @@
 	animation: bodyReveal 200ms var(--ease-standard) both;
 }
 
-@media (prefers-reduced-motion: reduce) {
-	.bodyReveal {
-		animation: none;
-	}
-}
-
 /* The notice is chrome around the body, not a body row: one gap down, and it
  * never participates in the grid or rail the body may be running. */
 .notice {
@@ -162,4 +156,13 @@
 	justify-content: flex-start;
 	text-transform: uppercase;
 	padding: var(--widget-content-vertical-padding) 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.bodyReveal {
+		animation: none;
+	}
+	.chevron {
+		transition: none;
+	}
 }

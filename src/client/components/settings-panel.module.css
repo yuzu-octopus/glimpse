@@ -250,9 +250,14 @@
 
 	.nav {
 		flex-direction: row;
+		flex-wrap: wrap;
 		width: auto;
 		border-right: none;
 		border-bottom: 1px solid var(--color-separator);
+	}
+
+	.nav > * {
+		flex: 0 0 auto;
 	}
 
 	.content {
