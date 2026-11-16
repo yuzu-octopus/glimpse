@@ -23,11 +23,17 @@ import { describe, expect, it } from "vitest";
 const read = (path: string): string => readFileSync(path, "utf8");
 
 // Sources of truth, read at test time (same style as theme-tokens.test.ts).
-const pkg = JSON.parse(read("package.json")) as { dependencies: Record<string, string> };
+const pkg = JSON.parse(read("package.json")) as {
+	dependencies: Record<string, string>;
+	devDependencies: Record<string, string>;
+};
 const agents = read("AGENTS.md");
 const readme = read("README.md");
+const themingSkill = read(".agents/skills/theming-glimpse/SKILL.md");
+const changelog = read("CHANGELOG.md");
 const vite = read("vite.config.ts");
 const TTL_SOURCE = read("src/shared/live.ts");
+const BIOME_SCHEMA = read("biome.json");
 
 /** Declared TTL for one TTL_OVERRIDE_MS entry, parsed from code. */
 const ttlMsFor = (type: string): number => {
@@ -38,13 +44,26 @@ const ttlMsFor = (type: string): number => {
 };
 
 describe("toolchain contract", () => {
-	const kitRange = pkg.dependencies["astryx-dracula"];
-
-	it("pins the same astryx-dracula range in docs as package.json", () => {
+	it("pins the same astryx-dracula range in every doc that names a version", () => {
+		const kitRange = pkg.dependencies["astryx-dracula"];
+		const bare = kitRange.replace(/^\^/, "");
 		expect(kitRange).toMatch(/^\^\d+\.\d+\.\d+$/);
-		expect(agents).toContain(`\`${kitRange}\``);
-		expect(readme).toContain(`\`${kitRange}\``);
-		expect(agents).toContain(`astryx-dracula@${kitRange.replace(/^\^/, "")}`);
+		for (const [label, source] of [
+			["AGENTS.md", agents],
+			["README.md", readme],
+			["theming-glimpse skill", themingSkill],
+		] as const) {
+			expect(source, `${label} must pin the installed kit range`).toContain(`\`${kitRange}\``);
+		}
+		// CHANGELOG records bare versions ("astryx-dracula 0.9.0"), not ranges.
+		expect(changelog).toContain(`\`astryx-dracula\` ${bare}`);
+		expect(agents).toContain(`astryx-dracula@${bare}`);
+	});
+
+	it("points biome's schema at the installed CLI version", () => {
+		const schemaVersion = pkg.devDependencies["@biomejs/biome"];
+		expect(schemaVersion).toMatch(/^\d+\.\d+\.\d+$/);
+		expect(BIOME_SCHEMA).toContain(`biomejs.dev/schemas/${schemaVersion}/schema.json`);
 	});
 
 	it("quotes every getDefaultTtl per-type exception in the vite TTL table", () => {

@@ -6,7 +6,7 @@ description: Use when changing how Glimpse looks — colors, spacing, typography
 # Theming Glimpse
 
 ## Overview
-Glimpse ships **exactly one theme**: [`astryx-dracula`](https://github.com/yuzu-octopus/astryx-dracula) (MIT), the pure Dracula brand for Astryx. It is a **runtime dependency** (`^0.2.1`), not a fork — the CSS and the `<Theme>` object both come from the package.
+Glimpse ships **exactly one theme**: [`astryx-dracula`](https://github.com/yuzu-octopus/astryx-dracula) (MIT), the pure Dracula brand for Astryx. It is a **runtime dependency** (`^0.9.0`), not a fork — the CSS and the `<Theme>` object both come from the package.
 
 There is nothing to switch. No presets, no light mode, no picker, no `theme:` block. The theme is the brand, and the brand is dark.
 
