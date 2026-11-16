@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { useConfig as UseConfigHook } from "./useConfig";
@@ -54,5 +55,16 @@ describe("useConfig", () => {
 		const second = renderHook(() => useConfig());
 		await waitFor(() => expect(second.result.current.status).toBe("ready"));
 		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("config preload", () => {
+	it("preloads /api/config in index.html so the fetch starts before the JS bundle", () => {
+		const html = readFileSync("index.html", "utf8");
+		const configPreloads = [...html.matchAll(/<link\b[^>]*>/g)].filter(
+			(tag) => tag[0].includes('rel="preload"') && tag[0].includes('href="/api/config"'),
+		);
+		expect(configPreloads).toHaveLength(1);
+		expect(configPreloads[0][0]).toContain('as="fetch"');
 	});
 });

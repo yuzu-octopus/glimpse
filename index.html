@@ -2,29 +2,30 @@
 <!-- One brand theme (astryx-dracula), so the pre-CSS first paint is a fact,
      not a guess: these are the kit's --color-background / --color-text-base. -->
 <html lang="en" style="background-color: #282a36; color: #9aa1bc; color-scheme: dark">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#1e2327" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link
-      rel="preload"
-      as="font"
-      type="font/woff2"
-      crossorigin
-      href="/fonts/JetBrainsMono-Regular.woff2"
-    />
-    <link
-      rel="preload"
-      as="font"
-      type="font/woff2"
-      crossorigin
-      href="/fonts/JetBrainsMono-SemiBold.woff2"
-    />
-    <title>Glimpse</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="theme-color" content="#282a36" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="preload" as="fetch" href="/api/config" crossorigin />
+		<link
+			rel="preload"
+			as="font"
+			type="font/woff2"
+			crossorigin
+			href="/fonts/JetBrainsMono-Regular.woff2"
+		/>
+		<link
+			rel="preload"
+			as="font"
+			type="font/woff2"
+			crossorigin
+			href="/fonts/JetBrainsMono-SemiBold.woff2"
+		/>
+		<title>Glimpse</title>
+	</head>
+	<body>
+		<div id="root"></div>
+		<script type="module" src="/src/main.tsx"></script>
+	</body>
 </html>
