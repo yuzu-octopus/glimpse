@@ -7,7 +7,7 @@ import {
 	useTransition,
 } from "react";
 import type { PagePayload, WidgetPayload } from "../../shared/api";
-import { LIVE_POLL_MS, LIVE_TYPES, TTL_OVERRIDE_MS } from "../../shared/live";
+import { LIVE_POLL_MS, LIVE_TICK_MS, LIVE_TYPES, TTL_OVERRIDE_MS } from "../../shared/live";
 import { CONFIG_ONLY } from "../../shared/widgets";
 import { scheduleWidgetPreload } from "../widgets";
 
@@ -500,9 +500,36 @@ export function usePageData(slug: string): PageDataResult {
 	const lastPayloadJsonRef = useRef<string | null>(null);
 	const preloadedRef = useRef<string | null>(null);
 
+	// Live frames carry their own version; JSON dedupe stays the identity check.
+	const liveVersionRef = useRef(0);
+
 	useEffect(() => {
 		dataRef.current = data;
 	}, [data]);
+
+	// Render-skip + visible-page preload. Returns true when emitted. Shared by
+	// the page stream and the live ticker so both use the same JSON dedupe.
+	const emitProgress = useCallback(
+		(progress: PagePayload, version: number): boolean => {
+			if (preloadedRef.current !== slug) {
+				preloadedRef.current = slug;
+				scheduleWidgetPreload(collectWidgetTypes(progress));
+			}
+			// Content is the dedupe identity: the stream version counter resets
+			// to 0 on every fetch, so versions collide across polls (stream 2's
+			// v1 === stream 1's v1) and a version-only check would swallow a
+			// genuinely changed payload.
+			const json = JSON.stringify(progress);
+			if (json === lastPayloadJsonRef.current) return false;
+			lastVersionRef.current = version;
+			lastPayloadJsonRef.current = json;
+			dataRef.current = progress;
+			setData(progress);
+			setError(null);
+			return true;
+		},
+		[slug],
+	);
 
 	const doFetch = useCallback(
 		async (signal: AbortSignal, force = false) => {
@@ -510,35 +537,15 @@ export function usePageData(slug: string): PageDataResult {
 			validatingCountRef.current += 1;
 			setIsValidatingRaw(true);
 			try {
-				// Render-skip + visible-page preload. Returns true when emitted.
-				const emit = (progress: PagePayload, version: number): boolean => {
-					if (signal.aborted) return false;
-					if (preloadedRef.current !== slug) {
-						preloadedRef.current = slug;
-						scheduleWidgetPreload(collectWidgetTypes(progress));
-					}
-					// Content is the dedupe identity: the stream version counter resets
-					// to 0 on every fetch, so versions collide across polls (stream 2's
-					// v1 === stream 1's v1) and a version-only check would swallow a
-					// genuinely changed payload.
-					const json = JSON.stringify(progress);
-					if (json === lastPayloadJsonRef.current) return false;
-					lastVersionRef.current = version;
-					lastPayloadJsonRef.current = json;
-					dataRef.current = progress;
-					setData(progress);
-					setError(null);
-					return true;
-				};
 				const onProgress = (progress: PagePayload, version: number) => {
-					emit(progress, version);
+					if (!signal.aborted) emitProgress(progress, version);
 				};
 				const next = await fetchPage(slug, signal, onProgress, force);
 				if (signal.aborted) return;
 				setStaleNotice(null);
 				const version = versionBySlug.get(slug) ?? 0;
 				startTransition(() => {
-					emit(next, version);
+					emitProgress(next, version);
 				});
 			} catch (e) {
 				if ((e instanceof Error && e.name === "AbortError") || signal.aborted) return;
@@ -556,7 +563,7 @@ export function usePageData(slug: string): PageDataResult {
 				if (validatingCountRef.current === 0) setIsValidatingRaw(false);
 			}
 		},
-		[slug],
+		[slug, emitProgress],
 	);
 
 	const reload = useCallback(
@@ -627,12 +634,73 @@ export function usePageData(slug: string): PageDataResult {
 
 	useEffect(() => {
 		if (liveKey === "none") return;
-		const interval = liveKey === "homelab" ? 1000 : LIVE_POLL_MS;
 		const id = window.setInterval(() => {
+			if (document.hidden) return;
 			void validate();
-		}, interval);
+		}, LIVE_POLL_MS);
 		return () => window.clearInterval(id);
 	}, [liveKey, validate]);
+
+	// Live frames land on their own cadence and are merged path-by-path onto
+	// the current snapshot. Never cached, never a whole-page revalidation.
+	useEffect(() => {
+		if (liveKey === "none") return;
+		const ac = new AbortController();
+		let busy = false;
+		const tick = async (): Promise<void> => {
+			if (document.hidden || busy || ac.signal.aborted) return;
+			const current = dataRef.current;
+			if (!current) return;
+			busy = true;
+			try {
+				const res = await fetch(`/api/live/${encodeURIComponent(slug)}`, { signal: ac.signal });
+				if (!res.ok || !res.body) return;
+				const reader = res.body.getReader();
+				const dec = new TextDecoder();
+				let buf = "";
+				let next: PagePayload | null = null;
+				const handleLine = (line: string): void => {
+					if (!line.trim()) return;
+					let chunk: { path?: string; payload?: unknown };
+					try {
+						chunk = JSON.parse(line);
+					} catch {
+						return;
+					}
+					if (!chunk.path) return;
+					// The only clone: applyChunk then swaps just the owning column
+					// and widget, preserving every other region and object ref.
+					next ??= { ...current };
+					applyChunk(next, chunk.path, chunk.payload);
+				};
+				for (;;) {
+					const { done, value } = await reader.read();
+					if (done) break;
+					buf += dec.decode(value, { stream: true });
+					let nl = buf.indexOf("\n");
+					while (nl >= 0) {
+						handleLine(buf.slice(0, nl));
+						buf = buf.slice(nl + 1);
+						nl = buf.indexOf("\n");
+					}
+				}
+				buf += dec.decode();
+				handleLine(buf);
+				if (next && !ac.signal.aborted) emitProgress(next, ++liveVersionRef.current);
+			} catch {
+				// A failed tick leaves the payload and stale notice untouched.
+			} finally {
+				busy = false;
+			}
+		};
+		const id = window.setInterval(() => {
+			void tick();
+		}, LIVE_TICK_MS);
+		return () => {
+			window.clearInterval(id);
+			ac.abort();
+		};
+	}, [liveKey, slug, emitProgress]);
 
 	return { data, error, isValidating, validate, reload };
 }

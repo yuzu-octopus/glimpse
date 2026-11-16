@@ -8,6 +8,8 @@ export const LIVE_TYPES: Record<string, true> = {
 	"system-stats": true,
 };
 export const LIVE_POLL_MS = 30_000;
+/** Dedicated per-widget live frame cadence; the whole page polls at LIVE_POLL_MS. */
+export const LIVE_TICK_MS = 1_000;
 export const LIVE_TTL_MS = 60_000;
 export const STATIC_TTL_MS = 3_600_000;
 export const TTL_OVERRIDE_MS: Record<string, number> = {

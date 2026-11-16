@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Column, WidgetConfig, WidgetType } from "../shared/config";
-import { buildPagePayload, type StreamChunk, skeletonPagePayload, streamPagePayload } from "./api";
+import {
+	buildPagePayload,
+	type StreamChunk,
+	skeletonPagePayload,
+	streamLiveFrames,
+	streamPagePayload,
+} from "./api";
 import { Singleflight, TtlCache } from "./cache";
 import { registerWidget, serverWidgets, type WidgetFetchContext } from "./widgets/registry";
 
@@ -32,6 +38,7 @@ afterEach(() => {
 	serverWidgets.delete("rss" as never);
 	serverWidgets.delete("monitor" as never);
 	serverWidgets.delete("videos" as never);
+	serverWidgets.delete("server-stats" as never);
 });
 describe("buildPagePayload", () => {
 	it("returns null data for config-only widgets without a fetcher", async () => {
@@ -486,5 +493,38 @@ describe("skeletonPagePayload", () => {
 		} as unknown as Parameters<typeof skeletonPagePayload>[0];
 		const payload = skeletonPagePayload(flatPage);
 		expect(payload.widgets?.[0].config).toMatchObject({ "hide-header": true });
+	});
+});
+
+describe("streamLiveFrames", () => {
+	it("emits only live widgets and reuses the per-widget cache", async () => {
+		const fetcher = vi.fn(async () => ({ cpu: 42 }));
+		registerWidget("server-stats", fetcher);
+		registerWidget(
+			"rss",
+			vi.fn(async () => ({ items: [] })),
+		);
+		const livePage = {
+			name: "Lab",
+			slug: "lab",
+			columns: [
+				{
+					size: "full",
+					widgets: [{ type: "server-stats" }, { type: "rss", cache: "1h" }],
+				},
+			],
+		} as Parameters<typeof streamLiveFrames>[0];
+		const ctx = makeCtx();
+
+		const first: StreamChunk[] = [];
+		for await (const c of streamLiveFrames(livePage, ctx)) first.push(c);
+		const second: StreamChunk[] = [];
+		for await (const c of streamLiveFrames(livePage, ctx)) second.push(c);
+
+		expect(first).toHaveLength(1);
+		expect(first[0].path).toBe("columns[0].widgets[0]");
+		expect(first[0].payload.type).toBe("server-stats");
+		expect(second).toHaveLength(1);
+		expect(fetcher).toHaveBeenCalledOnce();
 	});
 });

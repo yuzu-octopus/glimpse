@@ -1,6 +1,7 @@
 import type { PagePayload, WidgetPayload } from "../shared/api";
 import type { Page } from "../shared/config";
 import { isRecord } from "../shared/is-record";
+import { LIVE_TYPES } from "../shared/live";
 import { serverWidgets, type WidgetFetchContext } from "./widgets/registry";
 import { fetchWidgetData } from "./widgets/runtime";
 
@@ -199,62 +200,25 @@ export interface StreamChunk {
 	payload: WidgetPayload;
 }
 
-/**
- * Progressive version of buildPagePayload: yields each top-level widget as
- * soon as its fetch settles so the server can flush NDJSON early. Slow
- * widgets (e.g. videos) don't block head widgets or fast columns.
- */
-export async function* streamPagePayload(
-	page: Page & { slug: string },
-	ctx: WidgetFetchContext,
-): AsyncGenerator<StreamChunk> {
-	const hideHeaders = page["hide-headers"] === true;
-	const gate = createFetchGate();
-	const pending: Promise<StreamChunk>[] = [];
-
-	const push = (path: string, cachePath: string, widget: Record<string, unknown>) => {
-		const task = fetchWidget(ctx, page.slug, cachePath, widget, gate).then((payload) => {
-			if (hideHeaders) {
-				const forceHide = (widgets: WidgetPayload[]): void => {
-					for (const w of widgets) {
-						w.config = { ...w.config, "hide-header": true };
-						if (w.widgets) forceHide(w.widgets);
-					}
-				};
-				payload.config = { ...payload.config, "hide-header": true };
-				if (payload.widgets) forceHide(payload.widgets);
-			}
-			return { path, payload } satisfies StreamChunk;
-		});
-		pending.push(task);
+/** Page-level `hide-headers` must survive on a live frame exactly as it does
+ * on a full-page stream, including nested container children. */
+function applyHideHeaders(payload: WidgetPayload, hideHeaders: boolean): void {
+	if (!hideHeaders) return;
+	const forceHide = (widgets: WidgetPayload[]): void => {
+		for (const w of widgets) {
+			w.config = { ...w.config, "hide-header": true };
+			if (w.widgets) forceHide(w.widgets);
+		}
 	};
+	payload.config = { ...payload.config, "hide-header": true };
+	if (payload.widgets) forceHide(payload.widgets);
+}
 
-	if (Array.isArray(page["head-widgets"])) {
-		page["head-widgets"].forEach((w, i) => {
-			push(`headWidgets[${i}]`, `h:${i}`, isRecord(w) ? w : { type: "unknown" });
-		});
-	}
-	const flat = (page as { widgets?: unknown[] }).widgets;
-	if (Array.isArray(flat)) {
-		flat.forEach((w, i) => {
-			push(`widgets[${i}]`, `w:${i}`, isRecord(w) ? w : { type: "unknown" });
-		});
-	} else {
-		const cols =
-			(page as { columns?: Array<{ size: "small" | "full"; widgets: unknown[] }> }).columns ?? [];
-		cols.forEach((col, ci) => {
-			col.widgets.forEach((w, wi) => {
-				const cachePath = `c:${ci}:${wi}`;
-				push(`columns[${ci}].widgets[${wi}]`, cachePath, isRecord(w) ? w : { type: "unknown" });
-			});
-		});
-	}
-
+/** Resolved-queue shared by the page and live streams: each chunk is emitted
+ * the moment its fetch settles, and a single rejection can never poison the
+ * stream (fetchWidget already swallows, but this guarantees progress). */
+async function* drainPending(pending: Promise<StreamChunk>[]): AsyncGenerator<StreamChunk> {
 	if (pending.length === 0) return;
-
-	// Resolved-queue: each promise enqueues its result as soon as it settles.
-	// Harden with .catch so a single rejection never poisons the stream
-	// (fetchWidget already swallows, but this guarantees progress).
 	const queue: StreamChunk[] = [];
 	let pendingCount = pending.length;
 	let notify: (() => void) | null = null;
@@ -297,6 +261,98 @@ export async function* streamPagePayload(
 		const next = queue.shift();
 		if (next) yield next;
 	}
+}
+
+/**
+ * Progressive version of buildPagePayload: yields each top-level widget as
+ * soon as its fetch settles so the server can flush NDJSON early. Slow
+ * widgets (e.g. videos) don't block head widgets or fast columns.
+ */
+export async function* streamPagePayload(
+	page: Page & { slug: string },
+	ctx: WidgetFetchContext,
+): AsyncGenerator<StreamChunk> {
+	const hideHeaders = page["hide-headers"] === true;
+	const gate = createFetchGate();
+	const pending: Promise<StreamChunk>[] = [];
+
+	const push = (path: string, cachePath: string, widget: Record<string, unknown>) => {
+		const task = fetchWidget(ctx, page.slug, cachePath, widget, gate).then((payload) => {
+			applyHideHeaders(payload, hideHeaders);
+			return { path, payload } satisfies StreamChunk;
+		});
+		pending.push(task);
+	};
+
+	if (Array.isArray(page["head-widgets"])) {
+		page["head-widgets"].forEach((w, i) => {
+			push(`headWidgets[${i}]`, `h:${i}`, isRecord(w) ? w : { type: "unknown" });
+		});
+	}
+	const flat = (page as { widgets?: unknown[] }).widgets;
+	if (Array.isArray(flat)) {
+		flat.forEach((w, i) => {
+			push(`widgets[${i}]`, `w:${i}`, isRecord(w) ? w : { type: "unknown" });
+		});
+	} else {
+		const cols =
+			(page as { columns?: Array<{ size: "small" | "full"; widgets: unknown[] }> }).columns ?? [];
+		cols.forEach((col, ci) => {
+			col.widgets.forEach((w, wi) => {
+				const cachePath = `c:${ci}:${wi}`;
+				push(`columns[${ci}].widgets[${wi}]`, cachePath, isRecord(w) ? w : { type: "unknown" });
+			});
+		});
+	}
+
+	yield* drainPending(pending);
+}
+
+/**
+ * Live-only counterpart of streamPagePayload: same top-level path walk and
+ * the same shared per-widget TTL cache, but only LIVE_TYPES widgets produce a
+ * frame. The client merges these frames path-by-path without rebuilding the
+ * page, so static widget arrays and object identities stay untouched.
+ */
+export async function* streamLiveFrames(
+	page: Page & { slug: string },
+	ctx: WidgetFetchContext,
+): AsyncGenerator<StreamChunk> {
+	const hideHeaders = page["hide-headers"] === true;
+	const gate = createFetchGate();
+	const pending: Promise<StreamChunk>[] = [];
+
+	const push = (path: string, cachePath: string, widget: Record<string, unknown>) => {
+		if (typeof widget.type !== "string" || !LIVE_TYPES[widget.type]) return;
+		const task = fetchWidget(ctx, page.slug, cachePath, widget, gate).then((payload) => {
+			applyHideHeaders(payload, hideHeaders);
+			return { path, payload } satisfies StreamChunk;
+		});
+		pending.push(task);
+	};
+
+	if (Array.isArray(page["head-widgets"])) {
+		page["head-widgets"].forEach((w, i) => {
+			push(`headWidgets[${i}]`, `h:${i}`, isRecord(w) ? w : { type: "unknown" });
+		});
+	}
+	const flat = (page as { widgets?: unknown[] }).widgets;
+	if (Array.isArray(flat)) {
+		flat.forEach((w, i) => {
+			push(`widgets[${i}]`, `w:${i}`, isRecord(w) ? w : { type: "unknown" });
+		});
+	} else {
+		const cols =
+			(page as { columns?: Array<{ size: "small" | "full"; widgets: unknown[] }> }).columns ?? [];
+		cols.forEach((col, ci) => {
+			col.widgets.forEach((w, wi) => {
+				const cachePath = `c:${ci}:${wi}`;
+				push(`columns[${ci}].widgets[${wi}]`, cachePath, isRecord(w) ? w : { type: "unknown" });
+			});
+		});
+	}
+
+	yield* drainPending(pending);
 }
 
 /** Sync skeleton mirroring buildPagePayload's shape with every widget data:null. */

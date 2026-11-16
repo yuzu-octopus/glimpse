@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { dirname, isAbsolute, join, normalize, resolve, sep } from "node:path";
-import { buildPagePayload, skeletonPagePayload, streamPagePayload } from "./api";
+import { buildPagePayload, skeletonPagePayload, streamLiveFrames, streamPagePayload } from "./api";
 import { Singleflight, TtlCache } from "./cache";
 import { getConfig, initConfig } from "./config";
 import { etagMatches } from "./etag";
@@ -256,6 +256,59 @@ const server = Bun.serve({
 			return new Response(stream, {
 				headers: {
 					"content-type": "application/x-ndjson; charset=utf-8",
+					"cache-control": "no-store",
+				},
+			});
+		}
+
+		// Dedicated 1Hz live endpoint: the whole-page stream stays at LIVE_POLL_MS
+		// while this reuses the shared per-widget TTL cache, so two ticks a second
+		// never hammer upstream. No ?stream/?force semantics or rate-limit bucket.
+		const liveMatch = /^\/api\/live\/([^/]+)$/.exec(pathname);
+		if (liveMatch) {
+			const r = getConfig();
+			if (!r.ok) return json({ ok: false, errors: r.errors }, 400);
+			let slug: string;
+			try {
+				slug = decodeURIComponent(liveMatch[1]);
+			} catch {
+				return json({ error: `page "${liveMatch[1]}" not found` }, 404);
+			}
+			const page = r.config?.pages.find((p) => p.slug === slug);
+			if (!page) return json({ error: `page "${slug}" not found` }, 404);
+			const abortController = new AbortController();
+			req.signal.addEventListener("abort", () => abortController.abort(), { once: true });
+			const streamCtx: WidgetFetchContext = {
+				...ctx,
+				fetch: ((input: string | URL | Request, init?: RequestInit) => {
+					const innerSignal = init?.signal as AbortSignal | undefined;
+					const signal = innerSignal
+						? typeof AbortSignal.any === "function"
+							? AbortSignal.any([innerSignal, abortController.signal])
+							: abortController.signal
+						: abortController.signal;
+					return ctx.fetch(input as string, { ...init, signal } as RequestInit);
+				}) as typeof ctx.fetch,
+			};
+			const enc = new TextEncoder();
+			const stream = new ReadableStream<Uint8Array>({
+				async start(controller) {
+					try {
+						for await (const chunk of streamLiveFrames(page, streamCtx)) {
+							controller.enqueue(enc.encode(`${JSON.stringify(chunk)}\n`));
+						}
+						controller.close();
+					} catch (e) {
+						controller.error(e);
+					}
+				},
+				cancel() {
+					abortController.abort();
+				},
+			});
+			return new Response(stream, {
+				headers: {
+					"content-type": "application/x-ndjson",
 					"cache-control": "no-store",
 				},
 			});
