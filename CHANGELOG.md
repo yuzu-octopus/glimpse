@@ -21,8 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 	### Changed
 	- Toolchain moved onto bun: `bun check` replaces `tsc --noEmit` (same checker, ~100x faster here), `bun fmt` replaces Biome's formatter, and Biome stays as the linter only (repo `biome.json`, pinned 2.6). `biome lint` reports 0 errors, 0 warnings, 0 infos.
-	- Updated every dependency to latest, majors included: `@astryxdesign/core` 0.7.13, `astryx-dracula` 0.8.0, vitest 5.1, vite-plugin-pwa 2, zod 4.6.7, react 19.3.1, jsdom 31, lucide-react 1.72, systeminformation 5.33.19. Core 0.7.13 keeps the caller-owned Banner live-region (see `src/client/kit/banner.ts`); the kit's `CHART_HUES` now ship `var(--token, #fallback)` so bare custom properties resolve under jsdom's computed style — tests read the inline declaration where the token lives.
-	- Upgraded `astryx-dracula` upstream theme to 0.8.0.
+	- Updated every dependency to latest, majors included: `@astryxdesign/core` 0.7.16, `astryx-dracula` 0.9.0, vitest 5.1, vite-plugin-pwa 2, zod 4.6.7, react 19.3.1, jsdom 31, lucide-react 1.73, systeminformation 5.33.23. Core 0.7.16 keeps the caller-owned Banner live-region (see `src/client/kit/banner.ts`); the kit's `CHART_HUES` now ship `var(--token, #fallback)` so bare custom properties resolve under jsdom's computed style — tests read the inline declaration where the token lives.
+	- Upgraded `astryx-dracula` upstream theme to 0.9.0 (additive: new shared modules; every subpath we import still exported).
 	- Cleaned up every remaining lint diagnostic across client, server, and CSS (non-null assertions narrowed, `!important` removed via layer order, descending specificity reordered, factory/test shapes fixed); Biome exits 0 with 0 errors, 0 warnings, 0 infos.
 	- Fluid interaction polish: the group-tab underline and the desktop nav's active pill now slide between items (measured from the live element, so uneven labels stay aligned); the widget body cross-fades from skeleton to content; the mobile nav unfolds instead of popping; the stale/offline notice rises in; the timer ring eases instead of ticking linearly.
 
