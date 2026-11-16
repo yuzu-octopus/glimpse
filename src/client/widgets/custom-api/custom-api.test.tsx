@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import CustomApi from "./index";
@@ -124,5 +125,42 @@ describe("custom-api widget", () => {
 			/>,
 		);
 		expect(screen.queryByTestId("custom-api-star")).not.toBeInTheDocument();
+	});
+
+	it("shrinks a long value and timestamp to one line without disabling the tooltip", () => {
+		const longValue = "a".repeat(240);
+		render(
+			<CustomApi
+				config={{ type: "custom-api", title: "CI" }}
+				data={{
+					items: [{ ...items[0], value: longValue, image: null, icon: null }],
+					frameless: false,
+				}}
+			/>,
+		);
+
+		// Core 0.7.16 clamps maxLines={1} with class-based nowrap/ellipsis rather
+		// than an inline -webkit-line-clamp, and StyleX classes resolve to no
+		// computed style in jsdom. The title and subtitle already clamp at one
+		// line, so their shared StyleX classes are exactly the clamp markers;
+		// the trailing value and timestamp must carry every one of them.
+		const clampClasses = [...screen.getByText("main").classList].filter((cls) =>
+			screen.getByText("Deploy #42").classList.contains(cls),
+		);
+		expect(clampClasses.length).toBeGreaterThan(0);
+		for (const el of [screen.getByText(longValue), screen.getByText("2m ago")]) {
+			for (const cls of clampClasses) {
+				expect(el.classList.contains(cls)).toBe(true);
+			}
+		}
+		expect(screen.getByText("Deploy #42")).toBeInTheDocument();
+
+		const css = readFileSync("src/client/widgets/custom-api/custom-api.module.css", "utf8");
+		expect(css).toMatch(/\.rowRight\s*\{[^}]*min-width:\s*0/);
+		expect(css).not.toMatch(/\.rowRight\s*\{[^}]*flex-shrink:\s*0/);
+		const jsx = readFileSync("src/client/widgets/custom-api/index.tsx", "utf8");
+		expect(jsx).not.toMatch(/hasTruncateTooltip=\{false\}/);
+		expect(css).toMatch(/\.icon\s*\{[^}]*flex-shrink:\s*0/);
+		expect(css).toMatch(/\.image\s*\{[^}]*flex-shrink:\s*0/);
 	});
 });

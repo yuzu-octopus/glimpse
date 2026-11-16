@@ -22,7 +22,7 @@ function Iframe({ config }: WidgetComponentProps) {
 	);
 }
 
-function Html({ config }: WidgetComponentProps) {
+export function Html({ config }: WidgetComponentProps) {
 	const cfg = config as unknown as HtmlConfig;
 	return (
 		<WidgetChrome

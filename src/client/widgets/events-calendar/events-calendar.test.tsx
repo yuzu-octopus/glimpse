@@ -1,6 +1,8 @@
+import { readFileSync } from "node:fs";
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import EventsCalendar from "./index";
+import styles from "./events-calendar.module.css";
 
 // Mon 2026-08-24 12:00 local — Today/Tomorrow labels deterministic.
 const NOW = new Date(2026, 7, 24, 12, 0, 0);
@@ -51,5 +53,27 @@ describe("events-calendar widget", () => {
 	it("renders an empty state with no upcoming events", () => {
 		render(<EventsCalendar config={{ type: "events-calendar" }} data={{ events: [] }} />);
 		expect(screen.getByText("No upcoming events")).toBeInTheDocument();
+	});
+
+	it("places time and title in two grid tracks with the location under the title", () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(NOW);
+		const { container } = render(
+			<EventsCalendar config={{ type: "events-calendar" }} data={{ events: EVENTS }} />,
+		);
+		const event = container.querySelector(`.${styles.event}`) as HTMLElement;
+
+		expect(event.querySelector(`.${styles.time}`)?.textContent).toContain("14:00");
+		expect(event.querySelector(`.${styles.title}`)?.textContent).toBe("Standup");
+		expect(event.querySelector(`.${styles.location}`)?.textContent).toBe("Room 4");
+
+		const css = readFileSync(
+			"src/client/widgets/events-calendar/events-calendar.module.css",
+			"utf8",
+		);
+		expect(css).toMatch(
+			/\.event\s*\{[^}]*grid-template-columns:\s*minmax\(84px,\s*auto\)\s+minmax\(0,\s*1fr\)/,
+		);
+		expect(css).not.toMatch(/padding-left:\s*92px/);
 	});
 });

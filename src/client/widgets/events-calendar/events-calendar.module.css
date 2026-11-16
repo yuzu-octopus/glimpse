@@ -20,27 +20,25 @@
    fired at all. Events are static per the doctrine, so the tint is gone
    rather than mirrored onto a node that can never receive focus. */
 .event {
-	display: flex;
-	flex-direction: column;
-	gap: 1px;
+	display: grid;
+	grid-template-columns: minmax(84px, auto) minmax(0, 1fr);
+	column-gap: 8px;
+	row-gap: 1px;
 	padding: 6px 8px;
 	border-radius: 6px;
 }
 
-.top {
-	display: flex;
-	align-items: baseline;
-	gap: 8px;
-}
-
 .time {
+	grid-column: 1;
+	grid-row: 1;
 	font-size: var(--font-size-xs);
 	color: var(--color-text-base-muted);
 	white-space: nowrap;
-	min-width: 84px;
 }
 
 .title {
+	grid-column: 2;
+	grid-row: 1;
 	font-size: var(--font-size-base);
 	color: var(--color-text-highlight);
 	overflow: hidden;
@@ -49,9 +47,10 @@
 }
 
 .location {
+	grid-column: 2;
+	grid-row: 2;
 	font-size: var(--font-size-xs);
 	color: var(--color-text-base-muted);
-	padding-left: 92px;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;

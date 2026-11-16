@@ -1,6 +1,8 @@
+import { readFileSync } from "node:fs";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import Iframe from "./index";
+import Iframe, { Html as HtmlWidget } from "./index";
+import styles from "./iframe.module.css";
 
 describe("iframe widget", () => {
 	it("renders the source frameless with the configured height as min-height", () => {
@@ -80,5 +82,25 @@ describe("iframe widget", () => {
 			/>,
 		);
 		expect(screen.getByTitle('Test <script> & "quotes"')).toBeInTheDocument();
+	});
+});
+
+describe("html widget overflow containment", () => {
+	const css = readFileSync("src/client/widgets/iframe/iframe.module.css", "utf8");
+
+	it("wraps author markup in a wrapping scrollport and caps wide descendants", () => {
+		render(
+			<HtmlWidget
+				config={{ type: "html", source: "<table><tr><td>very-wide-cell</td></tr></table>" }}
+				data={null}
+			/>,
+		);
+		const wrapper = screen.getByText("very-wide-cell").closest("div");
+		expect(wrapper?.className).toContain(styles.html);
+		expect(css).toMatch(/\.html\s*\{[^}]*overflow-x:\s*auto/);
+		expect(css).toMatch(/\.html\s*\{[^}]*overflow-wrap:\s*anywhere/);
+		expect(css).toMatch(
+			/\.html\s+img\s*,\s*\.html\s+table\s*,\s*\.html\s+pre\s*,\s*\.html\s+video\s*\{[^}]*max-width:\s*100%/,
+		);
 	});
 });

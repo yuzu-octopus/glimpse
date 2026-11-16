@@ -70,10 +70,8 @@ function EventsCalendar({ config, data, error, isLoading }: WidgetComponentProps
 						<div className={styles.dayHeader}>{group.label}</div>
 						{group.events.map((ev) => (
 							<div key={`${ev.startISO}-${ev.title}`} className={styles.event}>
-								<div className={styles.top}>
-									<span className={styles.time}>{timeRange(ev)}</span>
-									<span className={styles.title}>{ev.title}</span>
-								</div>
+								<span className={styles.time}>{timeRange(ev)}</span>
+								<span className={styles.title}>{ev.title}</span>
 								{ev.location ? <div className={styles.location}>{ev.location}</div> : null}
 							</div>
 						))}

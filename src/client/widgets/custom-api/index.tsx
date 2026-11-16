@@ -49,11 +49,15 @@ function ItemRow({ item }: { item: CustomApiItem }) {
 			</Stack>
 			<Stack gap={0.5} hAlign="end" className={styles.rowRight}>
 				{item.value ? (
-					<Text type="body" weight="semibold" hasTabularNumbers>
+					<Text type="body" weight="semibold" hasTabularNumbers maxLines={1}>
 						{item.value}
 					</Text>
 				) : null}
-				{item.timestamp ? <Text type="supporting">{item.timestamp}</Text> : null}
+				{item.timestamp ? (
+					<Text type="supporting" maxLines={1}>
+						{item.timestamp}
+					</Text>
+				) : null}
 			</Stack>
 		</HStack>
 	);

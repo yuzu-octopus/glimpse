@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { ContributionGraphConfig } from "../../../shared/widgets/contribution";
 import type { ContributionDay, ContributionGraphData } from "../../../shared/widgets/payloads";
 import { WidgetChrome } from "../../components/WidgetChrome";
@@ -5,6 +6,10 @@ import { registerWidgetComponent, type WidgetComponentProps } from "../registry"
 import styles from "./contribution-graph.module.css";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function labelOf(day: ContributionDay): string {
+	return `${day.count} contribution${day.count === 1 ? "" : "s"} on ${day.date}`;
+}
 
 /** Month label above each week column whose first day starts a new month. */
 function monthLabels(days: ContributionDay[]): Array<{ col: number; label: string }> {
@@ -28,6 +33,7 @@ function ContributionGraph({ config, data, error, isLoading }: WidgetComponentPr
 	const total = days.reduce((sum, d) => sum + d.count, 0);
 	const weeks = Math.ceil(days.length / 7) || 1;
 	const labels = monthLabels(days);
+	const [selected, setSelected] = useState<ContributionDay | null>(null);
 
 	return (
 		<WidgetChrome
@@ -62,15 +68,26 @@ function ContributionGraph({ config, data, error, isLoading }: WidgetComponentPr
 								style={{ ["--weeks" as string]: String(weeks) }}
 							>
 								{days.map((d) => (
-									<div
+									<button
+										type="button"
 										key={d.date}
 										className={`${styles.cell} ${styles[`l${d.level}`]}`}
 										data-testid={`cell-${d.date}`}
 										data-level={d.level}
-										title={`${d.count} contribution${d.count === 1 ? "" : "s"} on ${d.date}`}
+										title={labelOf(d)}
+										aria-label={labelOf(d)}
+										onClick={() => setSelected(d)}
 									/>
 								))}
 							</div>
+							<p
+								className={styles.readout}
+								data-testid="contribution-readout"
+								role="status"
+								aria-live="polite"
+							>
+								{selected ? labelOf(selected) : "Tap a day for its count"}
+							</p>
 						</>
 					) : null}
 				</div>,

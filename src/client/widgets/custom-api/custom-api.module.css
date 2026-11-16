@@ -23,7 +23,7 @@
 }
 
 .rowRight {
-	flex-shrink: 0;
+	min-width: 0;
 }
 .row {
 	position: relative;
