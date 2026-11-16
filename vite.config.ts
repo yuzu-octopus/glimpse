@@ -2,6 +2,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
+import { apiConfigPattern, apiPagePattern, apiThemePattern } from "./src/sw/apiPatterns";
 
 export default defineConfig({
 	plugins: [
@@ -57,7 +58,7 @@ export default defineConfig({
 						// (3s) or is offline, so the page chrome renders immediately.
 						// /api/config sends `no-store` — the SW cache is an intentional
 						// second layer for offline/stall, not a replacement for revalidation.
-						urlPattern: /^\/api\/config(\?.*)?$/,
+						urlPattern: apiConfigPattern,
 						handler: "NetworkFirst",
 						options: {
 							networkTimeoutSeconds: 3,
@@ -69,7 +70,7 @@ export default defineConfig({
 						// Per-page widget data: NetworkFirst with a short timeout gives
 						// stale-while-revalidate UX — cache renders when the network is
 						// slow or offline, while successful fetches refresh it in place.
-						urlPattern: /^\/api\/page\//,
+						urlPattern: apiPagePattern,
 						handler: "NetworkFirst",
 						options: {
 							networkTimeoutSeconds: 3,
@@ -78,7 +79,7 @@ export default defineConfig({
 						},
 					},
 					{
-						urlPattern: /^\/api\/theme(\?.*)?$/,
+						urlPattern: apiThemePattern,
 						handler: "NetworkFirst",
 						options: {
 							networkTimeoutSeconds: 3,
