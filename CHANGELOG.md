@@ -10,14 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-16
+
 	### Added
 	- `rex-sessions` widget: live Rex terminal sessions at a glance — shells the local `rex` CLI (`session.view` + per-block `title` / `program-status` / `pwd` / `process`); title + status + age only, never screen text. Blocked-first, `focused` badge, stale-on-error; set `cache: 5s` for a live view (static TTL otherwise).
+	- `GET /api/live/:slug` streams only LIVE_TYPES widget frames at 1s; the full page now polls at 30s. Non-live widget array refs are untouched, stream-end reconciliation and `?force` semantics preserved, disconnected clients abort upstream fetches.
 	- `ai-quota` multi-account routing: `accountId` schema field (also `CHATGPT_ACCOUNT_ID`), forwarded to the usage fetch — Codex multi-account headers now fire. Plus countdown/percent/key hygiene (`<1m`, 0–100 clamp, stable keys).
 	- `check-config` rejects mixed `span`+`size` columns at load instead of misrendering them as 1-wide tracks.
 	- Per-IP throttles on the two expensive endpoints: `?force` cache-bust (10/60s) and `/api/speedtest/run` (3/300s), 429 + `retry-after`; reads untouched.
 	- Custom-CSS read contained to the config directory (`isAbsolute` reject + `realpathSync`, fail closed, symlink-safe); malformed page slugs return the JSON 404 instead of a 500.
 	- Per-page widget fan-out cap (6, same number as warmup) + 5s negative cache on hard failures (`?force` still bypasses); stream chunk dedupe measured and rejected (~0.02–0.06ms/iter — not the cost).
 	- `model-releases` widget: live AI model drop feed from `live.aitracker.bot` with lab badges, announcement links, descriptions, and relative timestamps (`vertical-list` and `compact` styles).
+	- 16 implementation plans from the mobile audit (layout, widget interiors, perf/PWA) plus 9 earlier improve plans tracked under `plans/`; both sets reviewed and closed.
 
 	### Changed
 	- Toolchain moved onto bun: `bun check` replaces `tsc --noEmit` (same checker, ~100x faster here), `bun fmt` replaces Biome's formatter, and Biome stays as the linter only (repo `biome.json`, pinned 2.6). `biome lint` reports 0 errors, 0 warnings, 0 infos.
@@ -27,6 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 	- Fluid interaction polish: the group-tab underline and the desktop nav's active pill now slide between items (measured from the live element, so uneven labels stay aligned); the widget body cross-fades from skeleton to content; the mobile nav unfolds instead of popping; the stale/offline notice rises in; the timer ring eases instead of ticking linearly.
 
 ### Fixed
+- Cold load: `/api/config` is preloaded so the request overlaps the JS bundle; first-paint and PWA theme colors aligned to Dracula `#282a36`.
+- Service-worker API routes now match absolute request URLs; `?stream` excluded so no-store NDJSON is never replayed. Fonts load from `/fonts/` instead of the kit's unshipped path.
+- Mobile: collapsed columns reopen on breakpoint exit, JS/CSS breakpoints agree at 600px, mobile header no longer bleeds 8px, group tabs have 44px touch targets, reduced-motion rules actually win the cascade, settings nav wraps at 320px.
+- Mobile widgets: contribution graph no longer forces a 686px page scroll (sticky tappable readout), `html` widget contains wide markup, `custom-api` values shrink/truncate, events-calendar uses a real 2-track grid. Pull-to-refresh ignores inner scrollers and dialogs.
+- Polling pauses in hidden tabs; live frames use a dedicated 1s ticker instead of restreaming the whole page.
+- Baseline tests: smart-quote expectation, videos playlist cap sorting + fixture ids, JetBrains XML reader under vitest; test wall time down ~35s via retries:0 on failure-path cases.
 - Suppressed nested dark background box on links during mouse-down/active hold (`a:active`, `a[data-astryx-press]`).
 - Centered row separator lines with equal spacing above and below across feed, releases, markets, monitor, custom-api, docker, home-assistant, and tailscale widgets; eliminated hover box touching top separators.
 
