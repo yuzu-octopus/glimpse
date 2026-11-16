@@ -16,6 +16,22 @@
  * aliases for the glance names our stylesheets still consume.
  */
 
+@font-face {
+	font-family: "JetBrains Mono";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/fonts/JetBrainsMono-Regular.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "JetBrains Mono";
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url("/fonts/JetBrainsMono-SemiBold.woff2") format("woff2");
+}
+
 :root {
 	/* Single dark theme — matches the kit's tokens.css so the UA paints
      Dracula form controls and scrollbars even before <Theme> mounts. */
@@ -64,6 +80,7 @@ body {
 	color: var(--color-text-base);
 	background-color: var(--color-background);
 	overflow-y: scroll;
+	overflow-x: clip;
 }
 
 #root {
