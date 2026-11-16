@@ -1,6 +1,7 @@
 import { Loader2 } from "lucide-react";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import styles from "./pull-to-refresh.module.css";
+import { isInnerScrollerTarget } from "./pull-to-refresh-target";
 
 /** Drag distance (px) past which releasing triggers the refresh. */
 const THRESHOLD = 72;
@@ -48,6 +49,11 @@ export function PullToRefresh({
 	useEffect(() => {
 		const onTouchStart = (e: TouchEvent) => {
 			if (refreshingRef.current || !atTop() || e.touches.length !== 1) return;
+			if (isInnerScrollerTarget(e.target)) {
+				startYRef.current = null;
+				engagedRef.current = false;
+				return;
+			}
 			startYRef.current = e.touches[0].clientY;
 			engagedRef.current = false;
 		};
