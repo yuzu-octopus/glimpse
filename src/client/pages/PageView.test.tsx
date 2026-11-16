@@ -436,7 +436,21 @@ describe("PageView", () => {
 		const css = readFileSync("src/client/pages/page.module.css", "utf8");
 		const mobileStart = css.indexOf("@media (max-width: 600px)");
 		expect(mobileStart).toBeGreaterThan(-1);
-		const mobile = css.slice(mobileStart, css.indexOf("\n}", mobileStart));
+		// Brace-match the @media block rather than stopping at the first "\n}":
+		// nested rules inside it make a naive bound stop early.
+		let depth = 0;
+		let mobileEnd = mobileStart;
+		for (let i = mobileStart; i < css.length; i++) {
+			if (css[i] === "{") depth++;
+			else if (css[i] === "}") {
+				depth--;
+				if (depth === 0) {
+					mobileEnd = i;
+					break;
+				}
+			}
+		}
+		const mobile = css.slice(mobileStart, mobileEnd);
 		expect(mobile).toMatch(
 			/\.groupTabs\s+button,\s*\.groupTabs\s+\[data-tab-value\]\s*\{[^}]*min-height:\s*44px/,
 		);

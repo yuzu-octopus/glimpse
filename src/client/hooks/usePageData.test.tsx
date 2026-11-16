@@ -596,57 +596,59 @@ describe("usePageData hidden-tab polling", () => {
 			configurable: true,
 			get: () => (hidden ? "hidden" : "visible"),
 		});
-		const payload = makePayload({
-			columns: [
-				{
-					size: "full",
-					widgets: [
-						{
-							type: "server-stats" as WidgetType,
-							config: { type: "server-stats" },
-							data: { servers: [] },
-						},
-					],
-				},
-			],
-		});
-		const fetchMock = vi.fn(async () => ndjsonResponse([{ path: "$skeleton", payload }]));
-		vi.stubGlobal("fetch", fetchMock);
+		try {
+			const payload = makePayload({
+				columns: [
+					{
+						size: "full",
+						widgets: [
+							{
+								type: "server-stats" as WidgetType,
+								config: { type: "server-stats" },
+								data: { servers: [] },
+							},
+						],
+					},
+				],
+			});
+			const fetchMock = vi.fn(async () => ndjsonResponse([{ path: "$skeleton", payload }]));
+			vi.stubGlobal("fetch", fetchMock);
 
-		vi.useFakeTimers();
-		const view = renderHook(() => usePageData("home"));
-		// The mount fetch stream resolves on microtasks; flush it without
-		// uninstalling the fake clock, so the polling interval stays on it.
-		await act(async () => {
-			await vi.advanceTimersByTimeAsync(0);
-		});
-		expect(fetchMock).toHaveBeenCalledTimes(1);
-		const afterMount = fetchMock.mock.calls.length;
+			vi.useFakeTimers();
+			const view = renderHook(() => usePageData("home"));
+			// The mount fetch stream resolves on microtasks; flush it without
+			// uninstalling the fake clock, so the polling interval stays on it.
+			await act(async () => {
+				await vi.advanceTimersByTimeAsync(0);
+			});
+			expect(fetchMock).toHaveBeenCalledTimes(1);
+			const afterMount = fetchMock.mock.calls.length;
 
-		await act(async () => {
-			// 31s > STALE_MS, so the return path is eligible to revalidate;
-			// the homelab interval would otherwise have fired 31 times.
-			await vi.advanceTimersByTimeAsync(31_000);
-		});
-		expect(fetchMock).toHaveBeenCalledTimes(afterMount);
+			await act(async () => {
+				// 31s > STALE_MS, so the return path is eligible to revalidate;
+				// the homelab interval would otherwise have fired 31 times.
+				await vi.advanceTimersByTimeAsync(31_000);
+			});
+			expect(fetchMock).toHaveBeenCalledTimes(afterMount);
 
-		hidden = false;
-		await act(async () => {
-			document.dispatchEvent(new Event("visibilitychange"));
-			await vi.advanceTimersByTimeAsync(10);
-		});
-		expect(fetchMock).toHaveBeenCalledTimes(afterMount + 1);
-		expect(view.result.current.error).toBeNull();
+			hidden = false;
+			await act(async () => {
+				document.dispatchEvent(new Event("visibilitychange"));
+				await vi.advanceTimersByTimeAsync(10);
+			});
+			expect(fetchMock).toHaveBeenCalledTimes(afterMount + 1);
+			expect(view.result.current.error).toBeNull();
 
-		// The guard sits in the interval only — an explicit reload still fetches.
-		hidden = true;
-		vi.useRealTimers();
-		await act(async () => {
-			await view.result.current.reload();
-		});
-		expect(fetchMock).toHaveBeenCalledTimes(afterMount + 2);
-
-		if (hiddenDescriptor) Object.defineProperty(document, "hidden", hiddenDescriptor);
-		if (stateDescriptor) Object.defineProperty(document, "visibilityState", stateDescriptor);
+			// The guard sits in the interval only — an explicit reload still fetches.
+			hidden = true;
+			vi.useRealTimers();
+			await act(async () => {
+				await view.result.current.reload();
+			});
+			expect(fetchMock).toHaveBeenCalledTimes(afterMount + 2);
+		} finally {
+			if (hiddenDescriptor) Object.defineProperty(document, "hidden", hiddenDescriptor);
+			if (stateDescriptor) Object.defineProperty(document, "visibilityState", stateDescriptor);
+		}
 	});
 });

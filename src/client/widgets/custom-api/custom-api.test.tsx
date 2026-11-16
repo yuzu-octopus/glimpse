@@ -1,3 +1,4 @@
+import { Text } from "@astryxdesign/core";
 import { readFileSync } from "node:fs";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -130,28 +131,39 @@ describe("custom-api widget", () => {
 	it("shrinks a long value and timestamp to one line without disabling the tooltip", () => {
 		const longValue = "a".repeat(240);
 		render(
-			<CustomApi
-				config={{ type: "custom-api", title: "CI" }}
-				data={{
-					items: [{ ...items[0], value: longValue, image: null, icon: null }],
-					frameless: false,
-				}}
-			/>,
+			<>
+				<CustomApi
+					config={{ type: "custom-api", title: "CI" }}
+					data={{
+						items: [{ ...items[0], value: longValue, image: null, icon: null }],
+						frameless: false,
+					}}
+				/>
+				<Text data-testid="unclamped-control">unclamped control</Text>
+			</>,
 		);
 
 		// Core 0.7.16 clamps maxLines={1} with class-based nowrap/ellipsis rather
 		// than an inline -webkit-line-clamp, and StyleX classes resolve to no
 		// computed style in jsdom. The title and subtitle already clamp at one
-		// line, so their shared StyleX classes are exactly the clamp markers;
+		// line, so their shared StyleX classes are exactly the clamp markers
+		// (ignoring the universal `astryx-text` base class every Text carries);
 		// the trailing value and timestamp must carry every one of them.
-		const clampClasses = [...screen.getByText("main").classList].filter((cls) =>
-			screen.getByText("Deploy #42").classList.contains(cls),
+		const clampClasses = [...screen.getByText("main").classList].filter(
+			(cls) => cls !== "astryx-text" && screen.getByText("Deploy #42").classList.contains(cls),
 		);
 		expect(clampClasses.length).toBeGreaterThan(0);
 		for (const el of [screen.getByText(longValue), screen.getByText("2m ago")]) {
 			for (const cls of clampClasses) {
 				expect(el.classList.contains(cls)).toBe(true);
 			}
+		}
+
+		// The pinned classes are clamp-specific, not generic Text styling: an
+		// otherwise plain, unclamped Text carries none of them.
+		const unclamped = screen.getByTestId("unclamped-control");
+		for (const cls of clampClasses) {
+			expect(unclamped.classList.contains(cls)).toBe(false);
 		}
 		expect(screen.getByText("Deploy #42")).toBeInTheDocument();
 
